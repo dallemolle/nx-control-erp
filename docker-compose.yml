@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nx-control-erp-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: nx_control_erp
+    ports:
+      - "5432:5432"
+    volumes:
+      - nx-control-erp-db-data:/var/lib/postgresql/data
+
+volumes:
+  nx-control-erp-db-data:
