@@ -1,0 +1,265 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Perfil {
+  ADMINISTRADOR
+  FINANCEIRO
+  TESOURARIA
+  GESTOR
+  AUDITOR
+  CONSULTA
+}
+
+enum TipoCategoriaFinanceira {
+  RECEITA
+  DESPESA
+}
+
+enum TipoContaBancaria {
+  CORRENTE
+  APLICACAO
+  INVESTIMENTO
+  EMPRESTIMO_FINANCIAMENTO
+}
+
+enum StatusSafraProjeto {
+  PLANEJADO
+  EM_ANDAMENTO
+  ENCERRADO
+}
+
+model Empresa {
+  id           String   @id @default(uuid())
+  razaoSocial  String
+  nomeFantasia String
+  cnpj         String   @unique
+  moedaPadrao  String   @default("BRL")
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  usuarios            UsuarioEmpresa[]
+  centrosCusto        CentroCusto[]
+  centrosLucro        CentroLucro[]
+  safras              Safra[]
+  projetos            Projeto[]
+  categoriasFinanceiras CategoriaFinanceira[]
+  clientes            Cliente[]
+  fornecedores        Fornecedor[]
+  contasBancarias     ContaBancaria[]
+  auditLogs           AuditLog[]
+
+  @@map("empresas")
+}
+
+model Usuario {
+  id           String   @id @default(uuid())
+  nome         String
+  email        String   @unique
+  senhaHash    String
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  empresas  UsuarioEmpresa[]
+  auditLogs AuditLog[]
+
+  @@map("usuarios")
+}
+
+model UsuarioEmpresa {
+  id        String   @id @default(uuid())
+  usuarioId String
+  empresaId String
+  perfil    Perfil
+  ativo     Boolean  @default(true)
+  criadoEm  DateTime @default(now())
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, empresaId])
+  @@index([empresaId])
+  @@map("usuarios_empresas")
+}
+
+model CentroCusto {
+  id       String  @id @default(uuid())
+  empresaId String
+  nome     String
+  codigo   String
+  parentId String?
+  ativo    Boolean @default(true)
+  criadoEm DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  empresa Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  parent  CentroCusto?  @relation("CentroCustoHierarquia", fields: [parentId], references: [id])
+  filhos  CentroCusto[] @relation("CentroCustoHierarquia")
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId])
+  @@map("centros_custo")
+}
+
+model CentroLucro {
+  id       String   @id @default(uuid())
+  empresaId String
+  nome     String
+  codigo   String
+  ativo    Boolean  @default(true)
+  criadoEm DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId])
+  @@map("centros_lucro")
+}
+
+model Safra {
+  id          String              @id @default(uuid())
+  empresaId   String
+  nome        String
+  dataInicio  DateTime
+  dataFim     DateTime
+  status      StatusSafraProjeto  @default(PLANEJADO)
+  ativo       Boolean             @default(true)
+  criadoEm    DateTime            @default(now())
+  atualizadoEm DateTime           @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@unique([empresaId, nome])
+  @@index([empresaId])
+  @@map("safras")
+}
+
+model Projeto {
+  id       String              @id @default(uuid())
+  empresaId String
+  nome     String
+  codigo   String
+  status   StatusSafraProjeto  @default(PLANEJADO)
+  ativo    Boolean             @default(true)
+  criadoEm DateTime            @default(now())
+  atualizadoEm DateTime        @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId])
+  @@map("projetos")
+}
+
+model CategoriaFinanceira {
+  id       String                    @id @default(uuid())
+  empresaId String
+  nome     String
+  tipo     TipoCategoriaFinanceira
+  parentId String?
+  ativo    Boolean                   @default(true)
+  criadoEm DateTime                  @default(now())
+  atualizadoEm DateTime              @updatedAt
+
+  empresa Empresa               @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  parent  CategoriaFinanceira?  @relation("CategoriaFinanceiraHierarquia", fields: [parentId], references: [id])
+  filhos  CategoriaFinanceira[] @relation("CategoriaFinanceiraHierarquia")
+
+  @@index([empresaId])
+  @@map("categorias_financeiras")
+}
+
+model Cliente {
+  id        String   @id @default(uuid())
+  empresaId String
+  nome      String
+  cnpjCpf   String
+  contato   String?
+  email     String?
+  telefone  String?
+  ativo     Boolean  @default(true)
+  criadoEm  DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@unique([empresaId, cnpjCpf])
+  @@index([empresaId])
+  @@map("clientes")
+}
+
+model Fornecedor {
+  id        String   @id @default(uuid())
+  empresaId String
+  nome      String
+  cnpjCpf   String
+  contato   String?
+  email     String?
+  telefone  String?
+  ativo     Boolean  @default(true)
+  criadoEm  DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@unique([empresaId, cnpjCpf])
+  @@index([empresaId])
+  @@map("fornecedores")
+}
+
+model Banco {
+  id     String @id @default(uuid())
+  codigo String @unique
+  nome   String
+
+  contasBancarias ContaBancaria[]
+
+  @@map("bancos")
+}
+
+model ContaBancaria {
+  id           String            @id @default(uuid())
+  empresaId    String
+  bancoId      String
+  agencia      String
+  conta        String
+  tipo         TipoContaBancaria @default(CORRENTE)
+  moeda        String            @default("BRL")
+  saldoInicial Decimal           @default(0) @db.Decimal(18, 2)
+  ativo        Boolean           @default(true)
+  criadoEm     DateTime          @default(now())
+  atualizadoEm DateTime          @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  banco   Banco   @relation(fields: [bancoId], references: [id])
+
+  @@unique([empresaId, bancoId, agencia, conta])
+  @@index([empresaId])
+  @@map("contas_bancarias")
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  empresaId     String?
+  usuarioId     String?
+  entidade      String
+  entidadeId    String
+  acao          String
+  valorAnterior Json?
+  valorNovo     Json?
+  criadoEm      DateTime @default(now())
+
+  empresa Empresa? @relation(fields: [empresaId], references: [id])
+  usuario Usuario? @relation(fields: [usuarioId], references: [id])
+
+  @@index([empresaId])
+  @@index([entidade, entidadeId])
+  @@map("audit_logs")
+}
