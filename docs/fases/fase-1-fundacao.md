@@ -137,3 +137,21 @@ npm run build   # build de produção + type-check
 
 Em produção (Vercel), configurar `DATABASE_URL`/`DIRECT_URL` apontando para
 um projeto Neon e `AUTH_SECRET` com um valor gerado (`npx auth secret`).
+
+### Nota de deploy: geração do Prisma Client na Vercel
+
+O pacote `@prisma/client` só expõe `PrismaClient` e os tipos do schema
+(`Perfil`, `Prisma`, etc.) depois que `prisma generate` roda. Isso passa
+despercebido em dev porque o comando é rodado manualmente em algum momento,
+mas quebra o build numa Vercel "limpa" (`npm install` nunca gera o client),
+com erros do tipo `Module '"@prisma/client"' has no exported member
+'PrismaClient'` e uma cascata de `implicitly has an 'any' type` em tudo que
+deriva dele. Por isso `package.json` tem:
+
+```json
+"postinstall": "prisma generate",
+"build": "prisma generate && next build",
+```
+
+o `postinstall` cobre o caso normal, e o `prisma generate` no `build` é um
+reforço para cenários de build com cache de `node_modules`.
