@@ -1,0 +1,32 @@
+name: Prisma migrate deploy
+
+on:
+  push:
+    branches: [main, staging]
+    paths:
+      - "prisma/migrations/**"
+      - "prisma/schema.prisma"
+  workflow_dispatch: {}
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    # main -> ambiente "production", qualquer outro branch (ex.: staging) -> ambiente "staging".
+    # Cada ambiente tem seu próprio DATABASE_URL/DIRECT_URL configurado no GitHub
+    # (Settings -> Environments), então o mesmo job nunca mistura os bancos.
+    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Aplicar migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
