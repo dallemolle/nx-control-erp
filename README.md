@@ -53,4 +53,8 @@ npm run db:seed       # popula dados de demonstração
 
 Aplicação pensada para rodar na Vercel com banco Neon Postgres. Em produção,
 configure `DATABASE_URL`/`DIRECT_URL` apontando para o projeto Neon e
-`AUTH_SECRET` com um valor gerado (`npx auth secret`).
+`AUTH_SECRET` com um valor aleatório gerado localmente, por exemplo:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
