@@ -136,7 +136,9 @@ npm run build   # build de produção + type-check
 ```
 
 Em produção (Vercel), configurar `DATABASE_URL`/`DIRECT_URL` apontando para
-um projeto Neon e `AUTH_SECRET` com um valor gerado (`npx auth secret`).
+um projeto Neon e `AUTH_SECRET` com um valor aleatório gerado localmente
+(veja a nota de deploy abaixo — `npx auth secret` **não** deve ser usado,
+resolve para o pacote errado).
 
 ### Nota de deploy: geração do Prisma Client na Vercel
 
@@ -155,3 +157,36 @@ deriva dele. Por isso `package.json` tem:
 
 o `postinstall` cobre o caso normal, e o `prisma generate` no `build` é um
 reforço para cenários de build com cache de `node_modules`.
+
+### Nota de deploy: `prisma.config.ts` não pode depender de env vars
+
+`prisma.config.ts` inicialmente lia `DIRECT_URL` com o helper `env(...)` do
+`prisma/config`, que **lança erro se a variável não existir** — isso
+derrubava até o `prisma generate` (que não precisa de conexão nenhuma com o
+banco) sempre que `DATABASE_URL`/`DIRECT_URL` não estavam configuradas no
+ambiente, como numa Vercel recém-criada antes de apontar para o Neon. A
+correção foi trocar para leitura direta de `process.env` (`??`), que resolve
+para `undefined` em vez de lançar erro — comandos que realmente precisam da
+conexão (`migrate`, `studio`) continuam funcionando normalmente e falham com
+mensagem própria se a variável estiver ausente.
+
+### Nota de deploy: variáveis de ambiente e migrations em produção
+
+O build da Vercel só roda `prisma generate` (não `migrate deploy`) — ou seja,
+ele nunca aplica migrations no banco de produção sozinho. Checklist para o
+primeiro deploy com um projeto Neon:
+
+1. Nas configurações do projeto na Vercel (Settings → Environment Variables),
+   configurar `DATABASE_URL` (connection string **pooled** do Neon),
+   `DIRECT_URL` (connection string **direta/unpooled** do Neon) e
+   `AUTH_SECRET`. Gere o valor de `AUTH_SECRET` localmente com:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+   ```
+   (`npx auth secret` **não** funciona aqui — o pacote `auth` do npm é o CLI
+   de uma lib diferente, "Better Auth", e gera a variável com outro nome.)
+2. Aplicar as migrations manualmente contra o Neon antes (ou logo depois) do
+   primeiro deploy: `npm run db:deploy` localmente, com `DATABASE_URL`/
+   `DIRECT_URL` apontando para o Neon (não para o Postgres local).
+3. Opcionalmente rodar `npm run db:seed` (defina `SEED_ADMIN_SENHA` com uma
+   senha real antes — o padrão `TrocarSenha123!` é só para dev local).
