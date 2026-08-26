@@ -201,11 +201,32 @@ para `undefined` em vez de lançar erro — comandos que realmente precisam da
 conexão (`migrate`, `studio`) continuam funcionando normalmente e falham com
 mensagem própria se a variável estiver ausente.
 
-### Nota de deploy: variáveis de ambiente e migrations em produção
+### Nota de deploy: variáveis de ambiente e migrations em produção/staging
 
 O build da Vercel só roda `prisma generate` (não `migrate deploy`) — ou seja,
-ele nunca aplica migrations no banco de produção sozinho. Checklist para o
-primeiro deploy com um projeto Neon:
+ele nunca aplica migrations no banco sozinho. As migrations são aplicadas por
+um workflow separado do GitHub Actions
+(`.github/workflows/prisma-migrate.yml`), disparado a cada push em `main` ou
+`staging` que altere `prisma/schema.prisma` ou `prisma/migrations/**`
+(também pode ser rodado manualmente pela aba Actions → "Prisma migrate
+deploy" → "Run workflow", escolhendo o branch).
+
+O job usa **GitHub Environments** para nunca misturar os bancos: o branch
+`main` roda no ambiente `production`, qualquer outro branch (hoje, só
+`staging`) roda no ambiente `staging` — cada ambiente tem seu próprio
+`DATABASE_URL`/`DIRECT_URL`. Configurar em Settings → Environments do
+repositório:
+
+1. Criar o ambiente `production`, com secrets `DATABASE_URL` (pooled) e
+   `DIRECT_URL` (direct/unpooled) apontando para o projeto/branch de
+   produção no Neon.
+2. Criar o ambiente `staging`, com os mesmos nomes de secret, apontando para
+   um banco (ou branch do Neon) separado de staging — nunca reaproveitar a
+   connection string de produção aqui.
+3. (Opcional, recomendado para produção) marcar o ambiente `production` como
+   protegido, exigindo aprovação manual antes do job rodar.
+
+Checklist para o primeiro deploy com um projeto Neon:
 
 1. Nas configurações do projeto na Vercel (Settings → Environment Variables),
    configurar `DATABASE_URL` (connection string **pooled** do Neon),
@@ -216,8 +237,11 @@ primeiro deploy com um projeto Neon:
    ```
    (`npx auth secret` **não** funciona aqui — o pacote `auth` do npm é o CLI
    de uma lib diferente, "Better Auth", e gera a variável com outro nome.)
-2. Aplicar as migrations manualmente contra o Neon antes (ou logo depois) do
-   primeiro deploy: `npm run db:deploy` localmente, com `DATABASE_URL`/
-   `DIRECT_URL` apontando para o Neon (não para o Postgres local).
-3. Opcionalmente rodar `npm run db:seed` (defina `SEED_ADMIN_SENHA` com uma
-   senha real antes — o padrão `TrocarSenha123!` é só para dev local).
+2. Criar os ambientes `production`/`staging` no GitHub como descrito acima.
+3. No primeiro push que adiciona o workflow, ele não dispara sozinho (o
+   `paths` filter só reage a mudanças em `prisma/`) — rodar manualmente uma
+   vez pela aba Actions ("Run workflow"), ou rodar `npm run db:deploy`
+   localmente apontando para o Neon.
+4. Opcionalmente rodar `npm run db:seed` (defina `SEED_ADMIN_*`/
+   `SEED_EMPRESA_*` para dados reais — os padrões são só para dev local; veja
+   `prisma/seed.ts`).
