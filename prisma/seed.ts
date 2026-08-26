@@ -26,23 +26,25 @@ async function main() {
   }
 
   const empresa = await prisma.empresa.upsert({
-    where: { cnpj: "00.000.000/0001-00" },
+    where: { cnpj: process.env.SEED_EMPRESA_CNPJ ?? "00.000.000/0001-00" },
     update: {},
     create: {
-      razaoSocial: "Empresa Demonstração Ltda",
-      nomeFantasia: "Empresa Demonstração",
-      cnpj: "00.000.000/0001-00",
+      razaoSocial: process.env.SEED_EMPRESA_RAZAO_SOCIAL ?? "Empresa Demonstração Ltda",
+      nomeFantasia: process.env.SEED_EMPRESA_NOME_FANTASIA ?? "Empresa Demonstração",
+      cnpj: process.env.SEED_EMPRESA_CNPJ ?? "00.000.000/0001-00",
       moedaPadrao: "BRL",
     },
   });
 
+  const adminNome = process.env.SEED_ADMIN_NOME ?? "Administrador";
+  const adminEmail = process.env.SEED_ADMIN_EMAIL ?? "admin@nx-control-erp.local";
   const senhaAdminPadrao = process.env.SEED_ADMIN_SENHA ?? "TrocarSenha123!";
   const admin = await prisma.usuario.upsert({
-    where: { email: "admin@nx-control-erp.local" },
+    where: { email: adminEmail },
     update: {},
     create: {
-      nome: "Administrador",
-      email: "admin@nx-control-erp.local",
+      nome: adminNome,
+      email: adminEmail,
       senhaHash: await bcrypt.hash(senhaAdminPadrao, 12),
     },
   });
@@ -53,7 +55,7 @@ async function main() {
     create: { usuarioId: admin.id, empresaId: empresa.id, perfil: "ADMINISTRADOR" },
   });
 
-  console.log(`Seed concluído. Login: admin@nx-control-erp.local / senha: ${senhaAdminPadrao}`);
+  console.log(`Seed concluído. Login: ${adminEmail} / senha: ${senhaAdminPadrao}`);
 }
 
 main()

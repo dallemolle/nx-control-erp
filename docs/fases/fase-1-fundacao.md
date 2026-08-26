@@ -158,6 +158,37 @@ deriva dele. Por isso `package.json` tem:
 o `postinstall` cobre o caso normal, e o `prisma generate` no `build` é um
 reforço para cenários de build com cache de `node_modules`.
 
+Mesmo com isso, o build continuou falhando com os mesmos erros — a causa
+era outra (ver nota abaixo sobre `allowScripts`), o `postinstall` nem estava
+rodando.
+
+### Nota de deploy: npm 12 bloqueia scripts de instalação não aprovados
+
+A partir do npm 12 (usado no build da Vercel; localmente ainda estávamos na
+11.x), scripts de `preinstall`/`postinstall` de dependências só rodam se
+estiverem listados em `allowScripts` no `package.json` — sem isso, o npm só
+avisa ("not yet covered by allowScripts") e **pula o script**. Isso incluía
+o `preinstall` do próprio `prisma` e o `postinstall` do `@prisma/engines`
+(que baixa os binários da engine), então mesmo com `postinstall: "prisma
+generate"` configurado, o Prisma nunca ficava pronto para gerar o client
+corretamente.
+
+Correção: rodar `npx npm@latest approve-scripts --all` localmente, que
+grava a allowlist em `package.json`:
+
+```json
+"allowScripts": {
+  "esbuild@0.28.2": true,
+  "prisma@7.9.1": true,
+  "unrs-resolver@1.12.2": true,
+  "@prisma/engines@7.9.1": true
+}
+```
+
+Sempre que uma dependência nova trouxer install scripts, o npm vai avisar de
+novo e o comando precisa ser rerodado (ou `npm approve-scripts <pkg>` para
+aprovar só o pacote específico).
+
 ### Nota de deploy: `prisma.config.ts` não pode depender de env vars
 
 `prisma.config.ts` inicialmente lia `DIRECT_URL` com o helper `env(...)` do
