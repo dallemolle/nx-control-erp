@@ -7,6 +7,9 @@ Status: ⚪ **Planejada.** Escopo abaixo, sem desenho técnico ainda.
 As dimensões analíticas (centro de custo, centro de lucro, safra, projeto)
 já existem desde a Fase 1 e já são obrigatórias em todo cadastro relevante.
 Esta fase adiciona o orçamento e os comparativos sobre essas dimensões.
+Como essas dimensões são isoladas por filial (Fase 1), orçamento e
+comparativos herdam esse nível automaticamente — consolidação por empresa
+soma as filiais do usuário.
 
 ### Orçamento
 

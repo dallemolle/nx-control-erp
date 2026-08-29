@@ -24,9 +24,12 @@ movimentação bancária, auditoria de alterações.
 
 ### Filtros globais
 
-Empresa, período, banco, conta bancária, centro de custo, centro de lucro,
-safra, projeto, categoria, fornecedor, cliente, status, tipo de movimento —
-combináveis simultaneamente em todas as telas e relatórios relevantes.
+Empresa, filial, período, banco, conta bancária, centro de custo, centro de
+lucro, safra, projeto, categoria, fornecedor, cliente, status, tipo de
+movimento — combináveis simultaneamente em todas as telas e relatórios
+relevantes. Empresa sem filial selecionada consolida (soma) todas as
+filiais do usuário naquela empresa; com filial selecionada, detalha só
+aquela unidade.
 
 ### Auditoria completa e aprovações
 

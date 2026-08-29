@@ -31,6 +31,15 @@ Aplicação única Next.js (App Router), full-stack, hospedada na Vercel:
 - **Multi-empresa desde o schema**: toda entidade de negócio carrega
   `empresaId`; um usuário pode ter perfis diferentes em empresas diferentes
   via `UsuarioEmpresa`.
+- **Multi-filial**: abaixo de empresa, existe um segundo nível de
+  isolamento — `Filial` (cada uma com seu próprio CNPJ). A maioria das
+  entidades de negócio passa a carregar `filialId` em vez de `empresaId`;
+  `Cliente` e `Fornecedor` são exceção e continuam por `empresaId`,
+  compartilhados entre as filiais da empresa. O acesso do usuário a cada
+  filial (leitura e/ou alteração) é configurável por `UsuarioEmpresaFilial`,
+  como refinamento sobre o perfil já definido em `UsuarioEmpresa`. Design
+  completo em
+  [`docs/superpowers/specs/2026-08-29-filial-design.md`](../superpowers/specs/2026-08-29-filial-design.md).
 
 ### Stack
 
@@ -71,6 +80,15 @@ Padrões aplicados a todas: nunca há exclusão física de registro de negócio
 (campo `ativo`), sempre `criadoEm`/`atualizadoEm`, e todo dado é isolado por
 `empresaId`.
 
+**Ainda a implementar** (ver "O que falta" abaixo e o design completo em
+[`docs/superpowers/specs/2026-08-29-filial-design.md`](../superpowers/specs/2026-08-29-filial-design.md)):
+`Filial` (`empresaId`, `nome`, `cnpj` próprio) e `UsuarioEmpresaFilial`
+(`usuarioEmpresaId`, `filialId`, `podeAlterar`). Após essa migração, o
+isolamento por entidade fica misto: `CentroCusto`, `CentroLucro`, `Safra`,
+`Projeto`, `CategoriaFinanceira` e `ContaBancaria` passam de `empresaId`
+para `filialId`; `Cliente` e `Fornecedor` continuam por `empresaId`,
+compartilhados entre filiais.
+
 ## O que está implementado
 
 - **Autenticação**: login por email/senha (bcrypt), sessão JWT com checagem
@@ -94,12 +112,29 @@ Padrões aplicados a todas: nunca há exclusão física de registro de negócio
 
 ## O que falta para fechar a Fase 1
 
-Replicar os dois padrões já validados para os 6 cadastros restantes (schema
-já existe, falta service + Server Actions + UI):
+**Nível de filial** (retrofit — design completo em
+[`docs/superpowers/specs/2026-08-29-filial-design.md`](../superpowers/specs/2026-08-29-filial-design.md)):
 
-- Padrão "flat" (igual Cliente/Fornecedor): **Centro de lucro**, **Safra**,
-  **Projeto**, **Banco**, **Conta bancária**.
-- Padrão hierárquico (igual Centro de custo): **Categoria financeira**.
+- Model `Filial` e `UsuarioEmpresaFilial`; migração das 6 entidades hoje em
+  `empresaId` (`CentroCusto`, `CentroLucro`, `Safra`, `Projeto`,
+  `CategoriaFinanceira`, `ContaBancaria`) para `filialId`, com backfill de
+  uma filial "Matriz" por empresa existente.
+- Tela de CRUD de filiais.
+- Fluxo `/selecionar-filial` após `/selecionar-empresa`, com contexto ativo
+  (empresa + filial) na sessão.
+- Seção "acesso por filial" no cadastro de usuário (`/usuarios`): ADM marca
+  leitura e/ou alteração por filial, refinando o perfil já existente.
+- `requirePermission` passa a checar também `podeAlterar` da filial ativa
+  para ações de escrita sobre entidades filial-scoped.
+
+Depois disso, replicar os dois padrões já validados para os 6 cadastros
+restantes (schema já existe, falta service + Server Actions + UI) — já
+nascendo cientes de qual dos dois níveis de isolamento usar:
+
+- Padrão "flat", por filial: **Centro de lucro**, **Safra**, **Projeto**,
+  **Conta bancária**.
+- Padrão "flat", por empresa (catálogo global, sem isolamento): **Banco**.
+- Padrão hierárquico, por filial: **Categoria financeira**.
 
 ## Testes automatizados
 
