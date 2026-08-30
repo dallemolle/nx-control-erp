@@ -59,6 +59,10 @@ export async function definirAcessoFilial(
 ) {
   requirePermission(sessao.perfil, "usuario:gerenciar");
 
+  await prisma.filial.findUniqueOrThrow({
+    where: { id: filialId, empresaId: sessao.empresaId },
+  });
+
   const vinculo = await prisma.usuarioEmpresa.findUniqueOrThrow({
     where: { usuarioId_empresaId: { usuarioId, empresaId: sessao.empresaId } },
   });
