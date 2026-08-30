@@ -11,7 +11,7 @@ export default async function CentrosDeCustoPage() {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "cadastro:ler");
 
-  const centros = await listarCentrosCusto(sessao.empresaId);
+  const centros = await listarCentrosCusto(sessao.filialId);
   const nomePorId = new Map(centros.map((centro) => [centro.id, centro]));
 
   return (
