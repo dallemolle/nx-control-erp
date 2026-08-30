@@ -4,16 +4,16 @@ import { requireSessaoAtiva } from "@/server/auth/sessao";
 
 export default async function DashboardPage() {
   const sessao = await requireSessaoAtiva();
-  const { empresaId } = sessao;
+  const { empresaId, filialId } = sessao;
 
   const [clientes, fornecedores, centrosCusto, centrosLucro, safras, contasBancarias, usuarios] =
     await Promise.all([
       prisma.cliente.count({ where: { empresaId, ativo: true } }),
       prisma.fornecedor.count({ where: { empresaId, ativo: true } }),
-      prisma.centroCusto.count({ where: { empresaId, ativo: true } }),
-      prisma.centroLucro.count({ where: { empresaId, ativo: true } }),
-      prisma.safra.count({ where: { empresaId, ativo: true } }),
-      prisma.contaBancaria.count({ where: { empresaId, ativo: true } }),
+      prisma.centroCusto.count({ where: { filialId, ativo: true } }),
+      prisma.centroLucro.count({ where: { filialId, ativo: true } }),
+      prisma.safra.count({ where: { filialId, ativo: true } }),
+      prisma.contaBancaria.count({ where: { filialId, ativo: true } }),
       prisma.usuarioEmpresa.count({ where: { empresaId, ativo: true } }),
     ]);
 
