@@ -1,5 +1,5 @@
 import { prisma } from "@/server/db/client";
-import { requirePermission } from "@/server/auth/permissions";
+import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permissions";
 import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { FornecedorFormValues } from "@/lib/schemas/fornecedor";
@@ -10,6 +10,7 @@ export async function listarFornecedores(empresaId: string) {
 
 export async function criarFornecedor(sessao: SessaoAtiva, dados: FornecedorFormValues) {
   requirePermission(sessao.perfil, "cadastro:escrever");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   const fornecedor = await prisma.fornecedor.create({
     data: { ...dados, empresaId: sessao.empresaId },
@@ -35,6 +36,7 @@ export async function atualizarFornecedor(
   dados: FornecedorFormValues,
 ) {
   requirePermission(sessao.perfil, "cadastro:escrever");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   const anterior = await prisma.fornecedor.findUniqueOrThrow({
     where: { id, empresaId: sessao.empresaId },
@@ -63,6 +65,7 @@ export async function atualizarFornecedor(
 
 export async function definirAtivoFornecedor(sessao: SessaoAtiva, id: string, ativo: boolean) {
   requirePermission(sessao.perfil, "cadastro:escrever");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   await prisma.fornecedor.findUniqueOrThrow({ where: { id, empresaId: sessao.empresaId } });
   const fornecedor = await prisma.fornecedor.update({ where: { id }, data: { ativo } });

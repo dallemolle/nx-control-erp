@@ -1,5 +1,5 @@
 import { prisma } from "@/server/db/client";
-import { requirePermission } from "@/server/auth/permissions";
+import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permissions";
 import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { ClienteFormValues } from "@/lib/schemas/cliente";
@@ -10,6 +10,7 @@ export async function listarClientes(empresaId: string) {
 
 export async function criarCliente(sessao: SessaoAtiva, dados: ClienteFormValues) {
   requirePermission(sessao.perfil, "cadastro:escrever");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   const cliente = await prisma.cliente.create({ data: { ...dados, empresaId: sessao.empresaId } });
 
@@ -33,6 +34,7 @@ export async function atualizarCliente(
   dados: ClienteFormValues,
 ) {
   requirePermission(sessao.perfil, "cadastro:escrever");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   const anterior = await prisma.cliente.findUniqueOrThrow({
     where: { id, empresaId: sessao.empresaId },
@@ -61,6 +63,7 @@ export async function atualizarCliente(
 
 export async function definirAtivoCliente(sessao: SessaoAtiva, id: string, ativo: boolean) {
   requirePermission(sessao.perfil, "cadastro:escrever");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   await prisma.cliente.findUniqueOrThrow({ where: { id, empresaId: sessao.empresaId } });
   const cliente = await prisma.cliente.update({ where: { id }, data: { ativo } });
