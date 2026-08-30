@@ -15,6 +15,7 @@ export async function criarCliente(sessao: SessaoAtiva, dados: ClienteFormValues
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
+    filialId: sessao.filialId,
     usuarioId: sessao.usuarioId,
     entidade: "Cliente",
     entidadeId: cliente.id,
@@ -40,6 +41,7 @@ export async function atualizarCliente(
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
+    filialId: sessao.filialId,
     usuarioId: sessao.usuarioId,
     entidade: "Cliente",
     entidadeId: id,
@@ -65,6 +67,7 @@ export async function definirAtivoCliente(sessao: SessaoAtiva, id: string, ativo
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
+    filialId: sessao.filialId,
     usuarioId: sessao.usuarioId,
     entidade: "Cliente",
     entidadeId: id,

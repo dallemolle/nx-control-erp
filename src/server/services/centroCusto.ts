@@ -35,6 +35,7 @@ export async function criarCentroCusto(sessao: SessaoAtiva, dados: CentroCustoFo
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
+    filialId: sessao.filialId,
     usuarioId: sessao.usuarioId,
     entidade: "CentroCusto",
     entidadeId: centro.id,
@@ -72,6 +73,7 @@ export async function atualizarCentroCusto(
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
+    filialId: sessao.filialId,
     usuarioId: sessao.usuarioId,
     entidade: "CentroCusto",
     entidadeId: id,
@@ -91,6 +93,7 @@ export async function definirAtivoCentroCusto(sessao: SessaoAtiva, id: string, a
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
+    filialId: sessao.filialId,
     usuarioId: sessao.usuarioId,
     entidade: "CentroCusto",
     entidadeId: id,

@@ -21,6 +21,7 @@ export async function criarEmpresa(sessao: SessaoAtiva, dados: EmpresaFormValues
 
   await registrarAuditoria({
     empresaId: empresa.id,
+    filialId: null,
     usuarioId: sessao.usuarioId,
     entidade: "Empresa",
     entidadeId: empresa.id,
@@ -40,6 +41,7 @@ export async function atualizarEmpresa(sessao: SessaoAtiva, id: string, dados: E
 
   await registrarAuditoria({
     empresaId: id,
+    filialId: null,
     usuarioId: sessao.usuarioId,
     entidade: "Empresa",
     entidadeId: id,
@@ -63,6 +65,7 @@ export async function definirAtivoEmpresa(sessao: SessaoAtiva, id: string, ativo
 
   await registrarAuditoria({
     empresaId: id,
+    filialId: null,
     usuarioId: sessao.usuarioId,
     entidade: "Empresa",
     entidadeId: id,

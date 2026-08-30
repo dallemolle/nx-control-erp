@@ -17,6 +17,7 @@ export async function criarFornecedor(sessao: SessaoAtiva, dados: FornecedorForm
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
+    filialId: sessao.filialId,
     usuarioId: sessao.usuarioId,
     entidade: "Fornecedor",
     entidadeId: fornecedor.id,
@@ -42,6 +43,7 @@ export async function atualizarFornecedor(
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
+    filialId: sessao.filialId,
     usuarioId: sessao.usuarioId,
     entidade: "Fornecedor",
     entidadeId: id,
@@ -67,6 +69,7 @@ export async function definirAtivoFornecedor(sessao: SessaoAtiva, id: string, at
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
+    filialId: sessao.filialId,
     usuarioId: sessao.usuarioId,
     entidade: "Fornecedor",
     entidadeId: id,

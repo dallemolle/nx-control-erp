@@ -2,8 +2,11 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { requireUsuarioAutenticado } from "@/server/auth/sessao";
-import { EMPRESA_ATIVA_COOKIE } from "@/server/auth/sessao";
+import {
+  requireUsuarioAutenticado,
+  EMPRESA_ATIVA_COOKIE,
+  FILIAL_ATIVA_COOKIE,
+} from "@/server/auth/sessao";
 import { requireVinculoAtivo } from "@/server/services/usuarioEmpresa";
 
 export async function selecionarEmpresa(formData: FormData): Promise<void> {
@@ -19,6 +22,7 @@ export async function selecionarEmpresa(formData: FormData): Promise<void> {
     secure: process.env.NODE_ENV === "production",
     path: "/",
   });
+  cookieStore.delete(FILIAL_ATIVA_COOKIE);
 
-  redirect("/");
+  redirect("/selecionar-filial");
 }

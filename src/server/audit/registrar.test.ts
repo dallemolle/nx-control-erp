@@ -25,6 +25,7 @@ describe("registrarAuditoria", () => {
   test("grava valorAnterior/valorNovo apenas com os campos alterados", async () => {
     await registrarAuditoria({
       empresaId,
+      filialId: null,
       usuarioId: null,
       entidade: "CentroCusto",
       entidadeId: "cc-1",

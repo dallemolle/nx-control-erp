@@ -3,14 +3,21 @@ import { redirect } from "next/navigation";
 import type { Perfil } from "@prisma/client";
 import { auth } from "./config";
 import { requireVinculoAtivo, AcessoNegadoError } from "@/server/services/usuarioEmpresa";
+import {
+  requireVinculoFilialAtivo,
+  AcessoFilialNegadoError,
+} from "@/server/services/usuarioEmpresaFilial";
 
 export const EMPRESA_ATIVA_COOKIE = "empresaAtivaId";
+export const FILIAL_ATIVA_COOKIE = "filialAtivaId";
 
 export type SessaoAtiva = {
   usuarioId: string;
   nome: string;
   empresaId: string;
   perfil: Perfil;
+  filialId: string;
+  podeAlterarFilial: boolean;
 };
 
 export async function requireUsuarioAutenticado() {
@@ -30,12 +37,34 @@ export async function requireSessaoAtiva(): Promise<SessaoAtiva> {
     redirect("/selecionar-empresa");
   }
 
+  let perfil: Perfil;
   try {
-    const perfil = await requireVinculoAtivo(usuario.id, empresaId);
-    return { usuarioId: usuario.id, nome: usuario.nome, empresaId, perfil };
+    perfil = await requireVinculoAtivo(usuario.id, empresaId);
   } catch (erro) {
     if (erro instanceof AcessoNegadoError) {
       redirect("/selecionar-empresa");
+    }
+    throw erro;
+  }
+
+  const filialId = cookieStore.get(FILIAL_ATIVA_COOKIE)?.value;
+  if (!filialId) {
+    redirect("/selecionar-filial");
+  }
+
+  try {
+    const { podeAlterar } = await requireVinculoFilialAtivo(usuario.id, empresaId, filialId);
+    return {
+      usuarioId: usuario.id,
+      nome: usuario.nome,
+      empresaId,
+      perfil,
+      filialId,
+      podeAlterarFilial: podeAlterar,
+    };
+  } catch (erro) {
+    if (erro instanceof AcessoFilialNegadoError) {
+      redirect("/selecionar-filial");
     }
     throw erro;
   }
