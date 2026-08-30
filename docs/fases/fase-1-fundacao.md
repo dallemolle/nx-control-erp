@@ -1,9 +1,9 @@
 # Fase 1 — Fundação
 
 Status: 🟡 **Em andamento.** Arquitetura, autenticação, RBAC, auditoria,
-empresas e usuários estão completos e testados. Dos 9 cadastros básicos
-previstos, 3 estão implementados (servem de padrão de referência) e 6 estão
-pendentes.
+empresas, usuários e o nível de filial estão completos e testados. Dos 9
+cadastros básicos previstos, 3 estão implementados (servem de padrão de
+referência) e 6 estão pendentes.
 
 ## Escopo desta fase
 
@@ -80,14 +80,16 @@ Padrões aplicados a todas: nunca há exclusão física de registro de negócio
 (campo `ativo`), sempre `criadoEm`/`atualizadoEm`, e todo dado é isolado por
 `empresaId`.
 
-**Ainda a implementar** (ver "O que falta" abaixo e o design completo em
+**Implementado** (retrofit — design completo em
 [`docs/superpowers/specs/2026-08-29-filial-design.md`](../superpowers/specs/2026-08-29-filial-design.md)):
 `Filial` (`empresaId`, `nome`, `cnpj` próprio) e `UsuarioEmpresaFilial`
-(`usuarioEmpresaId`, `filialId`, `podeAlterar`). Após essa migração, o
-isolamento por entidade fica misto: `CentroCusto`, `CentroLucro`, `Safra`,
-`Projeto`, `CategoriaFinanceira` e `ContaBancaria` passam de `empresaId`
-para `filialId`; `Cliente` e `Fornecedor` continuam por `empresaId`,
-compartilhados entre filiais.
+(`usuarioEmpresaId`, `filialId`, `podeAlterar`). O isolamento por entidade é
+misto: `CentroCusto`, `CentroLucro`, `Safra`, `Projeto`,
+`CategoriaFinanceira` e `ContaBancaria` são por `filialId`; `Cliente` e
+`Fornecedor` continuam por `empresaId`, compartilhados entre filiais. Só
+`CentroCusto` tem service/UI implementados até aqui — os outros 5 já
+nascem no schema com `filialId`, aguardando os cadastros pendentes (ver "O
+que falta" abaixo).
 
 ## O que está implementado
 
@@ -100,9 +102,20 @@ compartilhados entre filiais.
   alterados; tela de consulta em `/auditoria`.
 - **Multi-empresa**: seleção de empresa ativa após login (`/selecionar-empresa`),
   troca de empresa sem novo login, isolamento de dados por `empresaId`.
+- **Multi-filial**: seleção de filial ativa após empresa (`/selecionar-filial`),
+  troca de filial sem novo login, contexto ativo (empresa + filial) na
+  sessão. Nova empresa criada via `/empresas` já nasce com sua Filial
+  "Matriz" e o vínculo de acesso do criador.
 - **Empresas** (`/empresas`, admin): CRUD completo.
+- **Filiais** (`/filiais`, admin): CRUD completo, escopado à empresa ativa.
 - **Usuários** (`/usuarios`, admin): criação, vínculo a empresas com perfil,
-  troca de perfil, ativar/desativar (com proteção contra autodesativação).
+  troca de perfil, ativar/desativar (com proteção contra autodesativação),
+  seção "acesso por filial" (leitura e/ou alteração por `UsuarioEmpresaFilial`,
+  como refinamento sobre o perfil).
+- `requirePermission`/`requireAlteracaoFilial` checam também `podeAlterar`
+  da filial ativa para ações de escrita sobre entidades filial-scoped
+  (hoje, `CentroCusto`, além da checagem de acesso à filial em `Cliente`/
+  `Fornecedor`).
 - **Cadastros implementados** (padrão "flat"): **Clientes**
   (`/cadastros/clientes`), **Fornecedores** (`/cadastros/fornecedores`).
 - **Cadastro implementado** (padrão hierárquico, com prevenção de ciclo):
@@ -112,24 +125,12 @@ compartilhados entre filiais.
 
 ## O que falta para fechar a Fase 1
 
-**Nível de filial** (retrofit — design completo em
-[`docs/superpowers/specs/2026-08-29-filial-design.md`](../superpowers/specs/2026-08-29-filial-design.md)):
-
-- Model `Filial` e `UsuarioEmpresaFilial`; migração das 6 entidades hoje em
-  `empresaId` (`CentroCusto`, `CentroLucro`, `Safra`, `Projeto`,
-  `CategoriaFinanceira`, `ContaBancaria`) para `filialId`, com backfill de
-  uma filial "Matriz" por empresa existente.
-- Tela de CRUD de filiais.
-- Fluxo `/selecionar-filial` após `/selecionar-empresa`, com contexto ativo
-  (empresa + filial) na sessão.
-- Seção "acesso por filial" no cadastro de usuário (`/usuarios`): ADM marca
-  leitura e/ou alteração por filial, refinando o perfil já existente.
-- `requirePermission` passa a checar também `podeAlterar` da filial ativa
-  para ações de escrita sobre entidades filial-scoped.
-
-Depois disso, replicar os dois padrões já validados para os 6 cadastros
-restantes (schema já existe, falta service + Server Actions + UI) — já
-nascendo cientes de qual dos dois níveis de isolamento usar:
+O nível de filial (retrofit — design completo em
+[`docs/superpowers/specs/2026-08-29-filial-design.md`](../superpowers/specs/2026-08-29-filial-design.md))
+já foi entregue por completo (ver "O que está implementado" acima). O que
+resta é replicar os dois padrões já validados (schema já existe, falta
+service + Server Actions + UI) para os 6 cadastros restantes — já nascendo
+cientes de qual dos dois níveis de isolamento usar:
 
 - Padrão "flat", por filial: **Centro de lucro**, **Safra**, **Projeto**,
   **Conta bancária**.

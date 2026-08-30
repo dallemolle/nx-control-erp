@@ -73,12 +73,12 @@ export async function definirAcessoFilial(
 
   const acesso = await prisma.usuarioEmpresaFilial.upsert({
     where: { usuarioEmpresaId_filialId: { usuarioEmpresaId: vinculo.id, filialId } },
-    update: { ativo: dados.temAcesso, podeAlterar: dados.podeAlterar },
+    update: { ativo: dados.temAcesso, podeAlterar: dados.temAcesso && dados.podeAlterar },
     create: {
       usuarioEmpresaId: vinculo.id,
       filialId,
       ativo: dados.temAcesso,
-      podeAlterar: dados.podeAlterar,
+      podeAlterar: dados.temAcesso && dados.podeAlterar,
     },
   });
 

@@ -32,11 +32,17 @@ não uniforme:
 `empresaId`/`filialId`.
 
 `AuditLog` ganha `filialId String?` mantendo `empresaId String?` — ações de
-nível empresa (criar filial, vincular usuário a uma empresa) ficam só com
-`empresaId`; ações sobre entidades filial-scoped ganham os dois, permitindo
-à Fase 6 filtrar auditoria por filial específica ou consolidado por
-empresa. Ações sobre Cliente/Fornecedor (empresa-scoped) ficam só com
-`empresaId`, igual hoje.
+nível empresa (criar/atualizar/(in)ativar uma empresa, vincular usuário a
+uma empresa) ficam só com `empresaId`; ações sobre entidades filial-scoped
+ganham os dois, permitindo à Fase 6 filtrar auditoria por filial específica
+ou consolidado por empresa. Ações sobre Cliente/Fornecedor (empresa-scoped)
+também ganham `filialId: sessao.filialId` — não como fronteira de
+isolamento (essas entidades continuam lidas/gravadas por `empresaId`,
+compartilhadas entre filiais), mas como rastro de qual filial estava ativa
+no momento da escrita, útil para auditoria/traceability. A auditoria da
+própria criação de uma Filial (`criarFilial`) carrega `filialId` da filial
+recém-criada — não da filial ativa da sessão, que é uma entrada
+independente e não uma exceção ao critério acima.
 
 `UsuarioEmpresa` não muda — perfil fixo (`ADMINISTRADOR`, `FINANCEIRO`,
 `TESOURARIA`, `GESTOR`, `AUDITOR`, `CONSULTA`) continua definindo quais

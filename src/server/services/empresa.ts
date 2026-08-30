@@ -13,8 +13,14 @@ export async function criarEmpresa(sessao: SessaoAtiva, dados: EmpresaFormValues
 
   const empresa = await prisma.$transaction(async (tx) => {
     const novaEmpresa = await tx.empresa.create({ data: dados });
-    await tx.usuarioEmpresa.create({
+    const vinculo = await tx.usuarioEmpresa.create({
       data: { usuarioId: sessao.usuarioId, empresaId: novaEmpresa.id, perfil: "ADMINISTRADOR" },
+    });
+    const matriz = await tx.filial.create({
+      data: { empresaId: novaEmpresa.id, nome: "Matriz", cnpj: dados.cnpj },
+    });
+    await tx.usuarioEmpresaFilial.create({
+      data: { usuarioEmpresaId: vinculo.id, filialId: matriz.id, podeAlterar: true, ativo: true },
     });
     return novaEmpresa;
   });
