@@ -9,6 +9,7 @@ import { sair } from "./actions";
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const sessao = await requireSessaoAtiva();
   const empresa = await prisma.empresa.findUniqueOrThrow({ where: { id: sessao.empresaId } });
+  const filial = await prisma.filial.findUniqueOrThrow({ where: { id: sessao.filialId } });
 
   return (
     <div className="flex min-h-screen">
@@ -16,7 +17,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between border-b px-6 py-3">
           <div className="text-sm">
-            <p className="font-medium">{empresa.nomeFantasia}</p>
+            <p className="font-medium">
+              {empresa.nomeFantasia} · {filial.nome}
+            </p>
             <p className="text-xs text-muted-foreground">
               {sessao.nome} · {sessao.perfil}
             </p>
@@ -29,6 +32,14 @@ export default async function DashboardLayout({ children }: { children: ReactNod
               size="sm"
             >
               Trocar empresa
+            </Button>
+            <Button
+              render={<Link href="/selecionar-filial" />}
+              nativeButton={false}
+              variant="ghost"
+              size="sm"
+            >
+              Trocar filial
             </Button>
             <form action={sair}>
               <Button type="submit" variant="outline" size="sm">

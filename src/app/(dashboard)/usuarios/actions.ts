@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { criarUsuarioSchema, atualizarPerfilSchema } from "@/lib/schemas/usuario";
 import * as usuarioService from "@/server/services/usuario";
+import * as usuarioEmpresaFilialService from "@/server/services/usuarioEmpresaFilial";
 
 export type FormState = { erro?: string; sucesso?: boolean };
 
@@ -57,5 +58,19 @@ export async function alternarAtivoUsuarioAction(formData: FormData): Promise<vo
   const ativo = formData.get("ativo") === "true";
 
   await usuarioService.definirAtivoVinculo(sessao, usuarioId, ativo);
+  revalidatePath("/usuarios");
+}
+
+export async function atualizarAcessoFilialAction(formData: FormData): Promise<void> {
+  const sessao = await requireSessaoAtiva();
+  const usuarioId = String(formData.get("usuarioId") ?? "");
+  const filialId = String(formData.get("filialId") ?? "");
+  const temAcesso = formData.get("temAcesso") === "true";
+  const podeAlterar = formData.get("podeAlterar") === "true";
+
+  await usuarioEmpresaFilialService.definirAcessoFilial(sessao, usuarioId, filialId, {
+    temAcesso,
+    podeAlterar,
+  });
   revalidatePath("/usuarios");
 }

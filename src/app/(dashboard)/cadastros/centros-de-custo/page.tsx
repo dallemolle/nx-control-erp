@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
-import { requirePermission } from "@/server/auth/permissions";
+import { requirePermission, podeAlterarFilialAtiva } from "@/server/auth/permissions";
 import { listarCentrosCusto } from "@/server/services/centroCusto";
 import { CentroCustoDialogForm } from "./centro-custo-dialog-form";
 import { alternarAtivoCentroCustoAction } from "./actions";
@@ -10,8 +10,9 @@ import { alternarAtivoCentroCustoAction } from "./actions";
 export default async function CentrosDeCustoPage() {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "cadastro:ler");
+  const podeEscrever = podeAlterarFilialAtiva(sessao.perfil, sessao.podeAlterarFilial);
 
-  const centros = await listarCentrosCusto(sessao.empresaId);
+  const centros = await listarCentrosCusto(sessao.filialId);
   const nomePorId = new Map(centros.map((centro) => [centro.id, centro]));
 
   return (
@@ -23,7 +24,7 @@ export default async function CentrosDeCustoPage() {
             Estrutura hierárquica: Empresa → Unidade → Departamento → Centro de custo.
           </p>
         </div>
-        <CentroCustoDialogForm opcoesPai={centros} />
+        {podeEscrever && <CentroCustoDialogForm opcoesPai={centros} />}
       </div>
 
       <Table>
@@ -50,14 +51,18 @@ export default async function CentrosDeCustoPage() {
                 </Badge>
               </TableCell>
               <TableCell className="flex justify-end gap-2">
-                <CentroCustoDialogForm centro={centro} opcoesPai={centros} />
-                <form action={alternarAtivoCentroCustoAction}>
-                  <input type="hidden" name="id" value={centro.id} />
-                  <input type="hidden" name="ativo" value={(!centro.ativo).toString()} />
-                  <Button type="submit" variant="outline" size="sm">
-                    {centro.ativo ? "Inativar" : "Reativar"}
-                  </Button>
-                </form>
+                {podeEscrever && (
+                  <>
+                    <CentroCustoDialogForm centro={centro} opcoesPai={centros} />
+                    <form action={alternarAtivoCentroCustoAction}>
+                      <input type="hidden" name="id" value={centro.id} />
+                      <input type="hidden" name="ativo" value={(!centro.ativo).toString()} />
+                      <Button type="submit" variant="outline" size="sm">
+                        {centro.ativo ? "Inativar" : "Reativar"}
+                      </Button>
+                    </form>
+                  </>
+                )}
               </TableCell>
             </TableRow>
           ))}

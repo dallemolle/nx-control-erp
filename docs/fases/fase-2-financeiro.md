@@ -31,7 +31,7 @@ processo de brainstorm → design → plano usado na Fase 1.
 
 ### Bancos e tesouraria
 
-- Cadastro de contas bancárias por empresa já existe (`ContaBancaria`,
+- Cadastro de contas bancárias por filial já existe (`ContaBancaria`,
   Fase 1) — esta fase adiciona as movimentações de fato: lançamentos
   manuais, saldo contábil informado vs. saldo bancário vs. saldo disponível.
 - Suporte a conta corrente, aplicação, investimento e
@@ -39,7 +39,7 @@ processo de brainstorm → design → plano usado na Fase 1.
 
 ## Depende de
 
-- Fase 1 completa (empresas, cadastros básicos, RBAC, auditoria).
+- Fase 1 completa (empresas, filiais, cadastros básicos, RBAC, auditoria).
 
 ## Alimenta
 

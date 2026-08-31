@@ -44,17 +44,36 @@ model Empresa {
   atualizadoEm DateTime @updatedAt
 
   usuarios            UsuarioEmpresa[]
-  centrosCusto        CentroCusto[]
-  centrosLucro        CentroLucro[]
-  safras              Safra[]
-  projetos            Projeto[]
-  categoriasFinanceiras CategoriaFinanceira[]
+  filiais             Filial[]
   clientes            Cliente[]
   fornecedores        Fornecedor[]
-  contasBancarias     ContaBancaria[]
   auditLogs           AuditLog[]
 
   @@map("empresas")
+}
+
+model Filial {
+  id           String   @id @default(uuid())
+  empresaId    String
+  nome         String
+  cnpj         String   @unique
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  usuariosFiliais       UsuarioEmpresaFilial[]
+  centrosCusto          CentroCusto[]
+  centrosLucro          CentroLucro[]
+  safras                Safra[]
+  projetos              Projeto[]
+  categoriasFinanceiras CategoriaFinanceira[]
+  contasBancarias       ContaBancaria[]
+  auditLogs             AuditLog[]
+
+  @@index([empresaId])
+  @@map("filiais")
 }
 
 model Usuario {
@@ -83,14 +102,32 @@ model UsuarioEmpresa {
   usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
 
+  filiais UsuarioEmpresaFilial[]
+
   @@unique([usuarioId, empresaId])
   @@index([empresaId])
   @@map("usuarios_empresas")
 }
 
+model UsuarioEmpresaFilial {
+  id               String   @id @default(uuid())
+  usuarioEmpresaId String
+  filialId         String
+  podeAlterar      Boolean  @default(false)
+  ativo            Boolean  @default(true)
+  criadoEm         DateTime @default(now())
+
+  usuarioEmpresa UsuarioEmpresa @relation(fields: [usuarioEmpresaId], references: [id], onDelete: Cascade)
+  filial         Filial         @relation(fields: [filialId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioEmpresaId, filialId])
+  @@index([filialId])
+  @@map("usuarios_empresas_filiais")
+}
+
 model CentroCusto {
   id       String  @id @default(uuid())
-  empresaId String
+  filialId String
   nome     String
   codigo   String
   parentId String?
@@ -98,34 +135,34 @@ model CentroCusto {
   criadoEm DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  empresa Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  filial  Filial        @relation(fields: [filialId], references: [id], onDelete: Cascade)
   parent  CentroCusto?  @relation("CentroCustoHierarquia", fields: [parentId], references: [id])
   filhos  CentroCusto[] @relation("CentroCustoHierarquia")
 
-  @@unique([empresaId, codigo])
-  @@index([empresaId])
+  @@unique([filialId, codigo])
+  @@index([filialId])
   @@map("centros_custo")
 }
 
 model CentroLucro {
   id       String   @id @default(uuid())
-  empresaId String
+  filialId String
   nome     String
   codigo   String
   ativo    Boolean  @default(true)
   criadoEm DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  filial Filial @relation(fields: [filialId], references: [id], onDelete: Cascade)
 
-  @@unique([empresaId, codigo])
-  @@index([empresaId])
+  @@unique([filialId, codigo])
+  @@index([filialId])
   @@map("centros_lucro")
 }
 
 model Safra {
   id          String              @id @default(uuid())
-  empresaId   String
+  filialId    String
   nome        String
   dataInicio  DateTime
   dataFim     DateTime
@@ -134,16 +171,16 @@ model Safra {
   criadoEm    DateTime            @default(now())
   atualizadoEm DateTime           @updatedAt
 
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  filial Filial @relation(fields: [filialId], references: [id], onDelete: Cascade)
 
-  @@unique([empresaId, nome])
-  @@index([empresaId])
+  @@unique([filialId, nome])
+  @@index([filialId])
   @@map("safras")
 }
 
 model Projeto {
   id       String              @id @default(uuid())
-  empresaId String
+  filialId String
   nome     String
   codigo   String
   status   StatusSafraProjeto  @default(PLANEJADO)
@@ -151,16 +188,16 @@ model Projeto {
   criadoEm DateTime            @default(now())
   atualizadoEm DateTime        @updatedAt
 
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  filial Filial @relation(fields: [filialId], references: [id], onDelete: Cascade)
 
-  @@unique([empresaId, codigo])
-  @@index([empresaId])
+  @@unique([filialId, codigo])
+  @@index([filialId])
   @@map("projetos")
 }
 
 model CategoriaFinanceira {
   id       String                    @id @default(uuid())
-  empresaId String
+  filialId String
   nome     String
   tipo     TipoCategoriaFinanceira
   parentId String?
@@ -168,11 +205,11 @@ model CategoriaFinanceira {
   criadoEm DateTime                  @default(now())
   atualizadoEm DateTime              @updatedAt
 
-  empresa Empresa               @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  filial  Filial                @relation(fields: [filialId], references: [id], onDelete: Cascade)
   parent  CategoriaFinanceira?  @relation("CategoriaFinanceiraHierarquia", fields: [parentId], references: [id])
   filhos  CategoriaFinanceira[] @relation("CategoriaFinanceiraHierarquia")
 
-  @@index([empresaId])
+  @@index([filialId])
   @@map("categorias_financeiras")
 }
 
@@ -226,7 +263,7 @@ model Banco {
 
 model ContaBancaria {
   id           String            @id @default(uuid())
-  empresaId    String
+  filialId     String
   bancoId      String
   agencia      String
   conta        String
@@ -237,17 +274,18 @@ model ContaBancaria {
   criadoEm     DateTime          @default(now())
   atualizadoEm DateTime          @updatedAt
 
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  banco   Banco   @relation(fields: [bancoId], references: [id])
+  filial Filial @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  banco  Banco  @relation(fields: [bancoId], references: [id])
 
-  @@unique([empresaId, bancoId, agencia, conta])
-  @@index([empresaId])
+  @@unique([filialId, bancoId, agencia, conta])
+  @@index([filialId])
   @@map("contas_bancarias")
 }
 
 model AuditLog {
   id            String   @id @default(uuid())
   empresaId     String?
+  filialId      String?
   usuarioId     String?
   entidade      String
   entidadeId    String
@@ -257,9 +295,11 @@ model AuditLog {
   criadoEm      DateTime @default(now())
 
   empresa Empresa? @relation(fields: [empresaId], references: [id])
+  filial  Filial?  @relation(fields: [filialId], references: [id])
   usuario Usuario? @relation(fields: [usuarioId], references: [id])
 
   @@index([empresaId])
+  @@index([filialId])
   @@index([entidade, entidadeId])
   @@map("audit_logs")
 }

@@ -25,14 +25,28 @@ async function main() {
     });
   }
 
+  const empresaCnpj = process.env.SEED_EMPRESA_CNPJ ?? "00.000.000/0001-00";
   const empresa = await prisma.empresa.upsert({
-    where: { cnpj: process.env.SEED_EMPRESA_CNPJ ?? "00.000.000/0001-00" },
+    where: { cnpj: empresaCnpj },
     update: {},
     create: {
       razaoSocial: process.env.SEED_EMPRESA_RAZAO_SOCIAL ?? "Empresa Demonstração Ltda",
       nomeFantasia: process.env.SEED_EMPRESA_NOME_FANTASIA ?? "Empresa Demonstração",
-      cnpj: process.env.SEED_EMPRESA_CNPJ ?? "00.000.000/0001-00",
+      cnpj: empresaCnpj,
       moedaPadrao: "BRL",
+    },
+  });
+
+  // Migration 2 (backfill) só cria a Filial Matriz para empresas que já
+  // existiam na hora da migração. Um banco criado do zero (CI, dev novo)
+  // depende do seed pra ter a Filial.
+  const filial = await prisma.filial.upsert({
+    where: { cnpj: empresaCnpj },
+    update: {},
+    create: {
+      empresaId: empresa.id,
+      nome: "Matriz",
+      cnpj: empresaCnpj,
     },
   });
 
@@ -49,10 +63,18 @@ async function main() {
     },
   });
 
-  await prisma.usuarioEmpresa.upsert({
+  const usuarioEmpresa = await prisma.usuarioEmpresa.upsert({
     where: { usuarioId_empresaId: { usuarioId: admin.id, empresaId: empresa.id } },
     update: {},
     create: { usuarioId: admin.id, empresaId: empresa.id, perfil: "ADMINISTRADOR" },
+  });
+
+  await prisma.usuarioEmpresaFilial.upsert({
+    where: {
+      usuarioEmpresaId_filialId: { usuarioEmpresaId: usuarioEmpresa.id, filialId: filial.id },
+    },
+    update: {},
+    create: { usuarioEmpresaId: usuarioEmpresa.id, filialId: filial.id, podeAlterar: true },
   });
 
   console.log(`Seed concluído. Login: ${adminEmail} / senha: ${senhaAdminPadrao}`);

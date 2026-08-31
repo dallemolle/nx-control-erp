@@ -1,9 +1,8 @@
 # Fase 1 — Fundação
 
-Status: 🟡 **Em andamento.** Arquitetura, autenticação, RBAC, auditoria,
-empresas e usuários estão completos e testados. Dos 9 cadastros básicos
-previstos, 3 estão implementados (servem de padrão de referência) e 6 estão
-pendentes.
+Status: 🟢 **Concluída.** Arquitetura, autenticação, RBAC, auditoria,
+empresas, usuários, o nível de filial e os 9 cadastros básicos previstos
+estão completos e testados.
 
 ## Escopo desta fase
 
@@ -31,6 +30,15 @@ Aplicação única Next.js (App Router), full-stack, hospedada na Vercel:
 - **Multi-empresa desde o schema**: toda entidade de negócio carrega
   `empresaId`; um usuário pode ter perfis diferentes em empresas diferentes
   via `UsuarioEmpresa`.
+- **Multi-filial**: abaixo de empresa, existe um segundo nível de
+  isolamento — `Filial` (cada uma com seu próprio CNPJ). A maioria das
+  entidades de negócio passa a carregar `filialId` em vez de `empresaId`;
+  `Cliente` e `Fornecedor` são exceção e continuam por `empresaId`,
+  compartilhados entre as filiais da empresa. O acesso do usuário a cada
+  filial (leitura e/ou alteração) é configurável por `UsuarioEmpresaFilial`,
+  como refinamento sobre o perfil já definido em `UsuarioEmpresa`. Design
+  completo em
+  [`docs/superpowers/specs/2026-08-29-filial-design.md`](../superpowers/specs/2026-08-29-filial-design.md).
 
 ### Stack
 
@@ -71,6 +79,16 @@ Padrões aplicados a todas: nunca há exclusão física de registro de negócio
 (campo `ativo`), sempre `criadoEm`/`atualizadoEm`, e todo dado é isolado por
 `empresaId`.
 
+**Implementado** (retrofit — design completo em
+[`docs/superpowers/specs/2026-08-29-filial-design.md`](../superpowers/specs/2026-08-29-filial-design.md)):
+`Filial` (`empresaId`, `nome`, `cnpj` próprio) e `UsuarioEmpresaFilial`
+(`usuarioEmpresaId`, `filialId`, `podeAlterar`). O isolamento por entidade é
+misto: `CentroCusto`, `CentroLucro`, `Safra`, `Projeto`,
+`CategoriaFinanceira` e `ContaBancaria` são por `filialId`; `Cliente` e
+`Fornecedor` continuam por `empresaId`, compartilhados entre filiais. Todas
+as entidades já têm service/UI implementados (ver "O que está implementado"
+abaixo).
+
 ## O que está implementado
 
 - **Autenticação**: login por email/senha (bcrypt), sessão JWT com checagem
@@ -82,28 +100,46 @@ Padrões aplicados a todas: nunca há exclusão física de registro de negócio
   alterados; tela de consulta em `/auditoria`.
 - **Multi-empresa**: seleção de empresa ativa após login (`/selecionar-empresa`),
   troca de empresa sem novo login, isolamento de dados por `empresaId`.
+- **Multi-filial**: seleção de filial ativa após empresa (`/selecionar-filial`),
+  troca de filial sem novo login, contexto ativo (empresa + filial) na
+  sessão. Nova empresa criada via `/empresas` já nasce com sua Filial
+  "Matriz" e o vínculo de acesso do criador.
 - **Empresas** (`/empresas`, admin): CRUD completo.
+- **Filiais** (`/filiais`, admin): CRUD completo, escopado à empresa ativa.
 - **Usuários** (`/usuarios`, admin): criação, vínculo a empresas com perfil,
-  troca de perfil, ativar/desativar (com proteção contra autodesativação).
-- **Cadastros implementados** (padrão "flat"): **Clientes**
-  (`/cadastros/clientes`), **Fornecedores** (`/cadastros/fornecedores`).
-- **Cadastro implementado** (padrão hierárquico, com prevenção de ciclo):
-  **Centros de custo** (`/cadastros/centros-de-custo`).
+  troca de perfil, ativar/desativar (com proteção contra autodesativação),
+  seção "acesso por filial" (leitura e/ou alteração por `UsuarioEmpresaFilial`,
+  como refinamento sobre o perfil).
+- `requirePermission`/`requireAlteracaoFilial` checam também `podeAlterar`
+  da filial ativa para ações de escrita sobre entidades filial-scoped
+  (`CentroCusto`, `CentroLucro`, `Safra`, `Projeto`, `CategoriaFinanceira`,
+  `ContaBancaria`), além da checagem de acesso à filial em `Cliente`/
+  `Fornecedor`.
+- **Cadastros implementados** (padrão "flat", por empresa, sem isolamento
+  por filial): **Clientes** (`/cadastros/clientes`), **Fornecedores**
+  (`/cadastros/fornecedores`).
+- **Cadastros implementados** (padrão "flat", por filial): **Centro de
+  lucro** (`/cadastros/centros-de-lucro`), **Safra**
+  (`/cadastros/safras`), **Projeto** (`/cadastros/projetos`), **Conta
+  bancária** (`/cadastros/contas-bancarias`).
+- **Cadastro implementado** (padrão "flat", catálogo global por empresa,
+  sem isolamento por filial): **Banco** (`/cadastros/bancos`).
+- **Cadastros implementados** (padrão hierárquico, por filial, com
+  prevenção de ciclo): **Centros de custo** (`/cadastros/centros-de-custo`),
+  **Categoria financeira** (`/cadastros/categorias`).
 - **Dashboard** (`/`): contagens reais por empresa (clientes, fornecedores,
   centros de custo/lucro, safras, contas bancárias, usuários).
 
-## O que falta para fechar a Fase 1
+## Fase 1 concluída
 
-Replicar os dois padrões já validados para os 6 cadastros restantes (schema
-já existe, falta service + Server Actions + UI):
-
-- Padrão "flat" (igual Cliente/Fornecedor): **Centro de lucro**, **Safra**,
-  **Projeto**, **Banco**, **Conta bancária**.
-- Padrão hierárquico (igual Centro de custo): **Categoria financeira**.
+Todos os 9 cadastros básicos previstos estão implementados (ver "O que está
+implementado" acima). O próximo passo natural é o desenho técnico da Fase 2
+(Financeiro: Contas a Pagar/Receber, Bancos) — iniciar esse desenho ou sua
+implementação está fora do escopo deste plano.
 
 ## Testes automatizados
 
-19 testes (Vitest) cobrindo as regras críticas identificadas no plano —
+48 testes (Vitest) cobrindo as regras críticas identificadas no plano —
 CRUDs simples são verificados manualmente, não unitariamente, por serem
 glue code sobre essas peças já testadas:
 
@@ -114,6 +150,9 @@ glue code sobre essas peças já testadas:
   hierarquias (centro de custo / categoria financeira).
 - `src/server/services/usuarioEmpresa.test.ts` — validação de vínculo
   usuário↔empresa ativo (integração com Postgres real).
+- `src/server/services/categoriaFinanceira.test.ts` — isolamento por
+  filial, prevenção de ciclo hierárquico e checagem de `podeAlterar` em
+  filial somente leitura (integração com Postgres real).
 - `src/server/auth/senha.test.ts` — hash/verificação de senha.
 
 ## Como rodar localmente

@@ -45,6 +45,7 @@ export async function criarUsuarioEVincular(
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
+    filialId: null,
     usuarioId: sessao.usuarioId,
     entidade: "UsuarioEmpresa",
     entidadeId: resultado.vinculo.id,
@@ -74,6 +75,7 @@ export async function atualizarPerfilVinculo(
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
+    filialId: null,
     usuarioId: sessao.usuarioId,
     entidade: "UsuarioEmpresa",
     entidadeId: vinculo.id,
@@ -103,6 +105,7 @@ export async function definirAtivoVinculo(sessao: SessaoAtiva, usuarioId: string
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
+    filialId: null,
     usuarioId: sessao.usuarioId,
     entidade: "UsuarioEmpresa",
     entidadeId: vinculo.id,

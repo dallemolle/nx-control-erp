@@ -4,6 +4,7 @@ import { buildAuditDiff } from "./diff";
 
 export type RegistrarAuditoriaParams = {
   empresaId: string | null;
+  filialId: string | null;
   usuarioId: string | null;
   entidade: string;
   entidadeId: string;
@@ -18,6 +19,7 @@ export async function registrarAuditoria(params: RegistrarAuditoriaParams): Prom
   await prisma.auditLog.create({
     data: {
       empresaId: params.empresaId,
+      filialId: params.filialId,
       usuarioId: params.usuarioId,
       entidade: params.entidade,
       entidadeId: params.entidadeId,

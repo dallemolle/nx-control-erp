@@ -22,6 +22,7 @@ export const NAV_SECTIONS: NavSection[] = [
     titulo: "Administração",
     itens: [
       { href: "/empresas", label: "Empresas", permitido: ["ADMINISTRADOR"] },
+      { href: "/filiais", label: "Filiais", permitido: ["ADMINISTRADOR"] },
       { href: "/usuarios", label: "Usuários", permitido: ["ADMINISTRADOR"] },
       {
         href: "/auditoria",
