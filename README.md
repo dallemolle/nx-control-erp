@@ -58,3 +58,11 @@ configure `DATABASE_URL`/`DIRECT_URL` apontando para o projeto Neon e
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
+
+Migrations em produção/staging rodam via GitHub Actions
+(`.github/workflows/prisma-migrate.yml`), com detalhes de configuração em
+[docs/fases/fase-1-fundacao.md](./docs/fases/fase-1-fundacao.md#nota-de-deploy-variáveis-de-ambiente-e-migrations-em-produçãostaging).
+Se o job falhar com **`P3005` ("The database schema is not empty")**, veja o
+procedimento de baseline na
+[nota de deploy correspondente](./docs/fases/fase-1-fundacao.md#nota-de-deploy-erro-p3005-the-database-schema-is-not-empty)
+— nunca use `prisma migrate reset` para resolver isso, apaga o banco.

@@ -284,3 +284,58 @@ Checklist para o primeiro deploy com um projeto Neon:
 4. Opcionalmente rodar `npm run db:seed` (defina `SEED_ADMIN_*`/
    `SEED_EMPRESA_*` para dados reais — os padrões são só para dev local; veja
    `prisma/seed.ts`).
+
+### Nota de deploy: erro P3005 ("The database schema is not empty")
+
+Acontece quando o banco de destino já tem tabelas, mas a tabela de controle
+`_prisma_migrations` está vazia ou não existe — o Prisma não sabe que aquele
+schema já existe e se recusa a aplicar migrations às cegas. Causa mais comum:
+o banco foi criado em algum momento via `prisma db push` (ou SQL manual, ou
+cópia/branch de outro banco) antes do workflow de migrations existir ou ser
+usado nesse ambiente.
+
+**Nunca rode `prisma migrate reset` para "resolver" isso** — apaga o banco
+inteiro. O procedimento correto é o de
+["baseline" oficial do Prisma](https://pris.ly/d/migrate-baseline):
+
+1. **Confirmar o schema atual antes de tocar em qualquer coisa.** Com a
+   `DATABASE_URL`/`DIRECT_URL` do ambiente afetado, rode no SQL Editor do
+   Neon (ou `psql`):
+   ```sql
+   SELECT table_name FROM information_schema.tables
+   WHERE table_schema = 'public' ORDER BY table_name;
+   ```
+   e confira se a lista de tabelas bate **exatamente** com o estado de uma
+   migration específica em `prisma/migrations/` (compare com o histórico —
+   cada migration nova soma/altera tabelas). Se tiver dado real, confirme
+   também com `SELECT count(*) FROM <tabela>` nas tabelas principais.
+2. **Se tiver dado real, crie um branch/snapshot no Neon antes de seguir**
+   (console do Neon → Branches → criar a partir do branch afetado) — é
+   instantâneo e dá um ponto de restauração caso algo saia diferente do
+   esperado.
+3. **Marcar como "aplicadas" só as migrations que já batem com o schema
+   atual** (isso só grava histórico, não roda SQL nenhum):
+   ```powershell
+   $env:DATABASE_URL = "<pooled>"
+   $env:DIRECT_URL   = "<direta>"
+   npx prisma migrate resolve --applied <nome_da_migration_1>
+   npx prisma migrate resolve --applied <nome_da_migration_2>
+   # ... uma por migration que já reflete o estado real do banco, em ordem
+   ```
+   (em bash/zsh, use `export VAR="valor"` em vez de `$env:VAR = "valor"`)
+4. **Conferir antes de seguir**: `npx prisma migrate status` deve listar só
+   as migrations restantes (as que ainda vão alterar o schema de verdade)
+   como pendentes.
+5. **Aplicar as pendentes de verdade**: `npx prisma migrate deploy`.
+6. Limpe as variáveis de ambiente do terminal
+   (`$env:DATABASE_URL = $null; $env:DIRECT_URL = $null`) e considere trocar
+   a senha do role do Postgres se a connection string chegou a aparecer em
+   texto puro em algum lugar (chat, log, print) — Neon console → Roles →
+   Reset password.
+
+**Cuidado ao ter mais de um projeto/branch no Neon**: confirme que a
+connection string usada é realmente a do ambiente que falhou (o host do
+endpoint Neon, tipo `ep-xxxxx-xxxxxxxx`, aparece na própria mensagem de erro
+do `P3005` — compare com o host da connection string antes de rodar
+qualquer coisa). Rodar isso no banco errado não é destrutivo por si só, mas
+não resolve o problema no banco certo e pode confundir o diagnóstico.
