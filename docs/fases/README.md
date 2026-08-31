@@ -6,7 +6,7 @@ atualizada conforme o trabalho avança.
 
 | Fase | Nome | Status |
 |---|---|---|
-| 1 | [Fundação](./fase-1-fundacao.md) | 🟡 Em andamento (núcleo completo, cadastros básicos parciais) |
+| 1 | [Fundação](./fase-1-fundacao.md) | 🟢 Concluída |
 | 2 | [Financeiro (Contas a Pagar/Receber, Bancos)](./fase-2-financeiro.md) | ⚪ Planejada |
 | 3 | [Conciliação bancária](./fase-3-conciliacao.md) | ⚪ Planejada |
 | 4 | [Fluxo de caixa](./fase-4-fluxo-de-caixa.md) | ⚪ Planejada |

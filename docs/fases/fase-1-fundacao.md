@@ -1,9 +1,8 @@
 # Fase 1 — Fundação
 
-Status: 🟡 **Em andamento.** Arquitetura, autenticação, RBAC, auditoria,
-empresas, usuários e o nível de filial estão completos e testados. Dos 9
-cadastros básicos previstos, 3 estão implementados (servem de padrão de
-referência) e 6 estão pendentes.
+Status: 🟢 **Concluída.** Arquitetura, autenticação, RBAC, auditoria,
+empresas, usuários, o nível de filial e os 9 cadastros básicos previstos
+estão completos e testados.
 
 ## Escopo desta fase
 
@@ -86,10 +85,9 @@ Padrões aplicados a todas: nunca há exclusão física de registro de negócio
 (`usuarioEmpresaId`, `filialId`, `podeAlterar`). O isolamento por entidade é
 misto: `CentroCusto`, `CentroLucro`, `Safra`, `Projeto`,
 `CategoriaFinanceira` e `ContaBancaria` são por `filialId`; `Cliente` e
-`Fornecedor` continuam por `empresaId`, compartilhados entre filiais. Só
-`CentroCusto` tem service/UI implementados até aqui — os outros 5 já
-nascem no schema com `filialId`, aguardando os cadastros pendentes (ver "O
-que falta" abaixo).
+`Fornecedor` continuam por `empresaId`, compartilhados entre filiais. Todas
+as entidades já têm service/UI implementados (ver "O que está implementado"
+abaixo).
 
 ## O que está implementado
 
@@ -114,32 +112,34 @@ que falta" abaixo).
   como refinamento sobre o perfil).
 - `requirePermission`/`requireAlteracaoFilial` checam também `podeAlterar`
   da filial ativa para ações de escrita sobre entidades filial-scoped
-  (hoje, `CentroCusto`, além da checagem de acesso à filial em `Cliente`/
-  `Fornecedor`).
-- **Cadastros implementados** (padrão "flat"): **Clientes**
-  (`/cadastros/clientes`), **Fornecedores** (`/cadastros/fornecedores`).
-- **Cadastro implementado** (padrão hierárquico, com prevenção de ciclo):
-  **Centros de custo** (`/cadastros/centros-de-custo`).
+  (`CentroCusto`, `CentroLucro`, `Safra`, `Projeto`, `CategoriaFinanceira`,
+  `ContaBancaria`), além da checagem de acesso à filial em `Cliente`/
+  `Fornecedor`.
+- **Cadastros implementados** (padrão "flat", por empresa, sem isolamento
+  por filial): **Clientes** (`/cadastros/clientes`), **Fornecedores**
+  (`/cadastros/fornecedores`).
+- **Cadastros implementados** (padrão "flat", por filial): **Centro de
+  lucro** (`/cadastros/centros-de-lucro`), **Safra**
+  (`/cadastros/safras`), **Projeto** (`/cadastros/projetos`), **Conta
+  bancária** (`/cadastros/contas-bancarias`).
+- **Cadastro implementado** (padrão "flat", catálogo global por empresa,
+  sem isolamento por filial): **Banco** (`/cadastros/bancos`).
+- **Cadastros implementados** (padrão hierárquico, por filial, com
+  prevenção de ciclo): **Centros de custo** (`/cadastros/centros-de-custo`),
+  **Categoria financeira** (`/cadastros/categorias`).
 - **Dashboard** (`/`): contagens reais por empresa (clientes, fornecedores,
   centros de custo/lucro, safras, contas bancárias, usuários).
 
-## O que falta para fechar a Fase 1
+## Fase 1 concluída
 
-O nível de filial (retrofit — design completo em
-[`docs/superpowers/specs/2026-08-29-filial-design.md`](../superpowers/specs/2026-08-29-filial-design.md))
-já foi entregue por completo (ver "O que está implementado" acima). O que
-resta é replicar os dois padrões já validados (schema já existe, falta
-service + Server Actions + UI) para os 6 cadastros restantes — já nascendo
-cientes de qual dos dois níveis de isolamento usar:
-
-- Padrão "flat", por filial: **Centro de lucro**, **Safra**, **Projeto**,
-  **Conta bancária**.
-- Padrão "flat", por empresa (catálogo global, sem isolamento): **Banco**.
-- Padrão hierárquico, por filial: **Categoria financeira**.
+Todos os 9 cadastros básicos previstos estão implementados (ver "O que está
+implementado" acima). O próximo passo natural é o desenho técnico da Fase 2
+(Financeiro: Contas a Pagar/Receber, Bancos) — iniciar esse desenho ou sua
+implementação está fora do escopo deste plano.
 
 ## Testes automatizados
 
-19 testes (Vitest) cobrindo as regras críticas identificadas no plano —
+48 testes (Vitest) cobrindo as regras críticas identificadas no plano —
 CRUDs simples são verificados manualmente, não unitariamente, por serem
 glue code sobre essas peças já testadas:
 
@@ -150,6 +150,9 @@ glue code sobre essas peças já testadas:
   hierarquias (centro de custo / categoria financeira).
 - `src/server/services/usuarioEmpresa.test.ts` — validação de vínculo
   usuário↔empresa ativo (integração com Postgres real).
+- `src/server/services/categoriaFinanceira.test.ts` — isolamento por
+  filial, prevenção de ciclo hierárquico e checagem de `podeAlterar` em
+  filial somente leitura (integração com Postgres real).
 - `src/server/auth/senha.test.ts` — hash/verificação de senha.
 
 ## Como rodar localmente
