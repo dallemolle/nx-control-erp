@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
-import { requirePermission } from "@/server/auth/permissions";
+import { requirePermission, podeAlterarFilialAtiva } from "@/server/auth/permissions";
 import { listarBancos } from "@/server/services/banco";
 import { listarContasBancarias } from "@/server/services/contaBancaria";
 import { ContaBancariaDialogForm } from "./conta-bancaria-dialog-form";
@@ -11,6 +11,7 @@ import { alternarAtivoContaBancariaAction } from "./actions";
 export default async function ContasBancariasPage() {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "cadastro:ler");
+  const podeEscrever = podeAlterarFilialAtiva(sessao.perfil, sessao.podeAlterarFilial);
 
   const [bancos, contas] = await Promise.all([
     listarBancos(),
@@ -24,7 +25,7 @@ export default async function ContasBancariasPage() {
           <h1 className="text-lg font-semibold">Contas bancárias</h1>
           <p className="text-sm text-muted-foreground">Cadastro de contas bancárias da filial.</p>
         </div>
-        <ContaBancariaDialogForm bancos={bancos} />
+        {podeEscrever && <ContaBancariaDialogForm bancos={bancos} />}
       </div>
 
       <Table>
@@ -57,17 +58,21 @@ export default async function ContasBancariasPage() {
                 </Badge>
               </TableCell>
               <TableCell className="flex justify-end gap-2">
-                <ContaBancariaDialogForm
-                  conta={{ ...conta, saldoInicial: Number(conta.saldoInicial) }}
-                  bancos={bancos}
-                />
-                <form action={alternarAtivoContaBancariaAction}>
-                  <input type="hidden" name="id" value={conta.id} />
-                  <input type="hidden" name="ativo" value={(!conta.ativo).toString()} />
-                  <Button type="submit" variant="outline" size="sm">
-                    {conta.ativo ? "Inativar" : "Reativar"}
-                  </Button>
-                </form>
+                {podeEscrever && (
+                  <>
+                    <ContaBancariaDialogForm
+                      conta={{ ...conta, saldoInicial: Number(conta.saldoInicial) }}
+                      bancos={bancos}
+                    />
+                    <form action={alternarAtivoContaBancariaAction}>
+                      <input type="hidden" name="id" value={conta.id} />
+                      <input type="hidden" name="ativo" value={(!conta.ativo).toString()} />
+                      <Button type="submit" variant="outline" size="sm">
+                        {conta.ativo ? "Inativar" : "Reativar"}
+                      </Button>
+                    </form>
+                  </>
+                )}
               </TableCell>
             </TableRow>
           ))}

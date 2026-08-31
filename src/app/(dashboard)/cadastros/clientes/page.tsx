@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
-import { requirePermission } from "@/server/auth/permissions";
+import { requirePermission, podeAlterarFilialAtiva } from "@/server/auth/permissions";
 import { listarClientes } from "@/server/services/cliente";
 import { ClienteDialogForm } from "./cliente-dialog-form";
 import { alternarAtivoClienteAction } from "./actions";
@@ -10,6 +10,7 @@ import { alternarAtivoClienteAction } from "./actions";
 export default async function ClientesPage() {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "cadastro:ler");
+  const podeEscrever = podeAlterarFilialAtiva(sessao.perfil, sessao.podeAlterarFilial);
 
   const clientes = await listarClientes(sessao.empresaId);
 
@@ -20,7 +21,7 @@ export default async function ClientesPage() {
           <h1 className="text-lg font-semibold">Clientes</h1>
           <p className="text-sm text-muted-foreground">Cadastro de clientes da empresa.</p>
         </div>
-        <ClienteDialogForm />
+        {podeEscrever && <ClienteDialogForm />}
       </div>
 
       <Table>
@@ -45,14 +46,18 @@ export default async function ClientesPage() {
                 </Badge>
               </TableCell>
               <TableCell className="flex justify-end gap-2">
-                <ClienteDialogForm cliente={cliente} />
-                <form action={alternarAtivoClienteAction}>
-                  <input type="hidden" name="id" value={cliente.id} />
-                  <input type="hidden" name="ativo" value={(!cliente.ativo).toString()} />
-                  <Button type="submit" variant="outline" size="sm">
-                    {cliente.ativo ? "Inativar" : "Reativar"}
-                  </Button>
-                </form>
+                {podeEscrever && (
+                  <>
+                    <ClienteDialogForm cliente={cliente} />
+                    <form action={alternarAtivoClienteAction}>
+                      <input type="hidden" name="id" value={cliente.id} />
+                      <input type="hidden" name="ativo" value={(!cliente.ativo).toString()} />
+                      <Button type="submit" variant="outline" size="sm">
+                        {cliente.ativo ? "Inativar" : "Reativar"}
+                      </Button>
+                    </form>
+                  </>
+                )}
               </TableCell>
             </TableRow>
           ))}

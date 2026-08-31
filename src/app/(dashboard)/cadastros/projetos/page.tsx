@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
-import { requirePermission } from "@/server/auth/permissions";
+import { requirePermission, podeAlterarFilialAtiva } from "@/server/auth/permissions";
 import { listarProjetos } from "@/server/services/projeto";
 import { ProjetoDialogForm } from "./projeto-dialog-form";
 import { alternarAtivoProjetoAction } from "./actions";
@@ -10,6 +10,7 @@ import { alternarAtivoProjetoAction } from "./actions";
 export default async function ProjetosPage() {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "cadastro:ler");
+  const podeEscrever = podeAlterarFilialAtiva(sessao.perfil, sessao.podeAlterarFilial);
 
   const projetos = await listarProjetos(sessao.filialId);
 
@@ -20,7 +21,7 @@ export default async function ProjetosPage() {
           <h1 className="text-lg font-semibold">Projetos</h1>
           <p className="text-sm text-muted-foreground">Cadastro de projetos da filial.</p>
         </div>
-        <ProjetoDialogForm />
+        {podeEscrever && <ProjetoDialogForm />}
       </div>
 
       <Table>
@@ -45,14 +46,18 @@ export default async function ProjetosPage() {
                 </Badge>
               </TableCell>
               <TableCell className="flex justify-end gap-2">
-                <ProjetoDialogForm projeto={projeto} />
-                <form action={alternarAtivoProjetoAction}>
-                  <input type="hidden" name="id" value={projeto.id} />
-                  <input type="hidden" name="ativo" value={(!projeto.ativo).toString()} />
-                  <Button type="submit" variant="outline" size="sm">
-                    {projeto.ativo ? "Inativar" : "Reativar"}
-                  </Button>
-                </form>
+                {podeEscrever && (
+                  <>
+                    <ProjetoDialogForm projeto={projeto} />
+                    <form action={alternarAtivoProjetoAction}>
+                      <input type="hidden" name="id" value={projeto.id} />
+                      <input type="hidden" name="ativo" value={(!projeto.ativo).toString()} />
+                      <Button type="submit" variant="outline" size="sm">
+                        {projeto.ativo ? "Inativar" : "Reativar"}
+                      </Button>
+                    </form>
+                  </>
+                )}
               </TableCell>
             </TableRow>
           ))}

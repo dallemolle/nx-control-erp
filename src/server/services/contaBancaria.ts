@@ -28,7 +28,7 @@ export async function criarContaBancaria(sessao: SessaoAtiva, dados: ContaBancar
     entidadeId: conta.id,
     acao: "CRIAR",
     anterior: null,
-    novo: { ...dados, saldoInicial: String(dados.saldoInicial) },
+    novo: dados,
   });
 
   return conta;
@@ -60,9 +60,9 @@ export async function atualizarContaBancaria(
       conta: anterior.conta,
       tipo: anterior.tipo,
       moeda: anterior.moeda,
-      saldoInicial: anterior.saldoInicial.toString(),
+      saldoInicial: anterior.saldoInicial,
     },
-    novo: { ...dados, saldoInicial: String(dados.saldoInicial) },
+    novo: dados,
   });
 
   return conta;

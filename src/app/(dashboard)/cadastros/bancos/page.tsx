@@ -1,12 +1,13 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
-import { requirePermission } from "@/server/auth/permissions";
+import { requirePermission, podeExecutar } from "@/server/auth/permissions";
 import { listarBancos } from "@/server/services/banco";
 import { BancoDialogForm } from "./banco-dialog-form";
 
 export default async function BancosPage() {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "cadastro:ler");
+  const podeEscrever = podeExecutar(sessao.perfil, "cadastro:escrever");
 
   const bancos = await listarBancos();
 
@@ -17,7 +18,7 @@ export default async function BancosPage() {
           <h1 className="text-lg font-semibold">Bancos</h1>
           <p className="text-sm text-muted-foreground">Cadastro global de bancos.</p>
         </div>
-        <BancoDialogForm />
+        {podeEscrever && <BancoDialogForm />}
       </div>
 
       <Table>
@@ -34,7 +35,7 @@ export default async function BancosPage() {
               <TableCell>{banco.codigo}</TableCell>
               <TableCell className="font-medium">{banco.nome}</TableCell>
               <TableCell className="flex justify-end gap-2">
-                <BancoDialogForm banco={banco} />
+                {podeEscrever && <BancoDialogForm banco={banco} />}
               </TableCell>
             </TableRow>
           ))}

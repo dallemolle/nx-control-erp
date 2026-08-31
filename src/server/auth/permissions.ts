@@ -47,3 +47,11 @@ export function requireAlteracaoFilial(podeAlterarFilial: boolean): void {
     throw new FilialSomenteLeituraError();
   }
 }
+
+/**
+ * Versão booleana (não lança) da combinação requirePermission("cadastro:escrever")
+ * + requireAlteracaoFilial, usada pela UI pra decidir se mostra ações de escrita.
+ */
+export function podeAlterarFilialAtiva(perfil: Perfil, podeAlterarFilial: boolean): boolean {
+  return podeExecutar(perfil, "cadastro:escrever") && podeAlterarFilial;
+}

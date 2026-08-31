@@ -24,7 +24,7 @@ export async function criarSafra(sessao: SessaoAtiva, dados: SafraFormValues) {
     entidadeId: safra.id,
     acao: "CRIAR",
     anterior: null,
-    novo: { ...dados, dataInicio: dados.dataInicio.toISOString(), dataFim: dados.dataFim.toISOString() },
+    novo: dados,
   });
 
   return safra;
@@ -48,11 +48,11 @@ export async function atualizarSafra(sessao: SessaoAtiva, id: string, dados: Saf
     acao: "ATUALIZAR",
     anterior: {
       nome: anterior.nome,
-      dataInicio: anterior.dataInicio.toISOString(),
-      dataFim: anterior.dataFim.toISOString(),
+      dataInicio: anterior.dataInicio,
+      dataFim: anterior.dataFim,
       status: anterior.status,
     },
-    novo: { ...dados, dataInicio: dados.dataInicio.toISOString(), dataFim: dados.dataFim.toISOString() },
+    novo: dados,
   });
 
   return safra;

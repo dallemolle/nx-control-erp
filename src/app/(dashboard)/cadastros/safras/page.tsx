@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
-import { requirePermission } from "@/server/auth/permissions";
+import { requirePermission, podeAlterarFilialAtiva } from "@/server/auth/permissions";
 import { listarSafras } from "@/server/services/safra";
 import { SafraDialogForm } from "./safra-dialog-form";
 import { alternarAtivoSafraAction } from "./actions";
@@ -14,6 +14,7 @@ function formatarData(data: Date): string {
 export default async function SafrasPage() {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "cadastro:ler");
+  const podeEscrever = podeAlterarFilialAtiva(sessao.perfil, sessao.podeAlterarFilial);
 
   const safras = await listarSafras(sessao.filialId);
 
@@ -24,7 +25,7 @@ export default async function SafrasPage() {
           <h1 className="text-lg font-semibold">Safras</h1>
           <p className="text-sm text-muted-foreground">Cadastro de safras da filial.</p>
         </div>
-        <SafraDialogForm />
+        {podeEscrever && <SafraDialogForm />}
       </div>
 
       <Table>
@@ -51,14 +52,18 @@ export default async function SafrasPage() {
                 </Badge>
               </TableCell>
               <TableCell className="flex justify-end gap-2">
-                <SafraDialogForm safra={safra} />
-                <form action={alternarAtivoSafraAction}>
-                  <input type="hidden" name="id" value={safra.id} />
-                  <input type="hidden" name="ativo" value={(!safra.ativo).toString()} />
-                  <Button type="submit" variant="outline" size="sm">
-                    {safra.ativo ? "Inativar" : "Reativar"}
-                  </Button>
-                </form>
+                {podeEscrever && (
+                  <>
+                    <SafraDialogForm safra={safra} />
+                    <form action={alternarAtivoSafraAction}>
+                      <input type="hidden" name="id" value={safra.id} />
+                      <input type="hidden" name="ativo" value={(!safra.ativo).toString()} />
+                      <Button type="submit" variant="outline" size="sm">
+                        {safra.ativo ? "Inativar" : "Reativar"}
+                      </Button>
+                    </form>
+                  </>
+                )}
               </TableCell>
             </TableRow>
           ))}

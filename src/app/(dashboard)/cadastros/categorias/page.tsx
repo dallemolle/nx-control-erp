@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
-import { requirePermission } from "@/server/auth/permissions";
+import { requirePermission, podeAlterarFilialAtiva } from "@/server/auth/permissions";
 import { listarCategoriasFinanceiras } from "@/server/services/categoriaFinanceira";
 import { CategoriaFinanceiraDialogForm } from "./categoria-financeira-dialog-form";
 import { alternarAtivoCategoriaFinanceiraAction } from "./actions";
@@ -10,6 +10,7 @@ import { alternarAtivoCategoriaFinanceiraAction } from "./actions";
 export default async function CategoriasFinanceirasPage() {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "cadastro:ler");
+  const podeEscrever = podeAlterarFilialAtiva(sessao.perfil, sessao.podeAlterarFilial);
 
   const categorias = await listarCategoriasFinanceiras(sessao.filialId);
   const nomePorId = new Map(categorias.map((categoria) => [categoria.id, categoria]));
@@ -23,7 +24,7 @@ export default async function CategoriasFinanceirasPage() {
             Estrutura hierárquica de receitas e despesas.
           </p>
         </div>
-        <CategoriaFinanceiraDialogForm opcoesPai={categorias} />
+        {podeEscrever && <CategoriaFinanceiraDialogForm opcoesPai={categorias} />}
       </div>
 
       <Table>
@@ -54,14 +55,18 @@ export default async function CategoriasFinanceirasPage() {
                 </Badge>
               </TableCell>
               <TableCell className="flex justify-end gap-2">
-                <CategoriaFinanceiraDialogForm categoria={categoria} opcoesPai={categorias} />
-                <form action={alternarAtivoCategoriaFinanceiraAction}>
-                  <input type="hidden" name="id" value={categoria.id} />
-                  <input type="hidden" name="ativo" value={(!categoria.ativo).toString()} />
-                  <Button type="submit" variant="outline" size="sm">
-                    {categoria.ativo ? "Inativar" : "Reativar"}
-                  </Button>
-                </form>
+                {podeEscrever && (
+                  <>
+                    <CategoriaFinanceiraDialogForm categoria={categoria} opcoesPai={categorias} />
+                    <form action={alternarAtivoCategoriaFinanceiraAction}>
+                      <input type="hidden" name="id" value={categoria.id} />
+                      <input type="hidden" name="ativo" value={(!categoria.ativo).toString()} />
+                      <Button type="submit" variant="outline" size="sm">
+                        {categoria.ativo ? "Inativar" : "Reativar"}
+                      </Button>
+                    </form>
+                  </>
+                )}
               </TableCell>
             </TableRow>
           ))}
