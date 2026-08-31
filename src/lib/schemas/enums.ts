@@ -1,0 +1,10 @@
+export const STATUS_SAFRA_PROJETO = ["PLANEJADO", "EM_ANDAMENTO", "ENCERRADO"] as const;
+
+export const TIPO_CONTA_BANCARIA = [
+  "CORRENTE",
+  "APLICACAO",
+  "INVESTIMENTO",
+  "EMPRESTIMO_FINANCIAMENTO",
+] as const;
+
+export const TIPO_CATEGORIA_FINANCEIRA = ["RECEITA", "DESPESA"] as const;
