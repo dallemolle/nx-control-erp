@@ -2689,13 +2689,17 @@ git commit -m "Adicionar UI de titulo: nav, tabela, dialog de criar/editar, pagi
 - Create: `src/app/(dashboard)/financeiro/_titulos/baixa-dialog.tsx`
 - Create: `src/app/(dashboard)/financeiro/_titulos/renegociar-dialog.tsx`
 - Create: `src/app/(dashboard)/financeiro/_titulos/importar-csv-dialog.tsx`
-- Modify: `src/app/(dashboard)/financeiro/_titulos/actions.ts` (adicionar actions de baixa/renegociação/importação)
+- Create: `src/app/(dashboard)/financeiro/_titulos/anexos-panel.tsx`
+- Modify: `src/app/(dashboard)/financeiro/_titulos/actions.ts` (adicionar actions de baixa/renegociação/importação/anexos)
+- Modify: `src/app/(dashboard)/financeiro/_titulos/titulo-table.tsx` (Task 10 — renderizar `AnexosPanel` na linha expandida)
 - Create: `src/app/(dashboard)/financeiro/aprovacoes/actions.ts`
 - Create: `src/app/(dashboard)/financeiro/aprovacoes/rejeitar-baixa-form.tsx`
 - Create: `src/app/(dashboard)/financeiro/aprovacoes/page.tsx`
 
 **Interfaces:**
-- Consumes: `registrarBaixa`/`aprovarBaixa`/`rejeitarBaixa`/`listarBaixasPendentes` (Task 6), `renegociarParcela` (Task 7), `validarCsv`/`confirmarImportacao` (Task 9), `podeAprovarBaixa` (Task 2).
+- Consumes: `registrarBaixa`/`aprovarBaixa`/`rejeitarBaixa`/`listarBaixasPendentes` (Task 6), `renegociarParcela` (Task 7), `listarAnexos`/`adicionarAnexo`/`removerAnexo` (Task 8), `validarCsv`/`confirmarImportacao` (Task 9), `podeAprovarBaixa` (Task 2).
+
+**Nota de pré-flight:** a Task 8 declara "usadas pela Task 11" para suas 3 funções de anexo, mas a primeira redação desta Task 11 nunca as consumia — nenhuma UI de anexos existia. Corrigido abaixo (Steps 2 e 7): `anexos-panel.tsx` novo + wiring em `titulo-table.tsx`.
 
 - [ ] **Step 1: Adicionar as actions de baixa, renegociação e importação em `src/app/(dashboard)/financeiro/_titulos/actions.ts`**
 
@@ -2706,6 +2710,7 @@ import { baixaSchema } from "@/lib/schemas/baixa";
 import * as baixaService from "@/server/services/baixa";
 import * as renegociacaoService from "@/server/services/renegociacao";
 import * as importacaoService from "@/server/services/importacaoTitulo";
+import * as anexoService from "@/server/services/anexo";
 
 export async function registrarBaixaAction(
   tipo: TipoTitulo,
@@ -2772,9 +2777,90 @@ export async function confirmarImportacaoAction(
   revalidatePath(rotaPara(tipo));
   return { sucesso: true };
 }
+
+export async function listarAnexosAction(tituloId: string) {
+  return anexoService.listarAnexos(tituloId);
+}
+
+export async function adicionarAnexoAction(tituloId: string, arquivo: File): Promise<void> {
+  const sessao = await requireSessaoAtiva();
+  await anexoService.adicionarAnexo(sessao, tituloId, arquivo);
+}
+
+export async function removerAnexoAction(anexoId: string): Promise<void> {
+  const sessao = await requireSessaoAtiva();
+  await anexoService.removerAnexo(sessao, anexoId);
+}
 ```
 
-- [ ] **Step 2: Criar `src/app/(dashboard)/financeiro/_titulos/baixa-dialog.tsx`**
+- [ ] **Step 2: Criar `src/app/(dashboard)/financeiro/_titulos/anexos-panel.tsx`**
+
+```tsx
+"use client";
+
+import { useEffect, useState, useTransition } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { listarAnexosAction, adicionarAnexoAction, removerAnexoAction } from "./actions";
+
+type Anexo = { id: string; nomeArquivo: string; url: string };
+
+export function AnexosPanel({ tituloId, podeEscrever }: { tituloId: string; podeEscrever: boolean }) {
+  const [anexos, setAnexos] = useState<Anexo[]>([]);
+  const [carregado, setCarregado] = useState(false);
+  const [pendente, iniciarTransicao] = useTransition();
+
+  useEffect(() => {
+    listarAnexosAction(tituloId).then((lista) => {
+      setAnexos(lista);
+      setCarregado(true);
+    });
+  }, [tituloId]);
+
+  function enviarArquivo(arquivo: File) {
+    iniciarTransicao(async () => {
+      await adicionarAnexoAction(tituloId, arquivo);
+      setAnexos(await listarAnexosAction(tituloId));
+    });
+  }
+
+  function remover(anexoId: string) {
+    iniciarTransicao(async () => {
+      await removerAnexoAction(anexoId);
+      setAnexos(await listarAnexosAction(tituloId));
+    });
+  }
+
+  if (!carregado) return null;
+
+  return (
+    <div className="pl-8 py-2 space-y-2 text-sm">
+      <div className="font-medium text-muted-foreground">Anexos</div>
+      {anexos.map((anexo) => (
+        <div key={anexo.id} className="flex items-center gap-2">
+          <a href={anexo.url} target="_blank" rel="noreferrer" className="underline">
+            {anexo.nomeArquivo}
+          </a>
+          {podeEscrever && (
+            <Button type="button" variant="outline" size="sm" disabled={pendente} onClick={() => remover(anexo.id)}>
+              Remover
+            </Button>
+          )}
+        </div>
+      ))}
+      {podeEscrever && (
+        <Input
+          type="file"
+          disabled={pendente}
+          onChange={(e) => e.target.files?.[0] && enviarArquivo(e.target.files[0])}
+        />
+      )}
+    </div>
+  );
+}
+```
+
+- [ ] **Step 3: Criar `src/app/(dashboard)/financeiro/_titulos/baixa-dialog.tsx`**
 
 ```tsx
 "use client";
@@ -2867,7 +2953,7 @@ export function BaixaDialog({
 }
 ```
 
-- [ ] **Step 3: Criar `src/app/(dashboard)/financeiro/_titulos/renegociar-dialog.tsx`**
+- [ ] **Step 4: Criar `src/app/(dashboard)/financeiro/_titulos/renegociar-dialog.tsx`**
 
 ```tsx
 "use client";
@@ -2958,7 +3044,7 @@ export function RenegociarDialog({
 }
 ```
 
-- [ ] **Step 4: Criar `src/app/(dashboard)/financeiro/_titulos/importar-csv-dialog.tsx`**
+- [ ] **Step 5: Criar `src/app/(dashboard)/financeiro/_titulos/importar-csv-dialog.tsx`**
 
 ```tsx
 "use client";
@@ -3031,7 +3117,7 @@ export function ImportarCsvDialog({ tipo }: { tipo: TipoTitulo }) {
 }
 ```
 
-- [ ] **Step 5: Criar `src/app/(dashboard)/financeiro/_titulos/contas-client-panel.tsx`**
+- [ ] **Step 6: Criar `src/app/(dashboard)/financeiro/_titulos/contas-client-panel.tsx`**
 
 Este componente junta `TituloTable` (Task 10) com os dialogs de baixa/renegociação, controlando qual `parcelaId` está aberto em cada um — é o componente que as páginas `contas-a-pagar`/`contas-a-receber` (Task 10, Step 5-6) renderizam.
 
@@ -3094,7 +3180,62 @@ export function ContasClientePanel({
 }
 ```
 
-- [ ] **Step 6: Criar `src/app/(dashboard)/financeiro/aprovacoes/actions.ts`**
+- [ ] **Step 7: Modificar `src/app/(dashboard)/financeiro/_titulos/titulo-table.tsx` (Task 10) para renderizar `AnexosPanel`**
+
+Adicionar ao topo do arquivo, junto aos outros imports:
+```tsx
+import { AnexosPanel } from "./anexos-panel";
+```
+
+Substituir o trecho final do corpo do `Fragment` de cada título — de `{expandidoId === titulo.id &&\n              titulo.parcelas.map(...)}` até o `</Fragment>` — por:
+
+```tsx
+            {expandidoId === titulo.id &&
+              titulo.parcelas.map((parcela) => (
+                <TableRow key={parcela.id} className="bg-muted/30">
+                  <TableCell colSpan={2} className="pl-8">
+                    Parcela {parcela.numero} — venc. {new Date(parcela.dataVencimento).toLocaleDateString("pt-BR")}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={VARIANTE_STATUS[parcela.status] ?? "secondary"}>{parcela.status}</Badge>
+                  </TableCell>
+                  <TableCell className="flex justify-end gap-2">
+                    {podeBaixar && parcela.status !== "PAGO" && parcela.status !== "CANCELADO" && (
+                      <Button type="button" size="sm" onClick={() => onAbrirBaixa(parcela.id)}>
+                        Baixar
+                      </Button>
+                    )}
+                    {podeEscrever && parcela.status === "VENCIDO" && (
+                      <Button type="button" variant="outline" size="sm" onClick={() => onAbrirRenegociacao(parcela.id)}>
+                        Renegociar
+                      </Button>
+                    )}
+                    {podeEscrever && parcela.status !== "CANCELADO" && parcela.status !== "PAGO" && (
+                      <form action={cancelarParcelaAction}>
+                        <input type="hidden" name="parcelaId" value={parcela.id} />
+                        <input type="hidden" name="tipo" value={tipo} />
+                        <Button type="submit" variant="outline" size="sm">
+                          Cancelar
+                        </Button>
+                      </form>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            {expandidoId === titulo.id && (
+              <TableRow className="bg-muted/30">
+                <TableCell colSpan={4}>
+                  <AnexosPanel tituloId={titulo.id} podeEscrever={podeEscrever} />
+                </TableCell>
+              </TableRow>
+            )}
+          </Fragment>
+        ))}
+```
+
+(o único trecho novo é o segundo bloco `{expandidoId === titulo.id && (...)}` com o `AnexosPanel` — o resto é idêntico ao que a Task 10 já escreveu, reproduzido aqui por completo para a substituição ficar inequívoca.)
+
+- [ ] **Step 8: Criar `src/app/(dashboard)/financeiro/aprovacoes/actions.ts`**
 
 ```ts
 "use server";
@@ -3128,7 +3269,7 @@ export async function rejeitarBaixaAction(_prev: FormState, formData: FormData):
 }
 ```
 
-- [ ] **Step 7: Criar `src/app/(dashboard)/financeiro/aprovacoes/rejeitar-baixa-form.tsx`**
+- [ ] **Step 9: Criar `src/app/(dashboard)/financeiro/aprovacoes/rejeitar-baixa-form.tsx`**
 
 `rejeitarBaixaAction` usa `useActionState` (precisa devolver `FormState` para exibir erro de validação), o que exige um Client Component — por isso vem num arquivo próprio, à parte da página (que é Server Component).
 
@@ -3160,7 +3301,7 @@ export function RejeitarBaixaForm({ baixaId }: { baixaId: string }) {
 }
 ```
 
-- [ ] **Step 8: Criar `src/app/(dashboard)/financeiro/aprovacoes/page.tsx`**
+- [ ] **Step 10: Criar `src/app/(dashboard)/financeiro/aprovacoes/page.tsx`**
 
 ```tsx
 import { Button } from "@/components/ui/button";
@@ -3227,12 +3368,12 @@ export default async function AprovacoesPage() {
 }
 ```
 
-- [ ] **Step 9: Rodar type-check**
+- [ ] **Step 11: Rodar type-check**
 
 Run: `npx tsc --noEmit`
 Expected: sem erros — confirma que todos os componentes criados nas Tasks 10 e 11 se encaixam (props, imports, tipos).
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 12: Commit**
 
 ```bash
 git add "src/app/(dashboard)/financeiro"
