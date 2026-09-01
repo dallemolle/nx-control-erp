@@ -7,7 +7,7 @@ atualizada conforme o trabalho avança.
 | Fase | Nome | Status |
 |---|---|---|
 | 1 | [Fundação](./fase-1-fundacao.md) | 🟢 Concluída |
-| 2 | [Financeiro (Contas a Pagar/Receber, Bancos)](./fase-2-financeiro.md) | ⚪ Planejada |
+| 2 | [Financeiro (Contas a Pagar/Receber, Bancos)](./fase-2-financeiro.md) | 🟡 Em andamento |
 | 3 | [Conciliação bancária](./fase-3-conciliacao.md) | ⚪ Planejada |
 | 4 | [Fluxo de caixa](./fase-4-fluxo-de-caixa.md) | ⚪ Planejada |
 | 5 | [Controladoria e orçamento](./fase-5-controladoria.md) | ⚪ Planejada |

@@ -1,9 +1,10 @@
 # Fase 2 — Financeiro
 
-Status: ⚪ **Planejada.** Escopo abaixo, sem desenho técnico ainda — o design
-detalhado (modelo de dados de títulos/parcelas, fluxos de aprovação, telas)
-será feito quando esta fase entrar em desenvolvimento, seguindo o mesmo
-processo de brainstorm → design → plano usado na Fase 1.
+Status: 🟡 **Em andamento.** Design técnico do primeiro sub-projeto (Contas
+a Pagar/Receber — Títulos) em
+`docs/superpowers/specs/2026-08-31-financeiro-titulos-design.md`,
+implementado. Tesouraria (lançamentos bancários) ainda não tem desenho
+técnico — próximo sub-projeto.
 
 ## Escopo
 
