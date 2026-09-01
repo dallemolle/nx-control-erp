@@ -108,4 +108,57 @@ describe("baixa (fluxo de aprovação)", () => {
     const pendentes = await listarBaixasPendentes(fixtureTesouraria.filialId);
     expect(pendentes.every((baixa) => baixa.statusAprovacao === "PENDENTE")).toBe(true);
   });
+
+  test("não é possível aprovar uma baixa já rejeitada", async () => {
+    const parcela = await criarParcelaDeTeste(fixtureTesouraria, 400);
+    const baixa = await registrarBaixa(fixtureTesouraria.sessao, parcela.id, {
+      data: new Date(),
+      valorPago: 400,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fixtureTesouraria.contaBancariaId,
+    });
+
+    await rejeitarBaixa(fixtureTesouraria.sessao, baixa.id, "Valor divergente");
+
+    await expect(aprovarBaixa(fixtureTesouraria.sessao, baixa.id)).rejects.toThrow(/já foi avaliada/);
+
+    const parcelaFinal = await prisma.parcela.findUniqueOrThrow({ where: { id: parcela.id } });
+    expect(parcelaFinal.status).not.toBe("PAGO");
+  });
+
+  test("não é possível rejeitar uma baixa já aprovada", async () => {
+    const parcela = await criarParcelaDeTeste(fixtureTesouraria, 500);
+    const baixa = await registrarBaixa(fixtureTesouraria.sessao, parcela.id, {
+      data: new Date(),
+      valorPago: 500,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fixtureTesouraria.contaBancariaId,
+    });
+
+    await aprovarBaixa(fixtureTesouraria.sessao, baixa.id);
+
+    await expect(
+      rejeitarBaixa(fixtureTesouraria.sessao, baixa.id, "Arrependimento"),
+    ).rejects.toThrow(/já foi avaliada/);
+  });
+
+  test("rejeita baixa contra conta bancária de outra filial", async () => {
+    const parcela = await criarParcelaDeTeste(fixture, 600);
+
+    await expect(
+      registrarBaixa(fixture.sessao, parcela.id, {
+        data: new Date(),
+        valorPago: 600,
+        valorJuros: 0,
+        valorMulta: 0,
+        valorDesconto: 0,
+        // Conta bancária da OUTRA fixture (outra empresa/filial).
+        contaBancariaId: fixtureTesouraria.contaBancariaId,
+      }),
+    ).rejects.toThrow(/não pertence à filial ativa/);
+  });
 });

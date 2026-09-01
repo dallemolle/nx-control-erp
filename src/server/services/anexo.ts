@@ -4,17 +4,39 @@ import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permiss
 import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 
-export async function listarAnexos(tituloId: string) {
-  return prisma.anexo.findMany({ where: { tituloId }, orderBy: { criadoEm: "desc" } });
+/** Limite de tamanho por anexo. Documentos fiscais/boletos ficam muito abaixo disso. */
+export const TAMANHO_MAXIMO_ANEXO_BYTES = 10 * 1024 * 1024;
+
+export async function listarAnexos(filialId: string, tituloId: string) {
+  return prisma.anexo.findMany({
+    where: { tituloId, titulo: { filialId } },
+    orderBy: { criadoEm: "desc" },
+  });
+}
+
+export async function buscarAnexoDaFilial(filialId: string, anexoId: string) {
+  return prisma.anexo.findFirst({ where: { id: anexoId, titulo: { filialId } } });
 }
 
 export async function adicionarAnexo(sessao: SessaoAtiva, tituloId: string, arquivo: File) {
   requirePermission(sessao.perfil, "titulo:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
+  if (arquivo.size > TAMANHO_MAXIMO_ANEXO_BYTES) {
+    throw new Error(
+      `Arquivo maior que o limite de ${TAMANHO_MAXIMO_ANEXO_BYTES / (1024 * 1024)} MB por anexo`,
+    );
+  }
+
   await prisma.titulo.findFirstOrThrow({ where: { id: tituloId, filialId: sessao.filialId } });
 
-  const blob = await put(`titulos/${tituloId}/${arquivo.name}`, arquivo, { access: "public" });
+  // `allowOverwrite`: sem ele o `put()` do @vercel/blob v2 estoura quando o pathname
+  // já existe (addRandomSuffix é false por padrão). O spec pede que reenviar o mesmo
+  // arquivo substitua a versão anterior em vez de empilhar versões.
+  const blob = await put(`titulos/${tituloId}/${arquivo.name}`, arquivo, {
+    access: "private",
+    allowOverwrite: true,
+  });
 
   const anexo = await prisma.anexo.create({
     data: {

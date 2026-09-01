@@ -3,6 +3,7 @@ import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permiss
 import { registrarAuditoria } from "@/server/audit/registrar";
 import { recalcularEPersistirStatusParcela } from "@/server/services/parcela";
 import type { SessaoAtiva } from "@/server/auth/sessao";
+import type { StatusAprovacaoBaixa } from "@prisma/client";
 import type { BaixaFormValues } from "@/lib/schemas/baixa";
 
 async function buscarParcelaDaFilial(filialId: string, parcelaId: string) {
@@ -11,6 +12,17 @@ async function buscarParcelaDaFilial(filialId: string, parcelaId: string) {
 
 async function buscarBaixaDaFilial(filialId: string, baixaId: string) {
   return prisma.baixa.findFirstOrThrow({ where: { id: baixaId, parcela: { titulo: { filialId } } } });
+}
+
+/**
+ * APROVADO e REJEITADO são estados finais. Sem esta trava, reenviar o formulário de
+ * aprovação (o `baixaId` vem de um input escondido) reabriria uma baixa já rejeitada
+ * e ela voltaria a abater o saldo da parcela.
+ */
+function garantirBaixaPendente(statusAtual: StatusAprovacaoBaixa): void {
+  if (statusAtual !== "PENDENTE") {
+    throw new Error("Esta baixa já foi avaliada");
+  }
 }
 
 export async function listarBaixasPendentes(filialId: string) {
@@ -30,6 +42,15 @@ export async function registrarBaixa(sessao: SessaoAtiva, parcelaId: string, dad
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   await buscarParcelaDaFilial(sessao.filialId, parcelaId);
+
+  // A FK só prova que a conta existe em alguma filial — sem este escopo uma baixa
+  // poderia ser lançada contra a conta bancária de outro tenant.
+  const contaBancaria = await prisma.contaBancaria.findFirst({
+    where: { id: dados.contaBancariaId, filialId: sessao.filialId },
+  });
+  if (!contaBancaria) {
+    throw new Error("Conta bancária não pertence à filial ativa");
+  }
 
   const baixa = await prisma.baixa.create({
     data: {
@@ -64,6 +85,7 @@ export async function aprovarBaixa(sessao: SessaoAtiva, baixaId: string) {
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   const anterior = await buscarBaixaDaFilial(sessao.filialId, baixaId);
+  garantirBaixaPendente(anterior.statusAprovacao);
 
   const baixa = await prisma.baixa.update({
     where: { id: baixaId },
@@ -90,6 +112,7 @@ export async function rejeitarBaixa(sessao: SessaoAtiva, baixaId: string, motivo
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   const anterior = await buscarBaixaDaFilial(sessao.filialId, baixaId);
+  garantirBaixaPendente(anterior.statusAprovacao);
 
   const baixa = await prisma.baixa.update({
     where: { id: baixaId },

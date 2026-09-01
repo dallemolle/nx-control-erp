@@ -5,10 +5,11 @@ vi.mock("@vercel/blob", () => ({
   del: vi.fn(async () => undefined),
 }));
 
+import { put } from "@vercel/blob";
 import { prisma } from "@/server/db/client";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
 import { criarTitulo } from "./titulo";
-import { adicionarAnexo, removerAnexo, listarAnexos } from "./anexo";
+import { adicionarAnexo, removerAnexo, listarAnexos, TAMANHO_MAXIMO_ANEXO_BYTES } from "./anexo";
 
 describe("anexo (Vercel Blob mockado — não é o banco de dados)", () => {
   let fixture: FixtureFinanceiro;
@@ -45,7 +46,14 @@ describe("anexo (Vercel Blob mockado — não é o banco de dados)", () => {
     expect(anexo.nomeArquivo).toBe("nota.pdf");
     expect(anexo.url).toContain("blob.test");
 
-    const anexos = await listarAnexos(tituloId);
+    // O blob precisa ser privado (a leitura passa pela rota autenticada) e sobrescrever
+    // a versão anterior: o put() do @vercel/blob v2 estoura se o pathname já existir.
+    expect(put).toHaveBeenLastCalledWith(`titulos/${tituloId}/nota.pdf`, arquivo, {
+      access: "private",
+      allowOverwrite: true,
+    });
+
+    const anexos = await listarAnexos(fixture.filialId, tituloId);
     expect(anexos).toHaveLength(1);
   });
 
@@ -55,7 +63,26 @@ describe("anexo (Vercel Blob mockado — não é o banco de dados)", () => {
 
     await removerAnexo(fixture.sessao, anexo.id);
 
-    const anexos = await listarAnexos(tituloId);
+    const anexos = await listarAnexos(fixture.filialId, tituloId);
     expect(anexos.find((item) => item.id === anexo.id)).toBeUndefined();
+  });
+
+  test("rejeita arquivo acima do limite de tamanho", async () => {
+    const grande = new File([new Uint8Array(TAMANHO_MAXIMO_ANEXO_BYTES + 1)], "gigante.pdf", {
+      type: "application/pdf",
+    });
+
+    await expect(adicionarAnexo(fixture.sessao, tituloId, grande)).rejects.toThrow(/limite/i);
+  });
+
+  test("listarAnexos não vaza anexos de outra filial", async () => {
+    const filialIrma = await prisma.filial.create({
+      data: { empresaId: fixture.empresaId, nome: "Filial Irma ANEX", cnpj: "11.111.ANEX/0001-99" },
+    });
+
+    const anexos = await listarAnexos(filialIrma.id, tituloId);
+    expect(anexos).toHaveLength(0);
+
+    await prisma.filial.delete({ where: { id: filialIrma.id } });
   });
 });

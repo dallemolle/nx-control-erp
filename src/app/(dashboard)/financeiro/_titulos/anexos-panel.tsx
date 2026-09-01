@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { listarAnexosAction, adicionarAnexoAction, removerAnexoAction } from "./actions";
 
-type Anexo = { id: string; nomeArquivo: string; url: string };
+type Anexo = { id: string; nomeArquivo: string };
 
 export function AnexosPanel({ tituloId, podeEscrever }: { tituloId: string; podeEscrever: boolean }) {
   const [anexos, setAnexos] = useState<Anexo[]>([]);
@@ -40,7 +40,8 @@ export function AnexosPanel({ tituloId, podeEscrever }: { tituloId: string; pode
       <div className="font-medium text-muted-foreground">Anexos</div>
       {anexos.map((anexo) => (
         <div key={anexo.id} className="flex items-center gap-2">
-          <a href={anexo.url} target="_blank" rel="noreferrer" className="underline">
+          {/* Blobs são privados: o download passa pela rota autenticada, não pela URL do blob. */}
+          <a href={`/api/anexos/${anexo.id}`} target="_blank" rel="noreferrer" className="underline">
             {anexo.nomeArquivo}
           </a>
           {podeEscrever && (

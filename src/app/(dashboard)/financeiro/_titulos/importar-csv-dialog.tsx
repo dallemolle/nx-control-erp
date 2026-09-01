@@ -15,10 +15,17 @@ export function ImportarCsvDialog({ tipo }: { tipo: TipoTitulo }) {
   const [pendente, iniciarTransicao] = useTransition();
 
   async function lerArquivo(arquivo: File) {
-    const conteudo = await arquivo.text();
-    const resultado = await validarCsvAction(conteudo);
-    setLinhas(resultado);
-    setErro(undefined);
+    try {
+      const conteudo = await arquivo.text();
+      const resultado = await validarCsvAction(conteudo);
+      setLinhas(resultado);
+      setErro(undefined);
+    } catch (falha) {
+      // A action valida sessão/permissão e limita o tamanho do CSV — sem este catch
+      // a rejeição some e o dialog fica em branco.
+      setLinhas([]);
+      setErro(falha instanceof Error ? falha.message : "Não foi possível ler o arquivo");
+    }
   }
 
   function confirmar() {

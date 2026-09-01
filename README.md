@@ -59,6 +59,13 @@ configure `DATABASE_URL`/`DIRECT_URL` apontando para o projeto Neon e
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
+Os **anexos de título** (contas a pagar/receber) são gravados no Vercel Blob:
+crie um Blob store no projeto e configure `BLOB_READ_WRITE_TOKEN` com o token
+read-write dele. Os blobs são gravados com `access: "private"` e servidos
+apenas pela rota autenticada `/api/anexos/[anexoId]`, que revalida a sessão e o
+escopo de filial a cada download. Sem essa variável, upload, download e
+exclusão de anexos falham em runtime.
+
 Migrations em produção/staging rodam via GitHub Actions
 (`.github/workflows/prisma-migrate.yml`), com detalhes de configuração em
 [docs/fases/fase-1-fundacao.md](./docs/fases/fase-1-fundacao.md#nota-de-deploy-variáveis-de-ambiente-e-migrations-em-produçãostaging).

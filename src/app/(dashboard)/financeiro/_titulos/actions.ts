@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
+import { requirePermission } from "@/server/auth/permissions";
 import { tituloSchema, tituloHeaderSchema } from "@/lib/schemas/titulo";
 import * as tituloService from "@/server/services/titulo";
 import type { TipoTitulo } from "@prisma/client";
@@ -142,7 +143,17 @@ export async function renegociarParcelaAction(
   return { sucesso: true };
 }
 
+/** Guarda de tamanho do CSV colado/enviado — evita parsear um payload arbitrário. */
+const TAMANHO_MAXIMO_CSV = 2_000_000;
+
 export async function validarCsvAction(conteudoCsv: string) {
+  const sessao = await requireSessaoAtiva();
+  requirePermission(sessao.perfil, "titulo:escrever");
+
+  if (conteudoCsv.length > TAMANHO_MAXIMO_CSV) {
+    throw new Error("Arquivo CSV muito grande — divida a importação em lotes menores");
+  }
+
   return importacaoService.validarCsv(conteudoCsv);
 }
 
@@ -163,7 +174,9 @@ export async function confirmarImportacaoAction(
 }
 
 export async function listarAnexosAction(tituloId: string) {
-  return anexoService.listarAnexos(tituloId);
+  const sessao = await requireSessaoAtiva();
+  requirePermission(sessao.perfil, "titulo:ler");
+  return anexoService.listarAnexos(sessao.filialId, tituloId);
 }
 
 export async function adicionarAnexoAction(tituloId: string, arquivo: File): Promise<void> {
