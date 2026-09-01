@@ -13,14 +13,39 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { TipoTitulo } from "@prisma/client";
+import { SEM_VALOR } from "@/lib/schemas/enums";
 import { criarTituloAction, atualizarTituloAction, type FormState } from "./actions";
 
 type Opcao = { id: string; nome: string };
 
 type ParcelaLinha = { numero: number; dataVencimento: string; valorOriginal: string };
 
+/** Cabeçalho do título já achatado para o formulário (ver `tituloParaFormulario`). */
+export type TituloEditavel = {
+  id: string;
+  contraparteId: string;
+  documento: string;
+  dataEmissao: string;
+  dataCompetencia: string;
+  categoriaFinanceiraId: string;
+  centroCustoId: string | null;
+  centroLucroId: string | null;
+  safraId: string | null;
+  projetoId: string | null;
+  contaBancariaId: string | null;
+  formaPagamento: string | null;
+};
+
 const ESTADO_INICIAL: FormState = {};
-const SEM_VALOR = "__nenhum__";
+
+/** `<input type="date">` só aceita `yyyy-MM-dd`. */
+export function paraInputDate(data: Date | string): string {
+  return new Date(data).toISOString().slice(0, 10);
+}
+
+function opcional(valor: string | null | undefined): string {
+  return valor && valor.length > 0 ? valor : SEM_VALOR;
+}
 
 export function TituloDialogForm({
   tipo,
@@ -34,7 +59,7 @@ export function TituloDialogForm({
   contasBancarias,
 }: {
   tipo: TipoTitulo;
-  titulo?: { id: string; contraparteId: string; documento: string };
+  titulo?: TituloEditavel;
   contrapartes: Opcao[];
   categorias: Opcao[];
   centrosCusto: Opcao[];
@@ -101,17 +126,29 @@ export function TituloDialogForm({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="dataEmissao">Emissão</Label>
-              <Input id="dataEmissao" name="dataEmissao" type="date" required />
+              <Input
+                id="dataEmissao"
+                name="dataEmissao"
+                type="date"
+                defaultValue={titulo?.dataEmissao}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="dataCompetencia">Competência</Label>
-              <Input id="dataCompetencia" name="dataCompetencia" type="date" required />
+              <Input
+                id="dataCompetencia"
+                name="dataCompetencia"
+                type="date"
+                defaultValue={titulo?.dataCompetencia}
+                required
+              />
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="categoriaFinanceiraId">Categoria financeira</Label>
-            <Select name="categoriaFinanceiraId">
+            <Select name="categoriaFinanceiraId" defaultValue={titulo?.categoriaFinanceiraId}>
               <SelectTrigger id="categoriaFinanceiraId" className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -127,14 +164,24 @@ export function TituloDialogForm({
 
           <div className="grid grid-cols-2 gap-4">
             {[
-              { nome: "centroCustoId", label: "Centro de custo", opcoes: centrosCusto },
-              { nome: "centroLucroId", label: "Centro de lucro", opcoes: centrosLucro },
-              { nome: "safraId", label: "Safra", opcoes: safras },
-              { nome: "projetoId", label: "Projeto", opcoes: projetos },
+              {
+                nome: "centroCustoId",
+                label: "Centro de custo",
+                opcoes: centrosCusto,
+                atual: titulo?.centroCustoId,
+              },
+              {
+                nome: "centroLucroId",
+                label: "Centro de lucro",
+                opcoes: centrosLucro,
+                atual: titulo?.centroLucroId,
+              },
+              { nome: "safraId", label: "Safra", opcoes: safras, atual: titulo?.safraId },
+              { nome: "projetoId", label: "Projeto", opcoes: projetos, atual: titulo?.projetoId },
             ].map((campo) => (
               <div key={campo.nome} className="space-y-2">
                 <Label htmlFor={campo.nome}>{campo.label}</Label>
-                <Select name={campo.nome} defaultValue={SEM_VALOR}>
+                <Select name={campo.nome} defaultValue={opcional(campo.atual)}>
                   <SelectTrigger id={campo.nome} className="w-full">
                     <SelectValue />
                   </SelectTrigger>
@@ -153,7 +200,7 @@ export function TituloDialogForm({
 
           <div className="space-y-2">
             <Label htmlFor="contaBancariaId">Conta bancária prevista</Label>
-            <Select name="contaBancariaId" defaultValue={SEM_VALOR}>
+            <Select name="contaBancariaId" defaultValue={opcional(titulo?.contaBancariaId)}>
               <SelectTrigger id="contaBancariaId" className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -166,6 +213,16 @@ export function TituloDialogForm({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="formaPagamento">Forma de pagamento</Label>
+            <Input
+              id="formaPagamento"
+              name="formaPagamento"
+              defaultValue={titulo?.formaPagamento ?? ""}
+              placeholder="Opcional (ex.: Boleto, PIX)"
+            />
           </div>
 
           {!titulo && (

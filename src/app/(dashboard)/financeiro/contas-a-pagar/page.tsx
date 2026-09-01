@@ -29,10 +29,18 @@ export default async function ContasAPagarPage() {
       listarContasBancarias(sessao.filialId),
     ]);
 
-  const opcoesContasBancarias = contasBancarias.map((conta) => ({
-    id: conta.id,
-    nome: `${conta.banco.nome} - Ag ${conta.agencia}/CC ${conta.conta}`,
-  }));
+  const opcoes = {
+    contrapartes: fornecedores,
+    categorias,
+    centrosCusto,
+    centrosLucro,
+    safras,
+    projetos,
+    contasBancarias: contasBancarias.map((conta) => ({
+      id: conta.id,
+      nome: `${conta.banco.nome} - Ag ${conta.agencia}/CC ${conta.conta}`,
+    })),
+  };
 
   return (
     <div className="space-y-6">
@@ -44,22 +52,22 @@ export default async function ContasAPagarPage() {
         {podeEscrever && (
           <TituloDialogForm
             tipo="PAGAR"
-            contrapartes={fornecedores}
-            categorias={categorias}
-            centrosCusto={centrosCusto}
-            centrosLucro={centrosLucro}
-            safras={safras}
-            projetos={projetos}
-            contasBancarias={opcoesContasBancarias}
+            contrapartes={opcoes.contrapartes}
+            categorias={opcoes.categorias}
+            centrosCusto={opcoes.centrosCusto}
+            centrosLucro={opcoes.centrosLucro}
+            safras={opcoes.safras}
+            projetos={opcoes.projetos}
+            contasBancarias={opcoes.contasBancarias}
           />
         )}
       </div>
       <ContasClientePanel
         tipo="PAGAR"
         titulos={titulos}
+        opcoes={opcoes}
         podeEscrever={podeEscrever}
         podeBaixar={podeBaixar}
-        contasBancarias={opcoesContasBancarias}
       />
     </div>
   );

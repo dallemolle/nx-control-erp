@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { TipoTitulo } from "@prisma/client";
-import { TituloTable } from "./titulo-table";
+import { TituloTable, type OpcoesTitulo } from "./titulo-table";
 import { BaixaDialog } from "./baixa-dialog";
 import { RenegociarDialog } from "./renegociar-dialog";
 import { ImportarCsvDialog } from "./importar-csv-dialog";
@@ -10,15 +10,16 @@ import { ImportarCsvDialog } from "./importar-csv-dialog";
 export function ContasClientePanel({
   tipo,
   titulos,
+  opcoes,
   podeEscrever,
   podeBaixar,
-  contasBancarias,
 }: {
   tipo: TipoTitulo;
   titulos: Parameters<typeof TituloTable>[0]["titulos"];
+  /** Listas de seleção do cabeçalho — usadas pelo dialog de edição de cada título. */
+  opcoes: OpcoesTitulo;
   podeEscrever: boolean;
   podeBaixar: boolean;
-  contasBancarias: { id: string; nome: string }[];
 }) {
   const [parcelaBaixaId, setParcelaBaixaId] = useState<string | null>(null);
   const [parcelaRenegociacaoId, setParcelaRenegociacaoId] = useState<string | null>(null);
@@ -33,6 +34,7 @@ export function ContasClientePanel({
       <TituloTable
         tipo={tipo}
         titulos={titulos}
+        opcoes={opcoes}
         podeEscrever={podeEscrever}
         podeBaixar={podeBaixar}
         onAbrirBaixa={setParcelaBaixaId}
@@ -41,7 +43,7 @@ export function ContasClientePanel({
       <BaixaDialog
         tipo={tipo}
         parcelaId={parcelaBaixaId}
-        contasBancarias={contasBancarias}
+        contasBancarias={opcoes.contasBancarias}
         aberto={parcelaBaixaId !== null}
         onOpenChange={(aberto) => !aberto && setParcelaBaixaId(null)}
       />
