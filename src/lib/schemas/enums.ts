@@ -8,3 +8,17 @@ export const TIPO_CONTA_BANCARIA = [
 ] as const;
 
 export const TIPO_CATEGORIA_FINANCEIRA = ["RECEITA", "DESPESA"] as const;
+
+export const TIPO_TITULO = ["PAGAR", "RECEBER"] as const;
+
+export const STATUS_PARCELA = [
+  "EM_ABERTO",
+  "A_VENCER",
+  "VENCIDO",
+  "PARCIALMENTE_PAGO",
+  "PAGO",
+  "CANCELADO",
+  "RENEGOCIADO",
+] as const;
+
+export const STATUS_APROVACAO_BAIXA = ["PENDENTE", "APROVADO", "REJEITADO"] as const;
