@@ -2,6 +2,8 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/server/db/client";
 import { buildAuditDiff } from "./diff";
 
+export type ClientePrisma = Prisma.TransactionClient | typeof prisma;
+
 export type RegistrarAuditoriaParams = {
   empresaId: string | null;
   filialId: string | null;
@@ -13,10 +15,13 @@ export type RegistrarAuditoriaParams = {
   novo: Record<string, unknown> | null;
 };
 
-export async function registrarAuditoria(params: RegistrarAuditoriaParams): Promise<void> {
+export async function registrarAuditoria(
+  params: RegistrarAuditoriaParams,
+  db: ClientePrisma = prisma,
+): Promise<void> {
   const { valorAnterior, valorNovo } = buildAuditDiff(params.anterior, params.novo);
 
-  await prisma.auditLog.create({
+  await db.auditLog.create({
     data: {
       empresaId: params.empresaId,
       filialId: params.filialId,
