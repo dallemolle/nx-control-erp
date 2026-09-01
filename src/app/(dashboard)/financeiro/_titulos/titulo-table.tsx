@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { TipoTitulo } from "@prisma/client";
 import { cancelarParcelaAction } from "./actions";
+import { AnexosPanel } from "./anexos-panel";
 
 type ParcelaLinha = {
   id: string;
@@ -99,6 +100,13 @@ export function TituloTable({
                   </TableCell>
                 </TableRow>
               ))}
+            {expandidoId === titulo.id && (
+              <TableRow className="bg-muted/30">
+                <TableCell colSpan={4}>
+                  <AnexosPanel tituloId={titulo.id} podeEscrever={podeEscrever} />
+                </TableCell>
+              </TableRow>
+            )}
           </Fragment>
         ))}
       </TableBody>

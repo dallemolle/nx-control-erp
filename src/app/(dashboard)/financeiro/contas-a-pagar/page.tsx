@@ -59,7 +59,7 @@ export default async function ContasAPagarPage() {
         titulos={titulos}
         podeEscrever={podeEscrever}
         podeBaixar={podeBaixar}
-        contasBancarias={contasBancarias}
+        contasBancarias={opcoesContasBancarias}
       />
     </div>
   );
