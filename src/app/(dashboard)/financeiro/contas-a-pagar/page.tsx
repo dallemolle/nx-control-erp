@@ -29,6 +29,11 @@ export default async function ContasAPagarPage() {
       listarContasBancarias(sessao.filialId),
     ]);
 
+  const opcoesContasBancarias = contasBancarias.map((conta) => ({
+    id: conta.id,
+    nome: `${conta.banco.nome} - Ag ${conta.agencia}/CC ${conta.conta}`,
+  }));
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -45,7 +50,7 @@ export default async function ContasAPagarPage() {
             centrosLucro={centrosLucro}
             safras={safras}
             projetos={projetos}
-            contasBancarias={contasBancarias}
+            contasBancarias={opcoesContasBancarias}
           />
         )}
       </div>
