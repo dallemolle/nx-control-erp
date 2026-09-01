@@ -29,7 +29,13 @@ export async function GET(_request: Request, ctx: { params: Promise<{ anexoId: s
   return new Response(resultado.stream, {
     headers: {
       "Content-Type": resultado.blob.contentType,
-      "Content-Disposition": `inline; filename="${encodeURIComponent(anexo.nomeArquivo)}"`,
+      // "attachment" (não "inline"): o content-type é o que o usuário que fez upload
+      // informou, e este endpoint serve o arquivo a partir da própria origem da
+      // aplicação — servir inline permitiria um upload malicioso (ex.: .html marcado
+      // como text/html) executar como se fosse a própria aplicação para quem abrir o
+      // link. "attachment" força o download em vez de renderizar o conteúdo.
+      "Content-Disposition": `attachment; filename="${encodeURIComponent(anexo.nomeArquivo)}"`,
+      "X-Content-Type-Options": "nosniff",
       "Cache-Control": "private, no-store",
     },
   });
