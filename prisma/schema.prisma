@@ -70,6 +70,7 @@ model Filial {
   projetos              Projeto[]
   categoriasFinanceiras CategoriaFinanceira[]
   contasBancarias       ContaBancaria[]
+  titulos               Titulo[]
   auditLogs             AuditLog[]
 
   @@index([empresaId])
@@ -85,8 +86,11 @@ model Usuario {
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  empresas  UsuarioEmpresa[]
-  auditLogs AuditLog[]
+  empresas              UsuarioEmpresa[]
+  auditLogs             AuditLog[]
+  baixasRegistradas     Baixa[]           @relation("BaixaRegistradaPor")
+  baixasAvaliadas       Baixa[]           @relation("BaixaAvaliadaPor")
+  anexos                Anexo[]
 
   @@map("usuarios")
 }
@@ -138,6 +142,7 @@ model CentroCusto {
   filial  Filial        @relation(fields: [filialId], references: [id], onDelete: Cascade)
   parent  CentroCusto?  @relation("CentroCustoHierarquia", fields: [parentId], references: [id])
   filhos  CentroCusto[] @relation("CentroCustoHierarquia")
+  titulos Titulo[]
 
   @@unique([filialId, codigo])
   @@index([filialId])
@@ -153,7 +158,8 @@ model CentroLucro {
   criadoEm DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  filial Filial @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  filial  Filial   @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  titulos Titulo[]
 
   @@unique([filialId, codigo])
   @@index([filialId])
@@ -171,7 +177,8 @@ model Safra {
   criadoEm    DateTime            @default(now())
   atualizadoEm DateTime           @updatedAt
 
-  filial Filial @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  filial  Filial   @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  titulos Titulo[]
 
   @@unique([filialId, nome])
   @@index([filialId])
@@ -188,7 +195,8 @@ model Projeto {
   criadoEm DateTime            @default(now())
   atualizadoEm DateTime        @updatedAt
 
-  filial Filial @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  filial  Filial   @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  titulos Titulo[]
 
   @@unique([filialId, codigo])
   @@index([filialId])
@@ -208,6 +216,7 @@ model CategoriaFinanceira {
   filial  Filial                @relation(fields: [filialId], references: [id], onDelete: Cascade)
   parent  CategoriaFinanceira?  @relation("CategoriaFinanceiraHierarquia", fields: [parentId], references: [id])
   filhos  CategoriaFinanceira[] @relation("CategoriaFinanceiraHierarquia")
+  titulos Titulo[]
 
   @@index([filialId])
   @@map("categorias_financeiras")
@@ -225,7 +234,8 @@ model Cliente {
   criadoEm  DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresa Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  titulos Titulo[]
 
   @@unique([empresaId, cnpjCpf])
   @@index([empresaId])
@@ -244,7 +254,8 @@ model Fornecedor {
   criadoEm  DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresa Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  titulos Titulo[]
 
   @@unique([empresaId, cnpjCpf])
   @@index([empresaId])
@@ -274,8 +285,10 @@ model ContaBancaria {
   criadoEm     DateTime          @default(now())
   atualizadoEm DateTime          @updatedAt
 
-  filial Filial @relation(fields: [filialId], references: [id], onDelete: Cascade)
-  banco  Banco  @relation(fields: [bancoId], references: [id])
+  filial Filial   @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  banco  Banco    @relation(fields: [bancoId], references: [id])
+  titulos Titulo[]
+  baixas  Baixa[]
 
   @@unique([filialId, bancoId, agencia, conta])
   @@index([filialId])
@@ -302,4 +315,128 @@ model AuditLog {
   @@index([filialId])
   @@index([entidade, entidadeId])
   @@map("audit_logs")
+}
+
+enum TipoTitulo {
+  PAGAR
+  RECEBER
+}
+
+enum StatusParcela {
+  EM_ABERTO
+  A_VENCER
+  VENCIDO
+  PARCIALMENTE_PAGO
+  PAGO
+  CANCELADO
+  RENEGOCIADO
+}
+
+enum StatusAprovacaoBaixa {
+  PENDENTE
+  APROVADO
+  REJEITADO
+}
+
+model Titulo {
+  id                    String     @id @default(uuid())
+  filialId              String
+  tipo                  TipoTitulo
+  fornecedorId          String?
+  clienteId             String?
+  documento             String
+  dataEmissao           DateTime
+  dataCompetencia       DateTime
+  categoriaFinanceiraId String
+  centroCustoId         String?
+  centroLucroId         String?
+  safraId               String?
+  projetoId             String?
+  contaBancariaId       String?
+  formaPagamento        String?
+  ativo                 Boolean    @default(true)
+  criadoEm              DateTime   @default(now())
+  atualizadoEm          DateTime   @updatedAt
+
+  filial              Filial              @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  fornecedor          Fornecedor?         @relation(fields: [fornecedorId], references: [id])
+  cliente             Cliente?            @relation(fields: [clienteId], references: [id])
+  categoriaFinanceira CategoriaFinanceira @relation(fields: [categoriaFinanceiraId], references: [id])
+  centroCusto         CentroCusto?        @relation(fields: [centroCustoId], references: [id])
+  centroLucro         CentroLucro?        @relation(fields: [centroLucroId], references: [id])
+  safra               Safra?              @relation(fields: [safraId], references: [id])
+  projeto             Projeto?            @relation(fields: [projetoId], references: [id])
+  contaBancaria       ContaBancaria?      @relation(fields: [contaBancariaId], references: [id])
+
+  parcelas Parcela[]
+  anexos   Anexo[]
+
+  @@index([filialId])
+  @@index([fornecedorId])
+  @@index([clienteId])
+  @@map("titulos")
+}
+
+model Parcela {
+  id              String        @id @default(uuid())
+  tituloId        String
+  numero          Int
+  dataVencimento  DateTime
+  valorOriginal   Decimal       @db.Decimal(18, 2)
+  valorAtualizado Decimal       @db.Decimal(18, 2)
+  status          StatusParcela @default(EM_ABERTO)
+  parcelaOrigemId String?
+  criadoEm        DateTime      @default(now())
+  atualizadoEm    DateTime      @updatedAt
+
+  titulo        Titulo    @relation(fields: [tituloId], references: [id], onDelete: Cascade)
+  parcelaOrigem Parcela?  @relation("RenegociacaoParcela", fields: [parcelaOrigemId], references: [id])
+  renegociacoes Parcela[] @relation("RenegociacaoParcela")
+  baixas        Baixa[]
+
+  @@unique([tituloId, numero])
+  @@index([tituloId])
+  @@index([status])
+  @@map("parcelas")
+}
+
+model Baixa {
+  id              String               @id @default(uuid())
+  parcelaId       String
+  data            DateTime
+  valorPago       Decimal              @db.Decimal(18, 2)
+  valorJuros      Decimal              @default(0) @db.Decimal(18, 2)
+  valorMulta      Decimal              @default(0) @db.Decimal(18, 2)
+  valorDesconto   Decimal              @default(0) @db.Decimal(18, 2)
+  contaBancariaId String
+  usuarioId       String
+  statusAprovacao StatusAprovacaoBaixa @default(PENDENTE)
+  avaliadoPorId   String?
+  avaliadoEm      DateTime?
+  motivoRejeicao  String?
+  criadoEm        DateTime             @default(now())
+
+  parcela       Parcela       @relation(fields: [parcelaId], references: [id], onDelete: Cascade)
+  contaBancaria ContaBancaria @relation(fields: [contaBancariaId], references: [id])
+  usuario       Usuario       @relation("BaixaRegistradaPor", fields: [usuarioId], references: [id])
+  avaliadoPor   Usuario?      @relation("BaixaAvaliadaPor", fields: [avaliadoPorId], references: [id])
+
+  @@index([parcelaId])
+  @@map("baixas")
+}
+
+model Anexo {
+  id           String   @id @default(uuid())
+  tituloId     String
+  url          String
+  nomeArquivo  String
+  tamanhoBytes Int
+  usuarioId    String
+  criadoEm     DateTime @default(now())
+
+  titulo  Titulo  @relation(fields: [tituloId], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@index([tituloId])
+  @@map("anexos")
 }
