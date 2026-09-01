@@ -6,7 +6,11 @@ export type Acao =
   | "cadastro:escrever"
   | "cadastro:ler"
   | "auditoria:ler"
-  | "filial:gerenciar";
+  | "filial:gerenciar"
+  | "titulo:ler"
+  | "titulo:escrever"
+  | "titulo:baixar"
+  | "titulo:aprovar";
 
 export class PermissionError extends Error {
   constructor(perfil: Perfil, acao: Acao) {
@@ -24,11 +28,11 @@ export class FilialSomenteLeituraError extends Error {
 
 const PERMISSOES: Record<Perfil, ReadonlySet<Acao> | "TODAS"> = {
   ADMINISTRADOR: "TODAS",
-  FINANCEIRO: new Set(["cadastro:escrever", "cadastro:ler"]),
-  TESOURARIA: new Set(["cadastro:escrever", "cadastro:ler"]),
-  GESTOR: new Set(["cadastro:ler", "auditoria:ler"]),
-  AUDITOR: new Set(["cadastro:ler", "auditoria:ler"]),
-  CONSULTA: new Set(["cadastro:ler"]),
+  FINANCEIRO: new Set(["cadastro:escrever", "cadastro:ler", "titulo:ler", "titulo:escrever", "titulo:baixar"]),
+  TESOURARIA: new Set(["cadastro:escrever", "cadastro:ler", "titulo:ler", "titulo:baixar", "titulo:aprovar"]),
+  GESTOR: new Set(["cadastro:ler", "auditoria:ler", "titulo:ler"]),
+  AUDITOR: new Set(["cadastro:ler", "auditoria:ler", "titulo:ler"]),
+  CONSULTA: new Set(["cadastro:ler", "titulo:ler"]),
 };
 
 export function podeExecutar(perfil: Perfil, acao: Acao): boolean {
@@ -54,4 +58,16 @@ export function requireAlteracaoFilial(podeAlterarFilial: boolean): void {
  */
 export function podeAlterarFilialAtiva(perfil: Perfil, podeAlterarFilial: boolean): boolean {
   return podeExecutar(perfil, "cadastro:escrever") && podeAlterarFilial;
+}
+
+export function podeEscreverTitulo(perfil: Perfil, podeAlterarFilial: boolean): boolean {
+  return podeExecutar(perfil, "titulo:escrever") && podeAlterarFilial;
+}
+
+export function podeBaixarTitulo(perfil: Perfil, podeAlterarFilial: boolean): boolean {
+  return podeExecutar(perfil, "titulo:baixar") && podeAlterarFilial;
+}
+
+export function podeAprovarBaixa(perfil: Perfil, podeAlterarFilial: boolean): boolean {
+  return podeExecutar(perfil, "titulo:aprovar") && podeAlterarFilial;
 }

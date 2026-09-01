@@ -5,6 +5,14 @@ export type NavSection = { titulo: string; itens: NavItem[] };
 
 export const NAV_SECTIONS: NavSection[] = [
   {
+    titulo: "Financeiro",
+    itens: [
+      { href: "/financeiro/contas-a-pagar", label: "Contas a pagar" },
+      { href: "/financeiro/contas-a-receber", label: "Contas a receber" },
+      { href: "/financeiro/aprovacoes", label: "Aprovações pendentes", permitido: ["ADMINISTRADOR", "TESOURARIA"] },
+    ],
+  },
+  {
     titulo: "Cadastros",
     itens: [
       { href: "/cadastros/clientes", label: "Clientes" },
