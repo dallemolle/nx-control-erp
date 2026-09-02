@@ -33,6 +33,23 @@ enum StatusSafraProjeto {
   ENCERRADO
 }
 
+enum MeioPagamento {
+  PIX
+  DEPOSITO_BANCARIO
+}
+
+enum TipoChavePix {
+  CPF_CNPJ
+  CELULAR
+  EMAIL
+  ALEATORIA
+}
+
+enum TipoContaTerceiro {
+  CORRENTE
+  POUPANCA
+}
+
 model Empresa {
   id           String   @id @default(uuid())
   razaoSocial  String
@@ -234,7 +251,17 @@ model Cliente {
   criadoEm  DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
+  meioPagamento     MeioPagamento?
+  tipoChavePix      TipoChavePix?
+  chavePix          String?
+  bancoId           String?
+  agencia           String?
+  conta             String?
+  tipoContaTerceiro TipoContaTerceiro?
+  titularConta      String?
+
   empresa Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  banco   Banco?   @relation(fields: [bancoId], references: [id])
   titulos Titulo[]
 
   @@unique([empresaId, cnpjCpf])
@@ -254,7 +281,17 @@ model Fornecedor {
   criadoEm  DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
+  meioPagamento     MeioPagamento?
+  tipoChavePix      TipoChavePix?
+  chavePix          String?
+  bancoId           String?
+  agencia           String?
+  conta             String?
+  tipoContaTerceiro TipoContaTerceiro?
+  titularConta      String?
+
   empresa Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  banco   Banco?   @relation(fields: [bancoId], references: [id])
   titulos Titulo[]
 
   @@unique([empresaId, cnpjCpf])
@@ -268,6 +305,8 @@ model Banco {
   nome   String
 
   contasBancarias ContaBancaria[]
+  clientes        Cliente[]
+  fornecedores    Fornecedor[]
 
   @@map("bancos")
 }

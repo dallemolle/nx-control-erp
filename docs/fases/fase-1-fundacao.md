@@ -117,7 +117,11 @@ abaixo).
   `Fornecedor`.
 - **Cadastros implementados** (padrão "flat", por empresa, sem isolamento
   por filial): **Clientes** (`/cadastros/clientes`), **Fornecedores**
-  (`/cadastros/fornecedores`).
+  (`/cadastros/fornecedores`). Ambos têm uma seção "Dados bancários"
+  opcional — PIX (com tipo de chave: CPF/CNPJ, celular, email ou aleatória)
+  ou depósito bancário (banco do catálogo `Banco`, agência, conta, tipo de
+  conta corrente/poupança, titular) — que a Fase 2b (Tesouraria) poderá
+  consumir na hora de programar um pagamento/recebimento.
 - **Cadastros implementados** (padrão "flat", por filial): **Centro de
   lucro** (`/cadastros/centros-de-lucro`), **Safra**
   (`/cadastros/safras`), **Projeto** (`/cadastros/projetos`), **Conta

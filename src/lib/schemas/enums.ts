@@ -23,6 +23,12 @@ export const STATUS_PARCELA = [
 
 export const STATUS_APROVACAO_BAIXA = ["PENDENTE", "APROVADO", "REJEITADO"] as const;
 
+export const MEIO_PAGAMENTO = ["PIX", "DEPOSITO_BANCARIO"] as const;
+
+export const TIPO_CHAVE_PIX = ["CPF_CNPJ", "CELULAR", "EMAIL", "ALEATORIA"] as const;
+
+export const TIPO_CONTA_TERCEIRO = ["CORRENTE", "POUPANCA"] as const;
+
 /**
  * Sentinela de "nenhum valor selecionado" para `Select`s de campos opcionais.
  * O componente de Select não aceita `SelectItem` com `value=""`, então a opção
