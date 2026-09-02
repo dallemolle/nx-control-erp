@@ -111,6 +111,8 @@ export async function criarFixtureFinanceiro(
 }
 
 export async function limparFixtureFinanceiro(fixture: FixtureFinanceiro): Promise<void> {
+  await prisma.lancamentoBancario.deleteMany({ where: { filialId: fixture.filialId } });
+  await prisma.saldoBancarioInformado.deleteMany({ where: { contaBancaria: { filialId: fixture.filialId } } });
   await prisma.anexo.deleteMany({ where: { titulo: { filialId: fixture.filialId } } });
   await prisma.baixa.deleteMany({ where: { parcela: { titulo: { filialId: fixture.filialId } } } });
   await prisma.parcela.deleteMany({ where: { titulo: { filialId: fixture.filialId } } });

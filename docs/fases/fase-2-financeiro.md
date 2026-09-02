@@ -1,10 +1,12 @@
 # Fase 2 — Financeiro
 
-Status: 🟡 **Em andamento.** Design técnico do primeiro sub-projeto (Contas
-a Pagar/Receber — Títulos) em
-`docs/superpowers/specs/2026-08-31-financeiro-titulos-design.md`,
-implementado. Tesouraria (lançamentos bancários) ainda não tem desenho
-técnico — próximo sub-projeto.
+Status: 🟡 **Em andamento.** Sub-projeto 1 (Contas a Pagar/Receber —
+Títulos, design em
+`docs/superpowers/specs/2026-08-31-financeiro-titulos-design.md`)
+implementado. Sub-projeto 2 (Tesouraria — lançamentos bancários,
+transferências entre contas e saldo contábil × bancário informado, tela
+`/financeiro/tesouraria`) implementado. Falta apenas a Fase 3
+(conciliação bancária) para fechar o ciclo desta área.
 
 ## Escopo
 
@@ -33,10 +35,24 @@ técnico — próximo sub-projeto.
 ### Bancos e tesouraria
 
 - Cadastro de contas bancárias por filial já existe (`ContaBancaria`,
-  Fase 1) — esta fase adiciona as movimentações de fato: lançamentos
-  manuais, saldo contábil informado vs. saldo bancário vs. saldo disponível.
-- Suporte a conta corrente, aplicação, investimento e
+  Fase 1). Suporte a conta corrente, aplicação, investimento e
   empréstimo/financiamento (enum já modelado).
+- **Lançamentos bancários** (`LancamentoBancario`): entrada/saída
+  manual, transferência entre duas contas (duas pernas atômicas), e
+  criação automática ao aprovar uma `Baixa` (origem `BAIXA`, vinculada
+  ao título pago/recebido). Lançamentos são append-only — correções se
+  fazem com um lançamento de estorno, nunca editando o original.
+- **Saldo contábil** é sempre calculado (`saldoInicial` da conta + soma
+  dos lançamentos), nunca uma coluna armazenada.
+- **Saldo bancário** é um valor informado manualmente pelo usuário
+  (`SaldoBancarioInformado`, histórico completo por data) — sem
+  integração com banco real nesta fase. A tela `/financeiro/tesouraria`
+  mostra os dois lado a lado (contábil × último informado) por conta.
+  "Saldo disponível" não foi modelado — sem regra de bloqueio/reserva de
+  valores definida, ficou fora de escopo.
+- Novas permissões `lancamento:ler`/`lancamento:escrever` — `TESOURARIA`
+  tem as duas, os demais perfis (exceto `ADMINISTRADOR`, que tem tudo)
+  só leitura.
 
 ## Depende de
 
