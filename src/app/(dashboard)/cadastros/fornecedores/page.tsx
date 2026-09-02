@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeAlterarFilialAtiva } from "@/server/auth/permissions";
 import { listarFornecedores } from "@/server/services/fornecedor";
+import { listarBancos } from "@/server/services/banco";
 import { FornecedorDialogForm } from "./fornecedor-dialog-form";
 import { alternarAtivoFornecedorAction } from "./actions";
 
@@ -12,7 +13,10 @@ export default async function FornecedoresPage() {
   requirePermission(sessao.perfil, "cadastro:ler");
   const podeEscrever = podeAlterarFilialAtiva(sessao.perfil, sessao.podeAlterarFilial);
 
-  const fornecedores = await listarFornecedores(sessao.empresaId);
+  const [fornecedores, bancos] = await Promise.all([
+    listarFornecedores(sessao.empresaId),
+    listarBancos(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -21,7 +25,7 @@ export default async function FornecedoresPage() {
           <h1 className="text-lg font-semibold">Fornecedores</h1>
           <p className="text-sm text-muted-foreground">Cadastro de fornecedores da empresa.</p>
         </div>
-        {podeEscrever && <FornecedorDialogForm />}
+        {podeEscrever && <FornecedorDialogForm bancos={bancos} />}
       </div>
 
       <Table>
@@ -48,7 +52,7 @@ export default async function FornecedoresPage() {
               <TableCell className="flex justify-end gap-2">
                 {podeEscrever && (
                   <>
-                    <FornecedorDialogForm fornecedor={fornecedor} />
+                    <FornecedorDialogForm fornecedor={fornecedor} bancos={bancos} />
                     <form action={alternarAtivoFornecedorAction}>
                       <input type="hidden" name="id" value={fornecedor.id} />
                       <input type="hidden" name="ativo" value={(!fornecedor.ativo).toString()} />

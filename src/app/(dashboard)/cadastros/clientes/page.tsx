@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeAlterarFilialAtiva } from "@/server/auth/permissions";
 import { listarClientes } from "@/server/services/cliente";
+import { listarBancos } from "@/server/services/banco";
 import { ClienteDialogForm } from "./cliente-dialog-form";
 import { alternarAtivoClienteAction } from "./actions";
 
@@ -12,7 +13,10 @@ export default async function ClientesPage() {
   requirePermission(sessao.perfil, "cadastro:ler");
   const podeEscrever = podeAlterarFilialAtiva(sessao.perfil, sessao.podeAlterarFilial);
 
-  const clientes = await listarClientes(sessao.empresaId);
+  const [clientes, bancos] = await Promise.all([
+    listarClientes(sessao.empresaId),
+    listarBancos(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -21,7 +25,7 @@ export default async function ClientesPage() {
           <h1 className="text-lg font-semibold">Clientes</h1>
           <p className="text-sm text-muted-foreground">Cadastro de clientes da empresa.</p>
         </div>
-        {podeEscrever && <ClienteDialogForm />}
+        {podeEscrever && <ClienteDialogForm bancos={bancos} />}
       </div>
 
       <Table>
@@ -48,7 +52,7 @@ export default async function ClientesPage() {
               <TableCell className="flex justify-end gap-2">
                 {podeEscrever && (
                   <>
-                    <ClienteDialogForm cliente={cliente} />
+                    <ClienteDialogForm cliente={cliente} bancos={bancos} />
                     <form action={alternarAtivoClienteAction}>
                       <input type="hidden" name="id" value={cliente.id} />
                       <input type="hidden" name="ativo" value={(!cliente.ativo).toString()} />
