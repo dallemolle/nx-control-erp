@@ -10,6 +10,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/financeiro/contas-a-pagar", label: "Contas a pagar" },
       { href: "/financeiro/contas-a-receber", label: "Contas a receber" },
       { href: "/financeiro/aprovacoes", label: "Aprovações pendentes", permitido: ["ADMINISTRADOR", "TESOURARIA"] },
+      { href: "/financeiro/tesouraria", label: "Tesouraria" },
     ],
   },
   {

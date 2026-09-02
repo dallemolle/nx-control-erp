@@ -29,6 +29,10 @@ export const TIPO_CHAVE_PIX = ["CPF_CNPJ", "CELULAR", "EMAIL", "ALEATORIA"] as c
 
 export const TIPO_CONTA_TERCEIRO = ["CORRENTE", "POUPANCA"] as const;
 
+export const TIPO_LANCAMENTO = ["ENTRADA", "SAIDA"] as const;
+
+export const ORIGEM_LANCAMENTO = ["MANUAL", "BAIXA", "TRANSFERENCIA"] as const;
+
 /**
  * Sentinela de "nenhum valor selecionado" para `Select`s de campos opcionais.
  * O componente de Select não aceita `SelectItem` com `value=""`, então a opção

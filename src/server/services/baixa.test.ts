@@ -3,6 +3,7 @@ import { prisma } from "@/server/db/client";
 import { PermissionError } from "@/server/auth/permissions";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
 import { criarTitulo } from "./titulo";
+import type { TipoTitulo } from "@prisma/client";
 import { registrarBaixa, aprovarBaixa, rejeitarBaixa, listarBaixasPendentes } from "./baixa";
 
 describe("baixa (fluxo de aprovação)", () => {
@@ -20,11 +21,11 @@ describe("baixa (fluxo de aprovação)", () => {
     await prisma.$disconnect();
   });
 
-  async function criarParcelaDeTeste(fx: FixtureFinanceiro, valor: number) {
+  async function criarParcelaDeTeste(fx: FixtureFinanceiro, valor: number, tipo: TipoTitulo = "PAGAR") {
     // Usa sessaoAdmin (não fx.sessao) porque fixtureTesouraria não tem titulo:escrever —
     // este helper só monta dados de setup, não é o que está sendo testado.
-    const titulo = await criarTitulo(fx.sessaoAdmin, "PAGAR", {
-      contraparteId: fx.fornecedorId,
+    const titulo = await criarTitulo(fx.sessaoAdmin, tipo, {
+      contraparteId: tipo === "PAGAR" ? fx.fornecedorId : fx.clienteId,
       documento: `NF-${Date.now()}`,
       dataEmissao: new Date(),
       dataCompetencia: new Date(),
@@ -70,6 +71,62 @@ describe("baixa (fluxo de aprovação)", () => {
 
     const parcelaAprovada = await prisma.parcela.findUniqueOrThrow({ where: { id: parcela.id } });
     expect(parcelaAprovada.status).toBe("PAGO");
+  });
+
+  test("aprovar a baixa de um título PAGAR cria um lançamento bancário de saída", async () => {
+    const parcela = await criarParcelaDeTeste(fixtureTesouraria, 250);
+    const baixa = await registrarBaixa(fixtureTesouraria.sessao, parcela.id, {
+      data: new Date(),
+      valorPago: 250,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fixtureTesouraria.contaBancariaId,
+    });
+
+    await aprovarBaixa(fixtureTesouraria.sessao, baixa.id);
+
+    const lancamento = await prisma.lancamentoBancario.findFirst({ where: { baixaId: baixa.id } });
+    expect(lancamento).not.toBeNull();
+    expect(lancamento?.tipo).toBe("SAIDA");
+    expect(lancamento?.origem).toBe("BAIXA");
+    expect(Number(lancamento?.valor)).toBe(250);
+    expect(lancamento?.contaBancariaId).toBe(fixtureTesouraria.contaBancariaId);
+  });
+
+  test("aprovar a baixa de um título RECEBER cria um lançamento bancário de entrada", async () => {
+    const parcela = await criarParcelaDeTeste(fixtureTesouraria, 270, "RECEBER");
+    const baixa = await registrarBaixa(fixtureTesouraria.sessao, parcela.id, {
+      data: new Date(),
+      valorPago: 270,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fixtureTesouraria.contaBancariaId,
+    });
+
+    await aprovarBaixa(fixtureTesouraria.sessao, baixa.id);
+
+    const lancamento = await prisma.lancamentoBancario.findFirst({ where: { baixaId: baixa.id } });
+    expect(lancamento?.tipo).toBe("ENTRADA");
+    expect(lancamento?.origem).toBe("BAIXA");
+  });
+
+  test("rejeitar a baixa não cria lançamento bancário nenhum", async () => {
+    const parcela = await criarParcelaDeTeste(fixtureTesouraria, 260);
+    const baixa = await registrarBaixa(fixtureTesouraria.sessao, parcela.id, {
+      data: new Date(),
+      valorPago: 260,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fixtureTesouraria.contaBancariaId,
+    });
+
+    await rejeitarBaixa(fixtureTesouraria.sessao, baixa.id, "Valor incorreto");
+
+    const lancamento = await prisma.lancamentoBancario.findFirst({ where: { baixaId: baixa.id } });
+    expect(lancamento).toBeNull();
   });
 
   test("rejeitar a baixa não altera o status nem o saldo, e grava o motivo", async () => {

@@ -60,11 +60,11 @@ model Empresa {
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  usuarios            UsuarioEmpresa[]
-  filiais             Filial[]
-  clientes            Cliente[]
-  fornecedores        Fornecedor[]
-  auditLogs           AuditLog[]
+  usuarios     UsuarioEmpresa[]
+  filiais      Filial[]
+  clientes     Cliente[]
+  fornecedores Fornecedor[]
+  auditLogs    AuditLog[]
 
   @@map("empresas")
 }
@@ -89,6 +89,7 @@ model Filial {
   contasBancarias       ContaBancaria[]
   titulos               Titulo[]
   auditLogs             AuditLog[]
+  lancamentosBancarios  LancamentoBancario[]
 
   @@index([empresaId])
   @@map("filiais")
@@ -103,11 +104,13 @@ model Usuario {
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  empresas              UsuarioEmpresa[]
-  auditLogs             AuditLog[]
-  baixasRegistradas     Baixa[]           @relation("BaixaRegistradaPor")
-  baixasAvaliadas       Baixa[]           @relation("BaixaAvaliadaPor")
-  anexos                Anexo[]
+  empresas                  UsuarioEmpresa[]
+  auditLogs                 AuditLog[]
+  baixasRegistradas         Baixa[]                  @relation("BaixaRegistradaPor")
+  baixasAvaliadas           Baixa[]                  @relation("BaixaAvaliadaPor")
+  anexos                    Anexo[]
+  lancamentosBancarios      LancamentoBancario[]
+  saldosBancariosInformados SaldoBancarioInformado[]
 
   @@map("usuarios")
 }
@@ -147,13 +150,13 @@ model UsuarioEmpresaFilial {
 }
 
 model CentroCusto {
-  id       String  @id @default(uuid())
-  filialId String
-  nome     String
-  codigo   String
-  parentId String?
-  ativo    Boolean @default(true)
-  criadoEm DateTime @default(now())
+  id           String   @id @default(uuid())
+  filialId     String
+  nome         String
+  codigo       String
+  parentId     String?
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
   filial  Filial        @relation(fields: [filialId], references: [id], onDelete: Cascade)
@@ -167,12 +170,12 @@ model CentroCusto {
 }
 
 model CentroLucro {
-  id       String   @id @default(uuid())
-  filialId String
-  nome     String
-  codigo   String
-  ativo    Boolean  @default(true)
-  criadoEm DateTime @default(now())
+  id           String   @id @default(uuid())
+  filialId     String
+  nome         String
+  codigo       String
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
   filial  Filial   @relation(fields: [filialId], references: [id], onDelete: Cascade)
@@ -184,14 +187,14 @@ model CentroLucro {
 }
 
 model Safra {
-  id          String              @id @default(uuid())
-  filialId    String
-  nome        String
-  dataInicio  DateTime
-  dataFim     DateTime
-  status      StatusSafraProjeto  @default(PLANEJADO)
-  ativo       Boolean             @default(true)
-  criadoEm    DateTime            @default(now())
+  id           String             @id @default(uuid())
+  filialId     String
+  nome         String
+  dataInicio   DateTime
+  dataFim      DateTime
+  status       StatusSafraProjeto @default(PLANEJADO)
+  ativo        Boolean            @default(true)
+  criadoEm     DateTime           @default(now())
   atualizadoEm DateTime           @updatedAt
 
   filial  Filial   @relation(fields: [filialId], references: [id], onDelete: Cascade)
@@ -203,14 +206,14 @@ model Safra {
 }
 
 model Projeto {
-  id       String              @id @default(uuid())
-  filialId String
-  nome     String
-  codigo   String
-  status   StatusSafraProjeto  @default(PLANEJADO)
-  ativo    Boolean             @default(true)
-  criadoEm DateTime            @default(now())
-  atualizadoEm DateTime        @updatedAt
+  id           String             @id @default(uuid())
+  filialId     String
+  nome         String
+  codigo       String
+  status       StatusSafraProjeto @default(PLANEJADO)
+  ativo        Boolean            @default(true)
+  criadoEm     DateTime           @default(now())
+  atualizadoEm DateTime           @updatedAt
 
   filial  Filial   @relation(fields: [filialId], references: [id], onDelete: Cascade)
   titulos Titulo[]
@@ -221,34 +224,35 @@ model Projeto {
 }
 
 model CategoriaFinanceira {
-  id       String                    @id @default(uuid())
-  filialId String
-  nome     String
-  tipo     TipoCategoriaFinanceira
-  parentId String?
-  ativo    Boolean                   @default(true)
-  criadoEm DateTime                  @default(now())
-  atualizadoEm DateTime              @updatedAt
+  id           String                  @id @default(uuid())
+  filialId     String
+  nome         String
+  tipo         TipoCategoriaFinanceira
+  parentId     String?
+  ativo        Boolean                 @default(true)
+  criadoEm     DateTime                @default(now())
+  atualizadoEm DateTime                @updatedAt
 
-  filial  Filial                @relation(fields: [filialId], references: [id], onDelete: Cascade)
-  parent  CategoriaFinanceira?  @relation("CategoriaFinanceiraHierarquia", fields: [parentId], references: [id])
-  filhos  CategoriaFinanceira[] @relation("CategoriaFinanceiraHierarquia")
-  titulos Titulo[]
+  filial               Filial                @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  parent               CategoriaFinanceira?  @relation("CategoriaFinanceiraHierarquia", fields: [parentId], references: [id])
+  filhos               CategoriaFinanceira[] @relation("CategoriaFinanceiraHierarquia")
+  titulos              Titulo[]
+  lancamentosBancarios LancamentoBancario[]
 
   @@index([filialId])
   @@map("categorias_financeiras")
 }
 
 model Cliente {
-  id        String   @id @default(uuid())
-  empresaId String
-  nome      String
-  cnpjCpf   String
-  contato   String?
-  email     String?
-  telefone  String?
-  ativo     Boolean  @default(true)
-  criadoEm  DateTime @default(now())
+  id           String   @id @default(uuid())
+  empresaId    String
+  nome         String
+  cnpjCpf      String
+  contato      String?
+  email        String?
+  telefone     String?
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
   meioPagamento     MeioPagamento?
@@ -270,15 +274,15 @@ model Cliente {
 }
 
 model Fornecedor {
-  id        String   @id @default(uuid())
-  empresaId String
-  nome      String
-  cnpjCpf   String
-  contato   String?
-  email     String?
-  telefone  String?
-  ativo     Boolean  @default(true)
-  criadoEm  DateTime @default(now())
+  id           String   @id @default(uuid())
+  empresaId    String
+  nome         String
+  cnpjCpf      String
+  contato      String?
+  email        String?
+  telefone     String?
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
   meioPagamento     MeioPagamento?
@@ -324,10 +328,12 @@ model ContaBancaria {
   criadoEm     DateTime          @default(now())
   atualizadoEm DateTime          @updatedAt
 
-  filial Filial   @relation(fields: [filialId], references: [id], onDelete: Cascade)
-  banco  Banco    @relation(fields: [bancoId], references: [id])
-  titulos Titulo[]
-  baixas  Baixa[]
+  filial           Filial                   @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  banco            Banco                    @relation(fields: [bancoId], references: [id])
+  titulos          Titulo[]
+  baixas           Baixa[]
+  lancamentos      LancamentoBancario[]
+  saldosInformados SaldoBancarioInformado[]
 
   @@unique([filialId, bancoId, agencia, conta])
   @@index([filialId])
@@ -455,10 +461,11 @@ model Baixa {
   motivoRejeicao  String?
   criadoEm        DateTime             @default(now())
 
-  parcela       Parcela       @relation(fields: [parcelaId], references: [id], onDelete: Cascade)
-  contaBancaria ContaBancaria @relation(fields: [contaBancariaId], references: [id])
-  usuario       Usuario       @relation("BaixaRegistradaPor", fields: [usuarioId], references: [id])
-  avaliadoPor   Usuario?      @relation("BaixaAvaliadaPor", fields: [avaliadoPorId], references: [id])
+  parcela       Parcela              @relation(fields: [parcelaId], references: [id], onDelete: Cascade)
+  contaBancaria ContaBancaria        @relation(fields: [contaBancariaId], references: [id])
+  usuario       Usuario              @relation("BaixaRegistradaPor", fields: [usuarioId], references: [id])
+  avaliadoPor   Usuario?             @relation("BaixaAvaliadaPor", fields: [avaliadoPorId], references: [id])
+  lancamentos   LancamentoBancario[]
 
   @@index([parcelaId])
   @@map("baixas")
@@ -478,4 +485,57 @@ model Anexo {
 
   @@index([tituloId])
   @@map("anexos")
+}
+
+enum TipoLancamento {
+  ENTRADA
+  SAIDA
+}
+
+enum OrigemLancamento {
+  MANUAL
+  BAIXA
+  TRANSFERENCIA
+}
+
+model LancamentoBancario {
+  id                    String           @id @default(uuid())
+  filialId              String
+  contaBancariaId       String
+  data                  DateTime
+  tipo                  TipoLancamento
+  valor                 Decimal          @db.Decimal(18, 2)
+  descricao             String
+  origem                OrigemLancamento @default(MANUAL)
+  baixaId               String?
+  transferenciaId       String?
+  categoriaFinanceiraId String?
+  usuarioId             String
+  criadoEm              DateTime         @default(now())
+
+  filial              Filial               @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  contaBancaria       ContaBancaria        @relation(fields: [contaBancariaId], references: [id])
+  baixa               Baixa?               @relation(fields: [baixaId], references: [id])
+  categoriaFinanceira CategoriaFinanceira? @relation(fields: [categoriaFinanceiraId], references: [id])
+  usuario             Usuario              @relation(fields: [usuarioId], references: [id])
+
+  @@index([filialId])
+  @@index([contaBancariaId])
+  @@index([baixaId])
+  @@map("lancamentos_bancarios")
+}
+
+model SaldoBancarioInformado {
+  id              String   @id @default(uuid())
+  contaBancariaId String
+  data            DateTime
+  saldo           Decimal  @db.Decimal(18, 2)
+  usuarioId       String
+  criadoEm        DateTime @default(now())
+
+  contaBancaria ContaBancaria @relation(fields: [contaBancariaId], references: [id], onDelete: Cascade)
+  usuario       Usuario       @relation(fields: [usuarioId], references: [id])
+
+  @@index([contaBancariaId])
+  @@map("saldos_bancarios_informados")
 }

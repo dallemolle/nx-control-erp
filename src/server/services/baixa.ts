@@ -87,21 +87,47 @@ export async function aprovarBaixa(sessao: SessaoAtiva, baixaId: string) {
   const anterior = await buscarBaixaDaFilial(sessao.filialId, baixaId);
   garantirBaixaPendente(anterior.statusAprovacao);
 
-  const baixa = await prisma.baixa.update({
-    where: { id: baixaId },
-    data: { statusAprovacao: "APROVADO", avaliadoPorId: sessao.usuarioId, avaliadoEm: new Date() },
-  });
-  await recalcularEPersistirStatusParcela(anterior.parcelaId);
+  const baixa = await prisma.$transaction(async (tx) => {
+    const parcela = await tx.parcela.findUniqueOrThrow({
+      where: { id: anterior.parcelaId },
+      include: { titulo: true },
+    });
 
-  await registrarAuditoria({
-    empresaId: sessao.empresaId,
-    filialId: sessao.filialId,
-    usuarioId: sessao.usuarioId,
-    entidade: "Baixa",
-    entidadeId: baixaId,
-    acao: "APROVAR",
-    anterior: { statusAprovacao: anterior.statusAprovacao },
-    novo: { statusAprovacao: "APROVADO" },
+    const baixaAtualizada = await tx.baixa.update({
+      where: { id: baixaId },
+      data: { statusAprovacao: "APROVADO", avaliadoPorId: sessao.usuarioId, avaliadoEm: new Date() },
+    });
+    await recalcularEPersistirStatusParcela(anterior.parcelaId, tx);
+
+    const lancamento = await tx.lancamentoBancario.create({
+      data: {
+        filialId: sessao.filialId,
+        contaBancariaId: anterior.contaBancariaId,
+        data: anterior.data,
+        tipo: parcela.titulo.tipo === "RECEBER" ? "ENTRADA" : "SAIDA",
+        valor: anterior.valorPago,
+        descricao: `Baixa aprovada — parcela nº ${parcela.numero}`,
+        origem: "BAIXA",
+        baixaId: baixaAtualizada.id,
+        usuarioId: sessao.usuarioId,
+      },
+    });
+
+    await registrarAuditoria(
+      {
+        empresaId: sessao.empresaId,
+        filialId: sessao.filialId,
+        usuarioId: sessao.usuarioId,
+        entidade: "Baixa",
+        entidadeId: baixaId,
+        acao: "APROVAR",
+        anterior: { statusAprovacao: anterior.statusAprovacao },
+        novo: { statusAprovacao: "APROVADO", lancamentoBancarioId: lancamento.id },
+      },
+      tx,
+    );
+
+    return baixaAtualizada;
   });
 
   return baixa;

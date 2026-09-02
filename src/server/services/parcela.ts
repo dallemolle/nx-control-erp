@@ -1,4 +1,5 @@
 import { prisma } from "@/server/db/client";
+import type { ClientePrisma } from "@/server/audit/registrar";
 import type { StatusParcela } from "@prisma/client";
 
 export type ParcelaParaStatus = {
@@ -34,8 +35,11 @@ export function calcularStatusParcela(
   return "EM_ABERTO";
 }
 
-export async function recalcularEPersistirStatusParcela(parcelaId: string): Promise<StatusParcela> {
-  const parcela = await prisma.parcela.findUniqueOrThrow({
+export async function recalcularEPersistirStatusParcela(
+  parcelaId: string,
+  db: ClientePrisma = prisma,
+): Promise<StatusParcela> {
+  const parcela = await db.parcela.findUniqueOrThrow({
     where: { id: parcelaId },
     include: { baixas: true },
   });
@@ -58,6 +62,6 @@ export async function recalcularEPersistirStatusParcela(parcelaId: string): Prom
     return parcela.status;
   }
 
-  await prisma.parcela.update({ where: { id: parcelaId }, data: { status: statusCalculado } });
+  await db.parcela.update({ where: { id: parcelaId }, data: { status: statusCalculado } });
   return statusCalculado;
 }
