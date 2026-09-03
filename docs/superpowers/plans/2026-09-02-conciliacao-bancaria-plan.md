@@ -1453,11 +1453,11 @@ git commit -m "Adicionar conciliacao manual, desconciliacao e criacao de lancame
 
 - [ ] **Step 1: Adicionar a entrada de navegação**
 
-Em `src/app/(dashboard)/nav-items.ts`, no array `itens` da seção
-"Financeiro", depois de `"/financeiro/aprovacoes"`:
+Em `src/app/(dashboard)/nav-items.ts`, a linha `{ href:
+"/financeiro/tesouraria", label: "Tesouraria" }` **já existe** (Fase 2b)
+— não a duplique. Adicionar só a linha nova, logo depois dela:
 
 ```ts
-      { href: "/financeiro/tesouraria", label: "Tesouraria" },
       { href: "/financeiro/conciliacao", label: "Conciliação" },
 ```
 
