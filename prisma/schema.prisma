@@ -90,6 +90,7 @@ model Filial {
   titulos               Titulo[]
   auditLogs             AuditLog[]
   lancamentosBancarios  LancamentoBancario[]
+  extratosImportados    ExtratoImportado[]
 
   @@index([empresaId])
   @@map("filiais")
@@ -111,6 +112,7 @@ model Usuario {
   anexos                    Anexo[]
   lancamentosBancarios      LancamentoBancario[]
   saldosBancariosInformados SaldoBancarioInformado[]
+  extratosImportados        ExtratoImportado[]
 
   @@map("usuarios")
 }
@@ -328,12 +330,14 @@ model ContaBancaria {
   criadoEm     DateTime          @default(now())
   atualizadoEm DateTime          @updatedAt
 
-  filial           Filial                   @relation(fields: [filialId], references: [id], onDelete: Cascade)
-  banco            Banco                    @relation(fields: [bancoId], references: [id])
-  titulos          Titulo[]
-  baixas           Baixa[]
-  lancamentos      LancamentoBancario[]
-  saldosInformados SaldoBancarioInformado[]
+  filial             Filial                   @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  banco              Banco                    @relation(fields: [bancoId], references: [id])
+  titulos            Titulo[]
+  baixas             Baixa[]
+  lancamentos        LancamentoBancario[]
+  saldosInformados   SaldoBancarioInformado[]
+  extratosImportados ExtratoImportado[]
+  linhasExtrato      LinhaExtrato[]
 
   @@unique([filialId, bancoId, agencia, conta])
   @@index([filialId])
@@ -498,6 +502,15 @@ enum OrigemLancamento {
   TRANSFERENCIA
 }
 
+enum StatusLinhaExtrato {
+  NAO_CONCILIADO
+  SUGESTAO
+  CONCILIADO
+  DIVERGENCIA_VALOR
+  DIVERGENCIA_DATA
+  DUPLICADO
+}
+
 model LancamentoBancario {
   id                    String           @id @default(uuid())
   filialId              String
@@ -507,6 +520,7 @@ model LancamentoBancario {
   valor                 Decimal          @db.Decimal(18, 2)
   descricao             String
   origem                OrigemLancamento @default(MANUAL)
+  conciliado            Boolean          @default(false)
   baixaId               String?
   transferenciaId       String?
   categoriaFinanceiraId String?
@@ -518,11 +532,57 @@ model LancamentoBancario {
   baixa               Baixa?               @relation(fields: [baixaId], references: [id])
   categoriaFinanceira CategoriaFinanceira? @relation(fields: [categoriaFinanceiraId], references: [id])
   usuario             Usuario              @relation(fields: [usuarioId], references: [id])
+  linhaExtrato        LinhaExtrato?
 
   @@index([filialId])
   @@index([contaBancariaId])
   @@index([baixaId])
   @@map("lancamentos_bancarios")
+}
+
+model ExtratoImportado {
+  id              String   @id @default(uuid())
+  filialId        String
+  contaBancariaId String
+  nomeArquivo     String
+  totalLinhas     Int
+  linhasNovas     Int
+  linhasIgnoradas Int
+  usuarioId       String
+  criadoEm        DateTime @default(now())
+
+  filial        Filial         @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  contaBancaria ContaBancaria  @relation(fields: [contaBancariaId], references: [id])
+  usuario       Usuario        @relation(fields: [usuarioId], references: [id])
+  linhas        LinhaExtrato[]
+
+  @@index([filialId])
+  @@index([contaBancariaId])
+  @@map("extratos_importados")
+}
+
+model LinhaExtrato {
+  id                    String             @id @default(uuid())
+  extratoImportadoId    String
+  contaBancariaId       String
+  data                  DateTime
+  valor                 Decimal            @db.Decimal(18, 2)
+  tipo                  TipoLancamento
+  historico             String
+  identificadorBancario String
+  status                StatusLinhaExtrato @default(NAO_CONCILIADO)
+  lancamentoBancarioId  String?            @unique
+  criadoEm              DateTime           @default(now())
+
+  extratoImportado   ExtratoImportado    @relation(fields: [extratoImportadoId], references: [id], onDelete: Cascade)
+  contaBancaria      ContaBancaria       @relation(fields: [contaBancariaId], references: [id])
+  lancamentoBancario LancamentoBancario? @relation(fields: [lancamentoBancarioId], references: [id])
+
+  @@unique([contaBancariaId, identificadorBancario])
+  @@index([contaBancariaId])
+  @@index([extratoImportadoId])
+  @@index([status])
+  @@map("linhas_extrato")
 }
 
 model SaldoBancarioInformado {
