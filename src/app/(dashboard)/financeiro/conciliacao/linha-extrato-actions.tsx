@@ -9,7 +9,7 @@ import { CriarLancamentoDialogForm } from "./criar-lancamento-dialog-form";
 
 type Candidato = { id: string; data: string; valor: string; descricao: string; conciliado: boolean };
 
-const PRECISA_CANDIDATOS = ["SUGESTAO", "DIVERGENCIA_VALOR", "DIVERGENCIA_DATA", "DUPLICADO"];
+const PRECISA_CANDIDATOS = ["NAO_CONCILIADO", "SUGESTAO", "DIVERGENCIA_VALOR", "DIVERGENCIA_DATA", "DUPLICADO"];
 
 export function LinhaExtratoActions({
   linhaExtratoId,

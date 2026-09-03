@@ -58,6 +58,13 @@ describe("parseOfx", () => {
     expect(segunda.historico).toBe("PIX RECEBIDO");
   });
 
+  test("TRNTYPE DEBIT com TRNAMT positivo (sem sinal) vira SAIDA — TRNTYPE prevalece sobre o sinal", () => {
+    const debitSemSinal = `<STMTTRN>\n<TRNTYPE>DEBIT\n<DTPOSTED>20260817120000\n<TRNAMT>75.00\n<FITID>202608170003\n<NAME>TARIFA SEM SINAL\n</STMTTRN>`;
+    const [transacao] = parseOfx(debitSemSinal);
+    expect(transacao.tipo).toBe("SAIDA");
+    expect(transacao.valor).toBe(75);
+  });
+
   test("linha sem FITID lança erro", () => {
     const semFitid = `<STMTTRN>\n<TRNTYPE>DEBIT\n<DTPOSTED>20260815120000\n<TRNAMT>-10.00\n<NAME>X\n</STMTTRN>`;
     expect(() => parseOfx(semFitid)).toThrow(/FITID/);

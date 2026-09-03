@@ -256,8 +256,39 @@ describe("conciliarAutomaticamente", () => {
     expect(linha?.status).toBe("SUGESTAO");
     expect(linha?.lancamentoBancarioId).toBeNull();
 
-    const candidatos = await buscarCandidatosDaLinha(linha!.id);
+    const candidatos = await buscarCandidatosDaLinha(fixture.sessao, linha!.id);
     expect(candidatos.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("buscarCandidatosDaLinha", () => {
+  let fixture: FixtureFinanceiro;
+  let fixtureOutraFilial: FixtureFinanceiro;
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("CBB", "TESOURARIA");
+    fixtureOutraFilial = await criarFixtureFinanceiro("CBP", "TESOURARIA");
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fixture);
+    await limparFixtureFinanceiro(fixtureOutraFilial);
+    await prisma.$disconnect();
+  });
+
+  test("linha de outra filial não pode ser lida", async () => {
+    const extrato = await importarExtratoOfx(
+      fixture.sessao,
+      fixture.contaBancariaId,
+      arquivoOfx(OFX_DUAS_TRANSACOES("BUSC-A-1", "BUSC-A-2")),
+    );
+    const linha = await prisma.linhaExtrato.findFirstOrThrow({
+      where: { extratoImportadoId: extrato.id, identificadorBancario: "BUSC-A-1" },
+    });
+
+    await expect(buscarCandidatosDaLinha(fixtureOutraFilial.sessao, linha.id)).rejects.toThrow(
+      /não pertence à filial ativa/,
+    );
   });
 });
 

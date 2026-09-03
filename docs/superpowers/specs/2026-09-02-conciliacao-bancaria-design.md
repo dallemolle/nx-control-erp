@@ -181,7 +181,9 @@ Todos seguem o padrão já estabelecido: `requirePermission`,
   side-effect em `LancamentoBancario`).
 - `listarLinhasExtrato(filialId, contaBancariaId?, status?)` — leitura;
   para linhas `CONCILIADO`, inclui o `LancamentoBancario` vinculado.
-- `buscarCandidatosDaLinha(linhaExtratoId)` — leitura; reexecuta a
+- `buscarCandidatosDaLinha(sessao, linhaExtratoId)` — leitura; valida
+  que a `LinhaExtrato` pertence à `sessao.filialId` (mesmo padrão de
+  escopo das demais funções deste serviço), senão lança; reexecuta a
   mesma busca de candidatos (mesma `contaBancariaId` + `tipo`, janela
   de ±30 dias) usada por `classificarLinhaExtrato`, sem filtrar por
   `conciliado`, e devolve a lista completa pra UI montar o Select de
@@ -245,8 +247,13 @@ Nova entrada de nav "Conciliação" → `/financeiro/conciliacao` (sem
     `conciliado: false`). Ação disponível é só "Criar lançamento a
     partir desta linha", pra quando o usuário confirma que é mesmo um
     movimento à parte.
-  - **NAO_CONCILIADO**: só o botão "Criar lançamento a partir desta
-    linha".
+  - **NAO_CONCILIADO**: mesma UI de candidatos (via
+    `buscarCandidatosDaLinha`) que `SUGESTAO`/`DIVERGENCIA_*` — pode
+    haver um lançamento correspondente que só passou a existir depois
+    da rodada de conciliação automática (ou a linha foi resetada por
+    `desconciliar`), então o Select + "Confirmar" também aparecem
+    quando há candidatos — além do botão "Criar lançamento a partir
+    desta linha".
 
 ## Testes
 

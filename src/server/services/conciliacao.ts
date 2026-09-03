@@ -230,8 +230,13 @@ export async function listarLinhasExtrato(
   });
 }
 
-export async function buscarCandidatosDaLinha(linhaExtratoId: string) {
-  const linha = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linhaExtratoId } });
+export async function buscarCandidatosDaLinha(sessao: SessaoAtiva, linhaExtratoId: string) {
+  const linha = await prisma.linhaExtrato.findFirst({
+    where: { id: linhaExtratoId, contaBancaria: { filialId: sessao.filialId } },
+  });
+  if (!linha) {
+    throw new Error("Linha de extrato não pertence à filial ativa");
+  }
   return buscarCandidatosLancamento(linha.contaBancariaId, linha.tipo, linha.data);
 }
 

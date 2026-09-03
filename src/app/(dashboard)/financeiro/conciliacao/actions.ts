@@ -31,7 +31,7 @@ export async function importarExtratoAction(contaBancariaId: string, arquivo: Fi
 export async function buscarCandidatosAction(linhaExtratoId: string) {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "conciliacao:ler");
-  const candidatos = await conciliacaoService.buscarCandidatosDaLinha(linhaExtratoId);
+  const candidatos = await conciliacaoService.buscarCandidatosDaLinha(sessao, linhaExtratoId);
   return candidatos.map((c) => ({
     id: c.id,
     data: new Date(c.data).toLocaleDateString("pt-BR"),

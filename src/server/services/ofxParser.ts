@@ -34,6 +34,7 @@ export function parseOfx(conteudo: string): TransacaoOfx[] {
     const fitid = extrairTag(bloco, "FITID");
     const name = extrairTag(bloco, "NAME") ?? "";
     const memo = extrairTag(bloco, "MEMO") ?? "";
+    const trntype = extrairTag(bloco, "TRNTYPE");
 
     if (!trnamt || !dtposted || !fitid) {
       throw new Error("Linha de extrato OFX inválida: faltam TRNAMT, DTPOSTED ou FITID");
@@ -41,10 +42,24 @@ export function parseOfx(conteudo: string): TransacaoOfx[] {
 
     const valorNumerico = Number(trnamt);
 
+    // TRNTYPE manda quando presente e reconhecível — alguns bancos emitem
+    // TRNAMT sem sinal (ex.: DEBIT positivo), então confiar só no sinal do
+    // valor classificaria essas linhas errado. Vocabulário de TRNTYPE varia
+    // entre bancos, então tratamos com tolerância (contém CREDIT/DEBIT) e
+    // caímos pro sinal do valor pra qualquer tipo não reconhecido.
+    const trntypeNormalizado = trntype?.toUpperCase() ?? "";
+    const tipo: "ENTRADA" | "SAIDA" = trntypeNormalizado.includes("CREDIT")
+      ? "ENTRADA"
+      : trntypeNormalizado.includes("DEBIT")
+        ? "SAIDA"
+        : valorNumerico < 0
+          ? "SAIDA"
+          : "ENTRADA";
+
     return {
       data: parseDataOfx(dtposted),
       valor: Math.abs(valorNumerico),
-      tipo: valorNumerico < 0 ? "SAIDA" : "ENTRADA",
+      tipo,
       historico: [name, memo].filter(Boolean).join(" — ") || "Sem histórico",
       identificadorBancario: fitid,
     };
