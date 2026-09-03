@@ -249,6 +249,9 @@ export async function confirmarConciliacaoManual(
   if (!linha) {
     throw new Error("Linha de extrato não pertence à filial ativa");
   }
+  if (linha.lancamentoBancarioId) {
+    throw new Error("Esta linha já está conciliada");
+  }
 
   const lancamento = await prisma.lancamentoBancario.findFirst({
     where: { id: lancamentoBancarioId, contaBancariaId: linha.contaBancariaId, conciliado: false },

@@ -401,6 +401,57 @@ describe("confirmarConciliacaoManual / desconciliar", () => {
     const lancamentoFinal = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lancamento.id } });
     expect(lancamentoFinal.conciliado).toBe(false);
   });
+
+  test("não deixa reconciliar uma linha que já está vinculada a outro lançamento", async () => {
+    const lancamentoA = await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: new Date("2026-08-23T00:00:00Z"),
+        tipo: "SAIDA",
+        valor: 600,
+        descricao: "Lançamento original",
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+      },
+    });
+    const lancamentoB = await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: new Date("2026-08-24T00:00:00Z"),
+        tipo: "SAIDA",
+        valor: 700,
+        descricao: "Lançamento concorrente",
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+      },
+    });
+    const extrato = await importarExtratoOfx(
+      fixture.sessao,
+      fixture.contaBancariaId,
+      arquivoOfx(OFX_DUAS_TRANSACOES("MAN-D-1", "MAN-D-2")),
+    );
+    const linha = await prisma.linhaExtrato.findFirstOrThrow({
+      where: { extratoImportadoId: extrato.id, identificadorBancario: "MAN-D-1" },
+    });
+
+    await confirmarConciliacaoManual(fixture.sessao, linha.id, lancamentoA.id);
+
+    await expect(confirmarConciliacaoManual(fixture.sessao, linha.id, lancamentoB.id)).rejects.toThrow(
+      /já está conciliada/,
+    );
+
+    const linhaFinal = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } });
+    expect(linhaFinal.lancamentoBancarioId).toBe(lancamentoA.id);
+    expect(linhaFinal.status).toBe("CONCILIADO");
+
+    const lancamentoAFinal = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lancamentoA.id } });
+    expect(lancamentoAFinal.conciliado).toBe(true);
+
+    const lancamentoBFinal = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lancamentoB.id } });
+    expect(lancamentoBFinal.conciliado).toBe(false);
+  });
 });
 
 describe("criarLancamentoDaLinha", () => {
