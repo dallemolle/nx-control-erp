@@ -5,7 +5,9 @@ import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeEscreverConciliacao } from "@/server/auth/permissions";
 import { listarLinhasExtrato } from "@/server/services/conciliacao";
 import { listarContasBancarias } from "@/server/services/contaBancaria";
+import { listarCategoriasFinanceiras } from "@/server/services/categoriaFinanceira";
 import { ImportarExtratoDialogForm } from "./importar-extrato-dialog-form";
+import { LinhaExtratoActions } from "./linha-extrato-actions";
 
 export const STATUS_LABEL: Record<string, string> = {
   NAO_CONCILIADO: "Não conciliado",
@@ -21,9 +23,10 @@ export default async function ConciliacaoPage() {
   requirePermission(sessao.perfil, "conciliacao:ler");
   const podeEscrever = podeEscreverConciliacao(sessao.perfil, sessao.podeAlterarFilial);
 
-  const [linhas, contasBancarias] = await Promise.all([
+  const [linhas, contasBancarias, categorias] = await Promise.all([
     listarLinhasExtrato(sessao.filialId),
     listarContasBancarias(sessao.filialId),
+    listarCategoriasFinanceiras(sessao.filialId),
   ]);
 
   const opcoesContasBancarias = contasBancarias.map((conta) => ({
@@ -68,7 +71,15 @@ export default async function ConciliacaoPage() {
                   {STATUS_LABEL[linha.status] ?? linha.status}
                 </Badge>
               </TableCell>
-              <TableCell className="text-right" />
+              <TableCell className="text-right">
+                <LinhaExtratoActions
+                  linhaExtratoId={linha.id}
+                  status={linha.status}
+                  lancamentoVinculadoDescricao={linha.lancamentoBancario?.descricao ?? null}
+                  podeEscrever={podeEscrever}
+                  categorias={categorias}
+                />
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
