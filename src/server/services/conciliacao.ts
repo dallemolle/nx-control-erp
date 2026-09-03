@@ -234,3 +234,138 @@ export async function buscarCandidatosDaLinha(linhaExtratoId: string) {
   const linha = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linhaExtratoId } });
   return buscarCandidatosLancamento(linha.contaBancariaId, linha.tipo, linha.data);
 }
+
+export async function confirmarConciliacaoManual(
+  sessao: SessaoAtiva,
+  linhaExtratoId: string,
+  lancamentoBancarioId: string,
+): Promise<void> {
+  requirePermission(sessao.perfil, "conciliacao:escrever");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
+
+  const linha = await prisma.linhaExtrato.findFirst({
+    where: { id: linhaExtratoId, contaBancaria: { filialId: sessao.filialId } },
+  });
+  if (!linha) {
+    throw new Error("Linha de extrato não pertence à filial ativa");
+  }
+
+  const lancamento = await prisma.lancamentoBancario.findFirst({
+    where: { id: lancamentoBancarioId, contaBancariaId: linha.contaBancariaId, conciliado: false },
+  });
+  if (!lancamento) {
+    throw new Error("Lançamento não encontrado, de outra conta bancária, ou já conciliado");
+  }
+
+  await prisma.$transaction([
+    prisma.linhaExtrato.update({
+      where: { id: linhaExtratoId },
+      data: { status: "CONCILIADO", lancamentoBancarioId },
+    }),
+    prisma.lancamentoBancario.update({ where: { id: lancamentoBancarioId }, data: { conciliado: true } }),
+  ]);
+
+  await registrarAuditoria({
+    empresaId: sessao.empresaId,
+    filialId: sessao.filialId,
+    usuarioId: sessao.usuarioId,
+    entidade: "Conciliacao",
+    entidadeId: linhaExtratoId,
+    acao: "CONCILIAR",
+    anterior: { status: linha.status },
+    novo: { status: "CONCILIADO", lancamentoBancarioId },
+  });
+}
+
+export async function desconciliar(sessao: SessaoAtiva, linhaExtratoId: string): Promise<void> {
+  requirePermission(sessao.perfil, "conciliacao:escrever");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
+
+  const linha = await prisma.linhaExtrato.findFirst({
+    where: { id: linhaExtratoId, contaBancaria: { filialId: sessao.filialId } },
+  });
+  if (!linha) {
+    throw new Error("Linha de extrato não pertence à filial ativa");
+  }
+  if (!linha.lancamentoBancarioId) {
+    throw new Error("Esta linha não está conciliada");
+  }
+
+  const lancamentoBancarioId = linha.lancamentoBancarioId;
+
+  await prisma.$transaction([
+    prisma.linhaExtrato.update({
+      where: { id: linhaExtratoId },
+      data: { status: "NAO_CONCILIADO", lancamentoBancarioId: null },
+    }),
+    prisma.lancamentoBancario.update({ where: { id: lancamentoBancarioId }, data: { conciliado: false } }),
+  ]);
+
+  await registrarAuditoria({
+    empresaId: sessao.empresaId,
+    filialId: sessao.filialId,
+    usuarioId: sessao.usuarioId,
+    entidade: "Conciliacao",
+    entidadeId: linhaExtratoId,
+    acao: "DESCONCILIAR",
+    anterior: { status: "CONCILIADO", lancamentoBancarioId },
+    novo: { status: "NAO_CONCILIADO", lancamentoBancarioId: null },
+  });
+}
+
+export async function criarLancamentoDaLinha(
+  sessao: SessaoAtiva,
+  linhaExtratoId: string,
+  dados: { descricao: string; categoriaFinanceiraId: string | null },
+) {
+  requirePermission(sessao.perfil, "conciliacao:escrever");
+  requirePermission(sessao.perfil, "lancamento:escrever");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
+
+  const linha = await prisma.linhaExtrato.findFirst({
+    where: { id: linhaExtratoId, contaBancaria: { filialId: sessao.filialId } },
+  });
+  if (!linha) {
+    throw new Error("Linha de extrato não pertence à filial ativa");
+  }
+  if (linha.lancamentoBancarioId) {
+    throw new Error("Esta linha já está conciliada");
+  }
+
+  const lancamento = await prisma.$transaction(async (tx) => {
+    const criado = await tx.lancamentoBancario.create({
+      data: {
+        filialId: sessao.filialId,
+        contaBancariaId: linha.contaBancariaId,
+        data: linha.data,
+        tipo: linha.tipo,
+        valor: linha.valor,
+        descricao: dados.descricao,
+        origem: "MANUAL",
+        categoriaFinanceiraId: dados.categoriaFinanceiraId,
+        usuarioId: sessao.usuarioId,
+        conciliado: true,
+      },
+    });
+
+    await tx.linhaExtrato.update({
+      where: { id: linhaExtratoId },
+      data: { status: "CONCILIADO", lancamentoBancarioId: criado.id },
+    });
+
+    return criado;
+  });
+
+  await registrarAuditoria({
+    empresaId: sessao.empresaId,
+    filialId: sessao.filialId,
+    usuarioId: sessao.usuarioId,
+    entidade: "Conciliacao",
+    entidadeId: linhaExtratoId,
+    acao: "CRIAR_LANCAMENTO_E_CONCILIAR",
+    anterior: { status: linha.status },
+    novo: { status: "CONCILIADO", lancamentoBancarioId: lancamento.id },
+  });
+
+  return lancamento;
+}

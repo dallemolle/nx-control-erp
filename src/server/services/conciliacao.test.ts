@@ -290,3 +290,173 @@ describe("listarLinhasExtrato", () => {
     expect(linhas.every((l) => l.status === "NAO_CONCILIADO")).toBe(true);
   });
 });
+
+import {
+  confirmarConciliacaoManual,
+  desconciliar,
+  criarLancamentoDaLinha,
+} from "./conciliacao";
+
+describe("confirmarConciliacaoManual / desconciliar", () => {
+  let fixture: FixtureFinanceiro;
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("CBM", "TESOURARIA");
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fixture);
+    await prisma.$disconnect();
+  });
+
+  test("confirmar vincula a linha e marca o lançamento como conciliado", async () => {
+    const lancamento = await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: new Date("2026-08-20T00:00:00Z"),
+        tipo: "SAIDA",
+        valor: 300,
+        descricao: "Pagamento diverso",
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+      },
+    });
+    const extrato = await importarExtratoOfx(
+      fixture.sessao,
+      fixture.contaBancariaId,
+      arquivoOfx(OFX_DUAS_TRANSACOES("MAN-A-1", "MAN-A-2")),
+    );
+    const linha = await prisma.linhaExtrato.findFirstOrThrow({
+      where: { extratoImportadoId: extrato.id, identificadorBancario: "MAN-A-1" },
+    });
+
+    await confirmarConciliacaoManual(fixture.sessao, linha.id, lancamento.id);
+
+    const linhaAtualizada = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } });
+    expect(linhaAtualizada.status).toBe("CONCILIADO");
+    expect(linhaAtualizada.lancamentoBancarioId).toBe(lancamento.id);
+
+    const lancamentoAtualizado = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lancamento.id } });
+    expect(lancamentoAtualizado.conciliado).toBe(true);
+  });
+
+  test("não deixa confirmar um lançamento já conciliado", async () => {
+    const lancamento = await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: new Date("2026-08-21T00:00:00Z"),
+        tipo: "SAIDA",
+        valor: 400,
+        descricao: "Já conciliado",
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+        conciliado: true,
+      },
+    });
+    const extrato = await importarExtratoOfx(
+      fixture.sessao,
+      fixture.contaBancariaId,
+      arquivoOfx(OFX_DUAS_TRANSACOES("MAN-B-1", "MAN-B-2")),
+    );
+    const linha = await prisma.linhaExtrato.findFirstOrThrow({
+      where: { extratoImportadoId: extrato.id, identificadorBancario: "MAN-B-1" },
+    });
+
+    await expect(confirmarConciliacaoManual(fixture.sessao, linha.id, lancamento.id)).rejects.toThrow(
+      /não encontrado|já conciliado/,
+    );
+  });
+
+  test("desconciliar reverte o vínculo e o status", async () => {
+    const lancamento = await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: new Date("2026-08-22T00:00:00Z"),
+        tipo: "SAIDA",
+        valor: 500,
+        descricao: "Pra desconciliar",
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+      },
+    });
+    const extrato = await importarExtratoOfx(
+      fixture.sessao,
+      fixture.contaBancariaId,
+      arquivoOfx(OFX_DUAS_TRANSACOES("MAN-C-1", "MAN-C-2")),
+    );
+    const linha = await prisma.linhaExtrato.findFirstOrThrow({
+      where: { extratoImportadoId: extrato.id, identificadorBancario: "MAN-C-1" },
+    });
+    await confirmarConciliacaoManual(fixture.sessao, linha.id, lancamento.id);
+
+    await desconciliar(fixture.sessao, linha.id);
+
+    const linhaFinal = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } });
+    expect(linhaFinal.status).toBe("NAO_CONCILIADO");
+    expect(linhaFinal.lancamentoBancarioId).toBeNull();
+
+    const lancamentoFinal = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lancamento.id } });
+    expect(lancamentoFinal.conciliado).toBe(false);
+  });
+});
+
+describe("criarLancamentoDaLinha", () => {
+  let fixture: FixtureFinanceiro;
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("CBC", "TESOURARIA");
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fixture);
+    await prisma.$disconnect();
+  });
+
+  test("cria o lançamento e já concilia a linha atomicamente", async () => {
+    const extrato = await importarExtratoOfx(
+      fixture.sessao,
+      fixture.contaBancariaId,
+      arquivoOfx(OFX_DUAS_TRANSACOES("CRIA-A-1", "CRIA-A-2")),
+    );
+    const linha = await prisma.linhaExtrato.findFirstOrThrow({
+      where: { extratoImportadoId: extrato.id, identificadorBancario: "CRIA-A-1" },
+    });
+
+    const lancamento = await criarLancamentoDaLinha(fixture.sessao, linha.id, {
+      descricao: "Tarifa bancária (criada via conciliação)",
+      categoriaFinanceiraId: null,
+    });
+
+    expect(lancamento.conciliado).toBe(true);
+    expect(Number(lancamento.valor)).toBe(150);
+    expect(lancamento.tipo).toBe("SAIDA");
+    expect(lancamento.origem).toBe("MANUAL");
+
+    const linhaAtualizada = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } });
+    expect(linhaAtualizada.status).toBe("CONCILIADO");
+    expect(linhaAtualizada.lancamentoBancarioId).toBe(lancamento.id);
+  });
+
+  test("perfil sem lancamento:escrever não consegue criar lançamento da linha", async () => {
+    const fixtureFinanceiro = await criarFixtureFinanceiro("CBF2");
+    try {
+      const extrato = await importarExtratoOfx(
+        fixture.sessao,
+        fixture.contaBancariaId,
+        arquivoOfx(OFX_DUAS_TRANSACOES("CRIA-B-1", "CRIA-B-2")),
+      );
+      const linha = await prisma.linhaExtrato.findFirstOrThrow({
+        where: { extratoImportadoId: extrato.id, identificadorBancario: "CRIA-B-1" },
+      });
+
+      await expect(
+        criarLancamentoDaLinha(fixtureFinanceiro.sessao, linha.id, { descricao: "X", categoriaFinanceiraId: null }),
+      ).rejects.toThrow(PermissionError);
+    } finally {
+      await limparFixtureFinanceiro(fixtureFinanceiro);
+    }
+  });
+});
