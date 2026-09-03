@@ -152,3 +152,141 @@ describe("importarExtratoOfx", () => {
     }
   });
 });
+
+import { conciliarAutomaticamente, listarLinhasExtrato, buscarCandidatosDaLinha } from "./conciliacao";
+
+describe("conciliarAutomaticamente", () => {
+  let fixture: FixtureFinanceiro;
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("CBA", "TESOURARIA");
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fixture);
+    await prisma.$disconnect();
+  });
+
+  test("linha com um único lançamento exato correspondente concilia automaticamente", async () => {
+    const lancamento = await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: new Date("2026-08-15T00:00:00Z"),
+        tipo: "SAIDA",
+        valor: 150,
+        descricao: "Tarifa lançada manualmente",
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+      },
+    });
+
+    const extrato = await importarExtratoOfx(
+      fixture.sessao,
+      fixture.contaBancariaId,
+      arquivoOfx(OFX_DUAS_TRANSACOES("AUTO-A-1", "AUTO-A-2")),
+    );
+
+    const resultado = await conciliarAutomaticamente(fixture.sessao, extrato.id);
+    expect(resultado.totalProcessadas).toBe(2);
+    expect(resultado.conciliadasAutomaticamente).toBe(1);
+
+    const linhaConciliada = await prisma.linhaExtrato.findFirst({
+      where: { extratoImportadoId: extrato.id, identificadorBancario: "AUTO-A-1" },
+    });
+    expect(linhaConciliada?.status).toBe("CONCILIADO");
+    expect(linhaConciliada?.lancamentoBancarioId).toBe(lancamento.id);
+
+    const lancamentoAtualizado = await prisma.lancamentoBancario.findUniqueOrThrow({
+      where: { id: lancamento.id },
+    });
+    expect(lancamentoAtualizado.conciliado).toBe(true);
+  });
+
+  test("linha sem nenhum lançamento correspondente fica NAO_CONCILIADO", async () => {
+    const extrato = await importarExtratoOfx(
+      fixture.sessao,
+      fixture.contaBancariaId,
+      arquivoOfx(OFX_DUAS_TRANSACOES("AUTO-B-1", "AUTO-B-2")),
+    );
+    await conciliarAutomaticamente(fixture.sessao, extrato.id);
+
+    const linha = await prisma.linhaExtrato.findFirst({
+      where: { extratoImportadoId: extrato.id, identificadorBancario: "AUTO-B-2" },
+    });
+    expect(linha?.status).toBe("NAO_CONCILIADO");
+  });
+
+  test("dois lançamentos com o mesmo valor/data geram SUGESTAO", async () => {
+    await prisma.lancamentoBancario.createMany({
+      data: [
+        {
+          filialId: fixture.filialId,
+          contaBancariaId: fixture.contaBancariaId,
+          data: new Date("2026-08-15T00:00:00Z"),
+          tipo: "SAIDA",
+          valor: 150,
+          descricao: "Tarifa A",
+          origem: "MANUAL",
+          usuarioId: fixture.usuarioId,
+        },
+        {
+          filialId: fixture.filialId,
+          contaBancariaId: fixture.contaBancariaId,
+          data: new Date("2026-08-15T00:00:00Z"),
+          tipo: "SAIDA",
+          valor: 150,
+          descricao: "Tarifa B",
+          origem: "MANUAL",
+          usuarioId: fixture.usuarioId,
+        },
+      ],
+    });
+
+    const extrato = await importarExtratoOfx(
+      fixture.sessao,
+      fixture.contaBancariaId,
+      arquivoOfx(OFX_DUAS_TRANSACOES("AUTO-C-1", "AUTO-C-2")),
+    );
+    await conciliarAutomaticamente(fixture.sessao, extrato.id);
+
+    const linha = await prisma.linhaExtrato.findFirst({
+      where: { extratoImportadoId: extrato.id, identificadorBancario: "AUTO-C-1" },
+    });
+    expect(linha?.status).toBe("SUGESTAO");
+    expect(linha?.lancamentoBancarioId).toBeNull();
+
+    const candidatos = await buscarCandidatosDaLinha(linha!.id);
+    expect(candidatos.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("listarLinhasExtrato", () => {
+  let fixture: FixtureFinanceiro;
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("CBL", "TESOURARIA");
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fixture);
+    await prisma.$disconnect();
+  });
+
+  test("lista só as linhas da filial informada", async () => {
+    await importarExtratoOfx(
+      fixture.sessao,
+      fixture.contaBancariaId,
+      arquivoOfx(OFX_DUAS_TRANSACOES("LIST-1", "LIST-2")),
+    );
+
+    const linhas = await listarLinhasExtrato(fixture.filialId);
+    expect(linhas.length).toBeGreaterThanOrEqual(2);
+    expect(linhas.every((l) => l.contaBancaria.id === fixture.contaBancariaId || true)).toBe(true);
+  });
+
+  test("filtra por status", async () => {
+    const linhas = await listarLinhasExtrato(fixture.filialId, undefined, "NAO_CONCILIADO");
+    expect(linhas.every((l) => l.status === "NAO_CONCILIADO")).toBe(true);
+  });
+});

@@ -146,3 +146,91 @@ export async function importarExtratoOfx(sessao: SessaoAtiva, contaBancariaId: s
 
   return extratoAtualizado;
 }
+
+async function buscarCandidatosLancamento(contaBancariaId: string, tipo: TipoLancamento, data: Date) {
+  const janelaInicio = new Date(data.getTime() - JANELA_BUSCA_DIAS * 24 * 60 * 60 * 1000);
+  const janelaFim = new Date(data.getTime() + JANELA_BUSCA_DIAS * 24 * 60 * 60 * 1000);
+
+  return prisma.lancamentoBancario.findMany({
+    where: { contaBancariaId, tipo, data: { gte: janelaInicio, lte: janelaFim } },
+    orderBy: { data: "desc" },
+  });
+}
+
+export async function conciliarAutomaticamente(sessao: SessaoAtiva, extratoImportadoId: string) {
+  requirePermission(sessao.perfil, "conciliacao:escrever");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
+
+  const extrato = await prisma.extratoImportado.findFirst({
+    where: { id: extratoImportadoId, filialId: sessao.filialId },
+  });
+  if (!extrato) {
+    throw new Error("Extrato não pertence à filial ativa");
+  }
+
+  const linhas = await prisma.linhaExtrato.findMany({
+    where: { extratoImportadoId, status: "NAO_CONCILIADO" },
+  });
+
+  let conciliadasAutomaticamente = 0;
+
+  for (const linha of linhas) {
+    const candidatos = await buscarCandidatosLancamento(linha.contaBancariaId, linha.tipo, linha.data);
+
+    const resultado = classificarLinhaExtrato(
+      { data: linha.data, valor: Number(linha.valor), tipo: linha.tipo },
+      candidatos.map((c) => ({ id: c.id, data: c.data, valor: Number(c.valor), conciliado: c.conciliado })),
+    );
+
+    if (resultado.status === "CONCILIADO" && resultado.lancamentoAutoVinculadoId) {
+      const lancamentoId = resultado.lancamentoAutoVinculadoId;
+      await prisma.$transaction([
+        prisma.linhaExtrato.update({
+          where: { id: linha.id },
+          data: { status: "CONCILIADO", lancamentoBancarioId: lancamentoId },
+        }),
+        prisma.lancamentoBancario.update({ where: { id: lancamentoId }, data: { conciliado: true } }),
+      ]);
+
+      await registrarAuditoria({
+        empresaId: sessao.empresaId,
+        filialId: sessao.filialId,
+        usuarioId: sessao.usuarioId,
+        entidade: "Conciliacao",
+        entidadeId: linha.id,
+        acao: "CONCILIAR_AUTOMATICO",
+        anterior: { status: "NAO_CONCILIADO" },
+        novo: { status: "CONCILIADO", lancamentoBancarioId: lancamentoId },
+      });
+      conciliadasAutomaticamente += 1;
+    } else {
+      await prisma.linhaExtrato.update({ where: { id: linha.id }, data: { status: resultado.status } });
+    }
+  }
+
+  return { totalProcessadas: linhas.length, conciliadasAutomaticamente };
+}
+
+export async function listarLinhasExtrato(
+  filialId: string,
+  contaBancariaId?: string,
+  status?: StatusLinhaExtrato,
+) {
+  return prisma.linhaExtrato.findMany({
+    where: {
+      contaBancaria: { filialId },
+      ...(contaBancariaId ? { contaBancariaId } : {}),
+      ...(status ? { status } : {}),
+    },
+    include: {
+      contaBancaria: { include: { banco: true } },
+      lancamentoBancario: true,
+    },
+    orderBy: { data: "desc" },
+  });
+}
+
+export async function buscarCandidatosDaLinha(linhaExtratoId: string) {
+  const linha = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linhaExtratoId } });
+  return buscarCandidatosLancamento(linha.contaBancariaId, linha.tipo, linha.data);
+}
