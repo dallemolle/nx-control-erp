@@ -70,6 +70,16 @@ describe("parseOfx", () => {
     expect(() => parseOfx(semFitid)).toThrow(/FITID/);
   });
 
+  test("TRNAMT não numérico lança erro", () => {
+    const valorInvalido = `<STMTTRN>\n<TRNTYPE>DEBIT\n<DTPOSTED>20260815120000\n<TRNAMT>abc\n<FITID>1\n<NAME>X\n</STMTTRN>`;
+    expect(() => parseOfx(valorInvalido)).toThrow(/TRNAMT não é um número válido/);
+  });
+
+  test("DTPOSTED fora do formato YYYYMMDD lança erro", () => {
+    const dataInvalida = `<STMTTRN>\n<TRNTYPE>DEBIT\n<DTPOSTED>15-08-2026\n<TRNAMT>-10.00\n<FITID>1\n<NAME>X\n</STMTTRN>`;
+    expect(() => parseOfx(dataInvalida)).toThrow(/DTPOSTED não está no formato esperado/);
+  });
+
   test("conteúdo sem nenhum STMTTRN retorna lista vazia", () => {
     expect(parseOfx("<OFX></OFX>")).toEqual([]);
   });

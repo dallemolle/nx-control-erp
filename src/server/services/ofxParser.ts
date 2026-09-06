@@ -39,8 +39,14 @@ export function parseOfx(conteudo: string): TransacaoOfx[] {
     if (!trnamt || !dtposted || !fitid) {
       throw new Error("Linha de extrato OFX inválida: faltam TRNAMT, DTPOSTED ou FITID");
     }
+    if (!/^\d{8}/.test(dtposted)) {
+      throw new Error(`Linha de extrato OFX inválida: DTPOSTED não está no formato esperado ("${dtposted}")`);
+    }
 
     const valorNumerico = Number(trnamt);
+    if (!Number.isFinite(valorNumerico)) {
+      throw new Error(`Linha de extrato OFX inválida: TRNAMT não é um número válido ("${trnamt}")`);
+    }
 
     // TRNTYPE manda quando presente e reconhecível — alguns bancos emitem
     // TRNAMT sem sinal (ex.: DEBIT positivo), então confiar só no sinal do

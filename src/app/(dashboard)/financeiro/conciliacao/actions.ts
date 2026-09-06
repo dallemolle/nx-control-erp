@@ -10,22 +10,57 @@ import { SEM_VALOR } from "@/lib/schemas/enums";
 
 export type FormState = { erro?: string; sucesso?: boolean };
 
+export type ResumoImportacao = {
+  totalLinhas: number;
+  linhasNovas: number;
+  linhasIgnoradas: number;
+  conciliadasAutomaticamente: number;
+};
+
+export type ImportarExtratoState = FormState & { resumo?: ResumoImportacao };
+
 function mensagemErro(erro: unknown): string {
   return erro instanceof Error ? erro.message : "Ocorreu um erro inesperado";
 }
 
-export async function importarExtratoAction(contaBancariaId: string, arquivo: File): Promise<FormState> {
+export async function importarExtratoAction(
+  contaBancariaId: string,
+  arquivo: File,
+): Promise<ImportarExtratoState> {
   const sessao = await requireSessaoAtiva();
 
+  let resumo: ResumoImportacao;
   try {
     const extrato = await conciliacaoService.importarExtratoOfx(sessao, contaBancariaId, arquivo);
-    await conciliacaoService.conciliarAutomaticamente(sessao, extrato.id);
+    const resultado = await conciliacaoService.conciliarAutomaticamente(sessao, extrato.id);
+    resumo = {
+      totalLinhas: extrato.totalLinhas,
+      linhasNovas: extrato.linhasNovas,
+      linhasIgnoradas: extrato.linhasIgnoradas,
+      conciliadasAutomaticamente: resultado.conciliadasAutomaticamente,
+    };
   } catch (erro) {
     return { erro: mensagemErro(erro) };
   }
 
   revalidatePath("/financeiro/conciliacao");
-  return { sucesso: true };
+  return { sucesso: true, resumo };
+}
+
+export async function reconciliarPendentesAction(): Promise<
+  FormState & { totalProcessadas?: number; conciliadasAutomaticamente?: number }
+> {
+  const sessao = await requireSessaoAtiva();
+
+  let resultado: { totalProcessadas: number; conciliadasAutomaticamente: number };
+  try {
+    resultado = await conciliacaoService.reconciliarPendentes(sessao);
+  } catch (erro) {
+    return { erro: mensagemErro(erro) };
+  }
+
+  revalidatePath("/financeiro/conciliacao");
+  return { sucesso: true, ...resultado };
 }
 
 export async function buscarCandidatosAction(linhaExtratoId: string) {

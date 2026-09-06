@@ -6,25 +6,34 @@ import { requirePermission, podeEscreverConciliacao } from "@/server/auth/permis
 import { listarLinhasExtrato } from "@/server/services/conciliacao";
 import { listarContasBancarias } from "@/server/services/contaBancaria";
 import { listarCategoriasFinanceiras } from "@/server/services/categoriaFinanceira";
+import { STATUS_LINHA_EXTRATO } from "@/lib/schemas/enums";
+import type { StatusLinhaExtrato } from "@prisma/client";
+import { STATUS_LABEL } from "./status-label";
+import { FiltroStatus } from "./filtro-status";
 import { ImportarExtratoDialogForm } from "./importar-extrato-dialog-form";
+import { ReconciliarPendentesButton } from "./reconciliar-pendentes-button";
 import { LinhaExtratoActions } from "./linha-extrato-actions";
 
-export const STATUS_LABEL: Record<string, string> = {
-  NAO_CONCILIADO: "Não conciliado",
-  SUGESTAO: "Sugestão",
-  CONCILIADO: "Conciliado",
-  DIVERGENCIA_VALOR: "Divergência de valor",
-  DIVERGENCIA_DATA: "Divergência de data",
-  DUPLICADO: "Duplicado",
-};
+function statusValido(valor: string | undefined): StatusLinhaExtrato | undefined {
+  return STATUS_LINHA_EXTRATO.includes(valor as (typeof STATUS_LINHA_EXTRATO)[number])
+    ? (valor as StatusLinhaExtrato)
+    : undefined;
+}
 
-export default async function ConciliacaoPage() {
+export default async function ConciliacaoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "conciliacao:ler");
   const podeEscrever = podeEscreverConciliacao(sessao.perfil, sessao.podeAlterarFilial);
 
+  const { status } = await searchParams;
+  const statusFiltro = statusValido(status);
+
   const [linhas, contasBancarias, categorias] = await Promise.all([
-    listarLinhasExtrato(sessao.filialId),
+    listarLinhasExtrato(sessao.filialId, undefined, statusFiltro),
     listarContasBancarias(sessao.filialId),
     listarCategoriasFinanceiras(sessao.filialId),
   ]);
@@ -43,8 +52,15 @@ export default async function ConciliacaoPage() {
             Importe o extrato (OFX) e concilie com os lançamentos já registrados.
           </p>
         </div>
-        {podeEscrever && <ImportarExtratoDialogForm contasBancarias={opcoesContasBancarias} />}
+        {podeEscrever && (
+          <div className="flex items-start gap-2">
+            <ReconciliarPendentesButton />
+            <ImportarExtratoDialogForm contasBancarias={opcoesContasBancarias} />
+          </div>
+        )}
       </div>
+
+      <FiltroStatus />
 
       <Table>
         <TableHeader>
