@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { prisma } from "@/server/db/client";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { Sidebar } from "./sidebar";
+import { ThemeToggle } from "./theme-toggle";
 import { sair } from "./actions";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
@@ -15,21 +16,23 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     <div className="flex min-h-screen">
       <Sidebar perfil={sessao.perfil} />
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b px-6 py-3">
+        <header className="flex items-center justify-between border-b border-app-header-foreground/10 bg-app-header px-6 py-3 text-app-header-foreground">
           <div className="text-sm">
             <p className="font-medium">
               {empresa.nomeFantasia} · {filial.nome}
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-app-header-foreground/70">
               {sessao.nome} · {sessao.perfil}
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Button
               render={<Link href="/selecionar-empresa" />}
               nativeButton={false}
               variant="ghost"
               size="sm"
+              className="text-app-header-foreground hover:bg-app-header-foreground/10 hover:text-app-header-foreground"
             >
               Trocar empresa
             </Button>
@@ -38,11 +41,17 @@ export default async function DashboardLayout({ children }: { children: ReactNod
               nativeButton={false}
               variant="ghost"
               size="sm"
+              className="text-app-header-foreground hover:bg-app-header-foreground/10 hover:text-app-header-foreground"
             >
               Trocar filial
             </Button>
             <form action={sair}>
-              <Button type="submit" variant="outline" size="sm">
+              <Button
+                type="submit"
+                variant="outline"
+                size="sm"
+                className="border-app-header-foreground/30 text-app-header-foreground hover:bg-app-header-foreground/10 hover:text-app-header-foreground"
+              >
                 Sair
               </Button>
             </form>

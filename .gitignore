@@ -44,3 +44,6 @@ next-env.d.ts
 
 # git worktrees (isolated workspaces for agent-driven work)
 /.worktrees/
+
+# superpowers scratch (sdd ledgers, brainstorm sessions)
+/.superpowers/
