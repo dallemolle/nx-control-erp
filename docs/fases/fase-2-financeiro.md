@@ -1,12 +1,13 @@
 # Fase 2 — Financeiro
 
-Status: 🟡 **Em andamento.** Sub-projeto 1 (Contas a Pagar/Receber —
+Status: 🟢 **Concluída.** Sub-projeto 1 (Contas a Pagar/Receber —
 Títulos, design em
 `docs/superpowers/specs/2026-08-31-financeiro-titulos-design.md`)
 implementado. Sub-projeto 2 (Tesouraria — lançamentos bancários,
 transferências entre contas e saldo contábil × bancário informado, tela
-`/financeiro/tesouraria`) implementado. Falta apenas a Fase 3
-(conciliação bancária) para fechar o ciclo desta área.
+`/financeiro/tesouraria`) implementado. Fase 3 (conciliação bancária,
+ver `docs/fases/fase-3-conciliacao.md`) também concluída, fechando o
+ciclo desta área.
 
 ## Escopo
 

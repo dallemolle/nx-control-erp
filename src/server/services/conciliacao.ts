@@ -1,4 +1,4 @@
-import type { StatusLinhaExtrato, TipoLancamento } from "@prisma/client";
+import type { StatusLinhaExtrato, TipoLancamento, Prisma } from "@prisma/client";
 import { prisma } from "@/server/db/client";
 import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permissions";
 import { registrarAuditoria } from "@/server/audit/registrar";
@@ -157,21 +157,21 @@ async function buscarCandidatosLancamento(contaBancariaId: string, tipo: TipoLan
   });
 }
 
-export async function conciliarAutomaticamente(sessao: SessaoAtiva, extratoImportadoId: string) {
-  requirePermission(sessao.perfil, "conciliacao:escrever");
-  requireAlteracaoFilial(sessao.podeAlterarFilial);
+type LinhaParaReconciliar = {
+  id: string;
+  contaBancariaId: string;
+  tipo: TipoLancamento;
+  data: Date;
+  valor: Prisma.Decimal;
+};
 
-  const extrato = await prisma.extratoImportado.findFirst({
-    where: { id: extratoImportadoId, filialId: sessao.filialId },
-  });
-  if (!extrato) {
-    throw new Error("Extrato não pertence à filial ativa");
-  }
-
-  const linhas = await prisma.linhaExtrato.findMany({
-    where: { extratoImportadoId, status: "NAO_CONCILIADO" },
-  });
-
+/**
+ * Corpo compartilhado por `conciliarAutomaticamente` (rodada única, na
+ * importação) e `reconciliarPendentes` (botão "tentar de novo" — cobre
+ * linhas que ficaram NAO_CONCILIADO porque o lançamento correspondente
+ * só foi criado depois, ou porque `desconciliar` resetou o status).
+ */
+async function processarLinhasPendentes(sessao: SessaoAtiva, linhas: LinhaParaReconciliar[]) {
   let conciliadasAutomaticamente = 0;
 
   for (const linha of linhas) {
@@ -209,6 +209,42 @@ export async function conciliarAutomaticamente(sessao: SessaoAtiva, extratoImpor
   }
 
   return { totalProcessadas: linhas.length, conciliadasAutomaticamente };
+}
+
+export async function conciliarAutomaticamente(sessao: SessaoAtiva, extratoImportadoId: string) {
+  requirePermission(sessao.perfil, "conciliacao:escrever");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
+
+  const extrato = await prisma.extratoImportado.findFirst({
+    where: { id: extratoImportadoId, filialId: sessao.filialId },
+  });
+  if (!extrato) {
+    throw new Error("Extrato não pertence à filial ativa");
+  }
+
+  const linhas = await prisma.linhaExtrato.findMany({
+    where: { extratoImportadoId, status: "NAO_CONCILIADO" },
+  });
+
+  return processarLinhasPendentes(sessao, linhas);
+}
+
+/**
+ * Reprocessa todas as linhas NAO_CONCILIADO da filial ativa, independente
+ * de qual extrato as trouxe — cobre o caso de uma linha ter ficado presa
+ * porque o lançamento correspondente só foi criado depois da importação,
+ * ou porque `desconciliar` resetou o status e perdeu a sugestão anterior.
+ * Acionado pelo botão "Reconciliar pendentes" na tela.
+ */
+export async function reconciliarPendentes(sessao: SessaoAtiva) {
+  requirePermission(sessao.perfil, "conciliacao:escrever");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
+
+  const linhas = await prisma.linhaExtrato.findMany({
+    where: { status: "NAO_CONCILIADO", contaBancaria: { filialId: sessao.filialId } },
+  });
+
+  return processarLinhasPendentes(sessao, linhas);
 }
 
 export async function listarLinhasExtrato(

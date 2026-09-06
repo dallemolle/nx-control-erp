@@ -1,18 +1,31 @@
 # Fase 4 — Fluxo de caixa
 
-Status: ⚪ **Planejada.** Escopo abaixo, sem desenho técnico ainda.
+Status: 🟡 **Em andamento.** Sub-projeto 1 (Fluxo de caixa realizado,
+design em
+`docs/superpowers/specs/2026-09-03-fluxo-caixa-realizado-design.md`)
+implementado, tela em `/financeiro/fluxo-de-caixa`. Sub-projetos 2
+(projetado) e 3 (estratégico) ainda sem desenho técnico — escopo abaixo
+é só a descrição original em prosa.
 
 ## Escopo
 
-### Fluxo de caixa realizado (método direto)
+### Fluxo de caixa realizado (método direto) — implementado
 
-- Usa exclusivamente movimentações efetivamente ocorridas em caixa/banco
-  (nunca regime de competência).
+- Usa exclusivamente movimentações já conciliadas (Fase 3) — nunca
+  regime de competência, nunca lançamento ainda não confirmado no
+  extrato.
 - Estrutura: saldo inicial + entradas de caixa − saídas de caixa = geração
-  líquida de caixa; + saldo inicial = saldo final de caixa.
-- Visualização diária, semanal, mensal, anual.
+  líquida de caixa; + saldo inicial = saldo final de caixa. Calculado sob
+  demanda a partir de `LancamentoBancario`/`ContaBancaria` (Fase 2b/3) —
+  sem tabela nova, sem cache.
+- Visualização diária, semanal, mensal, anual, cada uma com sua "janela"
+  natural (dias do mês / semanas do mês / meses do ano / últimos 5 anos),
+  navegável com anterior/próximo.
+- Sem consolidação por empresa, sem quebra por dimensão (centro de
+  custo/lucro, safra, projeto) e sem alertas nesta fase — ficam pra Fase 5
+  e para o sub-projeto "projetado", respectivamente.
 
-### Fluxo de caixa projetado (12 meses)
+### Fluxo de caixa projetado (12 meses) — ainda não desenhado
 
 - Baseado em contas a receber/pagar em aberto (Fase 2), contratos
   recorrentes, financiamentos, parcelamentos, orçamento (Fase 5), premissas
@@ -23,7 +36,7 @@ Status: ⚪ **Planejada.** Escopo abaixo, sem desenho técnico ainda.
   pagamentos/recebimentos, vencimentos relevantes, necessidade potencial de
   capital.
 
-### Fluxo de caixa estratégico (5 anos)
+### Fluxo de caixa estratégico (5 anos) — ainda não desenhado
 
 - Projeção anual, cenários base/otimista/pessimista.
 - Premissas editáveis: crescimento de receita, margem, inflação, custos,

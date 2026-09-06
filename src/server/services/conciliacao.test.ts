@@ -4,6 +4,7 @@ import { prisma } from "@/server/db/client";
 import { PermissionError } from "@/server/auth/permissions";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
 import { importarExtratoOfx } from "./conciliacao";
+import { reconciliarPendentes } from "./conciliacao";
 
 const LINHA_BASE = { data: new Date("2026-08-15T00:00:00Z"), valor: 150, tipo: "SAIDA" as const };
 
@@ -258,6 +259,62 @@ describe("conciliarAutomaticamente", () => {
 
     const candidatos = await buscarCandidatosDaLinha(fixture.sessao, linha!.id);
     expect(candidatos.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("reconciliarPendentes", () => {
+  let fixture: FixtureFinanceiro;
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("CBR", "TESOURARIA");
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fixture);
+    await prisma.$disconnect();
+  });
+
+  test("concilia uma linha NAO_CONCILIADO cujo lançamento só foi criado depois da importação", async () => {
+    const extrato = await importarExtratoOfx(
+      fixture.sessao,
+      fixture.contaBancariaId,
+      arquivoOfx(OFX_DUAS_TRANSACOES("RECON-A-1", "RECON-A-2")),
+    );
+    await conciliarAutomaticamente(fixture.sessao, extrato.id);
+
+    const linhaAntes = await prisma.linhaExtrato.findFirstOrThrow({
+      where: { extratoImportadoId: extrato.id, identificadorBancario: "RECON-A-1" },
+    });
+    expect(linhaAntes.status).toBe("NAO_CONCILIADO");
+
+    const lancamento = await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: new Date("2026-08-15T00:00:00Z"),
+        tipo: "SAIDA",
+        valor: 150,
+        descricao: "Tarifa lançada depois da importação",
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+      },
+    });
+
+    const resultado = await reconciliarPendentes(fixture.sessao);
+    expect(resultado.conciliadasAutomaticamente).toBeGreaterThanOrEqual(1);
+
+    const linhaDepois = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linhaAntes.id } });
+    expect(linhaDepois.status).toBe("CONCILIADO");
+    expect(linhaDepois.lancamentoBancarioId).toBe(lancamento.id);
+  });
+
+  test("perfil sem conciliacao:escrever não consegue reconciliar pendentes", async () => {
+    const fixtureFinanceiro = await criarFixtureFinanceiro("CBR2");
+    try {
+      await expect(reconciliarPendentes(fixtureFinanceiro.sessao)).rejects.toThrow(PermissionError);
+    } finally {
+      await limparFixtureFinanceiro(fixtureFinanceiro);
+    }
   });
 });
 
