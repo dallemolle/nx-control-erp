@@ -4,19 +4,12 @@ import { requirePermission } from "@/server/auth/permissions";
 import { listarFluxoDeCaixaRealizado, type Granularidade } from "@/server/services/fluxoDeCaixa";
 import { SeletorPeriodo } from "./seletor-periodo";
 import { formatarRotuloPeriodo } from "./formatar-rotulo-periodo";
+import { dataValida } from "./data-valida";
 
 const GRANULARIDADES_VALIDAS: Granularidade[] = ["DIA", "SEMANA", "MES", "ANO"];
 
 function granularidadeValida(valor: string | undefined): Granularidade {
   return GRANULARIDADES_VALIDAS.includes(valor as Granularidade) ? (valor as Granularidade) : "MES";
-}
-
-export function dataValida(valor: string | undefined): Date {
-  if (!valor || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) {
-    return new Date();
-  }
-  const data = new Date(`${valor}T00:00:00Z`);
-  return Number.isNaN(data.getTime()) ? new Date() : data;
 }
 
 export default async function FluxoDeCaixaPage({

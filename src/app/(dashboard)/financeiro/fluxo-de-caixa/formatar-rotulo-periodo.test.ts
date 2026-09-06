@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { formatarRotuloPeriodo } from "./formatar-rotulo-periodo";
-import { dataValida } from "./page";
+import { dataValida } from "./data-valida";
 
 describe("formatarRotuloPeriodo", () => {
   test("DIA formata como data curta", () => {
