@@ -1,5 +1,13 @@
-import { describe, expect, test } from "vitest";
-import { calcularJanela, calcularPeriodosFluxoDeCaixa, type LancamentoParaFluxo } from "./fluxoDeCaixa";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import { prisma } from "@/server/db/client";
+import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
+import {
+  buscarSaldoEmCaixaAte,
+  calcularJanela,
+  calcularPeriodosFluxoDeCaixa,
+  listarFluxoDeCaixaRealizado,
+  type LancamentoParaFluxo,
+} from "./fluxoDeCaixa";
 
 describe("calcularJanela", () => {
   test("DIA: devolve todos os dias do mês de referência", () => {
@@ -63,5 +71,99 @@ describe("calcularPeriodosFluxoDeCaixa", () => {
     ];
     const resultado = calcularPeriodosFluxoDeCaixa(periodos, lancamentos, 500);
     expect(resultado[0].entradas).toBe(0);
+  });
+});
+
+describe("buscarSaldoEmCaixaAte / listarFluxoDeCaixaRealizado", () => {
+  let fixture: FixtureFinanceiro;
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("FCX", "TESOURARIA");
+  });
+
+  afterAll(async () => {
+    await prisma.lancamentoBancario.deleteMany({ where: { filialId: fixture.filialId } });
+    await limparFixtureFinanceiro(fixture);
+    await prisma.$disconnect();
+  });
+
+  test("só soma lançamentos conciliados até a data informada", async () => {
+    await prisma.lancamentoBancario.createMany({
+      data: [
+        {
+          filialId: fixture.filialId,
+          contaBancariaId: fixture.contaBancariaId,
+          data: new Date("2026-09-10T00:00:00Z"),
+          tipo: "ENTRADA",
+          valor: 1000,
+          descricao: "Conciliado antes",
+          origem: "MANUAL",
+          usuarioId: fixture.usuarioId,
+          conciliado: true,
+        },
+        {
+          filialId: fixture.filialId,
+          contaBancariaId: fixture.contaBancariaId,
+          data: new Date("2026-09-05T00:00:00Z"),
+          tipo: "SAIDA",
+          valor: 200,
+          descricao: "Não conciliado — não deve contar",
+          origem: "MANUAL",
+          usuarioId: fixture.usuarioId,
+          conciliado: false,
+        },
+        {
+          filialId: fixture.filialId,
+          contaBancariaId: fixture.contaBancariaId,
+          data: new Date("2026-09-20T00:00:00Z"),
+          tipo: "ENTRADA",
+          valor: 5000,
+          descricao: "Depois da data de corte — não deve contar",
+          origem: "MANUAL",
+          usuarioId: fixture.usuarioId,
+          conciliado: true,
+        },
+      ],
+    });
+
+    const conta = await prisma.contaBancaria.findUniqueOrThrow({ where: { id: fixture.contaBancariaId } });
+
+    const saldo = await buscarSaldoEmCaixaAte(fixture.filialId, new Date("2026-09-15T00:00:00Z"));
+    expect(saldo).toBe(Number(conta.saldoInicial) + 1000);
+  });
+
+  test("listarFluxoDeCaixaRealizado escopa por filial — lançamento de outra filial não vaza", async () => {
+    const outraFixture = await criarFixtureFinanceiro("FCX2", "TESOURARIA");
+    try {
+      await prisma.lancamentoBancario.create({
+        data: {
+          filialId: outraFixture.filialId,
+          contaBancariaId: outraFixture.contaBancariaId,
+          data: new Date("2026-09-10T00:00:00Z"),
+          tipo: "ENTRADA",
+          valor: 999999,
+          descricao: "De outra filial",
+          origem: "MANUAL",
+          usuarioId: outraFixture.usuarioId,
+          conciliado: true,
+        },
+      });
+
+      const periodos = await listarFluxoDeCaixaRealizado(fixture.sessao, "MES", new Date("2026-09-01T00:00:00Z"));
+      const totalEntradas = periodos.reduce((soma, p) => soma + p.entradas, 0);
+      // Só os lançamentos conciliados da fixture (teste anterior): 1000 (Sep10) + 5000 (Sep20).
+      // Se o filtro de filial vazasse, o valor da outra filial (999999) apareceria aqui.
+      expect(totalEntradas).toBe(6000);
+    } finally {
+      await prisma.lancamentoBancario.deleteMany({ where: { filialId: outraFixture.filialId } });
+      await limparFixtureFinanceiro(outraFixture);
+    }
+  });
+
+  test("saldoFinal do último sub-período bate com buscarSaldoEmCaixaAte calculado direto pra mesma data", async () => {
+    const periodos = await listarFluxoDeCaixaRealizado(fixture.sessao, "MES", new Date("2026-09-01T00:00:00Z"));
+    const ultimoPeriodo = periodos[periodos.length - 1];
+    const saldoDireto = await buscarSaldoEmCaixaAte(fixture.filialId, ultimoPeriodo.fim);
+    expect(ultimoPeriodo.saldoFinal).toBeCloseTo(saldoDireto, 2);
   });
 });

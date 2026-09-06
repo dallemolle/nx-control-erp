@@ -1,3 +1,7 @@
+import { prisma } from "@/server/db/client";
+import { requirePermission } from "@/server/auth/permissions";
+import type { SessaoAtiva } from "@/server/auth/sessao";
+
 export type Granularidade = "DIA" | "SEMANA" | "MES" | "ANO";
 
 export type SubPeriodo = { inicio: Date; fim: Date };
@@ -99,4 +103,49 @@ export function calcularPeriodosFluxoDeCaixa(
 
     return { inicio, fim, saldoInicial, entradas, saidas, geracaoLiquida, saldoFinal };
   });
+}
+
+export async function buscarSaldoEmCaixaAte(filialId: string, data: Date): Promise<number> {
+  const contas = await prisma.contaBancaria.findMany({ where: { filialId, ativo: true } });
+  const saldoInicialTotal = contas.reduce((soma, conta) => soma + Number(conta.saldoInicial), 0);
+
+  const somas = await prisma.lancamentoBancario.groupBy({
+    by: ["tipo"],
+    where: { filialId, conciliado: true, data: { lte: data } },
+    _sum: { valor: true },
+  });
+
+  const entradas = Number(somas.find((s) => s.tipo === "ENTRADA")?._sum.valor ?? 0);
+  const saidas = Number(somas.find((s) => s.tipo === "SAIDA")?._sum.valor ?? 0);
+
+  return saldoInicialTotal + entradas - saidas;
+}
+
+export async function listarFluxoDeCaixaRealizado(
+  sessao: SessaoAtiva,
+  granularidade: Granularidade,
+  dataReferencia: Date,
+): Promise<PeriodoFluxoDeCaixa[]> {
+  requirePermission(sessao.perfil, "lancamento:ler");
+
+  const periodos = calcularJanela(granularidade, dataReferencia);
+  const inicioDaJanela = periodos[0].inicio;
+  const fimDaJanela = periodos[periodos.length - 1].fim;
+
+  const [saldoInicialAbsoluto, lancamentos] = await Promise.all([
+    buscarSaldoEmCaixaAte(sessao.filialId, new Date(inicioDaJanela.getTime() - 1)),
+    prisma.lancamentoBancario.findMany({
+      where: {
+        filialId: sessao.filialId,
+        conciliado: true,
+        data: { gte: inicioDaJanela, lte: fimDaJanela },
+      },
+    }),
+  ]);
+
+  return calcularPeriodosFluxoDeCaixa(
+    periodos,
+    lancamentos.map((l) => ({ data: l.data, valor: Number(l.valor), tipo: l.tipo })),
+    saldoInicialAbsoluto,
+  );
 }
