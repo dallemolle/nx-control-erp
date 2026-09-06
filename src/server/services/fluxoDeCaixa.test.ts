@@ -166,4 +166,39 @@ describe("buscarSaldoEmCaixaAte / listarFluxoDeCaixaRealizado", () => {
     const saldoDireto = await buscarSaldoEmCaixaAte(fixture.filialId, ultimoPeriodo.fim);
     expect(ultimoPeriodo.saldoFinal).toBeCloseTo(saldoDireto, 2);
   });
+
+  test("lançamentos de uma conta bancária inativa não entram no saldo", async () => {
+    const bancoOutraConta = await prisma.banco.create({ data: { codigo: `FCXI${Date.now()}`, nome: "Banco Inativo Teste" } });
+    const contaInativa = await prisma.contaBancaria.create({
+      data: {
+        filialId: fixture.filialId,
+        bancoId: bancoOutraConta.id,
+        agencia: "0002",
+        conta: "inativa-1",
+        saldoInicial: 0,
+        ativo: false,
+      },
+    });
+
+    await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: contaInativa.id,
+        data: new Date("2026-09-12T00:00:00Z"),
+        tipo: "ENTRADA",
+        valor: 777777,
+        descricao: "Lançamento em conta inativa — não deve contar",
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+        conciliado: true,
+      },
+    });
+
+    const saldo = await buscarSaldoEmCaixaAte(fixture.filialId, new Date("2026-09-15T00:00:00Z"));
+    expect(saldo).toBeLessThan(777777);
+
+    const periodos = await listarFluxoDeCaixaRealizado(fixture.sessao, "MES", new Date("2026-09-01T00:00:00Z"));
+    const totalEntradasComContaInativa = periodos.reduce((soma, p) => soma + p.entradas, 0);
+    expect(totalEntradasComContaInativa).toBeLessThan(777777);
+  });
 });

@@ -8,16 +8,16 @@ import type { Granularidade } from "@/server/services/fluxoDeCaixa";
 const GRANULARIDADES: Granularidade[] = ["DIA", "SEMANA", "MES", "ANO"];
 const LABEL: Record<Granularidade, string> = { DIA: "Dia", SEMANA: "Semana", MES: "Mês", ANO: "Ano" };
 
-function deslocarData(data: Date, granularidade: Granularidade, direcao: 1 | -1): Date {
-  const nova = new Date(data);
+export function deslocarData(data: Date, granularidade: Granularidade, direcao: 1 | -1): Date {
+  const ano = data.getUTCFullYear();
+  const mes = data.getUTCMonth();
   if (granularidade === "MES") {
-    nova.setUTCFullYear(nova.getUTCFullYear() + direcao);
-  } else if (granularidade === "ANO") {
-    nova.setUTCFullYear(nova.getUTCFullYear() + direcao * 5);
-  } else {
-    nova.setUTCMonth(nova.getUTCMonth() + direcao);
+    return new Date(Date.UTC(ano + direcao, 0, 1));
   }
-  return nova;
+  if (granularidade === "ANO") {
+    return new Date(Date.UTC(ano + direcao * 5, 0, 1));
+  }
+  return new Date(Date.UTC(ano, mes + direcao, 1));
 }
 
 export function SeletorPeriodo({

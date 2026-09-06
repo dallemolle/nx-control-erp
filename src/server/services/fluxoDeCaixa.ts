@@ -109,9 +109,12 @@ export async function buscarSaldoEmCaixaAte(filialId: string, data: Date): Promi
   const contas = await prisma.contaBancaria.findMany({ where: { filialId, ativo: true } });
   const saldoInicialTotal = contas.reduce((soma, conta) => soma + Number(conta.saldoInicial), 0);
 
+  // "-1ms antes do início da janela" (ver chamador) só é exato porque
+  // `LancamentoBancario.data` é TIMESTAMP(3) — uma migração futura pra
+  // precisão maior exigiria revisitar essa conta.
   const somas = await prisma.lancamentoBancario.groupBy({
     by: ["tipo"],
-    where: { filialId, conciliado: true, data: { lte: data } },
+    where: { filialId, conciliado: true, data: { lte: data }, contaBancaria: { ativo: true } },
     _sum: { valor: true },
   });
 
@@ -139,6 +142,7 @@ export async function listarFluxoDeCaixaRealizado(
         filialId: sessao.filialId,
         conciliado: true,
         data: { gte: inicioDaJanela, lte: fimDaJanela },
+        contaBancaria: { ativo: true },
       },
     }),
   ]);

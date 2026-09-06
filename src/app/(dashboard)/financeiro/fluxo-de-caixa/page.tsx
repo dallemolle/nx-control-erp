@@ -11,17 +11,27 @@ function granularidadeValida(valor: string | undefined): Granularidade {
   return GRANULARIDADES_VALIDAS.includes(valor as Granularidade) ? (valor as Granularidade) : "MES";
 }
 
+export function dataValida(valor: string | undefined): Date {
+  if (!valor || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) {
+    return new Date();
+  }
+  const data = new Date(`${valor}T00:00:00Z`);
+  return Number.isNaN(data.getTime()) ? new Date() : data;
+}
+
 export default async function FluxoDeCaixaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ granularidade?: string; data?: string }>;
+  searchParams: Promise<{ granularidade?: string | string[]; data?: string | string[] }>;
 }) {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "lancamento:ler");
 
   const params = await searchParams;
-  const granularidade = granularidadeValida(params.granularidade);
-  const dataReferencia = params.data ? new Date(`${params.data}T00:00:00Z`) : new Date();
+  const granularidadeParam = Array.isArray(params.granularidade) ? params.granularidade[0] : params.granularidade;
+  const dataParam = Array.isArray(params.data) ? params.data[0] : params.data;
+  const granularidade = granularidadeValida(granularidadeParam);
+  const dataReferencia = dataValida(dataParam);
 
   const periodos = await listarFluxoDeCaixaRealizado(sessao, granularidade, dataReferencia);
 
