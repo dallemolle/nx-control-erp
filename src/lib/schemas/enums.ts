@@ -33,6 +33,15 @@ export const TIPO_LANCAMENTO = ["ENTRADA", "SAIDA"] as const;
 
 export const ORIGEM_LANCAMENTO = ["MANUAL", "BAIXA", "TRANSFERENCIA"] as const;
 
+export const STATUS_LINHA_EXTRATO = [
+  "NAO_CONCILIADO",
+  "SUGESTAO",
+  "CONCILIADO",
+  "DIVERGENCIA_VALOR",
+  "DIVERGENCIA_DATA",
+  "DUPLICADO",
+] as const;
+
 /**
  * Sentinela de "nenhum valor selecionado" para `Select`s de campos opcionais.
  * O componente de Select não aceita `SelectItem` com `value=""`, então a opção

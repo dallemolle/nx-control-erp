@@ -12,7 +12,9 @@ export type Acao =
   | "titulo:baixar"
   | "titulo:aprovar"
   | "lancamento:ler"
-  | "lancamento:escrever";
+  | "lancamento:escrever"
+  | "conciliacao:ler"
+  | "conciliacao:escrever";
 
 export class PermissionError extends Error {
   constructor(perfil: Perfil, acao: Acao) {
@@ -37,6 +39,7 @@ const PERMISSOES: Record<Perfil, ReadonlySet<Acao> | "TODAS"> = {
     "titulo:escrever",
     "titulo:baixar",
     "lancamento:ler",
+    "conciliacao:ler",
   ]),
   TESOURARIA: new Set([
     "cadastro:escrever",
@@ -46,10 +49,12 @@ const PERMISSOES: Record<Perfil, ReadonlySet<Acao> | "TODAS"> = {
     "titulo:aprovar",
     "lancamento:ler",
     "lancamento:escrever",
+    "conciliacao:ler",
+    "conciliacao:escrever",
   ]),
-  GESTOR: new Set(["cadastro:ler", "auditoria:ler", "titulo:ler", "lancamento:ler"]),
-  AUDITOR: new Set(["cadastro:ler", "auditoria:ler", "titulo:ler", "lancamento:ler"]),
-  CONSULTA: new Set(["cadastro:ler", "titulo:ler", "lancamento:ler"]),
+  GESTOR: new Set(["cadastro:ler", "auditoria:ler", "titulo:ler", "lancamento:ler", "conciliacao:ler"]),
+  AUDITOR: new Set(["cadastro:ler", "auditoria:ler", "titulo:ler", "lancamento:ler", "conciliacao:ler"]),
+  CONSULTA: new Set(["cadastro:ler", "titulo:ler", "lancamento:ler", "conciliacao:ler"]),
 };
 
 export function podeExecutar(perfil: Perfil, acao: Acao): boolean {
@@ -91,4 +96,8 @@ export function podeAprovarBaixa(perfil: Perfil, podeAlterarFilial: boolean): bo
 
 export function podeEscreverLancamento(perfil: Perfil, podeAlterarFilial: boolean): boolean {
   return podeExecutar(perfil, "lancamento:escrever") && podeAlterarFilial;
+}
+
+export function podeEscreverConciliacao(perfil: Perfil, podeAlterarFilial: boolean): boolean {
+  return podeExecutar(perfil, "conciliacao:escrever") && podeAlterarFilial;
 }
