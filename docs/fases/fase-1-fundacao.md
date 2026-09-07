@@ -54,6 +54,20 @@ Aplicação única Next.js (App Router), full-stack, hospedada na Vercel:
 | Testes | Vitest |
 | Deploy | Vercel |
 
+### Tema visual
+
+Paleta branco + azul-marinho, em 3 variações de aplicação (`a`: sidebar
+navy sólida; `b`: tudo claro, navy só em destaques; `c`: faixa navy no
+header, sidebar clara) × claro/escuro — 6 temas no total. Cada tema é um
+bloco de variáveis CSS em `src/app/globals.css` (`.theme-a`,
+`.theme-a-dark`, `.theme-b`, ...), na mesma convenção de tokens que o
+shadcn já definia (`--primary`, `--sidebar`, `--chart-*`, etc.) — só a
+aplicação de qual bloco fica ativo é nova. Escolhido via um seletor no
+header do dashboard (`src/app/(dashboard)/theme-toggle.tsx`) e persistido
+no `localStorage` do navegador via `next-themes` (chave `nx-tema`,
+`src/components/theme-provider.tsx`) — preferência de cliente, não de
+usuário/empresa, sem coluna nova no banco.
+
 ### Desvio em relação ao plano original: estratégia de sessão
 
 O plano original previa sessão em banco (tabela própria) para permitir

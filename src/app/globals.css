@@ -39,6 +39,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-app-header-foreground: var(--app-header-foreground);
+  --color-app-header: var(--app-header-background);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -48,6 +50,15 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/*
+ * Paleta branco + azul-marinho, em 3 variações de aplicação (a/b/c) x 2
+ * modos (claro/escuro) = 6 temas. A classe ativa (ex.: "theme-a-dark") é
+ * controlada pelo next-themes (ver src/components/theme-provider.tsx) e
+ * fica no elemento <html>. O bloco :root abaixo é só o fallback para
+ * quando o script do next-themes ainda não rodou (ou JS desabilitado) —
+ * mantém os mesmos valores do tema padrão (theme-a).
+ */
+
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -55,66 +66,253 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: #0b2545;
+  --primary-foreground: #ffffff;
   --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
+  --secondary-foreground: #0b2545;
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --accent-foreground: #0b2545;
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --ring: #6fa8dc;
+  --chart-1: #bfd9ef;
+  --chart-2: #8fbee0;
+  --chart-3: #6fa8dc;
+  --chart-4: #3d5a78;
+  --chart-5: #0b2545;
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #0b2545;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #6fa8dc;
+  --sidebar-primary-foreground: #0b2545;
+  --sidebar-accent: #ffffff1f;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #ffffff1a;
+  --sidebar-ring: #6fa8dc;
+  --app-header-background: #ffffff;
+  --app-header-foreground: oklch(0.145 0 0);
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+/* Tema A — sidebar navy sólida (o mesmo conjunto de valores do :root acima) */
+.theme-a {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: #0b2545;
+  --primary-foreground: #ffffff;
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: #0b2545;
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: #0b2545;
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: #6fa8dc;
+  --chart-1: #bfd9ef;
+  --chart-2: #8fbee0;
+  --chart-3: #6fa8dc;
+  --chart-4: #3d5a78;
+  --chart-5: #0b2545;
+  --sidebar: #0b2545;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #6fa8dc;
+  --sidebar-primary-foreground: #0b2545;
+  --sidebar-accent: #ffffff1f;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #ffffff1a;
+  --sidebar-ring: #6fa8dc;
+  --app-header-background: #ffffff;
+  --app-header-foreground: oklch(0.145 0 0);
+}
+
+.theme-a-dark {
+  --background: #10151d;
+  --foreground: #f2f5f8;
+  --card: #161d27;
+  --card-foreground: #f2f5f8;
+  --popover: #161d27;
+  --popover-foreground: #f2f5f8;
+  --primary: #6fa8dc;
+  --primary-foreground: #0b2545;
+  --secondary: #1e2733;
+  --secondary-foreground: #f2f5f8;
+  --muted: #1e2733;
+  --muted-foreground: #93a3b8;
+  --accent: #1e2733;
+  --accent-foreground: #f2f5f8;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --border: #ffffff1a;
+  --input: #ffffff26;
+  --ring: #6fa8dc;
+  --chart-1: #6fa8dc;
+  --chart-2: #8fbee0;
+  --chart-3: #bfd9ef;
+  --chart-4: #3d5a78;
+  --chart-5: #1b3a5c;
+  --sidebar: #060f1d;
+  --sidebar-foreground: #f2f5f8;
+  --sidebar-primary: #6fa8dc;
+  --sidebar-primary-foreground: #0b2545;
+  --sidebar-accent: #ffffff14;
+  --sidebar-accent-foreground: #f2f5f8;
+  --sidebar-border: #ffffff14;
+  --sidebar-ring: #6fa8dc;
+  --app-header-background: #161d27;
+  --app-header-foreground: #f2f5f8;
+}
+
+/* Tema B — tudo claro, navy só em destaques (botão primário, item ativo, links) */
+.theme-b {
+  --background: #ffffff;
+  --foreground: oklch(0.145 0 0);
+  --card: #ffffff;
+  --card-foreground: oklch(0.145 0 0);
+  --popover: #ffffff;
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: #0b2545;
+  --primary-foreground: #ffffff;
+  --secondary: #f7fafc;
+  --secondary-foreground: #0b2545;
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: #f7fafc;
+  --accent-foreground: #0b2545;
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: #0b2545;
+  --chart-1: #bfd9ef;
+  --chart-2: #8fbee0;
+  --chart-3: #6fa8dc;
+  --chart-4: #3d5a78;
+  --chart-5: #0b2545;
+  --sidebar: #f7fafc;
+  --sidebar-foreground: oklch(0.205 0 0);
+  --sidebar-primary: #0b2545;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: oklch(0.94 0 0);
+  --sidebar-accent-foreground: #0b2545;
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: #0b2545;
+  --app-header-background: #ffffff;
+  --app-header-foreground: oklch(0.145 0 0);
+}
+
+.theme-b-dark {
+  --background: #14181d;
+  --foreground: #f2f3f5;
+  --card: #1b2027;
+  --card-foreground: #f2f3f5;
+  --popover: #1b2027;
+  --popover-foreground: #f2f3f5;
+  --primary: #6fa8dc;
+  --primary-foreground: #0b2545;
+  --secondary: #1f252d;
+  --secondary-foreground: #f2f3f5;
+  --muted: #1f252d;
+  --muted-foreground: #8d96a3;
+  --accent: #1f252d;
+  --accent-foreground: #f2f3f5;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: #ffffff1a;
+  --input: #ffffff26;
+  --ring: #6fa8dc;
+  --chart-1: #6fa8dc;
+  --chart-2: #8fbee0;
+  --chart-3: #bfd9ef;
+  --chart-4: #3d5a78;
+  --chart-5: #1b3a5c;
+  --sidebar: #1b2027;
+  --sidebar-foreground: #f2f3f5;
+  --sidebar-primary: #6fa8dc;
+  --sidebar-primary-foreground: #0b2545;
+  --sidebar-accent: #262d36;
+  --sidebar-accent-foreground: #f2f3f5;
+  --sidebar-border: #ffffff14;
+  --sidebar-ring: #6fa8dc;
+  --app-header-background: #1b2027;
+  --app-header-foreground: #f2f3f5;
+}
+
+/* Tema C — header navy (faixa de identidade no topo), sidebar clara */
+.theme-c {
+  --background: #ffffff;
+  --foreground: oklch(0.145 0 0);
+  --card: #ffffff;
+  --card-foreground: oklch(0.145 0 0);
+  --popover: #ffffff;
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: #0b2545;
+  --primary-foreground: #ffffff;
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: #0b2545;
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: #f4f7fb;
+  --accent-foreground: #0b2545;
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: #0b2545;
+  --chart-1: #bfd9ef;
+  --chart-2: #8fbee0;
+  --chart-3: #6fa8dc;
+  --chart-4: #3d5a78;
+  --chart-5: #0b2545;
+  --sidebar: #ffffff;
+  --sidebar-foreground: oklch(0.205 0 0);
+  --sidebar-primary: #0b2545;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: #0b2545;
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: #0b2545;
+  --app-header-background: #0b2545;
+  --app-header-foreground: #ffffff;
+}
+
+.theme-c-dark {
+  --background: #14181d;
+  --foreground: #f2f3f5;
+  --card: #1b2027;
+  --card-foreground: #f2f3f5;
+  --popover: #1b2027;
+  --popover-foreground: #f2f3f5;
+  --primary: #6fa8dc;
+  --primary-foreground: #0b2545;
+  --secondary: #1f252d;
+  --secondary-foreground: #f2f3f5;
+  --muted: #1f252d;
+  --muted-foreground: #8d96a3;
+  --accent: #1f252d;
+  --accent-foreground: #f2f3f5;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: #ffffff1a;
+  --input: #ffffff26;
+  --ring: #6fa8dc;
+  --chart-1: #6fa8dc;
+  --chart-2: #8fbee0;
+  --chart-3: #bfd9ef;
+  --chart-4: #3d5a78;
+  --chart-5: #1b3a5c;
+  --sidebar: #1b2027;
+  --sidebar-foreground: #f2f3f5;
+  --sidebar-primary: #6fa8dc;
+  --sidebar-primary-foreground: #0b2545;
+  --sidebar-accent: #262d36;
+  --sidebar-accent-foreground: #f2f3f5;
+  --sidebar-border: #ffffff14;
+  --sidebar-ring: #6fa8dc;
+  --app-header-background: #0b2545;
+  --app-header-foreground: #ffffff;
 }
 
 @layer base {
