@@ -74,3 +74,50 @@ export function calcularPeriodosFluxoDeCaixaProjetado(
     return { inicio, fim, saldoInicial, entradasProjetadas, saidasProjetadas, geracaoLiquida, saldoFinal, alerta: saldoFinal < 0 };
   });
 }
+
+export async function buscarParcelasEmAbertoNoPeriodo(
+  filialId: string,
+  inicio: Date,
+  fim: Date,
+): Promise<ParcelaParaProjecao[]> {
+  const parcelas = await prisma.parcela.findMany({
+    where: {
+      titulo: { filialId },
+      status: { in: ["EM_ABERTO", "A_VENCER", "VENCIDO", "PARCIALMENTE_PAGO"] },
+      dataVencimento: { gte: inicio, lte: fim },
+    },
+    include: {
+      titulo: { select: { tipo: true } },
+      baixas: { where: { statusAprovacao: "APROVADO" } },
+    },
+  });
+
+  return parcelas.map((parcela) => ({
+    dataVencimento: parcela.dataVencimento,
+    tipo: parcela.titulo.tipo,
+    saldo: saldoRemanescenteParcela(
+      Number(parcela.valorAtualizado),
+      parcela.baixas.map((baixa) => ({ valorPago: Number(baixa.valorPago) })),
+    ),
+  }));
+}
+
+export async function listarFluxoDeCaixaProjetado(
+  sessao: SessaoAtiva,
+  modo: ModoJanelaProjetado,
+  dataReferencia: Date,
+): Promise<PeriodoFluxoDeCaixaProjetado[]> {
+  requirePermission(sessao.perfil, "titulo:ler");
+
+  const periodos = calcularJanelaProjetada(modo, dataReferencia);
+  const inicioDaJanela = periodos[0].inicio;
+  const fimDaJanela = periodos[periodos.length - 1].fim;
+  const agora = new Date();
+
+  const [saldoInicialAbsoluto, parcelas] = await Promise.all([
+    buscarSaldoEmCaixaAte(sessao.filialId, agora),
+    buscarParcelasEmAbertoNoPeriodo(sessao.filialId, inicioDaJanela, fimDaJanela),
+  ]);
+
+  return calcularPeriodosFluxoDeCaixaProjetado(periodos, parcelas, saldoInicialAbsoluto);
+}

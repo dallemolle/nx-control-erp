@@ -1,8 +1,15 @@
-import { describe, expect, test } from "vitest";
-import { calcularJanela } from "./fluxoDeCaixa";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import { prisma } from "@/server/db/client";
+import type { TipoTitulo } from "@prisma/client";
+import { buscarSaldoEmCaixaAte, calcularJanela } from "./fluxoDeCaixa";
+import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
+import { criarTitulo } from "./titulo";
+import { registrarBaixa, aprovarBaixa } from "./baixa";
 import {
+  buscarParcelasEmAbertoNoPeriodo,
   calcularJanelaProjetada,
   calcularPeriodosFluxoDeCaixaProjetado,
+  listarFluxoDeCaixaProjetado,
   saldoRemanescenteParcela,
   type ParcelaParaProjecao,
 } from "./fluxoDeCaixaProjetado";
@@ -102,5 +109,148 @@ describe("calcularPeriodosFluxoDeCaixaProjetado", () => {
     ];
     const resultado = calcularPeriodosFluxoDeCaixaProjetado(periodos, parcelas, 500);
     expect(resultado[0].entradasProjetadas).toBe(0);
+  });
+});
+
+describe("buscarParcelasEmAbertoNoPeriodo / listarFluxoDeCaixaProjetado (integração)", () => {
+  let fixture: FixtureFinanceiro;
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("FCP", "TESOURARIA");
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fixture);
+    await prisma.$disconnect();
+  });
+
+  async function criarTituloDeTeste(tipo: TipoTitulo, valor: number, dataVencimento: Date) {
+    return criarTitulo(fixture.sessaoAdmin, tipo, {
+      contraparteId: tipo === "PAGAR" ? fixture.fornecedorId : fixture.clienteId,
+      documento: `PROJ-${Date.now()}-${Math.random()}`,
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: fixture.contaBancariaId,
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento, valorOriginal: valor }],
+    });
+  }
+
+  test("só parcelas com status em aberto entram — uma PAGO fica de fora", async () => {
+    const dataVencimento = new Date("2026-11-15T00:00:00Z");
+    await criarTituloDeTeste("RECEBER", 1000, dataVencimento);
+    const tituloPago = await criarTituloDeTeste("RECEBER", 2000, dataVencimento);
+
+    const baixa = await registrarBaixa(fixture.sessao, tituloPago.parcelas[0].id, {
+      data: new Date(),
+      valorPago: 2000,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fixture.contaBancariaId,
+    });
+    await aprovarBaixa(fixture.sessao, baixa.id);
+
+    const periodos = await listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", new Date("2026-11-01T00:00:00Z"));
+    const totalEntradas = periodos.reduce((soma, p) => soma + p.entradasProjetadas, 0);
+    expect(totalEntradas).toBe(1000);
+  });
+
+  test("baixa aprovada parcial abate do saldo; baixa pendente não abate nada", async () => {
+    const dataVencimento = new Date("2026-11-20T00:00:00Z");
+    const titulo = await criarTituloDeTeste("PAGAR", 1000, dataVencimento);
+    const parcelaId = titulo.parcelas[0].id;
+
+    const baixaAprovada = await registrarBaixa(fixture.sessao, parcelaId, {
+      data: new Date(),
+      valorPago: 300,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fixture.contaBancariaId,
+    });
+    await aprovarBaixa(fixture.sessao, baixaAprovada.id);
+
+    // Baixa pendente sobre o saldo restante — não deve abater nada ainda.
+    await registrarBaixa(fixture.sessao, parcelaId, {
+      data: new Date(),
+      valorPago: 200,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fixture.contaBancariaId,
+    });
+
+    const parcelas = await buscarParcelasEmAbertoNoPeriodo(
+      fixture.filialId,
+      new Date("2026-11-01T00:00:00Z"),
+      new Date("2026-11-30T23:59:59.999Z"),
+    );
+    const parcelaEncontrada = parcelas.find((p) => p.dataVencimento.getTime() === dataVencimento.getTime());
+    expect(parcelaEncontrada?.saldo).toBe(700);
+  });
+
+  test("separa RECEBER (entradas) de PAGAR (saídas) no mesmo mês", async () => {
+    const dataVencimento = new Date("2026-12-10T00:00:00Z");
+    await criarTituloDeTeste("RECEBER", 500, dataVencimento);
+    await criarTituloDeTeste("PAGAR", 300, dataVencimento);
+
+    const periodos = await listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", new Date("2026-12-01T00:00:00Z"));
+    const mesDezembro = periodos.find((p) => p.inicio.toISOString() === "2026-12-01T00:00:00.000Z");
+    expect(mesDezembro?.entradasProjetadas).toBeGreaterThanOrEqual(500);
+    expect(mesDezembro?.saidasProjetadas).toBeGreaterThanOrEqual(300);
+  });
+
+  test("escopo de filial — parcela de outra filial não vaza", async () => {
+    const outraFixture = await criarFixtureFinanceiro("FCP2", "TESOURARIA");
+    try {
+      await criarTitulo(outraFixture.sessaoAdmin, "RECEBER", {
+        contraparteId: outraFixture.clienteId,
+        documento: `OUTRA-${Date.now()}`,
+        dataEmissao: new Date(),
+        dataCompetencia: new Date(),
+        categoriaFinanceiraId: outraFixture.categoriaFinanceiraId,
+        centroCustoId: "",
+        centroLucroId: "",
+        safraId: "",
+        projetoId: "",
+        contaBancariaId: outraFixture.contaBancariaId,
+        formaPagamento: "",
+        parcelas: [{ numero: 1, dataVencimento: new Date("2027-01-15T00:00:00Z"), valorOriginal: 999999 }],
+      });
+
+      const parcelas = await buscarParcelasEmAbertoNoPeriodo(
+        fixture.filialId,
+        new Date("2027-01-01T00:00:00Z"),
+        new Date("2027-01-31T23:59:59.999Z"),
+      );
+      expect(parcelas.every((p) => p.saldo !== 999999)).toBe(true);
+    } finally {
+      await limparFixtureFinanceiro(outraFixture);
+    }
+  });
+
+  test("saldoInicial do primeiro mês bate com buscarSaldoEmCaixaAte pra mesma referência de tempo", async () => {
+    const agora = new Date();
+    const [periodos, saldoDireto] = await Promise.all([
+      listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", agora),
+      buscarSaldoEmCaixaAte(fixture.filialId, agora),
+    ]);
+    expect(periodos[0].saldoInicial).toBeCloseTo(saldoDireto, 2);
+  });
+
+  test("MOVEL e ANO_CIVIL com a mesma dataReferencia produzem janelas diferentes fora de janeiro", async () => {
+    const dataReferencia = new Date("2026-06-01T00:00:00Z");
+    const [periodosMovel, periodosAnoCivil] = await Promise.all([
+      listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", dataReferencia),
+      listarFluxoDeCaixaProjetado(fixture.sessao, "ANO_CIVIL", dataReferencia),
+    ]);
+    expect(periodosMovel[0].inicio.toISOString()).toBe("2026-06-01T00:00:00.000Z");
+    expect(periodosAnoCivil[0].inicio.toISOString()).toBe("2026-01-01T00:00:00.000Z");
   });
 });
