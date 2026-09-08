@@ -3,9 +3,12 @@
 Status: 🟡 **Em andamento.** Sub-projeto 1 (Fluxo de caixa realizado,
 design em
 `docs/superpowers/specs/2026-09-03-fluxo-caixa-realizado-design.md`)
-implementado, tela em `/financeiro/fluxo-de-caixa`. Sub-projetos 2
-(projetado) e 3 (estratégico) ainda sem desenho técnico — escopo abaixo
-é só a descrição original em prosa.
+implementado, tela em `/financeiro/fluxo-de-caixa`. Sub-projeto 2 (Fluxo
+de caixa projetado, design em
+`docs/superpowers/specs/2026-09-07-fluxo-caixa-projetado-design.md`)
+implementado, tela em `/financeiro/fluxo-de-caixa-projetado`. Sub-projeto
+3 (estratégico) ainda sem desenho técnico — escopo abaixo é só a
+descrição original em prosa.
 
 ## Escopo
 
@@ -25,16 +28,23 @@ implementado, tela em `/financeiro/fluxo-de-caixa`. Sub-projetos 2
   custo/lucro, safra, projeto) e sem alertas nesta fase — ficam pra Fase 5
   e para o sub-projeto "projetado", respectivamente.
 
-### Fluxo de caixa projetado (12 meses) — ainda não desenhado
+### Fluxo de caixa projetado (12 meses) — implementado
 
-- Baseado em contas a receber/pagar em aberto (Fase 2), contratos
-  recorrentes, financiamentos, parcelamentos, orçamento (Fase 5), premissas
-  editáveis e histórico de recebimento/pagamento.
-- Tabela mês a mês: saldo inicial, entradas, saídas, geração de caixa, saldo
-  final.
-- Alertas: saldo negativo, insuficiência de caixa, concentração de
-  pagamentos/recebimentos, vencimentos relevantes, necessidade potencial de
-  capital.
+- Baseado em `Titulo`/`Parcela`/`Baixa` em aberto (Fase 2) — contratos
+  recorrentes, financiamentos, parcelamentos além de `Parcela` e
+  orçamento (Fase 5) não existem no schema hoje, ficam para quando esses
+  conceitos de domínio forem desenhados.
+- Saldo inicial ancorado no saldo em caixa **conciliado** de hoje
+  (reusa `buscarSaldoEmCaixaAte` do realizado), encadeado pelas parcelas
+  em aberto (`EM_ABERTO`/`A_VENCER`/`VENCIDO`/`PARCIALMENTE_PAGO`) mês a
+  mês. Parcela vencida com vencimento anterior ao início da janela
+  exibida não aparece (limitação documentada na spec e na própria tela).
+- Dois modos de janela: móvel (padrão, 12 meses a partir do mês atual) e
+  ano civil (Jan-Dez de um ano escolhido, pra comparar com um orçamento
+  anual futuro).
+- Alerta: só saldo final negativo (destaque visual + badge). Concentração
+  de vencimentos e necessidade potencial de capital ficam para uma
+  iteração futura.
 
 ### Fluxo de caixa estratégico (5 anos) — ainda não desenhado
 
