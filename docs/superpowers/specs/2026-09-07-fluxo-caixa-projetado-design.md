@@ -76,6 +76,18 @@ sob demanda a partir de dados já existentes.
   "calculada a partir do saldo em caixa de hoje". Reconstruir a cadeia
   completa através de anos não exibidos fica para uma iteração futura —
   ver "Fora de escopo".
+
+  Segunda limitação aceita conscientemente: uma parcela em aberto cujo
+  `dataVencimento` é anterior ao início da janela exibida não aparece em
+  lugar nenhum da tela — não entra no saldo (porque ainda não foi paga/
+  recebida, logo não gerou `LancamentoBancario` conciliado) e não entra em
+  nenhum mês exibido (porque `buscarParcelasEmAbertoNoPeriodo` só busca
+  `dataVencimento` dentro de `[inicio, fim]` da janela). Um título vencido
+  há meses e ainda em aberto fica assim invisível na projeção. A tela
+  avisa que a projeção é calculada a partir do "saldo em caixa
+  conciliado" e dos títulos "com vencimento dentro do período exibido"
+  para deixar isso explícito. Trazer parcelas vencidas de antes da janela
+  para o primeiro mês exibido fica para uma iteração futura.
 - **Alerta**: `alerta: boolean` calculado dentro da função pura de
   agregação (`saldoFinal < 0`, checagem estrita — zero não alerta), não
   em componente de UI, para ficar testável sem banco. É o único alerta
@@ -222,3 +234,6 @@ Estrutura espelha `financeiro/fluxo-de-caixa/`:
   sempre parte do saldo de hoje, com aviso textual na tela.
 - Consolidação por empresa (soma de filiais) — Fase 5.
 - Exportação (CSV/Excel/PDF) do relatório.
+- Parcelas em aberto com `dataVencimento` anterior ao início da janela
+  exibida não entram na projeção (nem no saldo, nem em nenhum mês) — ver
+  "Limitação aceita conscientemente" no modelo de cálculo.

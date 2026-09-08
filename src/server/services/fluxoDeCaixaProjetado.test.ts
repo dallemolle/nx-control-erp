@@ -202,8 +202,8 @@ describe("buscarParcelasEmAbertoNoPeriodo / listarFluxoDeCaixaProjetado (integra
 
     const periodos = await listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", new Date("2026-12-01T00:00:00Z"));
     const mesDezembro = periodos.find((p) => p.inicio.toISOString() === "2026-12-01T00:00:00.000Z");
-    expect(mesDezembro?.entradasProjetadas).toBeGreaterThanOrEqual(500);
-    expect(mesDezembro?.saidasProjetadas).toBeGreaterThanOrEqual(300);
+    expect(mesDezembro?.entradasProjetadas).toBe(500);
+    expect(mesDezembro?.saidasProjetadas).toBe(300);
   });
 
   test("escopo de filial — parcela de outra filial não vaza", async () => {
@@ -224,24 +224,51 @@ describe("buscarParcelasEmAbertoNoPeriodo / listarFluxoDeCaixaProjetado (integra
         parcelas: [{ numero: 1, dataVencimento: new Date("2027-01-15T00:00:00Z"), valorOriginal: 999999 }],
       });
 
-      const parcelas = await buscarParcelasEmAbertoNoPeriodo(
+      const parcelasFilialPrincipal = await buscarParcelasEmAbertoNoPeriodo(
         fixture.filialId,
         new Date("2027-01-01T00:00:00Z"),
         new Date("2027-01-31T23:59:59.999Z"),
       );
-      expect(parcelas.every((p) => p.saldo !== 999999)).toBe(true);
+      expect(parcelasFilialPrincipal.every((p) => p.saldo !== 999999)).toBe(true);
+
+      // Controle positivo: a parcela existe e aparece na filial correta —
+      // garante que a asserção acima não passaria mesmo com a query quebrada
+      // (ex.: devolvendo sempre um array vazio).
+      const parcelasOutraFilial = await buscarParcelasEmAbertoNoPeriodo(
+        outraFixture.filialId,
+        new Date("2027-01-01T00:00:00Z"),
+        new Date("2027-01-31T23:59:59.999Z"),
+      );
+      expect(parcelasOutraFilial.some((p) => p.saldo === 999999)).toBe(true);
     } finally {
       await limparFixtureFinanceiro(outraFixture);
     }
   });
 
-  test("saldoInicial do primeiro mês bate com buscarSaldoEmCaixaAte pra mesma referência de tempo", async () => {
+  test("saldoInicial do primeiro mês reflete o saldo em caixa conciliado de hoje, e encadeia para o mês seguinte", async () => {
+    await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        tipo: "ENTRADA",
+        valor: 5000,
+        descricao: "Saldo conciliado de teste — ancora do fluxo projetado",
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+        conciliado: true,
+      },
+    });
+
     const agora = new Date();
     const [periodos, saldoDireto] = await Promise.all([
       listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", agora),
       buscarSaldoEmCaixaAte(fixture.filialId, agora),
     ]);
+
+    expect(saldoDireto).toBeGreaterThanOrEqual(5000);
     expect(periodos[0].saldoInicial).toBeCloseTo(saldoDireto, 2);
+    expect(periodos[1].saldoInicial).toBeCloseTo(periodos[0].saldoFinal, 2);
   });
 
   test("MOVEL e ANO_CIVIL com a mesma dataReferencia produzem janelas diferentes fora de janeiro", async () => {

@@ -34,10 +34,12 @@ export default async function FluxoDeCaixaProjetadoPage({
       <div>
         <h1 className="text-lg font-semibold">Fluxo de caixa projetado</h1>
         <p className="text-sm text-muted-foreground">
-          Projeção calculada a partir do saldo em caixa de hoje e dos
-          títulos a pagar/receber já em aberto — não considera contratos
-          recorrentes, financiamentos nem orçamento (ainda não existem no
-          sistema).
+          Projeção calculada a partir do saldo em caixa conciliado de hoje
+          e dos títulos a pagar/receber já em aberto com vencimento dentro
+          do período exibido — não considera contratos recorrentes,
+          financiamentos, orçamento (ainda não existem no sistema), nem
+          títulos vencidos com vencimento anterior ao início do período
+          exibido.
         </p>
       </div>
 
