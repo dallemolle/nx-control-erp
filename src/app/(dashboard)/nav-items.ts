@@ -13,6 +13,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/financeiro/tesouraria", label: "Tesouraria" },
       { href: "/financeiro/conciliacao", label: "Conciliação" },
       { href: "/financeiro/fluxo-de-caixa", label: "Fluxo de caixa" },
+      { href: "/financeiro/fluxo-de-caixa-projetado", label: "Fluxo de caixa projetado" },
     ],
   },
   {
