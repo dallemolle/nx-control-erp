@@ -108,11 +108,6 @@ export type LinhaComparativoOrcamento = {
 
 Funções:
 
-- `listarOrcamento(sessao, ano)` — `requirePermission(sessao.perfil,
-  "orcamento:ler")`; busca `Orcamento` da filial ativa pro ano pedido,
-  uma linha por categoria×mês (categorias sem valor cadastrado aparecem
-  com `orcado: 0`, não ficam ausentes — a grade de edição precisa das 12
-  células por categoria mesmo vazias).
 - `salvarValorOrcamento(sessao, categoriaFinanceiraId, ano, mes, valor)`
   — `requirePermission(sessao.perfil, "orcamento:escrever")`; `upsert`
   por `[filialId, categoriaFinanceiraId, ano, mes]` (mesmo padrão
@@ -131,8 +126,15 @@ Funções:
   `dataVencimento` dentro do mês, agrupado por `Titulo.categoriaFinanceiraId`.
 - `listarComparativoOrcamento(sessao, ano)` — `requirePermission(sessao.perfil,
   "orcamento:ler")`; junta as 3 fontes (orçado, realizado, projetado) por
-  categoria×mês, calcula variação e `alerta`, devolve
-  `LinhaComparativoOrcamento[]`.
+  categoria×mês (categorias/meses sem valor orçado aparecem com
+  `orcado: 0`, não ficam ausentes — a linha continua existindo pra
+  qualquer categoria ativa), calcula variação e `alerta`, devolve
+  `LinhaComparativoOrcamento[]`. **É a única função de leitura que a UI
+  usa** — tanto a grade de edição (lê o campo `orcado` de cada linha)
+  quanto a visão de comparativo vêm da mesma chamada, evitando o
+  problema de fetch duplicado/condição de corrida já visto na Fase 4c
+  (lá, a página chamava duas funções de leitura que internamente se
+  sobrepunham).
 
 ## Alerta de estouro
 
