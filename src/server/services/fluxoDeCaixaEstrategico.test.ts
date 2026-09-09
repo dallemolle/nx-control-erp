@@ -1,4 +1,16 @@
 import { describe, expect, test } from "vitest";
+import { afterAll, beforeAll } from "vitest";
+import { prisma } from "@/server/db/client";
+import type { TipoCenarioEstrategico } from "@prisma/client";
+import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
+import {
+  garantirCenariosEstrategicos,
+  buscarAnoBaseConsolidado,
+  listarCenariosEstrategicos,
+  listarProjecaoEstrategica,
+  atualizarPremissasCenario,
+  TIPOS_CENARIO,
+} from "./fluxoDeCaixaEstrategico";
 import { calcularProjecaoEstrategica, type PremissasCenario } from "./fluxoDeCaixaEstrategico";
 
 describe("calcularProjecaoEstrategica", () => {
@@ -73,5 +85,113 @@ describe("calcularProjecaoEstrategica", () => {
     const resultadoZerado = calcularProjecaoEstrategica(premissasZeradas, 0, 0, 0);
     expect(resultadoZerado[0].margemLiquida).toBe(0);
     expect(Number.isFinite(resultadoZerado[0].margemLiquida)).toBe(true);
+  });
+});
+
+describe("garantirCenariosEstrategicos / listarCenariosEstrategicos / listarProjecaoEstrategica / atualizarPremissasCenario (integração)", () => {
+  let fixture: FixtureFinanceiro;
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("FCE", "GESTOR");
+  });
+
+  afterAll(async () => {
+    await prisma.cenarioEstrategico.deleteMany({ where: { empresaId: fixture.empresaId } });
+    await limparFixtureFinanceiro(fixture);
+    await prisma.$disconnect();
+  });
+
+  test("garantirCenariosEstrategicos cria os 3 tipos quando nenhum existe, e não duplica ao rodar de novo", async () => {
+    await garantirCenariosEstrategicos(fixture.empresaId);
+    const primeiraLeitura = await prisma.cenarioEstrategico.findMany({ where: { empresaId: fixture.empresaId } });
+    expect(primeiraLeitura).toHaveLength(3);
+    expect(new Set(primeiraLeitura.map((c) => c.tipo))).toEqual(new Set(TIPOS_CENARIO));
+
+    await garantirCenariosEstrategicos(fixture.empresaId);
+    const segundaLeitura = await prisma.cenarioEstrategico.findMany({ where: { empresaId: fixture.empresaId } });
+    expect(segundaLeitura).toHaveLength(3);
+  });
+
+  test("buscarAnoBaseConsolidado soma os últimos 12 meses de 2 filiais da mesma empresa", async () => {
+    const filial2 = await prisma.filial.create({
+      data: { empresaId: fixture.empresaId, nome: "Filial 2 FCE", cnpj: `88.888.FCE2/0001-99` },
+    });
+    const banco = await prisma.banco.create({ data: { codigo: `FCEB${Date.now()}`, nome: "Banco FCE" } });
+    const contaFilial2 = await prisma.contaBancaria.create({
+      data: { filialId: filial2.id, bancoId: banco.id, agencia: "0001", conta: "fce2-1", saldoInicial: 0 },
+    });
+
+    const hoje = new Date();
+    await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: hoje,
+        tipo: "ENTRADA",
+        valor: 1000,
+        descricao: "Receita filial 1",
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+        conciliado: true,
+      },
+    });
+    await prisma.lancamentoBancario.create({
+      data: {
+        filialId: filial2.id,
+        contaBancariaId: contaFilial2.id,
+        data: hoje,
+        tipo: "ENTRADA",
+        valor: 500,
+        descricao: "Receita filial 2",
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+        conciliado: true,
+      },
+    });
+
+    const anoBase = await buscarAnoBaseConsolidado(fixture.empresaId);
+    expect(anoBase.receitaBase).toBeGreaterThanOrEqual(1500);
+
+    await prisma.lancamentoBancario.deleteMany({ where: { filialId: filial2.id } });
+    await prisma.contaBancaria.deleteMany({ where: { filialId: filial2.id } });
+    await prisma.banco.delete({ where: { id: banco.id } });
+    await prisma.filial.delete({ where: { id: filial2.id } });
+  });
+
+  test("listarCenariosEstrategicos e listarProjecaoEstrategica escopam pela empresa ativa da sessão", async () => {
+    const cenarios = await listarCenariosEstrategicos(fixture.sessao);
+    expect(Object.keys(cenarios).sort()).toEqual([...TIPOS_CENARIO].sort());
+
+    const projecoes = await listarProjecaoEstrategica(fixture.sessao);
+    for (const tipo of TIPOS_CENARIO) {
+      expect(projecoes[tipo]).toHaveLength(5);
+    }
+  });
+
+  test("atualizarPremissasCenario recusa perfil sem planejamentoEstrategico:escrever", async () => {
+    const sessaoConsulta = { ...fixture.sessao, perfil: "CONSULTA" as const };
+    await expect(
+      atualizarPremissasCenario(sessaoConsulta, "BASE", {
+        crescimentoReceita: 0.1,
+        crescimentoCustos: 0.05,
+        capexPercentualReceita: 0.02,
+        novoEndividamentoAnual: 0,
+        taxaJurosAnual: 0,
+      }),
+    ).rejects.toThrow();
+  });
+
+  test("atualizarPremissasCenario persiste e listarCenariosEstrategicos reflete o valor novo", async () => {
+    await atualizarPremissasCenario(fixture.sessao, "OTIMISTA", {
+      crescimentoReceita: 0.15,
+      crescimentoCustos: 0.08,
+      capexPercentualReceita: 0.03,
+      novoEndividamentoAnual: 10000,
+      taxaJurosAnual: 0.12,
+    });
+
+    const cenarios = await listarCenariosEstrategicos(fixture.sessao);
+    expect(cenarios.OTIMISTA.crescimentoReceita).toBeCloseTo(0.15, 6);
+    expect(cenarios.OTIMISTA.novoEndividamentoAnual).toBeCloseTo(10000, 6);
   });
 });
