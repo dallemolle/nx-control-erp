@@ -38,6 +38,12 @@ enum MeioPagamento {
   DEPOSITO_BANCARIO
 }
 
+enum TipoCenarioEstrategico {
+  BASE
+  OTIMISTA
+  PESSIMISTA
+}
+
 enum TipoChavePix {
   CPF_CNPJ
   CELULAR
@@ -65,8 +71,28 @@ model Empresa {
   clientes     Cliente[]
   fornecedores Fornecedor[]
   auditLogs    AuditLog[]
+  cenariosEstrategicos CenarioEstrategico[]
 
   @@map("empresas")
+}
+
+model CenarioEstrategico {
+  id                     String                 @id @default(uuid())
+  empresaId              String
+  tipo                   TipoCenarioEstrategico
+  crescimentoReceita     Decimal                @db.Decimal(7, 4)
+  crescimentoCustos      Decimal                @db.Decimal(7, 4)
+  capexPercentualReceita Decimal                @db.Decimal(7, 4)
+  novoEndividamentoAnual Decimal                @db.Decimal(18, 2)
+  taxaJurosAnual         Decimal                @db.Decimal(7, 4)
+  criadoEm               DateTime               @default(now())
+  atualizadoEm           DateTime               @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@unique([empresaId, tipo])
+  @@index([empresaId])
+  @@map("cenarios_estrategicos")
 }
 
 model Filial {

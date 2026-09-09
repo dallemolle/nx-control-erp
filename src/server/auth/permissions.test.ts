@@ -90,3 +90,17 @@ describe("podeBaixarTitulo / podeAprovarBaixa / podeEscreverTitulo", () => {
     expect(podeEscreverTitulo("FINANCEIRO", true)).toBe(true);
   });
 });
+
+describe("permissões de planejamento estratégico", () => {
+  test("GESTOR pode ler e escrever premissas — primeira escrita do perfil no sistema", () => {
+    expect(() => requirePermission("GESTOR", "planejamentoEstrategico:ler")).not.toThrow();
+    expect(() => requirePermission("GESTOR", "planejamentoEstrategico:escrever")).not.toThrow();
+  });
+
+  test("FINANCEIRO, TESOURARIA, AUDITOR e CONSULTA só leem, não escrevem", () => {
+    for (const perfil of ["FINANCEIRO", "TESOURARIA", "AUDITOR", "CONSULTA"] as const) {
+      expect(() => requirePermission(perfil, "planejamentoEstrategico:ler")).not.toThrow();
+      expect(() => requirePermission(perfil, "planejamentoEstrategico:escrever")).toThrow(PermissionError);
+    }
+  });
+});
