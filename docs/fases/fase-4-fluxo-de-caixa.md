@@ -1,14 +1,14 @@
 # Fase 4 — Fluxo de caixa
 
-Status: 🟡 **Em andamento.** Sub-projeto 1 (Fluxo de caixa realizado,
-design em
-`docs/superpowers/specs/2026-09-03-fluxo-caixa-realizado-design.md`)
-implementado, tela em `/financeiro/fluxo-de-caixa`. Sub-projeto 2 (Fluxo
-de caixa projetado, design em
-`docs/superpowers/specs/2026-09-07-fluxo-caixa-projetado-design.md`)
-implementado, tela em `/financeiro/fluxo-de-caixa-projetado`. Sub-projeto
-3 (estratégico) ainda sem desenho técnico — escopo abaixo é só a
-descrição original em prosa.
+Status: 🟢 **Concluída.** Os 3 sub-projetos estão implementados: Fluxo
+de caixa realizado (design em
+`docs/superpowers/specs/2026-09-03-fluxo-caixa-realizado-design.md`,
+tela em `/financeiro/fluxo-de-caixa`), Fluxo de caixa projetado (design
+em `docs/superpowers/specs/2026-09-07-fluxo-caixa-projetado-design.md`,
+tela em `/financeiro/fluxo-de-caixa-projetado`) e Fluxo de caixa
+estratégico (design em
+`docs/superpowers/specs/2026-09-08-fluxo-caixa-estrategico-design.md`,
+tela em `/financeiro/fluxo-de-caixa-estrategico`).
 
 ## Escopo
 
@@ -46,12 +46,31 @@ descrição original em prosa.
   de vencimentos e necessidade potencial de capital ficam para uma
   iteração futura.
 
-### Fluxo de caixa estratégico (5 anos) — ainda não desenhado
+### Fluxo de caixa estratégico (5 anos) — implementado
 
-- Projeção anual, cenários base/otimista/pessimista.
-- Premissas editáveis: crescimento de receita, margem, inflação, custos,
-  despesas, CAPEX, endividamento, taxas de juros, prazo médio de
-  recebimento/pagamento, capital de giro.
+- Projeção anual de 5 anos, 3 cenários fixos (base/otimista/pessimista),
+  por **empresa** — a única feature do sistema além de gestão de
+  Empresa/Usuário com esse escopo em vez de por filial, consolidando
+  todas as filiais da empresa. Ano base a partir dos últimos 12 meses do
+  fluxo de caixa realizado.
+- 5 premissas editáveis por cenário (reduzidas das 10 do escopo
+  original): crescimento de receita, crescimento de custos/despesas (já
+  embute inflação), CAPEX (% da receita), novo endividamento anual,
+  taxa de juros anual. Margem líquida é métrica calculada/exibida, não
+  input. Prazo médio de recebimento/pagamento e capital de giro ficam
+  para uma iteração futura — exigem modelar descasamento de caixa no
+  tempo.
+- Sem amortização de dívida modelada (juros incidem sobre o saldo
+  devedor acumulado, que nunca é amortizado) — simplificação
+  documentada, adequada a uma visão direcional de 5 anos.
+- Único dado persistido de toda a Fase 4 (`CenarioEstrategico`, 1
+  migration) — os 3 cenários por empresa são garantidos via `upsert`
+  idempotente, sem criação eager nem migration de backfill. Primeira
+  permissão de escrita do perfil GESTOR em todo o sistema
+  (`planejamentoEstrategico:escrever`); leitura restrita a
+  ADMINISTRADOR/GESTOR/AUDITOR (não a todos os 6 perfis, diferente do
+  padrão do resto do sistema) — dado consolidado de empresa inteira é
+  mais sensível que dado de uma filial.
 
 ## Depende de
 
