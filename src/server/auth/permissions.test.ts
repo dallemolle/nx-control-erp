@@ -97,9 +97,14 @@ describe("permissões de planejamento estratégico", () => {
     expect(() => requirePermission("GESTOR", "planejamentoEstrategico:escrever")).not.toThrow();
   });
 
-  test("FINANCEIRO, TESOURARIA, AUDITOR e CONSULTA só leem, não escrevem", () => {
-    for (const perfil of ["FINANCEIRO", "TESOURARIA", "AUDITOR", "CONSULTA"] as const) {
-      expect(() => requirePermission(perfil, "planejamentoEstrategico:ler")).not.toThrow();
+  test("AUDITOR pode ler mas não escrever premissas estratégicas", () => {
+    expect(() => requirePermission("AUDITOR", "planejamentoEstrategico:ler")).not.toThrow();
+    expect(() => requirePermission("AUDITOR", "planejamentoEstrategico:escrever")).toThrow(PermissionError);
+  });
+
+  test("FINANCEIRO, TESOURARIA e CONSULTA não acessam planejamento estratégico — é dado consolidado de toda a empresa, não só da filial do perfil", () => {
+    for (const perfil of ["FINANCEIRO", "TESOURARIA", "CONSULTA"] as const) {
+      expect(() => requirePermission(perfil, "planejamentoEstrategico:ler")).toThrow(PermissionError);
       expect(() => requirePermission(perfil, "planejamentoEstrategico:escrever")).toThrow(PermissionError);
     }
   });

@@ -30,8 +30,8 @@ export function PremissasForm({
           id={`${tipo}-crescimentoReceita`}
           name="crescimentoReceita"
           type="number"
-          step="0.0001"
-          defaultValue={premissas.crescimentoReceita}
+          step="0.01"
+          defaultValue={(premissas.crescimentoReceita * 100).toFixed(2)}
           disabled={somenteLeitura}
           required
         />
@@ -42,8 +42,8 @@ export function PremissasForm({
           id={`${tipo}-crescimentoCustos`}
           name="crescimentoCustos"
           type="number"
-          step="0.0001"
-          defaultValue={premissas.crescimentoCustos}
+          step="0.01"
+          defaultValue={(premissas.crescimentoCustos * 100).toFixed(2)}
           disabled={somenteLeitura}
           required
         />
@@ -54,8 +54,8 @@ export function PremissasForm({
           id={`${tipo}-capexPercentualReceita`}
           name="capexPercentualReceita"
           type="number"
-          step="0.0001"
-          defaultValue={premissas.capexPercentualReceita}
+          step="0.01"
+          defaultValue={(premissas.capexPercentualReceita * 100).toFixed(2)}
           disabled={somenteLeitura}
           required
         />
@@ -78,8 +78,8 @@ export function PremissasForm({
           id={`${tipo}-taxaJurosAnual`}
           name="taxaJurosAnual"
           type="number"
-          step="0.0001"
-          defaultValue={premissas.taxaJurosAnual}
+          step="0.01"
+          defaultValue={(premissas.taxaJurosAnual * 100).toFixed(2)}
           disabled={somenteLeitura}
           required
         />
@@ -92,6 +92,7 @@ export function PremissasForm({
         </div>
       )}
       {state.erro ? <p className="text-sm text-destructive sm:col-span-2 lg:col-span-3">{state.erro}</p> : null}
+      {state.sucesso ? <p className="text-sm text-muted-foreground sm:col-span-2 lg:col-span-3">Premissas salvas.</p> : null}
     </form>
   );
 }

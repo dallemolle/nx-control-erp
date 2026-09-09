@@ -1,7 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeExecutar } from "@/server/auth/permissions";
-import { listarCenariosEstrategicos, listarProjecaoEstrategica, TIPOS_CENARIO } from "@/server/services/fluxoDeCaixaEstrategico";
+import { listarProjecaoEstrategica, TIPOS_CENARIO } from "@/server/services/fluxoDeCaixaEstrategico";
 import { PremissasForm } from "./premissas-form";
 
 const LABEL_CENARIO: Record<(typeof TIPOS_CENARIO)[number], string> = {
@@ -14,10 +14,7 @@ export default async function FluxoDeCaixaEstrategicoPage() {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "planejamentoEstrategico:ler");
 
-  const [cenarios, projecoes] = await Promise.all([
-    listarCenariosEstrategicos(sessao),
-    listarProjecaoEstrategica(sessao),
-  ]);
+  const { cenarios, projecoes } = await listarProjecaoEstrategica(sessao);
 
   const somenteLeitura = !podeExecutar(sessao.perfil, "planejamentoEstrategico:escrever");
 

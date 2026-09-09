@@ -96,6 +96,7 @@ describe("garantirCenariosEstrategicos / listarCenariosEstrategicos / listarProj
   });
 
   afterAll(async () => {
+    await prisma.auditLog.deleteMany({ where: { entidade: "CenarioEstrategico", empresaId: fixture.empresaId } });
     await prisma.cenarioEstrategico.deleteMany({ where: { empresaId: fixture.empresaId } });
     await limparFixtureFinanceiro(fixture);
     await prisma.$disconnect();
@@ -162,7 +163,7 @@ describe("garantirCenariosEstrategicos / listarCenariosEstrategicos / listarProj
     const cenarios = await listarCenariosEstrategicos(fixture.sessao);
     expect(Object.keys(cenarios).sort()).toEqual([...TIPOS_CENARIO].sort());
 
-    const projecoes = await listarProjecaoEstrategica(fixture.sessao);
+    const { projecoes } = await listarProjecaoEstrategica(fixture.sessao);
     for (const tipo of TIPOS_CENARIO) {
       expect(projecoes[tipo]).toHaveLength(5);
     }
@@ -193,5 +194,17 @@ describe("garantirCenariosEstrategicos / listarCenariosEstrategicos / listarProj
     const cenarios = await listarCenariosEstrategicos(fixture.sessao);
     expect(cenarios.OTIMISTA.crescimentoReceita).toBeCloseTo(0.15, 6);
     expect(cenarios.OTIMISTA.novoEndividamentoAnual).toBeCloseTo(10000, 6);
+  });
+
+  test("garantirCenariosEstrategicos é seguro sob concorrência numa empresa nova, sem cenários ainda", async () => {
+    const fixtureNova = await criarFixtureFinanceiro("FCE3", "ADMINISTRADOR");
+    try {
+      await Promise.all(Array.from({ length: 8 }, () => garantirCenariosEstrategicos(fixtureNova.empresaId)));
+      const cenarios = await prisma.cenarioEstrategico.findMany({ where: { empresaId: fixtureNova.empresaId } });
+      expect(cenarios).toHaveLength(3);
+    } finally {
+      await prisma.cenarioEstrategico.deleteMany({ where: { empresaId: fixtureNova.empresaId } });
+      await limparFixtureFinanceiro(fixtureNova);
+    }
   });
 });

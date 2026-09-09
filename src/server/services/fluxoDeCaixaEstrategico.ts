@@ -81,15 +81,10 @@ const PREMISSAS_ZERADAS = {
 };
 
 export async function garantirCenariosEstrategicos(empresaId: string, db: ClientePrisma = prisma): Promise<void> {
-  await Promise.all(
-    TIPOS_CENARIO.map((tipo) =>
-      db.cenarioEstrategico.upsert({
-        where: { empresaId_tipo: { empresaId, tipo } },
-        create: { empresaId, tipo, ...PREMISSAS_ZERADAS },
-        update: {},
-      }),
-    ),
-  );
+  await db.cenarioEstrategico.createMany({
+    data: TIPOS_CENARIO.map((tipo) => ({ empresaId, tipo, ...PREMISSAS_ZERADAS })),
+    skipDuplicates: true,
+  });
 }
 
 export async function buscarAnoBaseConsolidado(
@@ -147,9 +142,10 @@ export async function listarCenariosEstrategicos(
   return resultado;
 }
 
-export async function listarProjecaoEstrategica(
-  sessao: SessaoAtiva,
-): Promise<Record<TipoCenarioEstrategico, AnoProjetadoEstrategico[]>> {
+export async function listarProjecaoEstrategica(sessao: SessaoAtiva): Promise<{
+  cenarios: Record<TipoCenarioEstrategico, PremissasCenario & { id: string }>;
+  projecoes: Record<TipoCenarioEstrategico, AnoProjetadoEstrategico[]>;
+}> {
   requirePermission(sessao.perfil, "planejamentoEstrategico:ler");
 
   const [anoBase, cenarios] = await Promise.all([
@@ -157,11 +153,11 @@ export async function listarProjecaoEstrategica(
     listarCenariosEstrategicos(sessao),
   ]);
 
-  const resultado = {} as Record<TipoCenarioEstrategico, AnoProjetadoEstrategico[]>;
+  const projecoes = {} as Record<TipoCenarioEstrategico, AnoProjetadoEstrategico[]>;
   for (const tipo of TIPOS_CENARIO) {
-    resultado[tipo] = calcularProjecaoEstrategica(cenarios[tipo], anoBase.receitaBase, anoBase.custoBase, anoBase.saldoCaixaBase);
+    projecoes[tipo] = calcularProjecaoEstrategica(cenarios[tipo], anoBase.receitaBase, anoBase.custoBase, anoBase.saldoCaixaBase);
   }
-  return resultado;
+  return { cenarios, projecoes };
 }
 
 export async function atualizarPremissasCenario(

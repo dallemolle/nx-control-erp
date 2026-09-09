@@ -42,7 +42,6 @@ const PERMISSOES: Record<Perfil, ReadonlySet<Acao> | "TODAS"> = {
     "titulo:baixar",
     "lancamento:ler",
     "conciliacao:ler",
-    "planejamentoEstrategico:ler",
   ]),
   TESOURARIA: new Set([
     "cadastro:escrever",
@@ -54,7 +53,6 @@ const PERMISSOES: Record<Perfil, ReadonlySet<Acao> | "TODAS"> = {
     "lancamento:escrever",
     "conciliacao:ler",
     "conciliacao:escrever",
-    "planejamentoEstrategico:ler",
   ]),
   GESTOR: new Set([
     "cadastro:ler",
@@ -78,7 +76,6 @@ const PERMISSOES: Record<Perfil, ReadonlySet<Acao> | "TODAS"> = {
     "titulo:ler",
     "lancamento:ler",
     "conciliacao:ler",
-    "planejamentoEstrategico:ler",
   ]),
 };
 

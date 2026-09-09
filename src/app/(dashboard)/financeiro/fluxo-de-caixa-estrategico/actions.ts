@@ -16,6 +16,19 @@ function tipoValido(valor: FormDataEntryValue | null): valor is TipoCenarioEstra
   return typeof valor === "string" && (TIPOS_CENARIO as string[]).includes(valor);
 }
 
+const CAMPOS_PERCENTUAIS = ["crescimentoReceita", "crescimentoCustos", "capexPercentualReceita", "taxaJurosAnual"] as const;
+
+function converterPercentuaisParaFracao(formData: FormData): Record<string, FormDataEntryValue> {
+  const dados = Object.fromEntries(formData);
+  for (const campo of CAMPOS_PERCENTUAIS) {
+    const valor = dados[campo];
+    if (typeof valor === "string" && valor !== "") {
+      dados[campo] = String(Number(valor) / 100);
+    }
+  }
+  return dados;
+}
+
 export async function atualizarPremissasCenarioAction(
   _prev: FormState,
   formData: FormData,
@@ -26,7 +39,7 @@ export async function atualizarPremissasCenarioAction(
     return { erro: "Cenário inválido" };
   }
   const tipo = tipoBruto;
-  const parsed = premissasCenarioSchema.safeParse(Object.fromEntries(formData));
+  const parsed = premissasCenarioSchema.safeParse(converterPercentuaisParaFracao(formData));
   if (!parsed.success) {
     return { erro: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
