@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   description: "Gestão financeira, tesouraria e planejamento de caixa",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="pt-BR"
