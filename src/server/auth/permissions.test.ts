@@ -109,3 +109,17 @@ describe("permissões de planejamento estratégico", () => {
     }
   });
 });
+
+describe("permissões de orçamento", () => {
+  test("FINANCEIRO pode ler e escrever orçamento", () => {
+    expect(() => requirePermission("FINANCEIRO", "orcamento:ler")).not.toThrow();
+    expect(() => requirePermission("FINANCEIRO", "orcamento:escrever")).not.toThrow();
+  });
+
+  test("TESOURARIA, GESTOR, AUDITOR e CONSULTA só leem, não escrevem", () => {
+    for (const perfil of ["TESOURARIA", "GESTOR", "AUDITOR", "CONSULTA"] as const) {
+      expect(() => requirePermission(perfil, "orcamento:ler")).not.toThrow();
+      expect(() => requirePermission(perfil, "orcamento:escrever")).toThrow(PermissionError);
+    }
+  });
+});

@@ -117,6 +117,7 @@ model Filial {
   auditLogs             AuditLog[]
   lancamentosBancarios  LancamentoBancario[]
   extratosImportados    ExtratoImportado[]
+  orcamentos            Orcamento[]
 
   @@index([empresaId])
   @@map("filiais")
@@ -266,9 +267,28 @@ model CategoriaFinanceira {
   filhos               CategoriaFinanceira[] @relation("CategoriaFinanceiraHierarquia")
   titulos              Titulo[]
   lancamentosBancarios LancamentoBancario[]
+  orcamentos           Orcamento[]
 
   @@index([filialId])
   @@map("categorias_financeiras")
+}
+
+model Orcamento {
+  id                    String              @id @default(uuid())
+  filialId              String
+  categoriaFinanceiraId String
+  ano                   Int
+  mes                   Int
+  valor                 Decimal             @db.Decimal(18, 2)
+  criadoEm              DateTime            @default(now())
+  atualizadoEm          DateTime            @updatedAt
+
+  filial              Filial              @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  categoriaFinanceira CategoriaFinanceira @relation(fields: [categoriaFinanceiraId], references: [id])
+
+  @@unique([filialId, categoriaFinanceiraId, ano, mes])
+  @@index([filialId])
+  @@map("orcamentos")
 }
 
 model Cliente {

@@ -218,4 +218,20 @@ describe("baixa (fluxo de aprovação)", () => {
       }),
     ).rejects.toThrow(/não pertence à filial ativa/);
   });
+
+  test("aprovarBaixa copia a categoria do titulo para o lancamento bancario gerado", async () => {
+    const parcela = await criarParcelaDeTeste(fixtureTesouraria, 300);
+    const baixa = await registrarBaixa(fixtureTesouraria.sessao, parcela.id, {
+      data: new Date(),
+      valorPago: 300,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fixtureTesouraria.contaBancariaId,
+    });
+    await aprovarBaixa(fixtureTesouraria.sessao, baixa.id);
+
+    const lancamento = await prisma.lancamentoBancario.findFirstOrThrow({ where: { baixaId: baixa.id } });
+    expect(lancamento.categoriaFinanceiraId).toBe(fixtureTesouraria.categoriaFinanceiraId);
+  });
 });

@@ -107,6 +107,7 @@ export async function aprovarBaixa(sessao: SessaoAtiva, baixaId: string) {
         tipo: parcela.titulo.tipo === "RECEBER" ? "ENTRADA" : "SAIDA",
         valor: anterior.valorPago,
         descricao: `Baixa aprovada — parcela nº ${parcela.numero}`,
+        categoriaFinanceiraId: parcela.titulo.categoriaFinanceiraId,
         origem: "BAIXA",
         baixaId: baixaAtualizada.id,
         usuarioId: sessao.usuarioId,

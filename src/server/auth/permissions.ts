@@ -16,7 +16,9 @@ export type Acao =
   | "conciliacao:ler"
   | "conciliacao:escrever"
   | "planejamentoEstrategico:ler"
-  | "planejamentoEstrategico:escrever";
+  | "planejamentoEstrategico:escrever"
+  | "orcamento:ler"
+  | "orcamento:escrever";
 
 export class PermissionError extends Error {
   constructor(perfil: Perfil, acao: Acao) {
@@ -42,6 +44,8 @@ const PERMISSOES: Record<Perfil, ReadonlySet<Acao> | "TODAS"> = {
     "titulo:baixar",
     "lancamento:ler",
     "conciliacao:ler",
+    "orcamento:ler",
+    "orcamento:escrever",
   ]),
   TESOURARIA: new Set([
     "cadastro:escrever",
@@ -53,6 +57,7 @@ const PERMISSOES: Record<Perfil, ReadonlySet<Acao> | "TODAS"> = {
     "lancamento:escrever",
     "conciliacao:ler",
     "conciliacao:escrever",
+    "orcamento:ler",
   ]),
   GESTOR: new Set([
     "cadastro:ler",
@@ -62,6 +67,7 @@ const PERMISSOES: Record<Perfil, ReadonlySet<Acao> | "TODAS"> = {
     "conciliacao:ler",
     "planejamentoEstrategico:ler",
     "planejamentoEstrategico:escrever",
+    "orcamento:ler",
   ]),
   AUDITOR: new Set([
     "cadastro:ler",
@@ -70,12 +76,14 @@ const PERMISSOES: Record<Perfil, ReadonlySet<Acao> | "TODAS"> = {
     "lancamento:ler",
     "conciliacao:ler",
     "planejamentoEstrategico:ler",
+    "orcamento:ler",
   ]),
   CONSULTA: new Set([
     "cadastro:ler",
     "titulo:ler",
     "lancamento:ler",
     "conciliacao:ler",
+    "orcamento:ler",
   ]),
 };
 
