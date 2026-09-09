@@ -143,7 +143,7 @@ enum TipoCenarioEstrategico {
 }
 
 model CenarioEstrategico {
-  id                     String                  @id @default(cuid())
+  id                     String                  @id @default(uuid())
   empresaId              String
   tipo                   TipoCenarioEstrategico
   crescimentoReceita     Decimal                 @db.Decimal(7, 4)
@@ -166,13 +166,15 @@ convenção seria natural adotar já que o restante do schema usa
 `Decimal` para todo valor monetário/percentual sensível a arredondamento
 — nunca `Float`.
 
-**Criação automática dos 3 cenários**: quando uma `Empresa` é criada
-(`/empresas`), ela já nasce com os 3 `CenarioEstrategico` (BASE,
-OTIMISTA, PESSIMISTA) com todas as premissas zeradas — mesmo padrão já
-usado pela `Filial` "Matriz", que hoje já nasce automaticamente junto
-com toda `Empresa` nova (Fase 1). Empresas já existentes no banco (as
-duas fixtures de teste e a empresa de produção/seed) recebem os 3
-cenários via uma migration de backfill, não só a partir de agora.
+**Garantia dos 3 cenários via upsert-na-leitura, não criação eager**: em
+vez de criar os 3 `CenarioEstrategico` no momento em que a `Empresa` é
+criada (o que exigiria uma migration de backfill pras empresas já
+existentes no banco, incluindo produção e as fixtures de teste), toda
+leitura/escrita usa `prisma.cenarioEstrategico.upsert(...)` por tipo —
+cria com premissas zeradas se não existir, não faz nada se já existir.
+Isso é idempotente, cobre empresas antigas e novas uniformemente sem
+migration de dados, e não exige tocar em `criarEmpresa`
+(`src/server/services/empresa.ts`).
 
 ## Serviços (`src/server/services/fluxoDeCaixaEstrategico.ts`)
 
@@ -216,19 +218,25 @@ Funções assíncronas:
   `saldoCaixaBase`, e soma entradas/saídas conciliadas dos últimos 12
   meses de cada filial (mesma fonte de `LancamentoBancario` já usada em
   `fluxoDeCaixa.ts`) para `receitaBase`/`custoBase`.
+- `garantirCenariosEstrategicos(empresaId: string, db?: ClientePrisma): Promise<void>`
+  — `Promise.all` de 3 `db.cenarioEstrategico.upsert({ where: { empresaId_tipo: { empresaId, tipo } }, create: { empresaId, tipo, ...zeros }, update: {} })`,
+  um por `TipoCenarioEstrategico`. Idempotente; chamada no início das 3
+  funções abaixo.
 - `listarCenariosEstrategicos(sessao: SessaoAtiva): Promise<Record<TipoCenarioEstrategico, PremissasCenario & { id: string }>>`
   — `requirePermission(sessao.perfil, "planejamentoEstrategico:ler")`;
-  busca os 3 `CenarioEstrategico` da empresa ativa.
+  chama `garantirCenariosEstrategicos`, depois busca os 3
+  `CenarioEstrategico` da empresa ativa.
 - `listarProjecaoEstrategica(sessao: SessaoAtiva): Promise<Record<TipoCenarioEstrategico, AnoProjetadoEstrategico[]>>`
   — `requirePermission(sessao.perfil, "planejamentoEstrategico:ler")`;
-  busca o ano base uma vez (`buscarAnoBaseConsolidado`) e os 3 cenários,
-  roda `calcularProjecaoEstrategica` para cada um, devolve os 3
-  resultados.
+  busca o ano base uma vez (`buscarAnoBaseConsolidado`) e os 3 cenários
+  (via `listarCenariosEstrategicos`), roda `calcularProjecaoEstrategica`
+  para cada um, devolve os 3 resultados.
 - `atualizarPremissasCenario(sessao: SessaoAtiva, tipo: TipoCenarioEstrategico, premissas: PremissasCenario): Promise<void>`
   — `requirePermission(sessao.perfil, "planejamentoEstrategico:escrever")`
-  (sem `requireAlteracaoFilial` — ver "Permissões" abaixo); valida que o
-  `CenarioEstrategico` pertence à empresa ativa da sessão antes de
-  atualizar; grava via `registrarAuditoria`.
+  (sem `requireAlteracaoFilial` — ver "Permissões" abaixo); usa
+  `prisma.cenarioEstrategico.upsert(...)` com `where: { empresaId_tipo: { empresaId: sessao.empresaId, tipo } }`
+  — cria ou atualiza direto, sem precisar de leitura prévia nem de
+  `garantirCenariosEstrategicos`; grava via `registrarAuditoria`.
 
 ## Permissões
 
@@ -273,13 +281,19 @@ tem `planejamentoEstrategico:ler`).
   reproduz o ano base nos 5 anos sem crescimento nenhum.
 - Integração (Postgres real): `buscarAnoBaseConsolidado` soma
   corretamente os últimos 12 meses de 2 filiais da mesma empresa (não
-  soma uma filial de outra empresa); `listarCenariosEstrategicos`/
+  soma uma filial de outra empresa); `garantirCenariosEstrategicos` cria
+  os 3 tipos quando nenhum existe e não duplica/sobrescreve quando já
+  existem (idempotência); `listarCenariosEstrategicos`/
   `listarProjecaoEstrategica` escopam por empresa ativa da sessão;
   `atualizarPremissasCenario` recusa perfil sem
-  `planejamentoEstrategico:escrever` (ex.: FINANCEIRO); um cenário de
-  uma empresa não pode ser atualizado por sessão de outra empresa (usar
-  `id` do cenário sem checar `empresaId` seria uma falha de isolamento —
-  teste explícito pra isso).
+  `planejamentoEstrategico:escrever` (ex.: FINANCEIRO) e persiste
+  corretamente via `upsert` tanto quando o cenário já existe quanto
+  quando ainda não existe. Isolamento entre empresas é garantido por
+  construção (o `where` do upsert usa sempre `sessao.empresaId`, nunca um
+  `id` vindo do cliente — não existe parâmetro por onde mirar o cenário
+  de outra empresa), então não há um vetor de "vazamento por id" pra
+  testar aqui, diferente de outras entidades do sistema que recebem um
+  `id` do cliente.
 
 ## Depende de
 
