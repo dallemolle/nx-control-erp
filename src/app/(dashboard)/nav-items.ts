@@ -18,6 +18,12 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    titulo: "Controladoria",
+    itens: [
+      { href: "/controladoria/orcamento", label: "Orçamento" },
+    ],
+  },
+  {
     titulo: "Cadastros",
     itens: [
       { href: "/cadastros/clientes", label: "Clientes" },
