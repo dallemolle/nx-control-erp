@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { valorOrcamentoSchema } from "@/lib/schemas/orcamento";
-import { salvarValorOrcamento } from "@/server/services/orcamento";
+import { salvarValoresOrcamentoDoAno } from "@/server/services/orcamento";
 
 export type FormState = { erro?: string; sucesso?: boolean };
 
@@ -33,12 +33,8 @@ export async function salvarLinhaOrcamentoAction(
   }
 
   try {
-    for (const { mes, valor } of valoresPorMes) {
-      await salvarValorOrcamento(sessao, categoriaFinanceiraId, ano, mes, valor);
-    }
+    await salvarValoresOrcamentoDoAno(sessao, categoriaFinanceiraId, ano, valoresPorMes);
   } catch (erro) {
-    // Meses anteriores ao que falhou já podem ter sido persistidos —
-    // revalida pra UI não ficar mostrando um estado que não bate mais com o banco.
     revalidatePath("/controladoria/orcamento");
     return { erro: mensagemErro(erro) };
   }

@@ -6,6 +6,7 @@ import { registrarBaixa, aprovarBaixa } from "./baixa";
 import {
   montarLinhaComparativo,
   salvarValorOrcamento,
+  salvarValoresOrcamentoDoAno,
   buscarRealizadoPorCategoria,
   buscarProjetadoPorCategoria,
   listarComparativoOrcamento,
@@ -56,8 +57,9 @@ describe("salvarValorOrcamento / buscarRealizadoPorCategoria / buscarProjetadoPo
   });
 
   afterAll(async () => {
-    await prisma.orcamento.deleteMany({ where: { filialId: fixture.filialId } });
-    await prisma.auditLog.deleteMany({ where: { entidade: "Orcamento", filialId: fixture.filialId } });
+    // limparFixtureFinanceiro já apaga os orçamentos e todos os audit logs
+    // da filial (não só os de entidade "Orcamento") — ver Finding 2 da
+    // revisão final.
     await limparFixtureFinanceiro(fixture);
     await prisma.$disconnect();
   });
@@ -189,8 +191,55 @@ describe("salvarValorOrcamento / buscarRealizadoPorCategoria / buscarProjetadoPo
       const linhas = await listarComparativoOrcamento(fixture.sessao, 2026);
       expect(linhas.every((l) => l.orcado !== 999999)).toBe(true);
     } finally {
-      await prisma.orcamento.deleteMany({ where: { filialId: outraFixture.filialId } });
-      await prisma.auditLog.deleteMany({ where: { entidade: "Orcamento", filialId: outraFixture.filialId } });
+      await limparFixtureFinanceiro(outraFixture);
+    }
+  });
+});
+
+describe("salvarValoresOrcamentoDoAno (integração)", () => {
+  let fixture: FixtureFinanceiro;
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("ORCLOTE", "FINANCEIRO");
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fixture);
+    await prisma.$disconnect();
+  });
+
+  test("persiste os 12 meses em uma única chamada", async () => {
+    const valoresPorMes = Array.from({ length: 12 }, (_, i) => ({ mes: i + 1, valor: (i + 1) * 100 }));
+
+    await salvarValoresOrcamentoDoAno(fixture.sessao, fixture.categoriaFinanceiraId, 2027, valoresPorMes);
+
+    const salvos = await prisma.orcamento.findMany({
+      where: { filialId: fixture.filialId, categoriaFinanceiraId: fixture.categoriaFinanceiraId, ano: 2027 },
+      orderBy: { mes: "asc" },
+    });
+    expect(salvos).toHaveLength(12);
+    expect(salvos.map((o) => Number(o.valor))).toEqual(valoresPorMes.map((v) => v.valor));
+  });
+
+  test("nenhum dos 12 meses é persistido quando a categoria não pertence à filial (transação atômica)", async () => {
+    const outraFixture = await criarFixtureFinanceiro("ORCLOTE2", "FINANCEIRO");
+    try {
+      const valoresPorMes = Array.from({ length: 12 }, (_, i) => ({ mes: i + 1, valor: (i + 1) * 100 }));
+
+      await expect(
+        salvarValoresOrcamentoDoAno(fixture.sessao, outraFixture.categoriaFinanceiraId, 2028, valoresPorMes),
+      ).rejects.toThrow();
+
+      const salvosNaFilialCerta = await prisma.orcamento.findMany({
+        where: { filialId: fixture.filialId, ano: 2028 },
+      });
+      expect(salvosNaFilialCerta).toHaveLength(0);
+
+      const salvosNaOutraFilial = await prisma.orcamento.findMany({
+        where: { filialId: outraFixture.filialId, ano: 2028 },
+      });
+      expect(salvosNaOutraFilial).toHaveLength(0);
+    } finally {
       await limparFixtureFinanceiro(outraFixture);
     }
   });
