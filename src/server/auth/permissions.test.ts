@@ -6,6 +6,7 @@ import {
   podeEscreverTitulo,
   podeBaixarTitulo,
   podeAprovarBaixa,
+  podeEscreverOrcamento,
 } from "./permissions";
 
 describe("requirePermission", () => {
@@ -121,5 +122,23 @@ describe("permissões de orçamento", () => {
       expect(() => requirePermission(perfil, "orcamento:ler")).not.toThrow();
       expect(() => requirePermission(perfil, "orcamento:escrever")).toThrow(PermissionError);
     }
+  });
+});
+
+describe("podeEscreverOrcamento", () => {
+  test("FINANCEIRO com podeAlterarFilial=true pode escrever orçamento", () => {
+    expect(podeEscreverOrcamento("FINANCEIRO", true)).toBe(true);
+  });
+
+  test("FINANCEIRO com podeAlterarFilial=false não pode escrever, mesmo tendo o perfil certo", () => {
+    expect(podeEscreverOrcamento("FINANCEIRO", false)).toBe(false);
+  });
+
+  test("TESOURARIA com podeAlterarFilial=true ainda não pode escrever, porque o perfil só lê orçamento", () => {
+    expect(podeEscreverOrcamento("TESOURARIA", true)).toBe(false);
+  });
+
+  test("ADMINISTRADOR com podeAlterarFilial=false não pode escrever — a checagem de filial vale mesmo pro admin", () => {
+    expect(podeEscreverOrcamento("ADMINISTRADOR", false)).toBe(false);
   });
 });

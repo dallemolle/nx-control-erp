@@ -131,3 +131,7 @@ export function podeEscreverLancamento(perfil: Perfil, podeAlterarFilial: boolea
 export function podeEscreverConciliacao(perfil: Perfil, podeAlterarFilial: boolean): boolean {
   return podeExecutar(perfil, "conciliacao:escrever") && podeAlterarFilial;
 }
+
+export function podeEscreverOrcamento(perfil: Perfil, podeAlterarFilial: boolean): boolean {
+  return podeExecutar(perfil, "orcamento:escrever") && podeAlterarFilial;
+}

@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
-import { requirePermission, podeExecutar } from "@/server/auth/permissions";
+import { requirePermission, podeEscreverOrcamento } from "@/server/auth/permissions";
 import { listarComparativoOrcamento } from "@/server/services/orcamento";
 import { LinhaOrcamentoForm } from "./linha-orcamento-form";
 import { SeletorAnoMes } from "./seletor-ano-mes";
@@ -31,7 +31,7 @@ export default async function OrcamentoPage({
   const mes = mesValido(mesParam);
 
   const linhas = await listarComparativoOrcamento(sessao, ano);
-  const somenteLeitura = !podeExecutar(sessao.perfil, "orcamento:escrever");
+  const somenteLeitura = !podeEscreverOrcamento(sessao.perfil, sessao.podeAlterarFilial);
 
   const categoriasUnicas = Array.from(new Set(linhas.map((l) => l.categoriaFinanceiraId))).map((id) => {
     const primeira = linhas.find((l) => l.categoriaFinanceiraId === id)!;
