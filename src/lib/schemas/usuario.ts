@@ -9,10 +9,14 @@ export const PERFIS = [
   "CONSULTA",
 ] as const;
 
-export const criarUsuarioSchema = z.object({
-  nome: z.string().trim().min(2, "Informe o nome"),
+export const verificarEmailSchema = z.object({
   email: z.string().trim().email("Email inválido"),
-  senha: z.string().min(8, "A senha deve ter ao menos 8 caracteres"),
+});
+
+export const criarUsuarioSchema = z.object({
+  nome: z.string().trim().min(2, "Informe o nome").optional().or(z.literal("")),
+  email: z.string().trim().email("Email inválido"),
+  senha: z.string().min(8, "A senha deve ter ao menos 8 caracteres").optional().or(z.literal("")),
   perfil: z.enum(PERFIS),
 });
 

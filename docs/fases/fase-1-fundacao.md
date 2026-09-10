@@ -123,7 +123,12 @@ abaixo).
 - **Usuários** (`/usuarios`, admin): criação, vínculo a empresas com perfil,
   troca de perfil, ativar/desativar (com proteção contra autodesativação),
   seção "acesso por filial" (leitura e/ou alteração por `UsuarioEmpresaFilial`,
-  como refinamento sobre o perfil).
+  como refinamento sobre o perfil). O diálogo "Novo usuário" verifica o
+  email antes de pedir nome/senha (`buscarUsuarioPorEmail`) — se a pessoa já
+  existe no sistema (de outra empresa), só cria o vínculo, sem duplicar
+  cadastro nem exigir nome/senha; em ambos os casos, um toggle concede
+  acesso (leitura e/ou alteração) à filial ativa já na criação, dispensando
+  o passo manual separado em "acesso por filial" para o caso comum.
 - `requirePermission`/`requireAlteracaoFilial` checam também `podeAlterar`
   da filial ativa para ações de escrita sobre entidades filial-scoped
   (`CentroCusto`, `CentroLucro`, `Safra`, `Projeto`, `CategoriaFinanceira`,

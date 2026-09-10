@@ -13,9 +13,26 @@ export async function listarUsuariosDaEmpresa(empresaId: string) {
   });
 }
 
+export async function buscarUsuarioPorEmail(
+  sessao: SessaoAtiva,
+  email: string,
+): Promise<{ id: string; nome: string } | null> {
+  requirePermission(sessao.perfil, "usuario:gerenciar");
+
+  const usuario = await prisma.usuario.findUnique({ where: { email }, select: { id: true, nome: true } });
+  return usuario;
+}
+
 export async function criarUsuarioEVincular(
   sessao: SessaoAtiva,
-  dados: { nome: string; email: string; senha: string; perfil: Perfil },
+  dados: {
+    nome?: string;
+    email: string;
+    senha?: string;
+    perfil: Perfil;
+    concederAcessoFilialAtiva: boolean;
+    podeAlterarFilialAtiva: boolean;
+  },
 ) {
   requirePermission(sessao.perfil, "usuario:gerenciar");
 
@@ -23,6 +40,9 @@ export async function criarUsuarioEVincular(
     let usuario = await tx.usuario.findUnique({ where: { email: dados.email } });
 
     if (!usuario) {
+      if (!dados.nome || !dados.senha) {
+        throw new Error("Nome e senha são obrigatórios para criar um novo usuário");
+      }
       usuario = await tx.usuario.create({
         data: { nome: dados.nome, email: dados.email, senhaHash: await hashSenha(dados.senha) },
       });
@@ -40,6 +60,17 @@ export async function criarUsuarioEVincular(
       data: { usuarioId: usuario.id, empresaId: sessao.empresaId, perfil: dados.perfil },
     });
 
+    if (dados.concederAcessoFilialAtiva) {
+      await tx.usuarioEmpresaFilial.create({
+        data: {
+          usuarioEmpresaId: vinculo.id,
+          filialId: sessao.filialId,
+          ativo: true,
+          podeAlterar: dados.podeAlterarFilialAtiva,
+        },
+      });
+    }
+
     return { usuario, vinculo };
   });
 
@@ -53,6 +84,19 @@ export async function criarUsuarioEVincular(
     anterior: null,
     novo: { usuarioId: resultado.usuario.id, email: dados.email, perfil: dados.perfil },
   });
+
+  if (dados.concederAcessoFilialAtiva) {
+    await registrarAuditoria({
+      empresaId: sessao.empresaId,
+      filialId: sessao.filialId,
+      usuarioId: sessao.usuarioId,
+      entidade: "UsuarioEmpresaFilial",
+      entidadeId: resultado.vinculo.id,
+      acao: "CRIAR",
+      anterior: null,
+      novo: { filialId: sessao.filialId, podeAlterar: dados.podeAlterarFilialAtiva },
+    });
+  }
 
   return resultado;
 }
