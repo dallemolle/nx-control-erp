@@ -38,16 +38,11 @@ function somar(totais: Map<string | null, TotaisPorDimensao>, chave: string | nu
   totais.set(chave, atual);
 }
 
-/**
- * Realizado por dimensão — campo direto primeiro (lançamentos criados após
- * a correção na origem), fallback via baixa->parcela->titulo pra dado
- * histórico. Sem os dois, cai em `null` ("Não classificado").
- */
-export async function buscarRealizadoPorDimensao(
+export async function buscarRealizadoPorDimensaoNoPeriodo(
   filialId: string,
   tipoDimensao: TipoDimensao,
-  ano: number,
-  mes: number,
+  inicio: Date,
+  fim: Date,
 ): Promise<Map<string | null, TotaisPorDimensao>> {
   const campo = CAMPO_POR_DIMENSAO[tipoDimensao];
 
@@ -56,7 +51,7 @@ export async function buscarRealizadoPorDimensao(
       filialId,
       conciliado: true,
       contaBancaria: { ativo: true },
-      data: { gte: inicioDoMes(ano, mes), lte: fimDoMes(ano, mes) },
+      data: { gte: inicio, lte: fim },
     },
     include: {
       baixa: {
@@ -81,14 +76,26 @@ export async function buscarRealizadoPorDimensao(
 }
 
 /**
- * Projetado por dimensão — sempre via `Titulo`, direto (não há fallback
- * necessário: a parcela projetada só existe através do título).
+ * Realizado por dimensão — campo direto primeiro (lançamentos criados após
+ * a correção na origem), fallback via baixa->parcela->titulo pra dado
+ * histórico. Sem os dois, cai em `null` ("Não classificado"). Wrapper fino
+ * sobre a versão por intervalo — usado pelo relatório mensal (2a) e por
+ * nada mais; a lógica de query vive só em `buscarRealizadoPorDimensaoNoPeriodo`.
  */
-export async function buscarProjetadoPorDimensao(
+export async function buscarRealizadoPorDimensao(
   filialId: string,
   tipoDimensao: TipoDimensao,
   ano: number,
   mes: number,
+): Promise<Map<string | null, TotaisPorDimensao>> {
+  return buscarRealizadoPorDimensaoNoPeriodo(filialId, tipoDimensao, inicioDoMes(ano, mes), fimDoMes(ano, mes));
+}
+
+export async function buscarProjetadoPorDimensaoNoPeriodo(
+  filialId: string,
+  tipoDimensao: TipoDimensao,
+  inicio: Date,
+  fim: Date,
 ): Promise<Map<string | null, TotaisPorDimensao>> {
   const campo = CAMPO_POR_DIMENSAO[tipoDimensao];
 
@@ -96,7 +103,7 @@ export async function buscarProjetadoPorDimensao(
     where: {
       titulo: { filialId },
       status: { in: ["EM_ABERTO", "A_VENCER", "VENCIDO", "PARCIALMENTE_PAGO"] },
-      dataVencimento: { gte: inicioDoMes(ano, mes), lte: fimDoMes(ano, mes) },
+      dataVencimento: { gte: inicio, lte: fim },
     },
     include: {
       titulo: { select: { tipo: true, centroCustoId: true, centroLucroId: true, safraId: true } },
@@ -114,6 +121,20 @@ export async function buscarProjetadoPorDimensao(
     somar(totais, dimensaoId, parcela.titulo.tipo === "RECEBER" ? "entradas" : "saidas", saldo);
   }
   return totais;
+}
+
+/**
+ * Projetado por dimensão — sempre via `Titulo`, direto (não há fallback
+ * necessário: a parcela projetada só existe através do título). Wrapper
+ * fino sobre a versão por intervalo, mesmo motivo do realizado acima.
+ */
+export async function buscarProjetadoPorDimensao(
+  filialId: string,
+  tipoDimensao: TipoDimensao,
+  ano: number,
+  mes: number,
+): Promise<Map<string | null, TotaisPorDimensao>> {
+  return buscarProjetadoPorDimensaoNoPeriodo(filialId, tipoDimensao, inicioDoMes(ano, mes), fimDoMes(ano, mes));
 }
 
 export async function listarValoresDimensao(

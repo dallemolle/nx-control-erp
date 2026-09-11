@@ -6,6 +6,8 @@ import { registrarBaixa, aprovarBaixa } from "./baixa";
 import {
   buscarRealizadoPorDimensao,
   buscarProjetadoPorDimensao,
+  buscarRealizadoPorDimensaoNoPeriodo,
+  buscarProjetadoPorDimensaoNoPeriodo,
   listarValoresDimensao,
   listarFluxoDeCaixaPorDimensao,
 } from "./fluxoDeCaixaPorDimensao";
@@ -218,6 +220,77 @@ describe("fluxoDeCaixaPorDimensao", () => {
       const porCentroLucro = await buscarRealizadoPorDimensao(fixture.filialId, "CENTRO_LUCRO", 2026, 11);
       expect(porCentroLucro.get(safraAtivaId)).toBeUndefined();
     });
+
+    describe("buscarRealizadoPorDimensaoNoPeriodo", () => {
+      test("soma lançamentos de vários meses dentro do intervalo informado", async () => {
+        await prisma.lancamentoBancario.create({
+          data: {
+            filialId: fixture.filialId,
+            contaBancariaId: fixture.contaBancariaId,
+            data: new Date("2027-02-15T00:00:00Z"),
+            tipo: "SAIDA",
+            valor: 100,
+            descricao: "Fevereiro",
+            origem: "MANUAL",
+            usuarioId: fixture.usuarioId,
+            conciliado: true,
+            centroCustoId: centroCustoAtivoId,
+          },
+        });
+        await prisma.lancamentoBancario.create({
+          data: {
+            filialId: fixture.filialId,
+            contaBancariaId: fixture.contaBancariaId,
+            data: new Date("2027-05-10T00:00:00Z"),
+            tipo: "SAIDA",
+            valor: 50,
+            descricao: "Maio",
+            origem: "MANUAL",
+            usuarioId: fixture.usuarioId,
+            conciliado: true,
+            centroCustoId: centroCustoAtivoId,
+          },
+        });
+
+        const totais = await buscarRealizadoPorDimensaoNoPeriodo(
+          fixture.filialId,
+          "CENTRO_CUSTO",
+          new Date("2027-01-01T00:00:00Z"),
+          new Date("2027-06-30T23:59:59Z"),
+        );
+        expect(totais.get(centroCustoAtivoId)?.saidas).toBe(150);
+      });
+
+      test("exclui lançamento fora do intervalo, mesmo que dentro do mesmo ano", async () => {
+        await prisma.lancamentoBancario.create({
+          data: {
+            filialId: fixture.filialId,
+            contaBancariaId: fixture.contaBancariaId,
+            data: new Date("2027-09-01T00:00:00Z"),
+            tipo: "SAIDA",
+            valor: 999,
+            descricao: "Fora do intervalo",
+            origem: "MANUAL",
+            usuarioId: fixture.usuarioId,
+            conciliado: true,
+            centroCustoId: centroCustoAtivoId,
+          },
+        });
+
+        const totais = await buscarRealizadoPorDimensaoNoPeriodo(
+          fixture.filialId,
+          "CENTRO_CUSTO",
+          new Date("2027-01-01T00:00:00Z"),
+          new Date("2027-06-30T23:59:59Z"),
+        );
+        expect(totais.get(centroCustoAtivoId)?.saidas).toBe(150);
+      });
+
+      test("buscarRealizadoPorDimensao(ano, mes) continua produzindo o mesmo resultado que antes da refatoração", async () => {
+        const totais = await buscarRealizadoPorDimensao(fixture.filialId, "CENTRO_CUSTO", 2027, 2);
+        expect(totais.get(centroCustoAtivoId)?.saidas).toBe(100);
+      });
+    });
   });
 
   describe("buscarProjetadoPorDimensao", () => {
@@ -286,6 +359,41 @@ describe("fluxoDeCaixaPorDimensao", () => {
       } finally {
         await limparFixtureFinanceiro(outraFixture);
       }
+    });
+
+    describe("buscarProjetadoPorDimensaoNoPeriodo", () => {
+      test("soma parcelas em aberto de vários meses dentro do intervalo informado", async () => {
+        await criarTitulo(fixture.sessao, "RECEBER", {
+          contraparteId: fixture.clienteId,
+          documento: `FCD-PERIODO-${Date.now()}`,
+          dataEmissao: new Date(),
+          dataCompetencia: new Date(),
+          categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+          centroCustoId: centroCustoAtivoId,
+          centroLucroId: "",
+          safraId: "",
+          projetoId: "",
+          contaBancariaId: fixture.contaBancariaId,
+          formaPagamento: "",
+          parcelas: [{ numero: 1, dataVencimento: new Date("2027-03-20T00:00:00Z"), valorOriginal: 300 }],
+        });
+
+        const totais = await buscarProjetadoPorDimensaoNoPeriodo(
+          fixture.filialId,
+          "CENTRO_CUSTO",
+          new Date("2027-01-01T00:00:00Z"),
+          new Date("2027-06-30T23:59:59Z"),
+        );
+        expect(totais.get(centroCustoAtivoId)?.entradas).toBeGreaterThanOrEqual(300);
+
+        const totaisForaDoIntervalo = await buscarProjetadoPorDimensaoNoPeriodo(
+          fixture.filialId,
+          "CENTRO_CUSTO",
+          new Date("2027-07-01T00:00:00Z"),
+          new Date("2027-12-31T23:59:59Z"),
+        );
+        expect(totaisForaDoIntervalo.get(centroCustoAtivoId)).toBeUndefined();
+      });
     });
   });
 
