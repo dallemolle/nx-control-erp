@@ -357,10 +357,55 @@ export async function desconciliar(sessao: SessaoAtiva, linhaExtratoId: string):
   });
 }
 
+/**
+ * Repetido de `lancamentoBancario.ts` — `conciliacao.ts` e
+ * `lancamentoBancario.ts` não compartilham um módulo de validação hoje;
+ * extrair um helper comum é uma limpeza futura fora do escopo desta
+ * entrega.
+ */
+async function validarDimensoesDaFilial(
+  filialId: string,
+  dimensoes: {
+    centroCustoId: string | null;
+    centroLucroId: string | null;
+    safraId: string | null;
+    projetoId: string | null;
+  },
+): Promise<void> {
+  const referencias: [string, string | null, () => Promise<unknown>][] = [
+    ["Centro de custo", dimensoes.centroCustoId, () =>
+      prisma.centroCusto.findFirst({ where: { id: dimensoes.centroCustoId ?? "", filialId } }),
+    ],
+    ["Centro de lucro", dimensoes.centroLucroId, () =>
+      prisma.centroLucro.findFirst({ where: { id: dimensoes.centroLucroId ?? "", filialId } }),
+    ],
+    ["Safra", dimensoes.safraId, () =>
+      prisma.safra.findFirst({ where: { id: dimensoes.safraId ?? "", filialId } }),
+    ],
+    ["Projeto", dimensoes.projetoId, () =>
+      prisma.projeto.findFirst({ where: { id: dimensoes.projetoId ?? "", filialId } }),
+    ],
+  ];
+
+  for (const [rotulo, valor, buscar] of referencias) {
+    if (valor === null) continue;
+    if (!(await buscar())) {
+      throw new Error(`${rotulo} não pertence à filial ativa`);
+    }
+  }
+}
+
 export async function criarLancamentoDaLinha(
   sessao: SessaoAtiva,
   linhaExtratoId: string,
-  dados: { descricao: string; categoriaFinanceiraId: string | null },
+  dados: {
+    descricao: string;
+    categoriaFinanceiraId: string | null;
+    centroCustoId: string | null;
+    centroLucroId: string | null;
+    safraId: string | null;
+    projetoId: string | null;
+  },
 ) {
   requirePermission(sessao.perfil, "conciliacao:escrever");
   requirePermission(sessao.perfil, "lancamento:escrever");
@@ -376,6 +421,13 @@ export async function criarLancamentoDaLinha(
     throw new Error("Esta linha já está conciliada");
   }
 
+  await validarDimensoesDaFilial(sessao.filialId, {
+    centroCustoId: dados.centroCustoId,
+    centroLucroId: dados.centroLucroId,
+    safraId: dados.safraId,
+    projetoId: dados.projetoId,
+  });
+
   const lancamento = await prisma.$transaction(async (tx) => {
     const criado = await tx.lancamentoBancario.create({
       data: {
@@ -387,6 +439,10 @@ export async function criarLancamentoDaLinha(
         descricao: dados.descricao,
         origem: "MANUAL",
         categoriaFinanceiraId: dados.categoriaFinanceiraId,
+        centroCustoId: dados.centroCustoId,
+        centroLucroId: dados.centroLucroId,
+        safraId: dados.safraId,
+        projetoId: dados.projetoId,
         usuarioId: sessao.usuarioId,
         conciliado: true,
       },
