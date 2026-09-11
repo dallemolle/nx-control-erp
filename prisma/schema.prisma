@@ -118,6 +118,7 @@ model Filial {
   lancamentosBancarios  LancamentoBancario[]
   extratosImportados    ExtratoImportado[]
   orcamentos            Orcamento[]
+  orcamentosSafra       OrcamentoSafra[]
 
   @@index([empresaId])
   @@map("filiais")
@@ -231,6 +232,7 @@ model Safra {
   filial  Filial   @relation(fields: [filialId], references: [id], onDelete: Cascade)
   titulos Titulo[]
   lancamentosBancarios LancamentoBancario[]
+  orcamentosSafra OrcamentoSafra[]
 
   @@unique([filialId, nome])
   @@index([filialId])
@@ -293,6 +295,22 @@ model Orcamento {
   @@unique([filialId, categoriaFinanceiraId, ano, mes])
   @@index([filialId])
   @@map("orcamentos")
+}
+
+model OrcamentoSafra {
+  id           String   @id @default(uuid())
+  filialId     String
+  safraId      String
+  valor        Decimal  @db.Decimal(18, 2)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  filial Filial @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  safra  Safra  @relation(fields: [safraId], references: [id])
+
+  @@unique([filialId, safraId])
+  @@index([filialId])
+  @@map("orcamentos_safra")
 }
 
 model Cliente {
