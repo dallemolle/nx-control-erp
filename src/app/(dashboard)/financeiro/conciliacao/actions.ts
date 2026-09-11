@@ -119,6 +119,22 @@ export async function criarLancamentoDaLinhaAction(_prev: FormState, formData: F
         parsed.data.categoriaFinanceiraId && parsed.data.categoriaFinanceiraId !== SEM_VALOR
           ? parsed.data.categoriaFinanceiraId
           : null,
+      centroCustoId:
+        parsed.data.centroCustoId && parsed.data.centroCustoId !== SEM_VALOR
+          ? parsed.data.centroCustoId
+          : null,
+      centroLucroId:
+        parsed.data.centroLucroId && parsed.data.centroLucroId !== SEM_VALOR
+          ? parsed.data.centroLucroId
+          : null,
+      safraId:
+        parsed.data.safraId && parsed.data.safraId !== SEM_VALOR
+          ? parsed.data.safraId
+          : null,
+      projetoId:
+        parsed.data.projetoId && parsed.data.projetoId !== SEM_VALOR
+          ? parsed.data.projetoId
+          : null,
     });
   } catch (erro) {
     return { erro: mensagemErro(erro) };
