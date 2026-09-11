@@ -5,6 +5,10 @@ import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeEscreverLancamento } from "@/server/auth/permissions";
 import { listarResumoContas, listarLancamentos } from "@/server/services/lancamentoBancario";
 import { listarCategoriasFinanceiras } from "@/server/services/categoriaFinanceira";
+import { listarCentrosCusto } from "@/server/services/centroCusto";
+import { listarCentrosLucro } from "@/server/services/centroLucro";
+import { listarSafras } from "@/server/services/safra";
+import { listarProjetos } from "@/server/services/projeto";
 import { LancamentoDialogForm } from "./lancamento-dialog-form";
 import { TransferenciaDialogForm } from "./transferencia-dialog-form";
 import { SaldoBancarioDialogForm } from "./saldo-bancario-dialog-form";
@@ -20,10 +24,14 @@ export default async function TesourariaPage() {
   requirePermission(sessao.perfil, "lancamento:ler");
   const podeEscrever = podeEscreverLancamento(sessao.perfil, sessao.podeAlterarFilial);
 
-  const [resumoContas, lancamentos, categorias] = await Promise.all([
+  const [resumoContas, lancamentos, categorias, centrosCusto, centrosLucro, safras, projetos] = await Promise.all([
     listarResumoContas(sessao.filialId),
     listarLancamentos(sessao.filialId),
     listarCategoriasFinanceiras(sessao.filialId),
+    listarCentrosCusto(sessao.filialId),
+    listarCentrosLucro(sessao.filialId),
+    listarSafras(sessao.filialId),
+    listarProjetos(sessao.filialId),
   ]);
 
   const opcoesContasBancarias = resumoContas.map(({ conta }) => ({
@@ -42,7 +50,14 @@ export default async function TesourariaPage() {
         </div>
         {podeEscrever && (
           <div className="flex gap-2">
-            <LancamentoDialogForm contasBancarias={opcoesContasBancarias} categorias={categorias} />
+            <LancamentoDialogForm
+              contasBancarias={opcoesContasBancarias}
+              categorias={categorias}
+              centrosCusto={centrosCusto}
+              centrosLucro={centrosLucro}
+              safras={safras}
+              projetos={projetos}
+            />
             <TransferenciaDialogForm contasBancarias={opcoesContasBancarias} />
             <SaldoBancarioDialogForm contasBancarias={opcoesContasBancarias} />
           </div>
