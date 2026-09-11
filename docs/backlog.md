@@ -20,6 +20,33 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   vencimentos em uma janela curta, ou sobre necessidade de captação
   antecipada, ficou para uma iteração futura.
 
+## Comparação entre safras (Fase 5, sub-projeto 2b)
+
+- **Realizado/projetado por safra ignora lançamentos marcados fora da
+  janela `dataInicio`/`dataFim`.** `listarComparativoSafras` conta apenas
+  lançamentos/parcelas cuja data cai dentro do período oficial da safra —
+  um insumo comprado antes do início oficial, ou uma venda liquidada
+  depois do fim, mesmo estando marcado com aquela safra, não aparece no
+  comparativo (e, diferente do relatório de fluxo por dimensão do
+  sub-projeto 2a, não há uma linha "Não classificado" para reconciliar).
+  Decisão consciente ao aprovar o desenho: manter como está por ora. Se
+  vier a ser um problema real (compras de pré-safra, liquidações
+  pós-colheita), a mudança é pequena — trocar o período por um filtro
+  "todo lançamento marcado com esta safra, sem corte de data" em
+  `orcamentoSafra.ts`'s `listarComparativoSafras`.
+
+- **Sinal do orçado por safra (sempre ≥ 0) não bate com o sinal do
+  realizado/projetado (saldo líquido, pode ser negativo).** `orçado`
+  reaproveita `valorOrcamentoSchema` (não aceita negativo), enquanto
+  `realizado`/`projetado` são `entradas − saídas` e rotineiramente
+  negativos numa safra com custo alto — a Variação pode parecer um
+  estouro grande numa safra que na prática está dentro do esperado.
+  Decisão consciente ao aprovar o desenho: manter como está por ora. Se
+  isso confundir o usuário na prática, a correção é decidir se "orçado"
+  significa custo esperado (mantém ≥0, mas aí a Variação teria que
+  comparar contra saídas, não contra o saldo líquido) ou resultado líquido
+  esperado (permitir negativo no schema usado por esta tela).
+
 ## Cobertura de relatórios
 
 - **Projeto como dimensão de relatório** (Fase 5, sub-projeto 2a — Fluxo
