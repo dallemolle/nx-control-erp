@@ -2,7 +2,6 @@ import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { prisma } from "@/server/db/client";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
 import { criarTitulo } from "./titulo";
-import { registrarBaixa, aprovarBaixa } from "./baixa";
 import { montarLinhaComparativoSafra, salvarValorOrcamentoSafra, listarComparativoSafras } from "./orcamentoSafra";
 
 describe("montarLinhaComparativoSafra", () => {
