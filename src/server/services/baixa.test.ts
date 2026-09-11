@@ -234,4 +234,56 @@ describe("baixa (fluxo de aprovação)", () => {
     const lancamento = await prisma.lancamentoBancario.findFirstOrThrow({ where: { baixaId: baixa.id } });
     expect(lancamento.categoriaFinanceiraId).toBe(fixtureTesouraria.categoriaFinanceiraId);
   });
+
+  test("aprovarBaixa copia centro de custo, centro de lucro, safra e projeto do titulo", async () => {
+    const centroCusto = await prisma.centroCusto.create({
+      data: { filialId: fixtureTesouraria.filialId, nome: "Centro Baixa", codigo: "CXB" },
+    });
+    const centroLucro = await prisma.centroLucro.create({
+      data: { filialId: fixtureTesouraria.filialId, nome: "Lucro Baixa", codigo: "LXB" },
+    });
+    const safra = await prisma.safra.create({
+      data: {
+        filialId: fixtureTesouraria.filialId,
+        nome: "Safra Baixa",
+        dataInicio: new Date("2026-01-01"),
+        dataFim: new Date("2026-12-31"),
+      },
+    });
+    const projeto = await prisma.projeto.create({
+      data: { filialId: fixtureTesouraria.filialId, nome: "Projeto Baixa", codigo: "PXB" },
+    });
+
+    const titulo = await criarTitulo(fixtureTesouraria.sessaoAdmin, "PAGAR", {
+      contraparteId: fixtureTesouraria.fornecedorId,
+      documento: `NF-DIM-${Date.now()}`,
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fixtureTesouraria.categoriaFinanceiraId,
+      centroCustoId: centroCusto.id,
+      centroLucroId: centroLucro.id,
+      safraId: safra.id,
+      projetoId: projeto.id,
+      contaBancariaId: fixtureTesouraria.contaBancariaId,
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: new Date(), valorOriginal: 350 }],
+    });
+    const parcela = titulo.parcelas[0];
+
+    const baixa = await registrarBaixa(fixtureTesouraria.sessao, parcela.id, {
+      data: new Date(),
+      valorPago: 350,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fixtureTesouraria.contaBancariaId,
+    });
+    await aprovarBaixa(fixtureTesouraria.sessao, baixa.id);
+
+    const lancamento = await prisma.lancamentoBancario.findFirstOrThrow({ where: { baixaId: baixa.id } });
+    expect(lancamento.centroCustoId).toBe(centroCusto.id);
+    expect(lancamento.centroLucroId).toBe(centroLucro.id);
+    expect(lancamento.safraId).toBe(safra.id);
+    expect(lancamento.projetoId).toBe(projeto.id);
+  });
 });
