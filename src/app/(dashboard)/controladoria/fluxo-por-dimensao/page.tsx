@@ -47,7 +47,7 @@ export default async function FluxoPorDimensaoPage({
         <p className="text-sm text-muted-foreground">
           Realizado (movimentações conciliadas) e projetado (títulos em
           aberto) do mês, agrupados por centro de custo, centro de lucro ou
-          safra. "Não classificado" reúne o que não tem essa dimensão
+          safra. &quot;Não classificado&quot; reúne o que não tem essa dimensão
           preenchida.
         </p>
       </div>

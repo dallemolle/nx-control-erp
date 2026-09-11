@@ -102,10 +102,10 @@ export default async function ConciliacaoPage({
                   lancamentoVinculadoDescricao={linha.lancamentoBancario?.descricao ?? null}
                   podeEscrever={podeEscrever}
                   categorias={categorias}
-                  centrosCusto={centrosCusto}
-                  centrosLucro={centrosLucro}
-                  safras={safras}
-                  projetos={projetos}
+                  centrosCusto={centrosCusto.filter((c) => c.ativo)}
+                  centrosLucro={centrosLucro.filter((c) => c.ativo)}
+                  safras={safras.filter((s) => s.ativo)}
+                  projetos={projetos.filter((p) => p.ativo)}
                 />
               </TableCell>
             </TableRow>

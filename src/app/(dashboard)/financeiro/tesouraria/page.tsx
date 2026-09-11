@@ -53,10 +53,10 @@ export default async function TesourariaPage() {
             <LancamentoDialogForm
               contasBancarias={opcoesContasBancarias}
               categorias={categorias}
-              centrosCusto={centrosCusto}
-              centrosLucro={centrosLucro}
-              safras={safras}
-              projetos={projetos}
+              centrosCusto={centrosCusto.filter((c) => c.ativo)}
+              centrosLucro={centrosLucro.filter((c) => c.ativo)}
+              safras={safras.filter((s) => s.ativo)}
+              projetos={projetos.filter((p) => p.ativo)}
             />
             <TransferenciaDialogForm contasBancarias={opcoesContasBancarias} />
             <SaldoBancarioDialogForm contasBancarias={opcoesContasBancarias} />

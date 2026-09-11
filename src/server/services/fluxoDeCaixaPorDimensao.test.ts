@@ -15,6 +15,8 @@ describe("fluxoDeCaixaPorDimensao", () => {
   let centroCustoAtivoId: string;
   let centroCustoInativoId: string;
   let centroCustoFilhoId: string;
+  let centroLucroAtivoId: string;
+  let safraAtivaId: string;
 
   beforeAll(async () => {
     fixture = await criarFixtureFinanceiro("FCD", "FINANCEIRO");
@@ -33,6 +35,21 @@ describe("fluxoDeCaixaPorDimensao", () => {
       data: { filialId: fixture.filialId, nome: "Filho", codigo: "FLH", parentId: centroCustoAtivoId },
     });
     centroCustoFilhoId = centroCustoFilho.id;
+
+    const centroLucroAtivo = await prisma.centroLucro.create({
+      data: { filialId: fixture.filialId, nome: "Lucro Ativo", codigo: "LCR" },
+    });
+    centroLucroAtivoId = centroLucroAtivo.id;
+
+    const safraAtiva = await prisma.safra.create({
+      data: {
+        filialId: fixture.filialId,
+        nome: "Safra Ativa",
+        dataInicio: new Date("2026-01-01T00:00:00Z"),
+        dataFim: new Date("2026-12-31T00:00:00Z"),
+      },
+    });
+    safraAtivaId = safraAtiva.id;
   });
 
   afterAll(async () => {
@@ -149,6 +166,58 @@ describe("fluxoDeCaixaPorDimensao", () => {
         await limparFixtureFinanceiro(outraFixture);
       }
     });
+
+    test("CENTRO_LUCRO usa centroLucroId — não aparece em CENTRO_CUSTO nem SAFRA (pega mapeamento trocado)", async () => {
+      await prisma.lancamentoBancario.create({
+        data: {
+          filialId: fixture.filialId,
+          contaBancariaId: fixture.contaBancariaId,
+          data: new Date("2026-10-10T00:00:00Z"),
+          tipo: "SAIDA",
+          valor: 150,
+          descricao: "Centro de lucro",
+          origem: "MANUAL",
+          usuarioId: fixture.usuarioId,
+          conciliado: true,
+          centroLucroId: centroLucroAtivoId,
+        },
+      });
+
+      const porCentroLucro = await buscarRealizadoPorDimensao(fixture.filialId, "CENTRO_LUCRO", 2026, 10);
+      expect(porCentroLucro.get(centroLucroAtivoId)?.saidas).toBe(150);
+
+      const porCentroCusto = await buscarRealizadoPorDimensao(fixture.filialId, "CENTRO_CUSTO", 2026, 10);
+      expect(porCentroCusto.get(centroLucroAtivoId)).toBeUndefined();
+
+      const porSafra = await buscarRealizadoPorDimensao(fixture.filialId, "SAFRA", 2026, 10);
+      expect(porSafra.get(centroLucroAtivoId)).toBeUndefined();
+    });
+
+    test("SAFRA usa safraId — não aparece em CENTRO_CUSTO nem CENTRO_LUCRO (pega mapeamento trocado)", async () => {
+      await prisma.lancamentoBancario.create({
+        data: {
+          filialId: fixture.filialId,
+          contaBancariaId: fixture.contaBancariaId,
+          data: new Date("2026-11-10T00:00:00Z"),
+          tipo: "ENTRADA",
+          valor: 250,
+          descricao: "Safra",
+          origem: "MANUAL",
+          usuarioId: fixture.usuarioId,
+          conciliado: true,
+          safraId: safraAtivaId,
+        },
+      });
+
+      const porSafra = await buscarRealizadoPorDimensao(fixture.filialId, "SAFRA", 2026, 11);
+      expect(porSafra.get(safraAtivaId)?.entradas).toBe(250);
+
+      const porCentroCusto = await buscarRealizadoPorDimensao(fixture.filialId, "CENTRO_CUSTO", 2026, 11);
+      expect(porCentroCusto.get(safraAtivaId)).toBeUndefined();
+
+      const porCentroLucro = await buscarRealizadoPorDimensao(fixture.filialId, "CENTRO_LUCRO", 2026, 11);
+      expect(porCentroLucro.get(safraAtivaId)).toBeUndefined();
+    });
   });
 
   describe("buscarProjetadoPorDimensao", () => {
@@ -188,6 +257,35 @@ describe("fluxoDeCaixaPorDimensao", () => {
 
       const totaisMesErrado = await buscarProjetadoPorDimensao(fixture.filialId, "CENTRO_CUSTO", 2026, 9);
       expect(totaisMesErrado.get(centroCustoAtivoId)).toBeUndefined();
+    });
+
+    test("escopo de filial — parcela em aberto de outra filial não vaza", async () => {
+      const outraFixture = await criarFixtureFinanceiro("FCD3", "FINANCEIRO");
+      try {
+        const outroCentro = await prisma.centroCusto.create({
+          data: { filialId: outraFixture.filialId, nome: "Outro", codigo: "OUT" },
+        });
+
+        await criarTitulo(outraFixture.sessao, "PAGAR", {
+          contraparteId: outraFixture.fornecedorId,
+          documento: `FCD3-PROJ-PAG-${Date.now()}`,
+          dataEmissao: new Date(),
+          dataCompetencia: new Date(),
+          categoriaFinanceiraId: outraFixture.categoriaFinanceiraId,
+          centroCustoId: outroCentro.id,
+          centroLucroId: "",
+          safraId: "",
+          projetoId: "",
+          contaBancariaId: outraFixture.contaBancariaId,
+          formaPagamento: "",
+          parcelas: [{ numero: 1, dataVencimento: new Date("2026-08-15T00:00:00Z"), valorOriginal: 999 }],
+        });
+
+        const totais = await buscarProjetadoPorDimensao(fixture.filialId, "CENTRO_CUSTO", 2026, 8);
+        expect(totais.get(outroCentro.id)).toBeUndefined();
+      } finally {
+        await limparFixtureFinanceiro(outraFixture);
+      }
     });
   });
 
@@ -232,6 +330,33 @@ describe("fluxoDeCaixaPorDimensao", () => {
       const linhaFilho = linhas.find((l) => l.dimensaoId === centroCustoFilhoId);
       expect(linhaPai?.saidasRealizadas ?? 0).toBe(0);
       expect(linhaFilho?.saidasRealizadas).toBe(60);
+    });
+
+    test("dimensão inativa mas classificada aparece em linha própria '(inativo)', não some nem vira Não classificado", async () => {
+      await prisma.lancamentoBancario.create({
+        data: {
+          filialId: fixture.filialId,
+          contaBancariaId: fixture.contaBancariaId,
+          data: new Date("2026-12-10T00:00:00Z"),
+          tipo: "SAIDA",
+          valor: 80,
+          descricao: "Centro de custo desativado depois de classificado",
+          origem: "MANUAL",
+          usuarioId: fixture.usuarioId,
+          conciliado: true,
+          centroCustoId: centroCustoInativoId,
+        },
+      });
+
+      const linhas = await listarFluxoDeCaixaPorDimensao(fixture.sessao, "CENTRO_CUSTO", 2026, 12);
+
+      const linhaInativa = linhas.find((l) => l.dimensaoId === centroCustoInativoId);
+      expect(linhaInativa).toBeDefined();
+      expect(linhaInativa?.dimensaoNome).toBe("Inativo (inativo)");
+      expect(linhaInativa?.saidasRealizadas).toBe(80);
+
+      const naoClassificado = linhas.find((l) => l.dimensaoId === null);
+      expect(naoClassificado?.saidasRealizadas ?? 0).toBe(0);
     });
   });
 });

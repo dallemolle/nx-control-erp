@@ -141,6 +141,37 @@ export async function listarValoresDimensao(
   });
 }
 
+/**
+ * Busca o nome de dimensões que já não estão mais ativas, mas que ainda
+ * aparecem como chave (não-nula) em `realizado`/`projetado` — sem o filtro
+ * `ativo: true` de `listarValoresDimensao`, propositalmente, pra não deixar
+ * o valor desaparecer do relatório só porque foi desativado depois de
+ * classificar algum lançamento/parcela.
+ */
+async function buscarNomesInativos(
+  tipoDimensao: TipoDimensao,
+  ids: string[],
+): Promise<{ id: string; nome: string }[]> {
+  if (ids.length === 0) return [];
+
+  if (tipoDimensao === "CENTRO_CUSTO") {
+    return prisma.centroCusto.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, nome: true },
+    });
+  }
+  if (tipoDimensao === "CENTRO_LUCRO") {
+    return prisma.centroLucro.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, nome: true },
+    });
+  }
+  return prisma.safra.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, nome: true },
+  });
+}
+
 export async function listarFluxoDeCaixaPorDimensao(
   sessao: SessaoAtiva,
   tipoDimensao: TipoDimensao,
@@ -169,6 +200,40 @@ export async function listarFluxoDeCaixaPorDimensao(
       saidasProjetadas: p.saidas,
     };
   });
+
+  // Ids não-nulos presentes em realizado/projetado que não estão entre os
+  // valores ativos: dimensões desativadas depois de classificar algum
+  // lançamento/parcela. Sem isso, o valor some do relatório sem ir pra
+  // nenhuma linha — nem a dele, nem "Não classificado" (que é só pra chave
+  // null) — quebrando a reconciliação com as telas de realizado/projetado.
+  const idsAtivos = new Set(valores.map((valor) => valor.id));
+  const idsInativos = new Set<string>();
+  for (const chave of realizado.keys()) {
+    if (chave !== null && !idsAtivos.has(chave)) idsInativos.add(chave);
+  }
+  for (const chave of projetado.keys()) {
+    if (chave !== null && !idsAtivos.has(chave)) idsInativos.add(chave);
+  }
+
+  if (idsInativos.size > 0) {
+    const nomesInativos = await buscarNomesInativos(tipoDimensao, Array.from(idsInativos));
+    const nomePorId = new Map(nomesInativos.map((valor) => [valor.id, valor.nome]));
+    for (const id of idsInativos) {
+      const r = realizado.get(id) ?? { entradas: 0, saidas: 0 };
+      const p = projetado.get(id) ?? { entradas: 0, saidas: 0 };
+      const nome = nomePorId.get(id);
+      linhas.push({
+        dimensaoId: id,
+        dimensaoNome: nome ? `${nome} (inativo)` : "Desconhecido (inativo)",
+        ano,
+        mes,
+        entradasRealizadas: r.entradas,
+        saidasRealizadas: r.saidas,
+        entradasProjetadas: p.entradas,
+        saidasProjetadas: p.saidas,
+      });
+    }
+  }
 
   const rNulo = realizado.get(null) ?? { entradas: 0, saidas: 0 };
   const pNulo = projetado.get(null) ?? { entradas: 0, saidas: 0 };
