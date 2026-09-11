@@ -718,7 +718,7 @@ describe("listarComparativoSafras (integração)", () => {
     }
   });
 
-  test("recusa perfil sem orcamento:ler", async () => {
+  test("todos os 6 perfis têm orcamento:ler — nenhum é recusado", async () => {
     // CONSULTA e todos os outros 5 perfis têm orcamento:ler (ver permissions.ts) —
     // não há perfil sem essa permissão hoje; este teste fixa essa garantia:
     // se um novo perfil for adicionado sem orcamento:ler, este teste aponta
