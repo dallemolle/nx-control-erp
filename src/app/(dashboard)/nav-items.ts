@@ -21,6 +21,7 @@ export const NAV_SECTIONS: NavSection[] = [
     titulo: "Controladoria",
     itens: [
       { href: "/controladoria/orcamento", label: "Orçamento" },
+      { href: "/controladoria/fluxo-por-dimensao", label: "Fluxo de caixa por dimensão" },
     ],
   },
   {
