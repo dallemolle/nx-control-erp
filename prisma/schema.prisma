@@ -192,6 +192,7 @@ model CentroCusto {
   parent  CentroCusto?  @relation("CentroCustoHierarquia", fields: [parentId], references: [id])
   filhos  CentroCusto[] @relation("CentroCustoHierarquia")
   titulos Titulo[]
+  lancamentosBancarios LancamentoBancario[]
 
   @@unique([filialId, codigo])
   @@index([filialId])
@@ -209,6 +210,7 @@ model CentroLucro {
 
   filial  Filial   @relation(fields: [filialId], references: [id], onDelete: Cascade)
   titulos Titulo[]
+  lancamentosBancarios LancamentoBancario[]
 
   @@unique([filialId, codigo])
   @@index([filialId])
@@ -228,6 +230,7 @@ model Safra {
 
   filial  Filial   @relation(fields: [filialId], references: [id], onDelete: Cascade)
   titulos Titulo[]
+  lancamentosBancarios LancamentoBancario[]
 
   @@unique([filialId, nome])
   @@index([filialId])
@@ -246,6 +249,7 @@ model Projeto {
 
   filial  Filial   @relation(fields: [filialId], references: [id], onDelete: Cascade)
   titulos Titulo[]
+  lancamentosBancarios LancamentoBancario[]
 
   @@unique([filialId, codigo])
   @@index([filialId])
@@ -570,6 +574,10 @@ model LancamentoBancario {
   baixaId               String?
   transferenciaId       String?
   categoriaFinanceiraId String?
+  centroCustoId         String?
+  centroLucroId         String?
+  safraId               String?
+  projetoId             String?
   usuarioId             String
   criadoEm              DateTime         @default(now())
 
@@ -577,6 +585,10 @@ model LancamentoBancario {
   contaBancaria       ContaBancaria        @relation(fields: [contaBancariaId], references: [id])
   baixa               Baixa?               @relation(fields: [baixaId], references: [id])
   categoriaFinanceira CategoriaFinanceira? @relation(fields: [categoriaFinanceiraId], references: [id])
+  centroCusto         CentroCusto?         @relation(fields: [centroCustoId], references: [id])
+  centroLucro         CentroLucro?         @relation(fields: [centroLucroId], references: [id])
+  safra               Safra?               @relation(fields: [safraId], references: [id])
+  projeto             Projeto?             @relation(fields: [projetoId], references: [id])
   usuario             Usuario              @relation(fields: [usuarioId], references: [id])
   linhaExtrato        LinhaExtrato?
 
