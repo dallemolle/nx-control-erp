@@ -4,7 +4,7 @@ import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeEscreverOrcamento } from "@/server/auth/permissions";
 import { listarComparativoOrcamento } from "@/server/services/orcamento";
 import { LinhaOrcamentoForm } from "./linha-orcamento-form";
-import { SeletorAnoMes } from "./seletor-ano-mes";
+import { SeletorAnoMes } from "../_shared/seletor-ano-mes";
 
 function anoValido(valor: string | undefined): number {
   const numero = Number(valor);
