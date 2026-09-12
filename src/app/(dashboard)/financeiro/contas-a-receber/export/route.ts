@@ -1,8 +1,8 @@
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { podeExecutar } from "@/server/auth/permissions";
 import { listarTitulos } from "@/server/services/titulo";
-import { gerarCsv, type ColunaExport } from "@/lib/export/csv";
-import { gerarExcel } from "@/lib/export/excel";
+import { type ColunaExport } from "@/lib/export/csv";
+import { responderExport } from "@/lib/export/responder";
 
 type LinhaExport = {
   documento: string;
@@ -44,27 +44,5 @@ export async function GET(request: Request) {
   );
 
   const formato = new URL(request.url).searchParams.get("formato");
-  const dataDeHoje = new Date().toISOString().slice(0, 10);
-
-  if (formato === "xlsx") {
-    const buffer = await gerarExcel(linhas, COLUNAS, "Contas a receber");
-    return new Response(buffer, {
-      headers: {
-        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename="contas-a-receber-${dataDeHoje}.xlsx"`,
-        "X-Content-Type-Options": "nosniff",
-        "Cache-Control": "private, no-store",
-      },
-    });
-  }
-
-  const csv = gerarCsv(linhas, COLUNAS);
-  return new Response(csv, {
-    headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="contas-a-receber-${dataDeHoje}.csv"`,
-      "X-Content-Type-Options": "nosniff",
-      "Cache-Control": "private, no-store",
-    },
-  });
+  return responderExport(linhas, COLUNAS, { nomeArquivo: "contas-a-receber", nomeAba: "Contas a receber", formato });
 }

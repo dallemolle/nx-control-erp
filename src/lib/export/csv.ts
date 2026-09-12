@@ -5,9 +5,17 @@ export type ColunaExport<T> = {
   valor: (linha: T) => string | number | Date;
 };
 
-function formatarValorCsv(valor: string | number | Date): string | number {
+function formatarNumeroCsv(valor: number): string {
+  const arredondado = Math.round(valor * 100) / 100;
+  return arredondado.toString().replace(".", ",");
+}
+
+function formatarValorCsv(valor: string | number | Date): string {
   if (valor instanceof Date) {
     return valor.toLocaleDateString("pt-BR", { timeZone: "UTC" });
+  }
+  if (typeof valor === "number") {
+    return formatarNumeroCsv(valor);
   }
   return valor;
 }

@@ -3,8 +3,8 @@ import { podeExecutar } from "@/server/auth/permissions";
 import { listarFluxoDeCaixaRealizado, type Granularidade } from "@/server/services/fluxoDeCaixa";
 import { formatarRotuloPeriodo } from "../../_fluxo-de-caixa/formatar-rotulo-periodo";
 import { dataValida } from "../../_fluxo-de-caixa/data-valida";
-import { gerarCsv, type ColunaExport } from "@/lib/export/csv";
-import { gerarExcel } from "@/lib/export/excel";
+import { type ColunaExport } from "@/lib/export/csv";
+import { responderExport } from "@/lib/export/responder";
 
 const GRANULARIDADES_VALIDAS: Granularidade[] = ["DIA", "SEMANA", "MES", "ANO"];
 
@@ -51,27 +51,5 @@ export async function GET(request: Request) {
   }));
 
   const formato = url.searchParams.get("formato");
-  const dataDeHoje = new Date().toISOString().slice(0, 10);
-
-  if (formato === "xlsx") {
-    const buffer = await gerarExcel(linhas, COLUNAS, "Fluxo de caixa");
-    return new Response(buffer, {
-      headers: {
-        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename="fluxo-de-caixa-${dataDeHoje}.xlsx"`,
-        "X-Content-Type-Options": "nosniff",
-        "Cache-Control": "private, no-store",
-      },
-    });
-  }
-
-  const csv = gerarCsv(linhas, COLUNAS);
-  return new Response(csv, {
-    headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="fluxo-de-caixa-${dataDeHoje}.csv"`,
-      "X-Content-Type-Options": "nosniff",
-      "Cache-Control": "private, no-store",
-    },
-  });
+  return responderExport(linhas, COLUNAS, { nomeArquivo: "fluxo-de-caixa", nomeAba: "Fluxo de caixa", formato });
 }
