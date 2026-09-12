@@ -17,12 +17,20 @@ export function LinhaExtratoActions({
   lancamentoVinculadoDescricao,
   podeEscrever,
   categorias,
+  centrosCusto,
+  centrosLucro,
+  safras,
+  projetos,
 }: {
   linhaExtratoId: string;
   status: string;
   lancamentoVinculadoDescricao: string | null;
   podeEscrever: boolean;
   categorias: { id: string; nome: string }[];
+  centrosCusto: { id: string; nome: string }[];
+  centrosLucro: { id: string; nome: string }[];
+  safras: { id: string; nome: string }[];
+  projetos: { id: string; nome: string }[];
 }) {
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
   const [selecionado, setSelecionado] = useState("");
@@ -98,7 +106,14 @@ export function LinhaExtratoActions({
           </Button>
         </div>
       )}
-      <CriarLancamentoDialogForm linhaExtratoId={linhaExtratoId} categorias={categorias} />
+      <CriarLancamentoDialogForm
+        linhaExtratoId={linhaExtratoId}
+        categorias={categorias}
+        centrosCusto={centrosCusto}
+        centrosLucro={centrosLucro}
+        safras={safras}
+        projetos={projetos}
+      />
       {erro ? <p className="text-xs text-destructive">{erro}</p> : null}
     </div>
   );

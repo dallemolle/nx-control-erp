@@ -26,6 +26,38 @@ async function buscarContaDaFilial(filialId: string, contaBancariaId: string) {
   return conta;
 }
 
+async function validarDimensoesDaFilial(
+  filialId: string,
+  dimensoes: {
+    centroCustoId: string | null;
+    centroLucroId: string | null;
+    safraId: string | null;
+    projetoId: string | null;
+  },
+): Promise<void> {
+  const referencias: [string, string | null, () => Promise<unknown>][] = [
+    ["Centro de custo", dimensoes.centroCustoId, () =>
+      prisma.centroCusto.findFirst({ where: { id: dimensoes.centroCustoId ?? "", filialId } }),
+    ],
+    ["Centro de lucro", dimensoes.centroLucroId, () =>
+      prisma.centroLucro.findFirst({ where: { id: dimensoes.centroLucroId ?? "", filialId } }),
+    ],
+    ["Safra", dimensoes.safraId, () =>
+      prisma.safra.findFirst({ where: { id: dimensoes.safraId ?? "", filialId } }),
+    ],
+    ["Projeto", dimensoes.projetoId, () =>
+      prisma.projeto.findFirst({ where: { id: dimensoes.projetoId ?? "", filialId } }),
+    ],
+  ];
+
+  for (const [rotulo, valor, buscar] of referencias) {
+    if (valor === null) continue;
+    if (!(await buscar())) {
+      throw new Error(`${rotulo} não pertence à filial ativa`);
+    }
+  }
+}
+
 export async function listarLancamentos(filialId: string) {
   return prisma.lancamentoBancario.findMany({
     where: { filialId },
@@ -78,6 +110,12 @@ export async function criarLancamentoManual(sessao: SessaoAtiva, dados: Lancamen
 
   await buscarContaDaFilial(sessao.filialId, dados.contaBancariaId);
 
+  const centroCustoId = normalizarOpcional(dados.centroCustoId);
+  const centroLucroId = normalizarOpcional(dados.centroLucroId);
+  const safraId = normalizarOpcional(dados.safraId);
+  const projetoId = normalizarOpcional(dados.projetoId);
+  await validarDimensoesDaFilial(sessao.filialId, { centroCustoId, centroLucroId, safraId, projetoId });
+
   const dadosNormalizados = {
     filialId: sessao.filialId,
     contaBancariaId: dados.contaBancariaId,
@@ -87,6 +125,10 @@ export async function criarLancamentoManual(sessao: SessaoAtiva, dados: Lancamen
     descricao: dados.descricao,
     origem: "MANUAL" as const,
     categoriaFinanceiraId: normalizarOpcional(dados.categoriaFinanceiraId),
+    centroCustoId,
+    centroLucroId,
+    safraId,
+    projetoId,
     usuarioId: sessao.usuarioId,
   };
 

@@ -20,9 +20,17 @@ const ESTADO_INICIAL: FormState = {};
 export function LancamentoDialogForm({
   contasBancarias,
   categorias,
+  centrosCusto,
+  centrosLucro,
+  safras,
+  projetos,
 }: {
   contasBancarias: { id: string; nome: string }[];
   categorias: { id: string; nome: string }[];
+  centrosCusto: { id: string; nome: string }[];
+  centrosLucro: { id: string; nome: string }[];
+  safras: { id: string; nome: string }[];
+  projetos: { id: string; nome: string }[];
 }) {
   const [aberto, setAberto] = useState(false);
   const [state, formAction, pendente] = useActionState(criarLancamentoManualAction, ESTADO_INICIAL);
@@ -91,6 +99,70 @@ export function LancamentoDialogForm({
                 {categorias.map((categoria) => (
                   <SelectItem key={categoria.id} value={categoria.id}>
                     {categoria.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="centroCustoId">Centro de custo</Label>
+            <Select name="centroCustoId" defaultValue={SEM_VALOR}>
+              <SelectTrigger id="centroCustoId" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={SEM_VALOR}>Nenhum</SelectItem>
+                {centrosCusto.map((centro) => (
+                  <SelectItem key={centro.id} value={centro.id}>
+                    {centro.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="centroLucroId">Centro de lucro</Label>
+            <Select name="centroLucroId" defaultValue={SEM_VALOR}>
+              <SelectTrigger id="centroLucroId" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={SEM_VALOR}>Nenhum</SelectItem>
+                {centrosLucro.map((centro) => (
+                  <SelectItem key={centro.id} value={centro.id}>
+                    {centro.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="safraId">Safra</Label>
+            <Select name="safraId" defaultValue={SEM_VALOR}>
+              <SelectTrigger id="safraId" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={SEM_VALOR}>Nenhuma</SelectItem>
+                {safras.map((safra) => (
+                  <SelectItem key={safra.id} value={safra.id}>
+                    {safra.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="projetoId">Projeto</Label>
+            <Select name="projetoId" defaultValue={SEM_VALOR}>
+              <SelectTrigger id="projetoId" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={SEM_VALOR}>Nenhum</SelectItem>
+                {projetos.map((projeto) => (
+                  <SelectItem key={projeto.id} value={projeto.id}>
+                    {projeto.nome}
                   </SelectItem>
                 ))}
               </SelectContent>

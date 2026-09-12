@@ -16,7 +16,7 @@ export type PeriodoFluxoDeCaixa = SubPeriodo & {
   saldoFinal: number;
 };
 
-function fimDoDiaUTC(ano: number, mes: number, dia: number): Date {
+export function fimDoDiaUTC(ano: number, mes: number, dia: number): Date {
   return new Date(Date.UTC(ano, mes, dia, 23, 59, 59, 999));
 }
 

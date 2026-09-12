@@ -13,6 +13,16 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/financeiro/tesouraria", label: "Tesouraria" },
       { href: "/financeiro/conciliacao", label: "Conciliação" },
       { href: "/financeiro/fluxo-de-caixa", label: "Fluxo de caixa" },
+      { href: "/financeiro/fluxo-de-caixa-projetado", label: "Fluxo de caixa projetado" },
+      { href: "/financeiro/fluxo-de-caixa-estrategico", label: "Fluxo de caixa estratégico" },
+    ],
+  },
+  {
+    titulo: "Controladoria",
+    itens: [
+      { href: "/controladoria/orcamento", label: "Orçamento" },
+      { href: "/controladoria/fluxo-por-dimensao", label: "Fluxo de caixa por dimensão" },
+      { href: "/controladoria/comparacao-safras", label: "Comparação entre safras" },
     ],
   },
   {

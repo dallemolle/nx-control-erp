@@ -2,14 +2,27 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
-import { criarUsuarioSchema, atualizarPerfilSchema } from "@/lib/schemas/usuario";
+import { criarUsuarioSchema, verificarEmailSchema, atualizarPerfilSchema } from "@/lib/schemas/usuario";
 import * as usuarioService from "@/server/services/usuario";
 import * as usuarioEmpresaFilialService from "@/server/services/usuarioEmpresaFilial";
 
 export type FormState = { erro?: string; sucesso?: boolean };
 
+export type VerificarEmailResultado = { existe: true; nome: string } | { existe: false };
+
 function mensagemErro(erro: unknown): string {
   return erro instanceof Error ? erro.message : "Ocorreu um erro inesperado";
+}
+
+export async function verificarEmailAction(email: string): Promise<VerificarEmailResultado> {
+  const sessao = await requireSessaoAtiva();
+  const parsed = verificarEmailSchema.safeParse({ email });
+  if (!parsed.success) {
+    return { existe: false };
+  }
+
+  const usuario = await usuarioService.buscarUsuarioPorEmail(sessao, parsed.data.email);
+  return usuario ? { existe: true, nome: usuario.nome } : { existe: false };
 }
 
 export async function criarUsuarioAction(
@@ -22,8 +35,17 @@ export async function criarUsuarioAction(
     return { erro: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
 
+  const concederAcessoFilialAtiva = formData.get("concederAcessoFilialAtiva") === "true";
+  const podeAlterarFilialAtiva = formData.get("podeAlterarFilialAtiva") === "true";
+
   try {
-    await usuarioService.criarUsuarioEVincular(sessao, parsed.data);
+    await usuarioService.criarUsuarioEVincular(sessao, {
+      ...parsed.data,
+      nome: parsed.data.nome || undefined,
+      senha: parsed.data.senha || undefined,
+      concederAcessoFilialAtiva,
+      podeAlterarFilialAtiva,
+    });
   } catch (erro) {
     return { erro: mensagemErro(erro) };
   }

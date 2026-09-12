@@ -6,6 +6,10 @@ import { requirePermission, podeEscreverConciliacao } from "@/server/auth/permis
 import { listarLinhasExtrato } from "@/server/services/conciliacao";
 import { listarContasBancarias } from "@/server/services/contaBancaria";
 import { listarCategoriasFinanceiras } from "@/server/services/categoriaFinanceira";
+import { listarCentrosCusto } from "@/server/services/centroCusto";
+import { listarCentrosLucro } from "@/server/services/centroLucro";
+import { listarSafras } from "@/server/services/safra";
+import { listarProjetos } from "@/server/services/projeto";
 import { STATUS_LINHA_EXTRATO } from "@/lib/schemas/enums";
 import type { StatusLinhaExtrato } from "@prisma/client";
 import { STATUS_LABEL } from "./status-label";
@@ -32,10 +36,14 @@ export default async function ConciliacaoPage({
   const { status } = await searchParams;
   const statusFiltro = statusValido(status);
 
-  const [linhas, contasBancarias, categorias] = await Promise.all([
+  const [linhas, contasBancarias, categorias, centrosCusto, centrosLucro, safras, projetos] = await Promise.all([
     listarLinhasExtrato(sessao.filialId, undefined, statusFiltro),
     listarContasBancarias(sessao.filialId),
     listarCategoriasFinanceiras(sessao.filialId),
+    listarCentrosCusto(sessao.filialId),
+    listarCentrosLucro(sessao.filialId),
+    listarSafras(sessao.filialId),
+    listarProjetos(sessao.filialId),
   ]);
 
   const opcoesContasBancarias = contasBancarias.map((conta) => ({
@@ -94,6 +102,10 @@ export default async function ConciliacaoPage({
                   lancamentoVinculadoDescricao={linha.lancamentoBancario?.descricao ?? null}
                   podeEscrever={podeEscrever}
                   categorias={categorias}
+                  centrosCusto={centrosCusto.filter((c) => c.ativo)}
+                  centrosLucro={centrosLucro.filter((c) => c.ativo)}
+                  safras={safras.filter((s) => s.ativo)}
+                  projetos={projetos.filter((p) => p.ativo)}
                 />
               </TableCell>
             </TableRow>

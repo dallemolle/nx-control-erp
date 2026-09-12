@@ -3,8 +3,8 @@ import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission } from "@/server/auth/permissions";
 import { listarFluxoDeCaixaRealizado, type Granularidade } from "@/server/services/fluxoDeCaixa";
 import { SeletorPeriodo } from "./seletor-periodo";
-import { formatarRotuloPeriodo } from "./formatar-rotulo-periodo";
-import { dataValida } from "./data-valida";
+import { formatarRotuloPeriodo } from "../_fluxo-de-caixa/formatar-rotulo-periodo";
+import { dataValida } from "../_fluxo-de-caixa/data-valida";
 
 const GRANULARIDADES_VALIDAS: Granularidade[] = ["DIA", "SEMANA", "MES", "ANO"];
 

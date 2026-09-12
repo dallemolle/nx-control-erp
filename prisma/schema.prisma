@@ -38,6 +38,12 @@ enum MeioPagamento {
   DEPOSITO_BANCARIO
 }
 
+enum TipoCenarioEstrategico {
+  BASE
+  OTIMISTA
+  PESSIMISTA
+}
+
 enum TipoChavePix {
   CPF_CNPJ
   CELULAR
@@ -65,8 +71,28 @@ model Empresa {
   clientes     Cliente[]
   fornecedores Fornecedor[]
   auditLogs    AuditLog[]
+  cenariosEstrategicos CenarioEstrategico[]
 
   @@map("empresas")
+}
+
+model CenarioEstrategico {
+  id                     String                 @id @default(uuid())
+  empresaId              String
+  tipo                   TipoCenarioEstrategico
+  crescimentoReceita     Decimal                @db.Decimal(7, 4)
+  crescimentoCustos      Decimal                @db.Decimal(7, 4)
+  capexPercentualReceita Decimal                @db.Decimal(7, 4)
+  novoEndividamentoAnual Decimal                @db.Decimal(18, 2)
+  taxaJurosAnual         Decimal                @db.Decimal(7, 4)
+  criadoEm               DateTime               @default(now())
+  atualizadoEm           DateTime               @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@unique([empresaId, tipo])
+  @@index([empresaId])
+  @@map("cenarios_estrategicos")
 }
 
 model Filial {
@@ -91,6 +117,8 @@ model Filial {
   auditLogs             AuditLog[]
   lancamentosBancarios  LancamentoBancario[]
   extratosImportados    ExtratoImportado[]
+  orcamentos            Orcamento[]
+  orcamentosSafra       OrcamentoSafra[]
 
   @@index([empresaId])
   @@map("filiais")
@@ -165,6 +193,7 @@ model CentroCusto {
   parent  CentroCusto?  @relation("CentroCustoHierarquia", fields: [parentId], references: [id])
   filhos  CentroCusto[] @relation("CentroCustoHierarquia")
   titulos Titulo[]
+  lancamentosBancarios LancamentoBancario[]
 
   @@unique([filialId, codigo])
   @@index([filialId])
@@ -182,6 +211,7 @@ model CentroLucro {
 
   filial  Filial   @relation(fields: [filialId], references: [id], onDelete: Cascade)
   titulos Titulo[]
+  lancamentosBancarios LancamentoBancario[]
 
   @@unique([filialId, codigo])
   @@index([filialId])
@@ -201,6 +231,8 @@ model Safra {
 
   filial  Filial   @relation(fields: [filialId], references: [id], onDelete: Cascade)
   titulos Titulo[]
+  lancamentosBancarios LancamentoBancario[]
+  orcamentosSafra OrcamentoSafra[]
 
   @@unique([filialId, nome])
   @@index([filialId])
@@ -219,6 +251,7 @@ model Projeto {
 
   filial  Filial   @relation(fields: [filialId], references: [id], onDelete: Cascade)
   titulos Titulo[]
+  lancamentosBancarios LancamentoBancario[]
 
   @@unique([filialId, codigo])
   @@index([filialId])
@@ -240,9 +273,44 @@ model CategoriaFinanceira {
   filhos               CategoriaFinanceira[] @relation("CategoriaFinanceiraHierarquia")
   titulos              Titulo[]
   lancamentosBancarios LancamentoBancario[]
+  orcamentos           Orcamento[]
 
   @@index([filialId])
   @@map("categorias_financeiras")
+}
+
+model Orcamento {
+  id                    String              @id @default(uuid())
+  filialId              String
+  categoriaFinanceiraId String
+  ano                   Int
+  mes                   Int
+  valor                 Decimal             @db.Decimal(18, 2)
+  criadoEm              DateTime            @default(now())
+  atualizadoEm          DateTime            @updatedAt
+
+  filial              Filial              @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  categoriaFinanceira CategoriaFinanceira @relation(fields: [categoriaFinanceiraId], references: [id])
+
+  @@unique([filialId, categoriaFinanceiraId, ano, mes])
+  @@index([filialId])
+  @@map("orcamentos")
+}
+
+model OrcamentoSafra {
+  id           String   @id @default(uuid())
+  filialId     String
+  safraId      String
+  valor        Decimal  @db.Decimal(18, 2)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  filial Filial @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  safra  Safra  @relation(fields: [safraId], references: [id])
+
+  @@unique([filialId, safraId])
+  @@index([filialId])
+  @@map("orcamentos_safra")
 }
 
 model Cliente {
@@ -524,6 +592,10 @@ model LancamentoBancario {
   baixaId               String?
   transferenciaId       String?
   categoriaFinanceiraId String?
+  centroCustoId         String?
+  centroLucroId         String?
+  safraId               String?
+  projetoId             String?
   usuarioId             String
   criadoEm              DateTime         @default(now())
 
@@ -531,6 +603,10 @@ model LancamentoBancario {
   contaBancaria       ContaBancaria        @relation(fields: [contaBancariaId], references: [id])
   baixa               Baixa?               @relation(fields: [baixaId], references: [id])
   categoriaFinanceira CategoriaFinanceira? @relation(fields: [categoriaFinanceiraId], references: [id])
+  centroCusto         CentroCusto?         @relation(fields: [centroCustoId], references: [id])
+  centroLucro         CentroLucro?         @relation(fields: [centroLucroId], references: [id])
+  safra               Safra?               @relation(fields: [safraId], references: [id])
+  projeto             Projeto?             @relation(fields: [projetoId], references: [id])
   usuario             Usuario              @relation(fields: [usuarioId], references: [id])
   linhaExtrato        LinhaExtrato?
 

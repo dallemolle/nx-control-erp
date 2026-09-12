@@ -567,6 +567,10 @@ describe("criarLancamentoDaLinha", () => {
     const lancamento = await criarLancamentoDaLinha(fixture.sessao, linha.id, {
       descricao: "Tarifa bancária (criada via conciliação)",
       categoriaFinanceiraId: null,
+      centroCustoId: null,
+      centroLucroId: null,
+      safraId: null,
+      projetoId: null,
     });
 
     expect(lancamento.conciliado).toBe(true);
@@ -577,6 +581,49 @@ describe("criarLancamentoDaLinha", () => {
     const linhaAtualizada = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } });
     expect(linhaAtualizada.status).toBe("CONCILIADO");
     expect(linhaAtualizada.lancamentoBancarioId).toBe(lancamento.id);
+  });
+
+  test("grava as 4 dimensões quando informadas", async () => {
+    const centroCusto = await prisma.centroCusto.create({
+      data: { filialId: fixture.filialId, nome: "Operacional", codigo: "OPE" },
+    });
+    const centroLucro = await prisma.centroLucro.create({
+      data: { filialId: fixture.filialId, nome: "Unidade 2", codigo: "U2" },
+    });
+    const safra = await prisma.safra.create({
+      data: {
+        filialId: fixture.filialId,
+        nome: "Safra Conciliação",
+        dataInicio: new Date("2026-01-01"),
+        dataFim: new Date("2026-12-31"),
+      },
+    });
+    const projeto = await prisma.projeto.create({
+      data: { filialId: fixture.filialId, nome: "Projeto Conciliação", codigo: "PJC" },
+    });
+
+    const extrato = await importarExtratoOfx(
+      fixture.sessao,
+      fixture.contaBancariaId,
+      arquivoOfx(OFX_DUAS_TRANSACOES("CRIA-DIM-1", "CRIA-DIM-2")),
+    );
+    const linha = await prisma.linhaExtrato.findFirstOrThrow({
+      where: { extratoImportadoId: extrato.id, identificadorBancario: "CRIA-DIM-1" },
+    });
+
+    const lancamento = await criarLancamentoDaLinha(fixture.sessao, linha.id, {
+      descricao: "Tarifa com dimensões",
+      categoriaFinanceiraId: null,
+      centroCustoId: centroCusto.id,
+      centroLucroId: centroLucro.id,
+      safraId: safra.id,
+      projetoId: projeto.id,
+    });
+
+    expect(lancamento.centroCustoId).toBe(centroCusto.id);
+    expect(lancamento.centroLucroId).toBe(centroLucro.id);
+    expect(lancamento.safraId).toBe(safra.id);
+    expect(lancamento.projetoId).toBe(projeto.id);
   });
 
   test("perfil sem lancamento:escrever não consegue criar lançamento da linha", async () => {
@@ -592,7 +639,14 @@ describe("criarLancamentoDaLinha", () => {
       });
 
       await expect(
-        criarLancamentoDaLinha(fixtureFinanceiro.sessao, linha.id, { descricao: "X", categoriaFinanceiraId: null }),
+        criarLancamentoDaLinha(fixtureFinanceiro.sessao, linha.id, {
+          descricao: "X",
+          categoriaFinanceiraId: null,
+          centroCustoId: null,
+          centroLucroId: null,
+          safraId: null,
+          projetoId: null,
+        }),
       ).rejects.toThrow(PermissionError);
     } finally {
       await limparFixtureFinanceiro(fixtureFinanceiro);
