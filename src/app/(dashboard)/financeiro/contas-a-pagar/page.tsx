@@ -10,6 +10,7 @@ import { listarProjetos } from "@/server/services/projeto";
 import { listarContasBancarias } from "@/server/services/contaBancaria";
 import { TituloDialogForm } from "../_titulos/titulo-dialog-form";
 import { ContasClientePanel } from "../_titulos/contas-client-panel";
+import { ExportarLinks } from "../../_shared/exportar-links";
 
 export default async function ContasAPagarPage() {
   const sessao = await requireSessaoAtiva();
@@ -49,18 +50,21 @@ export default async function ContasAPagarPage() {
           <h1 className="text-lg font-semibold">Contas a pagar</h1>
           <p className="text-sm text-muted-foreground">Títulos e parcelas a pagar da filial ativa.</p>
         </div>
-        {podeEscrever && (
-          <TituloDialogForm
-            tipo="PAGAR"
-            contrapartes={opcoes.contrapartes}
-            categorias={opcoes.categorias}
-            centrosCusto={opcoes.centrosCusto}
-            centrosLucro={opcoes.centrosLucro}
-            safras={opcoes.safras}
-            projetos={opcoes.projetos}
-            contasBancarias={opcoes.contasBancarias}
-          />
-        )}
+        <div className="flex items-center gap-4">
+          <ExportarLinks baseHref="/financeiro/contas-a-pagar/export" />
+          {podeEscrever && (
+            <TituloDialogForm
+              tipo="PAGAR"
+              contrapartes={opcoes.contrapartes}
+              categorias={opcoes.categorias}
+              centrosCusto={opcoes.centrosCusto}
+              centrosLucro={opcoes.centrosLucro}
+              safras={opcoes.safras}
+              projetos={opcoes.projetos}
+              contasBancarias={opcoes.contasBancarias}
+            />
+          )}
+        </div>
       </div>
       <ContasClientePanel
         tipo="PAGAR"
