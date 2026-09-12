@@ -3,7 +3,7 @@ import { prisma } from "@/server/db/client";
 import { PermissionError } from "@/server/auth/permissions";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
 import { criarTitulo } from "./titulo";
-import { buscarIndicadoresExecutivos } from "./dashboardExecutivo";
+import { buscarIndicadoresExecutivos, buscarGraficosExecutivos } from "./dashboardExecutivo";
 
 describe("buscarIndicadoresExecutivos (integração)", () => {
   let fixture: FixtureFinanceiro;
@@ -261,5 +261,98 @@ describe("buscarIndicadoresExecutivos (integração)", () => {
     } finally {
       await limparFixtureFinanceiro(outraFixture);
     }
+  });
+});
+
+describe("buscarGraficosExecutivos (integração)", () => {
+  let fixture: FixtureFinanceiro;
+  let sessaoGestor: FixtureFinanceiro["sessao"];
+  let hoje: Date;
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("DASHG", "GESTOR");
+    sessaoGestor = fixture.sessao;
+    hoje = new Date();
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fixture);
+    await prisma.$disconnect();
+  });
+
+  test("recusa perfil sem dashboardExecutivo:ler", async () => {
+    const sessaoFinanceiro = { ...fixture.sessao, perfil: "FINANCEIRO" as const };
+    await expect(buscarGraficosExecutivos(sessaoFinanceiro)).rejects.toThrow(PermissionError);
+  });
+
+  test("entradasSaidas e evolucaoSaldo trazem 6 pontos, um por mês, mais recente por último", async () => {
+    const graficos = await buscarGraficosExecutivos(sessaoGestor);
+    expect(graficos.entradasSaidas).toHaveLength(6);
+    expect(graficos.evolucaoSaldo).toHaveLength(6);
+  });
+
+  test("entradasSaidas soma lançamento conciliado do mês corrente", async () => {
+    const dentroDoMes = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), 1, 12));
+    await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: dentroDoMes,
+        tipo: "ENTRADA",
+        valor: 700,
+        descricao: "Entrada do mês (gráfico)",
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+        conciliado: true,
+      },
+    });
+
+    const graficos = await buscarGraficosExecutivos(sessaoGestor);
+    const pontoDoMesAtual = graficos.entradasSaidas[graficos.entradasSaidas.length - 1];
+    expect(pontoDoMesAtual.entradas).toBeGreaterThanOrEqual(700);
+  });
+
+  test("aging classifica parcela vencida na faixa certa de dias de atraso", async () => {
+    const vencida45DiasAtras = new Date(hoje.getTime() - 45 * 24 * 60 * 60 * 1000);
+    await criarTitulo(fixture.sessaoAdmin, "PAGAR", {
+      contraparteId: fixture.fornecedorId,
+      documento: `DASHG-AGING-${Date.now()}`,
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: fixture.contaBancariaId,
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: vencida45DiasAtras, valorOriginal: 350 }],
+    });
+
+    const graficos = await buscarGraficosExecutivos(sessaoGestor);
+    const faixa31a60 = graficos.aging.find((p) => p.faixa === "31-60");
+    expect(faixa31a60?.contasAPagar).toBeGreaterThanOrEqual(350);
+  });
+
+  test("aging não inclui parcela ainda não vencida", async () => {
+    const aVencer = new Date(hoje.getTime() + 10 * 24 * 60 * 60 * 1000);
+    await criarTitulo(fixture.sessaoAdmin, "PAGAR", {
+      contraparteId: fixture.fornecedorId,
+      documento: `DASHG-NAOVENC-${Date.now()}`,
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: fixture.contaBancariaId,
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: aVencer, valorOriginal: 5000 }],
+    });
+
+    const graficos = await buscarGraficosExecutivos(sessaoGestor);
+    const totalAging = graficos.aging.reduce((soma, p) => soma + p.contasAPagar, 0);
+    expect(totalAging).toBeLessThan(5000);
   });
 });
