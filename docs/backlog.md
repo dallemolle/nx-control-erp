@@ -47,6 +47,24 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   comparar contra saídas, não contra o saldo líquido) ou resultado líquido
   esperado (permitir negativo no schema usado por esta tela).
 
+## Dashboard executivo (Fase 6)
+
+- **Gráfico "Orçado x Realizado" por categoria, consolidado por empresa.**
+  Cortado da v1 do dashboard executivo: `CategoriaFinanceira` é cadastrada
+  por filial, então não existe uma identidade única "esta categoria" que
+  some naturalmente entre filiais (duas filiais podem ter categorias de
+  mesmo nome como linhas totalmente diferentes no banco). Revisitar quando
+  o sub-projeto de Filtros globais (ou um cadastro de categoria
+  compartilhado entre filiais) existir.
+
+- **Gráfico "Fluxo de caixa por dimensão" (centro de custo/lucro/safra),
+  consolidado por empresa.** Mesmo problema do item acima —
+  `CentroCusto`/`CentroLucro`/`Safra` são cadastros por filial, sem chave
+  comum entre filiais para agregar. A tela por filial já existe
+  (sub-projeto 2a, `/controladoria/fluxo-por-dimensao`); o que falta é uma
+  visão consolidada por empresa, que depende da mesma solução do item
+  acima.
+
 ## Cobertura de relatórios
 
 - **Projeto como dimensão de relatório** (Fase 5, sub-projeto 2a — Fluxo
