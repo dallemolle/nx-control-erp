@@ -2,7 +2,7 @@ import { prisma } from "@/server/db/client";
 import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { StatusParcela } from "@prisma/client";
-import { buscarSaldoEmCaixaAte } from "./fluxoDeCaixa";
+import { buscarSaldoEmCaixaAte, fimDoDiaUTC } from "./fluxoDeCaixa";
 import { saldoRemanescenteParcela } from "./fluxoDeCaixaProjetado";
 
 export type IndicadoresExecutivos = {
@@ -34,8 +34,9 @@ export async function buscarIndicadoresExecutivos(sessao: SessaoAtiva): Promise<
 
   const filiais = await prisma.filial.findMany({ where: { empresaId: sessao.empresaId }, select: { id: true } });
   const hoje = new Date();
-  const em7Dias = new Date(hoje.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const em30Dias = new Date(hoje.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const inicioDeHoje = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()));
+  const em7Dias = fimDoDiaUTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate() + 7);
+  const em30Dias = fimDoDiaUTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate() + 30);
   const inicioMesAtual = inicioDoMes(hoje.getUTCFullYear(), hoje.getUTCMonth() + 1);
 
   let caixaDisponivel = 0;
@@ -66,8 +67,8 @@ export async function buscarIndicadoresExecutivos(sessao: SessaoAtiva): Promise<
         Number(parcela.valorAtualizado),
         parcela.baixas.map((baixa) => ({ valorPago: Number(baixa.valorPago) })),
       );
-      const dentroDe7Dias = parcela.dataVencimento >= hoje && parcela.dataVencimento <= em7Dias;
-      const dentroDe30Dias = parcela.dataVencimento >= hoje && parcela.dataVencimento <= em30Dias;
+      const dentroDe7Dias = parcela.dataVencimento >= inicioDeHoje && parcela.dataVencimento <= em7Dias;
+      const dentroDe30Dias = parcela.dataVencimento >= inicioDeHoje && parcela.dataVencimento <= em30Dias;
 
       if (parcela.titulo.tipo === "PAGAR") {
         contasAPagarEmAberto += saldo;

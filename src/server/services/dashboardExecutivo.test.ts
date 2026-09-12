@@ -132,6 +132,28 @@ describe("buscarIndicadoresExecutivos (integração)", () => {
     expect(indicadores.obrigacoes30Dias).toBeLessThan(700);
   });
 
+  test("obrigações vencendo hoje entram na janela de 7 e 30 dias, mesmo em qualquer horário do dia", async () => {
+    const hojeMeiaNoite = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()));
+    await criarTitulo(fixture.sessaoAdmin, "PAGAR", {
+      contraparteId: fixture.fornecedorId,
+      documento: `DASH-HOJE-${Date.now()}`,
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: fixture.contaBancariaId,
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: hojeMeiaNoite, valorOriginal: 150 }],
+    });
+
+    const indicadores = await buscarIndicadoresExecutivos(sessaoGestor);
+    expect(indicadores.obrigacoes7Dias).toBeGreaterThanOrEqual(150);
+    expect(indicadores.obrigacoes30Dias).toBeGreaterThanOrEqual(150);
+  });
+
   test("inadimplencia só soma parcelas RECEBER com status VENCIDO", async () => {
     const ontem = new Date(hoje.getTime() - 24 * 60 * 60 * 1000);
     const titulo = await criarTitulo(fixture.sessaoAdmin, "RECEBER", {
