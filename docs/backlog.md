@@ -150,6 +150,38 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   projetado, conciliação bancária, orçado x realizado, caixa por centro
   de custo/lucro/safra, obrigações e recebimentos futuros, movimentação
   bancária, auditoria de alterações — ficam para wiring futuro repetitivo
-  sobre o mesmo `gerarCsv`/`gerarExcel`/`ExportarLinks`. "Necessidade de
-  capital de giro" fica de fora até existir modelo de dados para o
-  conceito (mesma decisão já registrada para o Dashboard executivo).
+  sobre o mesmo `gerarCsv`/`gerarExcel`/`responderExport`/`ExportarLinks`.
+  "Necessidade de capital de giro" fica de fora até existir modelo de
+  dados para o conceito (mesma decisão já registrada para o Dashboard
+  executivo).
+
+- **`?formato=` desconhecido cai silenciosamente em CSV.** Hoje só existem
+  `csv`/`xlsx`, então qualquer outro valor (incluindo erro de digitação)
+  vira CSV sem aviso. Passa a importar quando `formato=pdf` existir —
+  nesse ponto, `responderExport` deveria recusar formatos que a rota ainda
+  não sabe gerar (ex.: `400`) em vez de mascarar como CSV.
+
+- **Data do nome do arquivo é calculada em UTC.** `new Date().
+  toISOString().slice(0, 10)` — depois das 21h (horário de Brasília,
+  UTC-3), o arquivo é nomeado com a data de amanhã. Cosmético, e
+  consistente com a convenção UTC já usada em todo o projeto.
+
+- **Rótulo diferente entre tela e export do Fluxo de caixa.** A tabela usa
+  "Geração de caixa"; o export usa "Geração líquida" (nome que a spec
+  já definia). O export está de acordo com o desenho; a tela é que ficou
+  destoante — alinhar os dois nomes quando a tela for tocada de novo.
+
+- **`import * as Papa from "papaparse"` em `csv.ts` diverge do
+  `import Papa from "papaparse"` já usado em `importacaoTitulo.ts`.**
+  Ambos compilam (foi uma correção necessária de interop de módulo feita
+  pelo implementador da Task 1), mas os dois estilos convivendo no projeto
+  é uma pequena inconsistência — padronizar em um dos dois quando algum
+  desses arquivos for tocado de novo.
+
+- **`exceljs` é uma dependência pesada** (traz `archiver`, `unzipper`,
+  `glob@7`, `fstream`, algumas já descontinuadas). Só é importado por
+  Route Handlers hoje (nunca por um componente client), o que é o correto
+  — não existe uma convenção `server-only` neste projeto para impedir um
+  import client acidental no futuro que arrastaria toda essa árvore pro
+  bundle do navegador. Considerar adicionar `import "server-only"` em
+  `src/lib/export/excel.ts` se isso vier a ser um problema real.
