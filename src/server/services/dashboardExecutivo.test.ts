@@ -355,4 +355,33 @@ describe("buscarGraficosExecutivos (integração)", () => {
     const totalAging = graficos.aging.reduce((soma, p) => soma + p.contasAPagar, 0);
     expect(totalAging).toBeLessThan(5000);
   });
+
+  test("aging não conta parcela vencendo hoje como já vencida — mesma janela de 'obrigações' já corrigida", async () => {
+    const graficosAntes = await buscarGraficosExecutivos(sessaoGestor);
+    const totalAgingAntes = graficosAntes.aging.reduce((soma, p) => soma + p.contasAPagar, 0);
+
+    const hojeMeiaNoite = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()));
+    await criarTitulo(fixture.sessaoAdmin, "PAGAR", {
+      contraparteId: fixture.fornecedorId,
+      documento: `DASHG-AGING-HOJE-${Date.now()}`,
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: fixture.contaBancariaId,
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: hojeMeiaNoite, valorOriginal: 275 }],
+    });
+
+    // Comparação por delta (em vez de um limiar absoluto) porque testes
+    // anteriores deste describe já deixam parcelas vencidas legítimas
+    // acumuladas no total de aging (sem limpeza entre `test`s) — o que
+    // importa aqui é que a nova parcela de hoje não soma nada ao total.
+    const graficosDepois = await buscarGraficosExecutivos(sessaoGestor);
+    const totalAgingDepois = graficosDepois.aging.reduce((soma, p) => soma + p.contasAPagar, 0);
+    expect(totalAgingDepois - totalAgingAntes).toBeLessThan(275);
+  });
 });

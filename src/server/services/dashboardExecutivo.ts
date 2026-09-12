@@ -135,16 +135,22 @@ function rotuloMes(data: Date): string {
  * `status` estar recalculado (mesma convenção já aceita em
  * `fluxoDeCaixaProjetado.ts`/`fluxoDeCaixaPorDimensao.ts`: `status` só é
  * recalculado quando `listarTitulos` é chamado).
+ *
+ * Usa `inicioDeHoje` (início do dia em UTC) como referência, e não o
+ * instante exato — mesmo motivo do `inicioDeHoje` de
+ * `buscarIndicadoresExecutivos`: uma parcela vencendo hoje não pode ser
+ * "já vencida" no aging enquanto ainda conta como obrigação futura nos
+ * cards de 7/30 dias do mesmo dashboard.
  */
-function faixaAging(hoje: Date, dataVencimento: Date): FaixaAging {
-  const diasAtraso = Math.floor((hoje.getTime() - dataVencimento.getTime()) / (24 * 60 * 60 * 1000));
+function faixaAging(inicioDeHoje: Date, dataVencimento: Date): FaixaAging {
+  const diasAtraso = Math.floor((inicioDeHoje.getTime() - dataVencimento.getTime()) / (24 * 60 * 60 * 1000));
   if (diasAtraso <= 30) return "0-30";
   if (diasAtraso <= 60) return "31-60";
   if (diasAtraso <= 90) return "61-90";
   return "90+";
 }
 
-async function buscarAgingConsolidado(filiais: { id: string }[], hoje: Date): Promise<PontoAging[]> {
+async function buscarAgingConsolidado(filiais: { id: string }[], inicioDeHoje: Date): Promise<PontoAging[]> {
   const buckets: Record<FaixaAging, { contasAPagar: number; contasAReceber: number }> = {
     "0-30": { contasAPagar: 0, contasAReceber: 0 },
     "31-60": { contasAPagar: 0, contasAReceber: 0 },
@@ -157,7 +163,7 @@ async function buscarAgingConsolidado(filiais: { id: string }[], hoje: Date): Pr
       where: {
         titulo: { filialId: filial.id },
         status: { in: STATUS_ABERTO },
-        dataVencimento: { lt: hoje },
+        dataVencimento: { lt: inicioDeHoje },
       },
       include: {
         titulo: { select: { tipo: true } },
@@ -172,7 +178,7 @@ async function buscarAgingConsolidado(filiais: { id: string }[], hoje: Date): Pr
       );
       if (saldo <= 0) continue;
 
-      const faixa = faixaAging(hoje, parcela.dataVencimento);
+      const faixa = faixaAging(inicioDeHoje, parcela.dataVencimento);
       if (parcela.titulo.tipo === "PAGAR") buckets[faixa].contasAPagar += saldo;
       else buckets[faixa].contasAReceber += saldo;
     }
@@ -193,6 +199,7 @@ export async function buscarGraficosExecutivos(sessao: SessaoAtiva): Promise<Gra
 
   const filiais = await prisma.filial.findMany({ where: { empresaId: sessao.empresaId }, select: { id: true } });
   const hoje = new Date();
+  const inicioDeHoje = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()));
 
   const entradasSaidas: PontoEntradasSaidas[] = [];
   const evolucaoSaldo: PontoEvolucaoSaldo[] = [];
@@ -227,7 +234,7 @@ export async function buscarGraficosExecutivos(sessao: SessaoAtiva): Promise<Gra
     evolucaoSaldo.push({ mes, saldo });
   }
 
-  const aging = await buscarAgingConsolidado(filiais, hoje);
+  const aging = await buscarAgingConsolidado(filiais, inicioDeHoje);
 
   return { entradasSaidas, evolucaoSaldo, aging };
 }

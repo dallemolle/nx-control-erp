@@ -13,8 +13,8 @@ export function EntradasSaidasChart({ dados }: { dados: PontoEntradasSaidas[] })
         <YAxis />
         <Tooltip />
         <Legend />
-        <Bar dataKey="entradas" fill="#16a34a" name="Entradas" />
-        <Bar dataKey="saidas" fill="#dc2626" name="Saídas" />
+        <Bar dataKey="entradas" fill="var(--chart-2)" name="Entradas" />
+        <Bar dataKey="saidas" fill="var(--chart-4)" name="Saídas" />
       </BarChart>
     </ChartContainer>
   );

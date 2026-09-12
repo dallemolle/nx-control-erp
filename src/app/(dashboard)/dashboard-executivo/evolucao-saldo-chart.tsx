@@ -12,7 +12,7 @@ export function EvolucaoSaldoChart({ dados }: { dados: PontoEvolucaoSaldo[] }) {
         <XAxis dataKey="mes" />
         <YAxis />
         <Tooltip />
-        <Line type="monotone" dataKey="saldo" stroke="#2563eb" name="Saldo" />
+        <Line type="monotone" dataKey="saldo" stroke="var(--chart-3)" name="Saldo" />
       </LineChart>
     </ChartContainer>
   );

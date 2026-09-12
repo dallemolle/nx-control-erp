@@ -13,8 +13,8 @@ export function AgingChart({ dados }: { dados: PontoAging[] }) {
         <YAxis />
         <Tooltip />
         <Legend />
-        <Bar dataKey="contasAPagar" fill="#dc2626" name="Contas a pagar" />
-        <Bar dataKey="contasAReceber" fill="#16a34a" name="Contas a receber" />
+        <Bar dataKey="contasAPagar" fill="var(--chart-4)" name="Contas a pagar" />
+        <Bar dataKey="contasAReceber" fill="var(--chart-2)" name="Contas a receber" />
       </BarChart>
     </ChartContainer>
   );
