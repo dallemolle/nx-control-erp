@@ -142,3 +142,17 @@ describe("podeEscreverOrcamento", () => {
     expect(podeEscreverOrcamento("ADMINISTRADOR", false)).toBe(false);
   });
 });
+
+describe("permissões de dashboard executivo", () => {
+  test("ADMINISTRADOR, GESTOR e AUDITOR podem ler o dashboard executivo", () => {
+    for (const perfil of ["ADMINISTRADOR", "GESTOR", "AUDITOR"] as const) {
+      expect(() => requirePermission(perfil, "dashboardExecutivo:ler")).not.toThrow();
+    }
+  });
+
+  test("FINANCEIRO, TESOURARIA e CONSULTA não acessam o dashboard executivo — é dado consolidado de toda a empresa, não só da filial do perfil", () => {
+    for (const perfil of ["FINANCEIRO", "TESOURARIA", "CONSULTA"] as const) {
+      expect(() => requirePermission(perfil, "dashboardExecutivo:ler")).toThrow(PermissionError);
+    }
+  });
+});

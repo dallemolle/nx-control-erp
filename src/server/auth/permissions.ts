@@ -18,7 +18,8 @@ export type Acao =
   | "planejamentoEstrategico:ler"
   | "planejamentoEstrategico:escrever"
   | "orcamento:ler"
-  | "orcamento:escrever";
+  | "orcamento:escrever"
+  | "dashboardExecutivo:ler";
 
 export class PermissionError extends Error {
   constructor(perfil: Perfil, acao: Acao) {
@@ -68,6 +69,7 @@ const PERMISSOES: Record<Perfil, ReadonlySet<Acao> | "TODAS"> = {
     "planejamentoEstrategico:ler",
     "planejamentoEstrategico:escrever",
     "orcamento:ler",
+    "dashboardExecutivo:ler",
   ]),
   AUDITOR: new Set([
     "cadastro:ler",
@@ -77,6 +79,7 @@ const PERMISSOES: Record<Perfil, ReadonlySet<Acao> | "TODAS"> = {
     "conciliacao:ler",
     "planejamentoEstrategico:ler",
     "orcamento:ler",
+    "dashboardExecutivo:ler",
   ]),
   CONSULTA: new Set([
     "cadastro:ler",
