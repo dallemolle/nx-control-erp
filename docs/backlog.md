@@ -134,3 +134,22 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   por um teste que efetivamente prova o rollback sob falha real. Retomar
   se o padrão de "atomic multi-row persist" for reusado em outro lugar e
   quiser um teste mais forte de referência.
+
+## Relatórios exportáveis (Fase 6, sub-projeto 6b)
+
+- **Export em PDF.** Cortado da v1 — é o formato mais caro (layout de
+  página, cabeçalho/rodapé, paginação) e os 2 formatos escolhidos (CSV,
+  Excel) já cobrem os casos de uso reais levantados. O mecanismo genérico
+  (`ColunaExport<T>`) já existe em `src/lib/export/`; adicionar PDF é
+  criar um terceiro `gerarPdf` ao lado de `gerarCsv`/`gerarExcel`, sem
+  tocar nas rotas já existentes além de adicionar o novo `formato=pdf`.
+
+- **Wiring dos ~8 relatórios restantes.** O mecanismo genérico está
+  validado com 2 relatórios (contas a pagar/receber, fluxo de caixa
+  realizado). Os demais da lista original da Fase 6 — fluxo de caixa
+  projetado, conciliação bancária, orçado x realizado, caixa por centro
+  de custo/lucro/safra, obrigações e recebimentos futuros, movimentação
+  bancária, auditoria de alterações — ficam para wiring futuro repetitivo
+  sobre o mesmo `gerarCsv`/`gerarExcel`/`ExportarLinks`. "Necessidade de
+  capital de giro" fica de fora até existir modelo de dados para o
+  conceito (mesma decisão já registrada para o Dashboard executivo).
