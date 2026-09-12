@@ -10,7 +10,7 @@ atualizada conforme o trabalho avança.
 | 2 | [Financeiro (Contas a Pagar/Receber, Bancos)](./fase-2-financeiro.md) | 🟢 Concluída |
 | 3 | [Conciliação bancária](./fase-3-conciliacao.md) | 🟢 Concluída |
 | 4 | [Fluxo de caixa](./fase-4-fluxo-de-caixa.md) | 🟢 Concluída |
-| 5 | [Controladoria e orçamento](./fase-5-controladoria.md) | ⚪ Planejada |
+| 5 | [Controladoria e orçamento](./fase-5-controladoria.md) | 🟢 Concluída |
 | 6 | [Gestão (dashboards, relatórios, auditoria, aprovações)](./fase-6-gestao.md) | ⚪ Planejada |
 
 ## Como isso é organizado
