@@ -236,3 +236,22 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   pagar/receber. Estender é wiring repetitivo sobre o mesmo padrão
   (`FiltroTitulos`-equivalente + `BarraDeFiltros`-equivalente por tela),
   não redesenho.
+
+## Auditoria — workflow de aprovação de pagamentos (Fase 6, sub-projeto 6d)
+
+- **Workflow de aprovação de pagamentos de 5 passos** (cadastro →
+  aprovação → programação → pagamento → conciliação), citado na prosa
+  original da Fase 6, ficou fora do escopo. Hoje o fluxo real é de 3
+  passos: cadastro → aprovação-que-já-é-pagamento (`aprovarBaixa` cria o
+  `LancamentoBancario` na própria transação de aprovação) → conciliação.
+  Não existe "programação" em nenhum lugar do schema. Desacoplar
+  aprovação de pagamento é uma mudança de comportamento real (não uma
+  extensão pequena) e não deve ser feita sem um pedido de negócio
+  explícito — retomar só se/quando isso for pedido.
+- **Ramo de classificação automática sem match** (dentro de
+  `processarLinhasPendentes`, em `conciliacao.ts`) não gera `AuditLog` —
+  decisão consciente, não um gap: é uma classificação derivada
+  (`SUGESTAO`/`DIVERGENCIA_VALOR`/`DIVERGENCIA_DATA`/`DUPLICADO`, sem
+  vincular nenhum `LancamentoBancario`), o mesmo princípio já aplicado a
+  `recalcularEPersistirStatusParcela`, que também não audita por ser
+  derivado, não uma ação de usuário.
