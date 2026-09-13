@@ -11,7 +11,7 @@ atualizada conforme o trabalho avança.
 | 3 | [Conciliação bancária](./fase-3-conciliacao.md) | 🟢 Concluída |
 | 4 | [Fluxo de caixa](./fase-4-fluxo-de-caixa.md) | 🟢 Concluída |
 | 5 | [Controladoria e orçamento](./fase-5-controladoria.md) | 🟢 Concluída |
-| 6 | [Gestão (dashboards, relatórios, auditoria, aprovações)](./fase-6-gestao.md) | ⚪ Planejada |
+| 6 | [Gestão (dashboards, relatórios, auditoria, aprovações)](./fase-6-gestao.md) | 🟢 Concluída |
 
 ## Como isso é organizado
 
