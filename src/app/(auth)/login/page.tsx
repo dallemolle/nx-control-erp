@@ -6,7 +6,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>nx-control-erp</CardTitle>
+          <CardTitle>NX Control</CardTitle>
         </CardHeader>
         <CardContent>
           <LoginForm />
