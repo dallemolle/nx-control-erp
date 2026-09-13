@@ -51,6 +51,7 @@ function montarModeloCsv(tipo: TipoTitulo): string {
 
 export function ImportarCsvDialog({ tipo }: { tipo: TipoTitulo }) {
   const [aberto, setAberto] = useState(false);
+  const [mostrarAjuda, setMostrarAjuda] = useState(false);
   const [linhas, setLinhas] = useState<LinhaImportacao[]>([]);
   const [erro, setErro] = useState<string>();
   const [pendente, iniciarTransicao] = useTransition();
@@ -93,27 +94,32 @@ export function ImportarCsvDialog({ tipo }: { tipo: TipoTitulo }) {
           <DialogTitle>Importar títulos via CSV</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="space-y-2 rounded-md border bg-muted/30 p-3 text-sm">
-            <p>
-              O arquivo precisa ter uma linha de cabeçalho com estes nomes de coluna. Os campos de {rotuloContraparte}{" "}
-              e demais cadastros são identificados pelo CNPJ/CPF, código ou nome já cadastrado — não pelo ID interno.
-            </p>
-            <ul className="space-y-0.5">
-              {COLUNAS_CSV.map((coluna) => (
-                <li key={coluna.nome}>
-                  <span className="font-mono">{coluna.nome}</span>
-                  {coluna.obrigatoria ? " (obrigatória)" : " (opcional)"} — {coluna.descricao}
-                </li>
-              ))}
-            </ul>
-            <a
-              href={modeloCsvHref}
-              download={`modelo-importacao-titulos-${tipo.toLowerCase()}.csv`}
-              className="inline-block text-primary underline-offset-4 hover:underline"
-            >
-              Baixar modelo CSV
-            </a>
-          </div>
+          <Button type="button" variant="outline" size="sm" onClick={() => setMostrarAjuda((atual) => !atual)}>
+            {mostrarAjuda ? "Ocultar" : "Como formatar o arquivo?"}
+          </Button>
+          {mostrarAjuda && (
+            <div className="space-y-2 rounded-md border bg-muted/30 p-3 text-sm">
+              <p>
+                O arquivo precisa ter uma linha de cabeçalho com estes nomes de coluna. Os campos de {rotuloContraparte}{" "}
+                e demais cadastros são identificados pelo CNPJ/CPF, código ou nome já cadastrado — não pelo ID interno.
+              </p>
+              <ul className="space-y-0.5">
+                {COLUNAS_CSV.map((coluna) => (
+                  <li key={coluna.nome}>
+                    <span className="font-mono">{coluna.nome}</span>
+                    {coluna.obrigatoria ? " (obrigatória)" : " (opcional)"} — {coluna.descricao}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href={modeloCsvHref}
+                download={`modelo-importacao-titulos-${tipo.toLowerCase()}.csv`}
+                className="inline-block text-primary underline-offset-4 hover:underline"
+              >
+                Baixar modelo CSV
+              </a>
+            </div>
+          )}
           <Input
             type="file"
             accept=".csv"
