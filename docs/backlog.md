@@ -5,6 +5,32 @@ alguma fase, mas conscientemente deixados fora do escopo da versão atual
 (YAGNI) para não atrasar a entrega. Cada item deve ter contexto suficiente
 para ser retomado sem precisar reconstruir o raciocínio original.
 
+## Segurança — dependências
+
+- **`mysql2`/`deepmerge-ts` vulneráveis via `@prisma/config` (dependência
+  do CLI `prisma`, dev-only).** `npm audit` (checado em 2026-09-12) marca
+  como alta severidade. Este projeto usa só Postgres — `mysql2` só existe
+  porque o CLI do Prisma dá suporte genérico a múltiplos bancos. Checado
+  contra a versão mais recente do Prisma disponível na época (`7.10.0`):
+  ainda depende da mesma `deepmerge-ts@7.1.5` vulnerável — não é algo que
+  uma atualização da nossa dependência resolva hoje, é um fix pendente do
+  próprio Prisma. O único caminho que `npm audit fix --force` oferece é
+  fazer downgrade do `prisma` para `6.19.3` (versão major anterior à que
+  o projeto usa — rejeitado, risco real de regressão). Reavaliar quando o
+  Prisma lançar uma versão que já traga `deepmerge-ts >= 8.0.0`.
+
+- **`uuid` vulnerável via `exceljs`** (severidade moderada,
+  `GHSA-w5hq-g745-h8pq` — falta de checagem de limites de buffer em
+  `v3`/`v5`/`v6` quando um buffer é fornecido pelo chamador). `exceljs`
+  está na versão mais recente disponível (`4.4.0`) e ainda depende de uma
+  versão vulnerável de `uuid`; o único fix que `npm audit fix --force`
+  oferece é fazer downgrade do `exceljs` para `3.4.0` — uma regressão real,
+  não uma correção. Risco prático baixo hoje: nenhum código deste projeto
+  passa buffer controlado pelo usuário para geração de UUID (nem direto,
+  nem através de qualquer chamada a `exceljs`) — o vetor de exploração da
+  CVE não é alcançável pelo uso atual. Reavaliar quando `exceljs` lançar
+  uma versão que atualize sua própria dependência de `uuid`.
+
 ## Alertas
 
 - **Alerta de estouro na comparação entre safras** (Fase 5, sub-projeto
