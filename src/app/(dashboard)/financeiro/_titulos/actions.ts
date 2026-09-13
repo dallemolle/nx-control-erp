@@ -146,7 +146,7 @@ export async function renegociarParcelaAction(
 /** Guarda de tamanho do CSV colado/enviado — evita parsear um payload arbitrário. */
 const TAMANHO_MAXIMO_CSV = 2_000_000;
 
-export async function validarCsvAction(conteudoCsv: string) {
+export async function validarCsvAction(tipo: TipoTitulo, conteudoCsv: string) {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "titulo:escrever");
 
@@ -154,7 +154,7 @@ export async function validarCsvAction(conteudoCsv: string) {
     throw new Error("Arquivo CSV muito grande — divida a importação em lotes menores");
   }
 
-  return importacaoService.validarCsv(conteudoCsv);
+  return importacaoService.validarCsv(sessao, tipo, conteudoCsv);
 }
 
 export async function confirmarImportacaoAction(
