@@ -14,6 +14,7 @@ type ParcelaLinha = {
   id: string;
   numero: number;
   dataVencimento: Date;
+  /** Vem como Decimal do Prisma ou string após a serialização servidor→cliente. */
   valorAtualizado: unknown;
   status: string;
 };
@@ -45,6 +46,10 @@ type TituloLinha = {
 
 function formatarData(data: Date): string {
   return new Date(data).toLocaleDateString("pt-BR");
+}
+
+function formatarMoeda(valor: unknown): string {
+  return Number(valor as string | number).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 export type OpcoesTitulo = {
@@ -145,40 +150,40 @@ export function TituloTable({
               <TableRow className="bg-muted/30">
                 <TableCell colSpan={5}>
                   <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
-                    <div>
-                      <dt className="text-muted-foreground">Emissão</dt>
+                    <div className="flex gap-1">
+                      <dt className="text-muted-foreground">Emissão:</dt>
                       <dd>{formatarData(titulo.dataEmissao)}</dd>
                     </div>
-                    <div>
-                      <dt className="text-muted-foreground">Competência</dt>
+                    <div className="flex gap-1">
+                      <dt className="text-muted-foreground">Competência:</dt>
                       <dd>{formatarData(titulo.dataCompetencia)}</dd>
                     </div>
-                    <div>
-                      <dt className="text-muted-foreground">Centro de custo</dt>
+                    <div className="flex gap-1">
+                      <dt className="text-muted-foreground">Centro de custo:</dt>
                       <dd>{titulo.centroCusto?.nome ?? "—"}</dd>
                     </div>
-                    <div>
-                      <dt className="text-muted-foreground">Centro de lucro</dt>
+                    <div className="flex gap-1">
+                      <dt className="text-muted-foreground">Centro de lucro:</dt>
                       <dd>{titulo.centroLucro?.nome ?? "—"}</dd>
                     </div>
-                    <div>
-                      <dt className="text-muted-foreground">Safra</dt>
+                    <div className="flex gap-1">
+                      <dt className="text-muted-foreground">Safra:</dt>
                       <dd>{titulo.safra?.nome ?? "—"}</dd>
                     </div>
-                    <div>
-                      <dt className="text-muted-foreground">Projeto</dt>
+                    <div className="flex gap-1">
+                      <dt className="text-muted-foreground">Projeto:</dt>
                       <dd>{titulo.projeto?.nome ?? "—"}</dd>
                     </div>
-                    <div>
-                      <dt className="text-muted-foreground">Conta bancária</dt>
+                    <div className="flex gap-1">
+                      <dt className="text-muted-foreground">Conta bancária:</dt>
                       <dd>
                         {titulo.contaBancaria
                           ? `${titulo.contaBancaria.banco.nome} - Ag ${titulo.contaBancaria.agencia}/CC ${titulo.contaBancaria.conta}`
                           : "—"}
                       </dd>
                     </div>
-                    <div>
-                      <dt className="text-muted-foreground">Forma de pagamento</dt>
+                    <div className="flex gap-1">
+                      <dt className="text-muted-foreground">Forma de pagamento:</dt>
                       <dd>{titulo.formaPagamento ?? "—"}</dd>
                     </div>
                   </dl>
@@ -189,7 +194,8 @@ export function TituloTable({
               titulo.parcelas.map((parcela) => (
                 <TableRow key={parcela.id} className="bg-muted/30">
                   <TableCell colSpan={3} className="pl-8">
-                    Parcela {parcela.numero} — venc. {new Date(parcela.dataVencimento).toLocaleDateString("pt-BR")}
+                    Parcela {parcela.numero} — venc. {formatarData(parcela.dataVencimento)} — valor{" "}
+                    {formatarMoeda(parcela.valorAtualizado)}
                   </TableCell>
                   <TableCell>
                     <Badge variant={VARIANTE_STATUS[parcela.status] ?? "secondary"}>{parcela.status}</Badge>
