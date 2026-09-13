@@ -93,9 +93,13 @@ registrado no backlog.
 - **Módulo de URL dedicado** — `src/app/(dashboard)/auditoria/filtro-auditoria-url.ts` (não reaproveita `filtro-titulos-url.ts` do sub-projeto 6c — campos completamente diferentes):
   ```ts
   export function filtroAuditoriaDaUrl(get: (campo: string) => string | undefined): FiltroAuditoria;
-  export function queryStringDoFiltro(get: (campo: string) => string | undefined): string;
   export function paginaDaUrl(get: (campo: string) => string | undefined): number; // >= 1, default 1, qualquer valor inválido/não numérico cai em 1
   ```
+
+  (Diferente do módulo equivalente do sub-projeto 6c, não há
+  `queryStringDoFiltro` aqui — lá ele existia para propagar os filtros
+  pro link de export; esta tela não tem export, então esse export seria
+  código morto sem consumidor.)
   Mesmos princípios de robustez do sub-projeto 6c: nenhum valor
   inválido/malformado lança erro, sempre cai no "sem filtro"/"página 1".
 
@@ -128,8 +132,12 @@ registrado no backlog.
 **Puros (sem banco)**, em `filtro-auditoria-url.test.ts`: casos de
 robustez de `filtroAuditoriaDaUrl` (sentinela, valor ausente, nunca
 lança erro) e de `paginaDaUrl` (ausente → 1, `"0"`/negativo/não-numérico
-→ 1, valor válido → o número); `queryStringDoFiltro` inclui só os
-params presentes.
+→ 1, valor válido → o número). Em `barra-de-filtros.test.ts`:
+`construirUrlComFiltro` (mesmos 4 casos do sub-projeto 6c, mais o caso
+novo: mudar um filtro sempre remove o param `pagina` da URL, mesmo que
+já estivesse em `"3"`). Em `paginacao.test.ts`: `construirUrlComPagina`
+(página 1 remove o param; página > 1 seta o param; preserva os demais
+params da URL).
 
 **Integração (Postgres real)**, em `auditoria.test.ts`, fixture
 `financeiroTestFixtures.ts` (mais um segundo usuário/filial dentro da
@@ -153,7 +161,9 @@ fixture nova):
 - `src/app/(dashboard)/auditoria/filtro-auditoria-url.ts` (novo).
 - `src/app/(dashboard)/auditoria/filtro-auditoria-url.test.ts` (novo).
 - `src/app/(dashboard)/auditoria/barra-de-filtros.tsx` (novo).
+- `src/app/(dashboard)/auditoria/barra-de-filtros.test.ts` (novo).
 - `src/app/(dashboard)/auditoria/paginacao.tsx` (novo).
+- `src/app/(dashboard)/auditoria/paginacao.test.ts` (novo).
 - `src/app/(dashboard)/auditoria/page.tsx` (reescrita — deixa de
   consultar `prisma` direto).
 - `docs/backlog.md` — registrar o workflow de aprovação/pagamento de 5
