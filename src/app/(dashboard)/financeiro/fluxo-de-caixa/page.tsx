@@ -5,6 +5,7 @@ import { listarFluxoDeCaixaRealizado, type Granularidade } from "@/server/servic
 import { SeletorPeriodo } from "./seletor-periodo";
 import { formatarRotuloPeriodo } from "../_fluxo-de-caixa/formatar-rotulo-periodo";
 import { dataValida } from "../_fluxo-de-caixa/data-valida";
+import { ExportarLinks } from "../../_shared/exportar-links";
 
 const GRANULARIDADES_VALIDAS: Granularidade[] = ["DIA", "SEMANA", "MES", "ANO"];
 
@@ -38,6 +39,11 @@ export default async function FluxoDeCaixaPage({
       </div>
 
       <SeletorPeriodo granularidade={granularidade} dataReferencia={dataReferencia.toISOString().slice(0, 10)} />
+
+      <ExportarLinks
+        baseHref="/financeiro/fluxo-de-caixa/export"
+        queryString={`granularidade=${granularidade}&data=${dataReferencia.toISOString().slice(0, 10)}`}
+      />
 
       <Table>
         <TableHeader>

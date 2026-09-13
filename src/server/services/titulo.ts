@@ -7,6 +7,28 @@ import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { StatusParcela, TipoTitulo } from "@prisma/client";
 import type { TituloFormValues, TituloHeaderFormValues } from "@/lib/schemas/titulo";
 
+export type FiltroTitulos = {
+  categoriaId?: string;
+  contraparteId?: string;
+  centroCustoId?: string;
+  centroLucroId?: string;
+  safraId?: string;
+  projetoId?: string;
+  status?: StatusParcela;
+  vencimentoDe?: Date;
+  vencimentoAte?: Date;
+};
+
+export function parcelaBateFiltroDeParcela(
+  parcela: { status: StatusParcela; dataVencimento: Date },
+  filtros: Pick<FiltroTitulos, "status" | "vencimentoDe" | "vencimentoAte">,
+): boolean {
+  if (filtros.status !== undefined && parcela.status !== filtros.status) return false;
+  if (filtros.vencimentoDe !== undefined && parcela.dataVencimento < filtros.vencimentoDe) return false;
+  if (filtros.vencimentoAte !== undefined && parcela.dataVencimento > filtros.vencimentoAte) return false;
+  return true;
+}
+
 function contraparteCampo(tipo: TipoTitulo, contraparteId: string) {
   return tipo === "PAGAR"
     ? { fornecedorId: contraparteId, clienteId: null }
@@ -92,9 +114,19 @@ export async function validarReferenciasDoTitulo(
   }
 }
 
-export async function listarTitulos(filialId: string, tipo: TipoTitulo) {
+export async function listarTitulos(filialId: string, tipo: TipoTitulo, filtros: FiltroTitulos = {}) {
   const titulos = await prisma.titulo.findMany({
-    where: { filialId, tipo },
+    where: {
+      filialId,
+      tipo,
+      ...(filtros.categoriaId && { categoriaFinanceiraId: filtros.categoriaId }),
+      ...(filtros.contraparteId &&
+        (tipo === "PAGAR" ? { fornecedorId: filtros.contraparteId } : { clienteId: filtros.contraparteId })),
+      ...(filtros.centroCustoId && { centroCustoId: filtros.centroCustoId }),
+      ...(filtros.centroLucroId && { centroLucroId: filtros.centroLucroId }),
+      ...(filtros.safraId && { safraId: filtros.safraId }),
+      ...(filtros.projetoId && { projetoId: filtros.projetoId }),
+    },
     include: {
       fornecedor: true,
       cliente: true,
@@ -137,7 +169,11 @@ export async function listarTitulos(filialId: string, tipo: TipoTitulo) {
     await prisma.parcela.updateMany({ where: { id: { in: ids } }, data: { status } });
   }
 
-  return titulos;
+  const temFiltroDeParcela =
+    filtros.status !== undefined || filtros.vencimentoDe !== undefined || filtros.vencimentoAte !== undefined;
+  if (!temFiltroDeParcela) return titulos;
+
+  return titulos.filter((titulo) => titulo.parcelas.some((parcela) => parcelaBateFiltroDeParcela(parcela, filtros)));
 }
 
 export async function criarTitulo(

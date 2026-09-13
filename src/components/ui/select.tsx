@@ -6,7 +6,39 @@ import { Select as SelectPrimitive } from "@base-ui/react/select"
 import { cn } from "@/lib/utils"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
 
-const Select = SelectPrimitive.Root
+/**
+ * Base UI só resolve o rótulo do item selecionado em `<SelectValue />` quando
+ * o `items` é passado ao `Select.Root` — mas este projeto declara as opções
+ * como filhos JSX (`<SelectItem>`), não via essa prop. Sem isso, o trigger
+ * mostra o `value` bruto (ex.: o sentinela "__nenhum__") em vez do rótulo
+ * amigável ("Todas"). Este wrapper extrai o mapa value→rótulo dos próprios
+ * `<SelectItem>` filhos em tempo de render, então nenhum dos usos existentes
+ * de `<Select>` precisa mudar.
+ */
+function extrairItemsDosFilhos(children: React.ReactNode): Record<string, React.ReactNode> {
+  const items: Record<string, React.ReactNode> = {}
+  React.Children.forEach(children, (child) => {
+    if (!React.isValidElement(child)) return
+    if (child.type === SelectItem) {
+      const { value, children: rotulo } = child.props as { value: string; children?: React.ReactNode }
+      items[value] = rotulo
+      return
+    }
+    const filhos = (child.props as { children?: React.ReactNode } | undefined)?.children
+    if (filhos) {
+      Object.assign(items, extrairItemsDosFilhos(filhos))
+    }
+  })
+  return items
+}
+
+function Select({ children, items, ...props }: SelectPrimitive.Root.Props<string>) {
+  return (
+    <SelectPrimitive.Root items={items ?? extrairItemsDosFilhos(children)} {...props}>
+      {children}
+    </SelectPrimitive.Root>
+  )
+}
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (

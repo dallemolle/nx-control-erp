@@ -81,6 +81,7 @@ export function TituloTable({
   opcoes,
   podeEscrever,
   podeBaixar,
+  filtroAtivo,
   onAbrirBaixa,
   onAbrirRenegociacao,
 }: {
@@ -89,6 +90,7 @@ export function TituloTable({
   opcoes: OpcoesTitulo;
   podeEscrever: boolean;
   podeBaixar: boolean;
+  filtroAtivo: boolean;
   onAbrirBaixa: (parcelaId: string) => void;
   onAbrirRenegociacao: (parcelaId: string) => void;
 }) {
@@ -188,6 +190,13 @@ export function TituloTable({
             )}
           </Fragment>
         ))}
+        {titulos.length === 0 && (
+          <TableRow>
+            <TableCell colSpan={5} className="text-center text-muted-foreground">
+              {filtroAtivo ? "Nenhum título encontrado para os filtros selecionados" : "Nenhum título cadastrado"}
+            </TableCell>
+          </TableRow>
+        )}
       </TableBody>
     </Table>
   );
