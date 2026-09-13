@@ -114,9 +114,19 @@ export async function validarReferenciasDoTitulo(
   }
 }
 
-export async function listarTitulos(filialId: string, tipo: TipoTitulo) {
+export async function listarTitulos(filialId: string, tipo: TipoTitulo, filtros: FiltroTitulos = {}) {
   const titulos = await prisma.titulo.findMany({
-    where: { filialId, tipo },
+    where: {
+      filialId,
+      tipo,
+      ...(filtros.categoriaId && { categoriaFinanceiraId: filtros.categoriaId }),
+      ...(filtros.contraparteId &&
+        (tipo === "PAGAR" ? { fornecedorId: filtros.contraparteId } : { clienteId: filtros.contraparteId })),
+      ...(filtros.centroCustoId && { centroCustoId: filtros.centroCustoId }),
+      ...(filtros.centroLucroId && { centroLucroId: filtros.centroLucroId }),
+      ...(filtros.safraId && { safraId: filtros.safraId }),
+      ...(filtros.projetoId && { projetoId: filtros.projetoId }),
+    },
     include: {
       fornecedor: true,
       cliente: true,
@@ -159,7 +169,11 @@ export async function listarTitulos(filialId: string, tipo: TipoTitulo) {
     await prisma.parcela.updateMany({ where: { id: { in: ids } }, data: { status } });
   }
 
-  return titulos;
+  const temFiltroDeParcela =
+    filtros.status !== undefined || filtros.vencimentoDe !== undefined || filtros.vencimentoAte !== undefined;
+  if (!temFiltroDeParcela) return titulos;
+
+  return titulos.filter((titulo) => titulo.parcelas.some((parcela) => parcelaBateFiltroDeParcela(parcela, filtros)));
 }
 
 export async function criarTitulo(

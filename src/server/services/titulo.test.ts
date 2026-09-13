@@ -399,4 +399,261 @@ describe("titulo (filial-scoped)", () => {
       /já renegociada ou cancelada/,
     );
   });
+
+  test("listarTitulos filtra por categoria", async () => {
+    const categoria = await prisma.categoriaFinanceira.create({
+      data: { filialId: fixture.filialId, nome: "Categoria Filtro Dimensao TIT", tipo: "DESPESA" },
+    });
+
+    const titulo = await criarTitulo(fixture.sessao, "PAGAR", {
+      contraparteId: fixture.fornecedorId,
+      documento: "NF-CATEGORIA-DIM-TIT",
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: categoria.id,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: "",
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: new Date(), valorOriginal: 100 }],
+    });
+
+    const filtrados = await listarTitulos(fixture.filialId, "PAGAR", { categoriaId: categoria.id });
+    expect(filtrados.every((t) => t.categoriaFinanceiraId === categoria.id)).toBe(true);
+    expect(filtrados.some((t) => t.id === titulo.id)).toBe(true);
+  });
+
+  test("listarTitulos filtra por contraparte (fornecedor)", async () => {
+    const outroFornecedor = await prisma.fornecedor.create({
+      data: { empresaId: fixture.empresaId, nome: "Fornecedor Filtro TIT", cnpjCpf: "77.777.TIT/0001-88" },
+    });
+
+    const tituloOutroFornecedor = await criarTitulo(fixture.sessao, "PAGAR", {
+      contraparteId: outroFornecedor.id,
+      documento: "NF-OUTRO-FORNECEDOR-TIT",
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: "",
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: new Date(), valorOriginal: 100 }],
+    });
+
+    const filtrados = await listarTitulos(fixture.filialId, "PAGAR", { contraparteId: fixture.fornecedorId });
+    expect(filtrados.every((t) => t.fornecedorId === fixture.fornecedorId)).toBe(true);
+    expect(filtrados.some((t) => t.id === tituloOutroFornecedor.id)).toBe(false);
+  });
+
+  test("listarTitulos filtra por centro de custo", async () => {
+    const centroCusto = await prisma.centroCusto.create({
+      data: { filialId: fixture.filialId, nome: "Centro Custo Filtro TIT", codigo: "CC-FILTRO-TIT" },
+    });
+
+    const titulo = await criarTitulo(fixture.sessao, "PAGAR", {
+      contraparteId: fixture.fornecedorId,
+      documento: "NF-CENTRO-CUSTO-TIT",
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+      centroCustoId: centroCusto.id,
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: "",
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: new Date(), valorOriginal: 100 }],
+    });
+
+    const filtrados = await listarTitulos(fixture.filialId, "PAGAR", { centroCustoId: centroCusto.id });
+    expect(filtrados.every((t) => t.centroCustoId === centroCusto.id)).toBe(true);
+    expect(filtrados.some((t) => t.id === titulo.id)).toBe(true);
+  });
+
+  test("listarTitulos filtra por centro de lucro", async () => {
+    const centroLucro = await prisma.centroLucro.create({
+      data: { filialId: fixture.filialId, nome: "Centro Lucro Filtro TIT", codigo: "CL-FILTRO-TIT" },
+    });
+
+    const titulo = await criarTitulo(fixture.sessao, "PAGAR", {
+      contraparteId: fixture.fornecedorId,
+      documento: "NF-CENTRO-LUCRO-TIT",
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: centroLucro.id,
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: "",
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: new Date(), valorOriginal: 100 }],
+    });
+
+    const filtrados = await listarTitulos(fixture.filialId, "PAGAR", { centroLucroId: centroLucro.id });
+    expect(filtrados.every((t) => t.centroLucroId === centroLucro.id)).toBe(true);
+    expect(filtrados.some((t) => t.id === titulo.id)).toBe(true);
+  });
+
+  test("listarTitulos filtra por safra", async () => {
+    const safra = await prisma.safra.create({
+      data: {
+        filialId: fixture.filialId,
+        nome: "Safra Filtro TIT",
+        dataInicio: new Date("2026-01-01"),
+        dataFim: new Date("2026-12-31"),
+      },
+    });
+
+    const titulo = await criarTitulo(fixture.sessao, "PAGAR", {
+      contraparteId: fixture.fornecedorId,
+      documento: "NF-SAFRA-TIT",
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: safra.id,
+      projetoId: "",
+      contaBancariaId: "",
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: new Date(), valorOriginal: 100 }],
+    });
+
+    const filtrados = await listarTitulos(fixture.filialId, "PAGAR", { safraId: safra.id });
+    expect(filtrados.every((t) => t.safraId === safra.id)).toBe(true);
+    expect(filtrados.some((t) => t.id === titulo.id)).toBe(true);
+  });
+
+  test("listarTitulos filtra por projeto", async () => {
+    const projeto = await prisma.projeto.create({
+      data: { filialId: fixture.filialId, nome: "Projeto Filtro TIT", codigo: "PRJ-FILTRO-TIT" },
+    });
+
+    const titulo = await criarTitulo(fixture.sessao, "PAGAR", {
+      contraparteId: fixture.fornecedorId,
+      documento: "NF-PROJETO-TIT",
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: projeto.id,
+      contaBancariaId: "",
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: new Date(), valorOriginal: 100 }],
+    });
+
+    const filtrados = await listarTitulos(fixture.filialId, "PAGAR", { projetoId: projeto.id });
+    expect(filtrados.every((t) => t.projetoId === projeto.id)).toBe(true);
+    expect(filtrados.some((t) => t.id === titulo.id)).toBe(true);
+  });
+
+  test("listarTitulos filtra por status", async () => {
+    const titulo = await criarTitulo(fixture.sessao, "PAGAR", {
+      contraparteId: fixture.fornecedorId,
+      documento: "NF-STATUS-TIT",
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: "",
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: new Date(), valorOriginal: 100 }],
+    });
+    await cancelarParcela(fixture.sessao, titulo.parcelas[0].id);
+
+    const cancelados = await listarTitulos(fixture.filialId, "PAGAR", { status: "CANCELADO" });
+    expect(cancelados.some((t) => t.id === titulo.id)).toBe(true);
+
+    const pagos = await listarTitulos(fixture.filialId, "PAGAR", { status: "PAGO" });
+    expect(pagos.some((t) => t.id === titulo.id)).toBe(false);
+  });
+
+  test("listarTitulos filtra por período de vencimento (inclusivo)", async () => {
+    const titulo = await criarTitulo(fixture.sessao, "PAGAR", {
+      contraparteId: fixture.fornecedorId,
+      documento: "NF-PERIODO-TIT",
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: "",
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: new Date("2027-03-10T00:00:00.000Z"), valorOriginal: 100 }],
+    });
+
+    const dentro = await listarTitulos(fixture.filialId, "PAGAR", {
+      vencimentoDe: new Date("2027-03-01T00:00:00.000Z"),
+      vencimentoAte: new Date("2027-03-31T00:00:00.000Z"),
+    });
+    expect(dentro.some((t) => t.id === titulo.id)).toBe(true);
+
+    const fora = await listarTitulos(fixture.filialId, "PAGAR", {
+      vencimentoDe: new Date("2027-04-01T00:00:00.000Z"),
+    });
+    expect(fora.some((t) => t.id === titulo.id)).toBe(false);
+  });
+
+  test("listarTitulos combina categoria e status: interseção, não união", async () => {
+    const categoriaCombo = await prisma.categoriaFinanceira.create({
+      data: { filialId: fixture.filialId, nome: "Categoria Combo TIT", tipo: "DESPESA" },
+    });
+
+    const tituloBateOsDois = await criarTitulo(fixture.sessao, "PAGAR", {
+      contraparteId: fixture.fornecedorId,
+      documento: "NF-COMBO-BATE-TIT",
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: categoriaCombo.id,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: "",
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: new Date(), valorOriginal: 100 }],
+    });
+    await cancelarParcela(fixture.sessao, tituloBateOsDois.parcelas[0].id);
+
+    const tituloSoCategoria = await criarTitulo(fixture.sessao, "PAGAR", {
+      contraparteId: fixture.fornecedorId,
+      documento: "NF-COMBO-SO-CATEGORIA-TIT",
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: categoriaCombo.id,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: "",
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: new Date(), valorOriginal: 100 }],
+    });
+
+    const filtrados = await listarTitulos(fixture.filialId, "PAGAR", {
+      categoriaId: categoriaCombo.id,
+      status: "CANCELADO",
+    });
+
+    expect(filtrados.some((t) => t.id === tituloBateOsDois.id)).toBe(true);
+    expect(filtrados.some((t) => t.id === tituloSoCategoria.id)).toBe(false);
+  });
+
+  test("listarTitulos com filtro que não bate nada devolve lista vazia", async () => {
+    const filtrados = await listarTitulos(fixture.filialId, "PAGAR", { vencimentoDe: new Date("2200-01-01") });
+    expect(filtrados).toEqual([]);
+  });
 });
