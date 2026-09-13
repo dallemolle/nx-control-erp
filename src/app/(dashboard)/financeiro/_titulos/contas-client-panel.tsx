@@ -13,6 +13,7 @@ export function ContasClientePanel({
   opcoes,
   podeEscrever,
   podeBaixar,
+  filtroAtivo,
 }: {
   tipo: TipoTitulo;
   titulos: Parameters<typeof TituloTable>[0]["titulos"];
@@ -20,6 +21,7 @@ export function ContasClientePanel({
   opcoes: OpcoesTitulo;
   podeEscrever: boolean;
   podeBaixar: boolean;
+  filtroAtivo: boolean;
 }) {
   const [parcelaBaixaId, setParcelaBaixaId] = useState<string | null>(null);
   const [parcelaRenegociacaoId, setParcelaRenegociacaoId] = useState<string | null>(null);
@@ -37,6 +39,7 @@ export function ContasClientePanel({
         opcoes={opcoes}
         podeEscrever={podeEscrever}
         podeBaixar={podeBaixar}
+        filtroAtivo={filtroAtivo}
         onAbrirBaixa={setParcelaBaixaId}
         onAbrirRenegociacao={setParcelaRenegociacaoId}
       />

@@ -10,17 +10,40 @@ import { listarProjetos } from "@/server/services/projeto";
 import { listarContasBancarias } from "@/server/services/contaBancaria";
 import { TituloDialogForm } from "../_titulos/titulo-dialog-form";
 import { ContasClientePanel } from "../_titulos/contas-client-panel";
+import { BarraDeFiltros } from "../_titulos/barra-de-filtros";
+import { filtroTitulosDaUrl, algumFiltroAtivo, queryStringDosFiltros } from "../_titulos/filtro-titulos-url";
 import { ExportarLinks } from "../../_shared/exportar-links";
 
-export default async function ContasAPagarPage() {
+function paramCru(valor: string | string[] | undefined): string | undefined {
+  return Array.isArray(valor) ? valor[0] : valor;
+}
+
+type SearchParams = {
+  categoria?: string | string[];
+  contraparte?: string | string[];
+  centroCusto?: string | string[];
+  centroLucro?: string | string[];
+  safra?: string | string[];
+  projeto?: string | string[];
+  status?: string | string[];
+  vencimentoDe?: string | string[];
+  vencimentoAte?: string | string[];
+};
+
+export default async function ContasAPagarPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "titulo:ler");
   const podeEscrever = podeEscreverTitulo(sessao.perfil, sessao.podeAlterarFilial);
   const podeBaixar = podeBaixarTitulo(sessao.perfil, sessao.podeAlterarFilial);
 
+  const sp = await searchParams;
+  const get = (campo: string) => paramCru((sp as Record<string, string | string[] | undefined>)[campo]);
+  const filtros = filtroTitulosDaUrl(get);
+  const queryString = queryStringDosFiltros(get);
+
   const [titulos, fornecedores, categorias, centrosCusto, centrosLucro, safras, projetos, contasBancarias] =
     await Promise.all([
-      listarTitulos(sessao.filialId, "PAGAR"),
+      listarTitulos(sessao.filialId, "PAGAR", filtros),
       listarFornecedores(sessao.empresaId),
       listarCategoriasFinanceiras(sessao.filialId),
       listarCentrosCusto(sessao.filialId),
@@ -51,7 +74,7 @@ export default async function ContasAPagarPage() {
           <p className="text-sm text-muted-foreground">Títulos e parcelas a pagar da filial ativa.</p>
         </div>
         <div className="flex items-center gap-4">
-          <ExportarLinks baseHref="/financeiro/contas-a-pagar/export" />
+          <ExportarLinks baseHref="/financeiro/contas-a-pagar/export" queryString={queryString} />
           {podeEscrever && (
             <TituloDialogForm
               tipo="PAGAR"
@@ -66,12 +89,24 @@ export default async function ContasAPagarPage() {
           )}
         </div>
       </div>
+      <BarraDeFiltros
+        rotuloContraparte="Fornecedor"
+        opcoes={{
+          categorias: opcoes.categorias,
+          contrapartes: opcoes.contrapartes,
+          centrosCusto: opcoes.centrosCusto,
+          centrosLucro: opcoes.centrosLucro,
+          safras: opcoes.safras,
+          projetos: opcoes.projetos,
+        }}
+      />
       <ContasClientePanel
         tipo="PAGAR"
         titulos={titulos}
         opcoes={opcoes}
         podeEscrever={podeEscrever}
         podeBaixar={podeBaixar}
+        filtroAtivo={algumFiltroAtivo(filtros)}
       />
     </div>
   );
