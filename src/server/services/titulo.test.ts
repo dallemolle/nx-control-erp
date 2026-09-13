@@ -3,8 +3,48 @@ import { prisma } from "@/server/db/client";
 import { FilialSomenteLeituraError } from "@/server/auth/permissions";
 import { SEM_VALOR } from "@/lib/schemas/enums";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
-import { criarTitulo, atualizarTitulo, listarTitulos, alterarVencimentoParcela, cancelarParcela } from "./titulo";
+import { criarTitulo, atualizarTitulo, listarTitulos, alterarVencimentoParcela, cancelarParcela, parcelaBateFiltroDeParcela } from "./titulo";
 import { renegociarParcela } from "./renegociacao";
+
+describe("parcelaBateFiltroDeParcela (pura)", () => {
+  test("sem filtro nenhum, sempre bate", () => {
+    expect(
+      parcelaBateFiltroDeParcela({ status: "VENCIDO", dataVencimento: new Date("2026-01-01") }, {}),
+    ).toBe(true);
+  });
+
+  test("filtra só por status", () => {
+    const parcela = { status: "VENCIDO" as const, dataVencimento: new Date("2026-01-01") };
+    expect(parcelaBateFiltroDeParcela(parcela, { status: "PAGO" })).toBe(false);
+    expect(parcelaBateFiltroDeParcela(parcela, { status: "VENCIDO" })).toBe(true);
+  });
+
+  test("filtra só por período (inclusivo nas duas pontas)", () => {
+    const parcela = { status: "VENCIDO" as const, dataVencimento: new Date("2026-06-15") };
+    expect(parcelaBateFiltroDeParcela(parcela, { vencimentoDe: new Date("2026-06-15") })).toBe(true);
+    expect(parcelaBateFiltroDeParcela(parcela, { vencimentoDe: new Date("2026-06-16") })).toBe(false);
+    expect(parcelaBateFiltroDeParcela(parcela, { vencimentoAte: new Date("2026-06-15") })).toBe(true);
+    expect(parcelaBateFiltroDeParcela(parcela, { vencimentoAte: new Date("2026-06-14") })).toBe(false);
+  });
+
+  test("status e período juntos exigem que a mesma parcela bata os dois", () => {
+    const parcela = { status: "VENCIDO" as const, dataVencimento: new Date("2026-06-15") };
+    expect(
+      parcelaBateFiltroDeParcela(parcela, {
+        status: "VENCIDO",
+        vencimentoDe: new Date("2026-06-01"),
+        vencimentoAte: new Date("2026-06-30"),
+      }),
+    ).toBe(true);
+    expect(
+      parcelaBateFiltroDeParcela(parcela, {
+        status: "PAGO",
+        vencimentoDe: new Date("2026-06-01"),
+        vencimentoAte: new Date("2026-06-30"),
+      }),
+    ).toBe(false);
+  });
+});
 
 describe("titulo (filial-scoped)", () => {
   let fixture: FixtureFinanceiro;

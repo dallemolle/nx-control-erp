@@ -7,6 +7,28 @@ import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { StatusParcela, TipoTitulo } from "@prisma/client";
 import type { TituloFormValues, TituloHeaderFormValues } from "@/lib/schemas/titulo";
 
+export type FiltroTitulos = {
+  categoriaId?: string;
+  contraparteId?: string;
+  centroCustoId?: string;
+  centroLucroId?: string;
+  safraId?: string;
+  projetoId?: string;
+  status?: StatusParcela;
+  vencimentoDe?: Date;
+  vencimentoAte?: Date;
+};
+
+export function parcelaBateFiltroDeParcela(
+  parcela: { status: StatusParcela; dataVencimento: Date },
+  filtros: Pick<FiltroTitulos, "status" | "vencimentoDe" | "vencimentoAte">,
+): boolean {
+  if (filtros.status !== undefined && parcela.status !== filtros.status) return false;
+  if (filtros.vencimentoDe !== undefined && parcela.dataVencimento < filtros.vencimentoDe) return false;
+  if (filtros.vencimentoAte !== undefined && parcela.dataVencimento > filtros.vencimentoAte) return false;
+  return true;
+}
+
 function contraparteCampo(tipo: TipoTitulo, contraparteId: string) {
   return tipo === "PAGAR"
     ? { fornecedorId: contraparteId, clienteId: null }
