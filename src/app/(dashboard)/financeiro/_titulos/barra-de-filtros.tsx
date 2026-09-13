@@ -5,18 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { SEM_VALOR } from "@/lib/schemas/enums";
-import type { StatusParcela } from "@prisma/client";
-
-const STATUS_OPCOES: StatusParcela[] = [
-  "EM_ABERTO",
-  "A_VENCER",
-  "VENCIDO",
-  "PARCIALMENTE_PAGO",
-  "PAGO",
-  "CANCELADO",
-  "RENEGOCIADO",
-];
+import { SEM_VALOR, STATUS_PARCELA } from "@/lib/schemas/enums";
 
 export type OpcoesFiltro = {
   categorias: { id: string; nome: string }[];
@@ -191,7 +180,7 @@ export function BarraDeFiltros({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={SEM_VALOR}>Todos os status</SelectItem>
-            {STATUS_OPCOES.map((status) => (
+            {STATUS_PARCELA.map((status) => (
               <SelectItem key={status} value={status}>
                 {status}
               </SelectItem>

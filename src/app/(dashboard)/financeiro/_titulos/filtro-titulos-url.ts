@@ -1,16 +1,6 @@
 import type { StatusParcela } from "@prisma/client";
 import type { FiltroTitulos } from "@/server/services/titulo";
-import { SEM_VALOR } from "@/lib/schemas/enums";
-
-const STATUS_VALIDOS: StatusParcela[] = [
-  "EM_ABERTO",
-  "A_VENCER",
-  "VENCIDO",
-  "PARCIALMENTE_PAGO",
-  "PAGO",
-  "CANCELADO",
-  "RENEGOCIADO",
-];
+import { SEM_VALOR, STATUS_PARCELA } from "@/lib/schemas/enums";
 
 /** Nomes dos params na URL, na ordem usada tanto pelas páginas quanto pelas rotas de export. */
 export const CAMPOS_FILTRO_TITULOS = [
@@ -30,13 +20,23 @@ function valorOuUndefined(valor: string | undefined): string | undefined {
 }
 
 function statusOuUndefined(valor: string | undefined): StatusParcela | undefined {
-  return STATUS_VALIDOS.includes(valor as StatusParcela) ? (valor as StatusParcela) : undefined;
+  return valor !== undefined && (STATUS_PARCELA as readonly string[]).includes(valor)
+    ? (valor as StatusParcela)
+    : undefined;
 }
 
-function dataOuUndefined(valor: string | undefined): Date | undefined {
+function dataInicioDoDiaOuUndefined(valor: string | undefined): Date | undefined {
   if (!valor || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) return undefined;
-  const data = new Date(`${valor}T00:00:00Z`);
-  return Number.isNaN(data.getTime()) ? undefined : data;
+  const data = new Date(`${valor}T00:00:00.000Z`);
+  if (Number.isNaN(data.getTime()) || data.toISOString().slice(0, 10) !== valor) return undefined;
+  return data;
+}
+
+function dataFimDoDiaOuUndefined(valor: string | undefined): Date | undefined {
+  if (!valor || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) return undefined;
+  const data = new Date(`${valor}T23:59:59.999Z`);
+  if (Number.isNaN(data.getTime()) || data.toISOString().slice(0, 10) !== valor) return undefined;
+  return data;
 }
 
 export function filtroTitulosDaUrl(get: (campo: string) => string | undefined): FiltroTitulos {
@@ -48,8 +48,8 @@ export function filtroTitulosDaUrl(get: (campo: string) => string | undefined): 
     safraId: valorOuUndefined(get("safra")),
     projetoId: valorOuUndefined(get("projeto")),
     status: statusOuUndefined(get("status")),
-    vencimentoDe: dataOuUndefined(get("vencimentoDe")),
-    vencimentoAte: dataOuUndefined(get("vencimentoAte")),
+    vencimentoDe: dataInicioDoDiaOuUndefined(get("vencimentoDe")),
+    vencimentoAte: dataFimDoDiaOuUndefined(get("vencimentoAte")),
   };
 }
 

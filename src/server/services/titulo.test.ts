@@ -656,4 +656,68 @@ describe("titulo (filial-scoped)", () => {
     const filtrados = await listarTitulos(fixture.filialId, "PAGAR", { vencimentoDe: new Date("2200-01-01") });
     expect(filtrados).toEqual([]);
   });
+
+  test("listarTitulos com filtro não vaza entre filiais mesmo quando os valores do filtro combinam", async () => {
+    const filialIrma = await prisma.filial.create({
+      data: { empresaId: fixture.empresaId, nome: "Filial Irma Filtro TIT", cnpj: "11.111.FLT/0001-99" },
+    });
+    const categoriaDaIrma = await prisma.categoriaFinanceira.create({
+      data: { filialId: filialIrma.id, nome: "Categoria Irma Filtro TIT", tipo: "DESPESA" },
+    });
+    const sessaoFilialIrma: typeof fixture.sessao = { ...fixture.sessaoAdmin, filialId: filialIrma.id };
+
+    await criarTitulo(sessaoFilialIrma, "PAGAR", {
+      contraparteId: fixture.fornecedorId,
+      documento: "NF-FILTRO-FILIAL-IRMA",
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: categoriaDaIrma.id,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: "",
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: new Date(), valorOriginal: 100 }],
+    });
+
+    const filtrados = await listarTitulos(fixture.filialId, "PAGAR", { categoriaId: categoriaDaIrma.id });
+    expect(filtrados).toEqual([]);
+
+    await prisma.parcela.deleteMany({ where: { titulo: { filialId: filialIrma.id } } });
+    await prisma.titulo.deleteMany({ where: { filialId: filialIrma.id } });
+    await prisma.auditLog.deleteMany({ where: { filialId: filialIrma.id } });
+    await prisma.categoriaFinanceira.delete({ where: { id: categoriaDaIrma.id } });
+    await prisma.filial.delete({ where: { id: filialIrma.id } });
+  });
+
+  test("listarTitulos: título com múltiplas parcelas, só uma bate o filtro, mas todas continuam visíveis", async () => {
+    const titulo = await criarTitulo(fixture.sessao, "PAGAR", {
+      contraparteId: fixture.fornecedorId,
+      documento: "NF-MULTI-PARCELA-TIT",
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: "",
+      formaPagamento: "",
+      parcelas: [
+        { numero: 1, dataVencimento: new Date("2028-01-15T00:00:00.000Z"), valorOriginal: 100 },
+        { numero: 2, dataVencimento: new Date("2028-06-15T00:00:00.000Z"), valorOriginal: 100 },
+      ],
+    });
+
+    const filtrados = await listarTitulos(fixture.filialId, "PAGAR", {
+      vencimentoDe: new Date("2028-06-01T00:00:00.000Z"),
+      vencimentoAte: new Date("2028-06-30T23:59:59.999Z"),
+    });
+
+    const tituloFiltrado = filtrados.find((t) => t.id === titulo.id);
+    expect(tituloFiltrado).toBeDefined();
+    expect(tituloFiltrado?.parcelas).toHaveLength(2);
+    expect(tituloFiltrado?.parcelas.map((p) => p.numero).sort()).toEqual([1, 2]);
+  });
 });

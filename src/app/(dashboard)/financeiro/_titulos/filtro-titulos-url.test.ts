@@ -38,7 +38,7 @@ describe("filtroTitulosDaUrl", () => {
     expect(filtro.projetoId).toBe("proj-1");
     expect(filtro.status).toBe("VENCIDO");
     expect(filtro.vencimentoDe?.toISOString()).toBe("2026-01-01T00:00:00.000Z");
-    expect(filtro.vencimentoAte?.toISOString()).toBe("2026-01-31T00:00:00.000Z");
+    expect(filtro.vencimentoAte?.toISOString()).toBe("2026-01-31T23:59:59.999Z");
   });
 
   test('sentinela "__nenhum__" vira undefined', () => {
@@ -54,6 +54,14 @@ describe("filtroTitulosDaUrl", () => {
   test("data malformada vira undefined (nunca lança erro)", () => {
     const filtro = filtroTitulosDaUrl((campo) => (campo === "vencimentoDe" ? "31/01/2026" : undefined));
     expect(filtro.vencimentoDe).toBeUndefined();
+  });
+
+  test("data com dia inválido (roll-over de calendário) vira undefined", () => {
+    const filtroDe = filtroTitulosDaUrl((campo) => (campo === "vencimentoDe" ? "2026-02-30" : undefined));
+    expect(filtroDe.vencimentoDe).toBeUndefined();
+
+    const filtroAte = filtroTitulosDaUrl((campo) => (campo === "vencimentoAte" ? "2026-02-30" : undefined));
+    expect(filtroAte.vencimentoAte).toBeUndefined();
   });
 });
 
