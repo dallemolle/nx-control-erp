@@ -1,6 +1,7 @@
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { podeExecutar } from "@/server/auth/permissions";
 import { listarTitulos } from "@/server/services/titulo";
+import { filtroTitulosDaUrl } from "../../_titulos/filtro-titulos-url";
 import { type ColunaExport } from "@/lib/export/csv";
 import { responderExport } from "@/lib/export/responder";
 
@@ -30,7 +31,10 @@ export async function GET(request: Request) {
     return new Response("Acesso negado", { status: 403 });
   }
 
-  const titulos = await listarTitulos(sessao.filialId, "PAGAR");
+  const url = new URL(request.url);
+  const filtros = filtroTitulosDaUrl((campo) => url.searchParams.get(campo) ?? undefined);
+
+  const titulos = await listarTitulos(sessao.filialId, "PAGAR", filtros);
   const linhas: LinhaExport[] = titulos.flatMap((titulo) =>
     titulo.parcelas.map((parcela) => ({
       documento: titulo.documento,
@@ -43,6 +47,6 @@ export async function GET(request: Request) {
     })),
   );
 
-  const formato = new URL(request.url).searchParams.get("formato");
+  const formato = url.searchParams.get("formato");
   return responderExport(linhas, COLUNAS, { nomeArquivo: "contas-a-pagar", nomeAba: "Contas a pagar", formato });
 }

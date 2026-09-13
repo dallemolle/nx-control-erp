@@ -211,3 +211,28 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   import client acidental no futuro que arrastaria toda essa árvore pro
   bundle do navegador. Considerar adicionar `import "server-only"` em
   `src/lib/export/excel.ts` se isso vier a ser um problema real.
+
+## Filtros globais (Fase 6, sub-projeto 6c)
+
+- **Consolidação por empresa ("empresa sem filial selecionada = todas as
+  filiais")** ficou fora do v1 — exige tornar `SessaoAtiva.filialId`
+  opcional (mudança de sessão/autenticação, não de tela). Quando for
+  retomado, os filtros de dimensão já combinam livremente com qualquer
+  jeito de escopo de filial que vier a existir — não há acoplamento entre
+  os dois.
+- **Banco e conta bancária como filtro** ficaram fora do v1 — exigem 1
+  hop extra (`contaBancaria.bancoId`), mesmo padrão dos demais filtros de
+  título, só que indireto. Adicionar como filtros de título normais
+  quando houver demanda.
+- **Multi-select por dimensão** (ex.: filtrar por 2 categorias ao mesmo
+  tempo) ficou fora do v1 — cada dimensão aceita hoje só um valor por
+  vez. Se necessário no futuro, a mudança troca `categoriaId?: string`
+  etc. por `categoriaIds?: string[]` em `FiltroTitulos` e o `where` do
+  Prisma passa a usar `in: [...]` em vez de igualdade — mecânica direta,
+  sem redesenho.
+- **Extensão do mecanismo para as demais telas financeiras** (fluxo de
+  caixa realizado/projetado, dashboard executivo, conciliação, fluxo por
+  dimensão) — este sub-projeto só aplicou o mecanismo a Contas a
+  pagar/receber. Estender é wiring repetitivo sobre o mesmo padrão
+  (`FiltroTitulos`-equivalente + `BarraDeFiltros`-equivalente por tela),
+  não redesenho.
