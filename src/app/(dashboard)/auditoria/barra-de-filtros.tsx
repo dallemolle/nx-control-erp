@@ -81,7 +81,7 @@ export function BarraDeFiltrosAuditoria({ opcoes }: { opcoes: OpcoesFiltroAudito
       </div>
 
       <div className="flex flex-col gap-1">
-        <span className="text-xs text-muted-foreground">Acao</span>
+        <span className="text-xs text-muted-foreground">Ação</span>
         <Select value={valorSelect("acao")} onValueChange={aoMudarSelect("acao")}>
           <SelectTrigger className="w-48">
             <SelectValue />
@@ -98,7 +98,7 @@ export function BarraDeFiltrosAuditoria({ opcoes }: { opcoes: OpcoesFiltroAudito
       </div>
 
       <div className="flex flex-col gap-1">
-        <span className="text-xs text-muted-foreground">Usuario</span>
+        <span className="text-xs text-muted-foreground">Usuário</span>
         <Select value={valorSelect("usuarioId")} onValueChange={aoMudarSelect("usuarioId")}>
           <SelectTrigger className="w-48">
             <SelectValue />
@@ -137,7 +137,7 @@ export function BarraDeFiltrosAuditoria({ opcoes }: { opcoes: OpcoesFiltroAudito
       </div>
 
       <div className="flex flex-col gap-1">
-        <span className="text-xs text-muted-foreground">Data ate</span>
+        <span className="text-xs text-muted-foreground">Data até</span>
         <Input type="date" className="w-40" value={valorData("dataAte")} onChange={aoMudarData("dataAte")} />
       </div>
 

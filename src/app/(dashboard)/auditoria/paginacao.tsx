@@ -26,7 +26,7 @@ export function Paginacao({ pagina, totalPaginas }: { pagina: number; totalPagin
   return (
     <div className="flex items-center justify-end gap-2">
       <span className="text-xs text-muted-foreground">
-        Pagina {pagina} de {totalPaginas}
+        Página {pagina} de {totalPaginas}
       </span>
       <Button type="button" variant="outline" size="sm" disabled={pagina <= 1} onClick={() => navegar(pagina - 1)}>
         Anterior
@@ -38,7 +38,7 @@ export function Paginacao({ pagina, totalPaginas }: { pagina: number; totalPagin
         disabled={pagina >= totalPaginas}
         onClick={() => navegar(pagina + 1)}
       >
-        Proximo
+        Próximo
       </Button>
     </div>
   );

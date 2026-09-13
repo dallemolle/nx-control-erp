@@ -42,8 +42,11 @@ export async function listarAuditoria(sessao: SessaoAtiva, filtro: FiltroAuditor
   const [logs, total] = await Promise.all([
     prisma.auditLog.findMany({
       where,
-      include: { usuario: true, filial: true },
-      orderBy: { criadoEm: "desc" },
+      include: {
+        usuario: { select: { id: true, nome: true } },
+        filial: { select: { id: true, nome: true } },
+      },
+      orderBy: [{ criadoEm: "desc" }, { id: "desc" }],
       skip: (paginaSegura - 1) * TAMANHO_PAGINA,
       take: TAMANHO_PAGINA,
     }),
@@ -57,22 +60,19 @@ export async function buscarOpcoesFiltroAuditoria(sessao: SessaoAtiva): Promise<
   requirePermission(sessao.perfil, "auditoria:ler");
 
   const [entidadesRows, acoesRows, usuarioIdsRows, filiais] = await Promise.all([
-    prisma.auditLog.findMany({
+    prisma.auditLog.groupBy({
+      by: ["entidade"],
       where: { empresaId: sessao.empresaId },
-      distinct: ["entidade"],
-      select: { entidade: true },
       orderBy: { entidade: "asc" },
     }),
-    prisma.auditLog.findMany({
+    prisma.auditLog.groupBy({
+      by: ["acao"],
       where: { empresaId: sessao.empresaId },
-      distinct: ["acao"],
-      select: { acao: true },
       orderBy: { acao: "asc" },
     }),
-    prisma.auditLog.findMany({
+    prisma.auditLog.groupBy({
+      by: ["usuarioId"],
       where: { empresaId: sessao.empresaId, usuarioId: { not: null } },
-      distinct: ["usuarioId"],
-      select: { usuarioId: true },
     }),
     prisma.filial.findMany({
       where: { empresaId: sessao.empresaId },

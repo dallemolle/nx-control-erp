@@ -32,6 +32,7 @@ export default async function AuditoriaPage({ searchParams }: { searchParams: Pr
   const get = (campo: string) => paramCru((sp as Record<string, string | string[] | undefined>)[campo]);
   const filtro = filtroAuditoriaDaUrl(get);
   const pagina = paginaDaUrl(get);
+  const filtroAtivo = Object.values(filtro).some((valor) => valor !== undefined);
 
   const [{ logs, totalPaginas }, opcoes] = await Promise.all([
     listarAuditoria(sessao, filtro, pagina),
@@ -75,6 +76,15 @@ export default async function AuditoriaPage({ searchParams }: { searchParams: Pr
               </TableCell>
             </TableRow>
           ))}
+          {logs.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center text-muted-foreground">
+                {filtroAtivo
+                  ? "Nenhum registro encontrado para os filtros selecionados"
+                  : "Nenhum registro de auditoria ainda"}
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
 
