@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "nx-control-erp",
+  title: "NX Control",
   description: "Gestão financeira, tesouraria e planejamento de caixa",
 };
 

@@ -12,7 +12,7 @@ export function Sidebar({ perfil }: { perfil: Perfil }) {
   return (
     <nav className="flex w-60 shrink-0 flex-col gap-6 border-r border-sidebar-border bg-sidebar p-4 text-sidebar-foreground">
       <Link href="/" className="px-2 text-sm font-semibold">
-        nx-control-erp
+        NX Control
       </Link>
       {NAV_SECTIONS.map((secao) => {
         const itensVisiveis = secao.itens.filter(
