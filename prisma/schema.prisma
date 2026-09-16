@@ -141,8 +141,25 @@ model Usuario {
   lancamentosBancarios      LancamentoBancario[]
   saldosBancariosInformados SaldoBancarioInformado[]
   extratosImportados        ExtratoImportado[]
+  apiKeys                   ApiKey[]
 
   @@map("usuarios")
+}
+
+model ApiKey {
+  id          String    @id @default(uuid())
+  usuarioId   String
+  nome        String
+  prefixo     String
+  chaveHash   String    @unique
+  ultimoUsoEm DateTime?
+  revogadaEm  DateTime?
+  criadoEm    DateTime  @default(now())
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@map("api_keys")
 }
 
 model UsuarioEmpresa {
