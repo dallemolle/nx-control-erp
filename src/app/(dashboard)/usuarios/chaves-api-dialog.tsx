@@ -31,6 +31,12 @@ export function ChavesApiDialog({ usuarioId }: { usuarioId: string }) {
   const [aberto, setAberto] = useState(false);
   const [chaves, setChaves] = useState<Chave[]>([]);
   const [state, formAction, pendente] = useActionState(gerarChaveAction, ESTADO_INICIAL);
+  // useActionState não expõe um jeito de resetar seu estado: o Dialog só esconde o
+  // conteúdo (não desmonta), então state.chaveCompleta continuaria "vivo" de uma
+  // geração anterior se fosse renderizado direto. Guardamos a chave recém-gerada
+  // aqui, e limpamos explicitamente ao fechar o diálogo — reabrir nunca reexibe
+  // uma chave antiga.
+  const [chaveRecemGerada, setChaveRecemGerada] = useState<string | null>(null);
 
   async function recarregar() {
     setChaves(await listarChavesAction(usuarioId));
@@ -41,9 +47,15 @@ export function ChavesApiDialog({ usuarioId }: { usuarioId: string }) {
   }, [aberto]);
 
   useEffect(() => {
+    if (state.chaveCompleta) setChaveRecemGerada(state.chaveCompleta);
     if (state.sucesso) recarregar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.sucesso, state.chaveCompleta]);
+
+  function aoAlternarAberto(novoAberto: boolean) {
+    setAberto(novoAberto);
+    if (!novoAberto) setChaveRecemGerada(null);
+  }
 
   async function revogar(chaveId: string) {
     const formData = new FormData();
@@ -53,17 +65,17 @@ export function ChavesApiDialog({ usuarioId }: { usuarioId: string }) {
   }
 
   return (
-    <Dialog open={aberto} onOpenChange={setAberto}>
+    <Dialog open={aberto} onOpenChange={aoAlternarAberto}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>Chaves de API</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Chaves de API</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          {state.chaveCompleta ? (
+          {chaveRecemGerada ? (
             <div className="space-y-2 rounded-md border border-amber-500 bg-amber-50 p-3 text-sm">
               <p className="font-medium">Copie a chave agora — ela não será mostrada novamente:</p>
-              <Input readOnly value={state.chaveCompleta} onFocus={(e) => e.target.select()} className="font-mono text-xs" />
+              <Input readOnly value={chaveRecemGerada} onFocus={(e) => e.target.select()} className="font-mono text-xs" />
             </div>
           ) : null}
 
