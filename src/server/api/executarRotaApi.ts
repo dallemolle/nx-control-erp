@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { ZodError } from "zod";
 import { PermissionError, FilialSomenteLeituraError } from "@/server/auth/permissions";
 import { ApiAuthError, requireSessaoApi } from "./sessaoApi";
 import type { SessaoAtiva } from "@/server/auth/sessao";
@@ -29,6 +30,12 @@ export async function executarRotaApi(
     }
     if (erro instanceof ErroValidacaoApi) {
       return Response.json({ erro: erro.message, campos: erro.campos }, { status: 422 });
+    }
+    if (erro instanceof ZodError) {
+      return Response.json(
+        { erro: erro.issues[0]?.message ?? "Dados inválidos", campos: erro.issues.map((issue) => String(issue.path[0])) },
+        { status: 422 },
+      );
     }
     if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2025") {
       return Response.json({ erro: "Recurso não encontrado" }, { status: 404 });

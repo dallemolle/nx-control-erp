@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import { z } from "zod";
 import { prisma } from "@/server/db/client";
 import {
   criarFixtureFinanceiro,
@@ -86,6 +87,17 @@ describe("executarRotaApi", () => {
     const corpo = await resposta.json();
     expect(corpo.erro).toBe('Categoria financeira "Insumos" não encontrada');
     expect(corpo.campos).toEqual(["categoriaFinanceira"]);
+  });
+
+  test("ZodError lançado pelo handler vira 422 com os campos", async () => {
+    const resposta = await executarRotaApi(requisicaoAutenticada(fixture, chaveCompleta), async () => {
+      z.object({ nome: z.string().min(1) }).parse({ nome: "" });
+      return Response.json({});
+    });
+
+    expect(resposta.status).toBe(422);
+    const corpo = await resposta.json();
+    expect(corpo.campos).toContain("nome");
   });
 
   test("recurso não encontrado via Prisma (findFirstOrThrow) vira 404", async () => {

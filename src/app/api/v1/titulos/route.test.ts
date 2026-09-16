@@ -124,6 +124,28 @@ describe("POST/GET /api/v1/titulos", () => {
     expect(corpo.campos).toContain("contraparteId");
   });
 
+  test("cadastros resolvidos mas parcelas vazias -> 422 (ZodError do tituloSchema, não 500)", async () => {
+    const fornecedor = await prisma.fornecedor.findUniqueOrThrow({ where: { id: fixture.fornecedorId } });
+    const categoria = await prisma.categoriaFinanceira.findUniqueOrThrow({ where: { id: fixture.categoriaFinanceiraId } });
+
+    const request = new Request("http://localhost/api/v1/titulos", {
+      method: "POST",
+      headers: headers(chaveCompleta),
+      body: JSON.stringify({
+        tipo: "PAGAR",
+        cnpjCpf: fornecedor.cnpjCpf,
+        documento: "NF-API-5",
+        dataEmissao: "2026-09-01",
+        dataCompetencia: "2026-09-01",
+        categoriaFinanceira: categoria.nome,
+        parcelas: [],
+      }),
+    });
+
+    const resposta = await POST(request);
+    expect(resposta.status).toBe(422);
+  });
+
   test("perfil CONSULTA não consegue criar título -> 403", async () => {
     const fornecedor = await prisma.fornecedor.findUniqueOrThrow({ where: { id: fixture.fornecedorId } });
     const categoria = await prisma.categoriaFinanceira.findUniqueOrThrow({ where: { id: fixture.categoriaFinanceiraId } });
