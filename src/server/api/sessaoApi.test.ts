@@ -124,4 +124,24 @@ describe("requireSessaoApi", () => {
       ),
     ).rejects.toMatchObject({ status: 403 });
   });
+
+  test("usuário desativado globalmente -> 401, mesmo com chave válida e vínculo ativo", async () => {
+    const gerada = await gerarChave(fixture.sessaoAdmin, fixture.usuarioId, "Chave de usuário a desativar");
+
+    await prisma.usuario.update({ where: { id: fixture.usuarioId }, data: { ativo: false } });
+
+    try {
+      await expect(
+        requireSessaoApi(
+          requisicao({
+            authorization: `Bearer ${gerada.chaveCompleta}`,
+            "x-empresa-id": fixture.empresaId,
+            "x-filial-id": fixture.filialId,
+          }),
+        ),
+      ).rejects.toMatchObject({ status: 401 });
+    } finally {
+      await prisma.usuario.update({ where: { id: fixture.usuarioId }, data: { ativo: true } });
+    }
+  });
 });

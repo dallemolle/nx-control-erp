@@ -31,6 +31,9 @@ export async function requireSessaoApi(request: Request): Promise<SessaoAtiva> {
   if (apiKey.revogadaEm) {
     throw new ApiAuthError(401, "Chave de API revogada");
   }
+  if (!apiKey.usuario.ativo) {
+    throw new ApiAuthError(401, "Usuário inativo");
+  }
 
   await prisma.apiKey.update({ where: { id: apiKey.id }, data: { ultimoUsoEm: new Date() } });
 

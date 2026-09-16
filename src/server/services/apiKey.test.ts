@@ -6,14 +6,20 @@ import { gerarChave, revogarChave, listarChaves, hashChaveApi } from "./apiKey";
 
 describe("gestão de chaves de API", () => {
   let fixture: FixtureFinanceiro;
+  let fixtureOutraEmpresa: FixtureFinanceiro;
 
   beforeAll(async () => {
     fixture = await criarFixtureFinanceiro("APIKEY");
+    fixtureOutraEmpresa = await criarFixtureFinanceiro("APIKEY2");
   });
 
   afterAll(async () => {
     await prisma.apiKey.deleteMany({ where: { usuarioId: { in: [fixture.usuarioId, fixture.usuarioAdminId] } } });
+    await prisma.apiKey.deleteMany({
+      where: { usuarioId: { in: [fixtureOutraEmpresa.usuarioId, fixtureOutraEmpresa.usuarioAdminId] } },
+    });
     await limparFixtureFinanceiro(fixture);
+    await limparFixtureFinanceiro(fixtureOutraEmpresa);
     await prisma.$disconnect();
   });
 
@@ -59,5 +65,22 @@ describe("gestão de chaves de API", () => {
 
     const criadaComoAdmin = await gerarChave(fixture.sessaoAdmin, fixture.usuarioId, "Para testar revogação negada");
     await expect(revogarChave(fixture.sessao, criadaComoAdmin.id)).rejects.toThrow(PermissionError);
+  });
+
+  test("admin de uma empresa não consegue gerar, listar ou revogar chave de usuário de outra empresa", async () => {
+    await expect(
+      gerarChave(fixture.sessaoAdmin, fixtureOutraEmpresa.usuarioId, "Cross-tenant"),
+    ).rejects.toThrow();
+    await expect(listarChaves(fixture.sessaoAdmin, fixtureOutraEmpresa.usuarioId)).rejects.toThrow();
+
+    const chaveDaOutraEmpresa = await gerarChave(
+      fixtureOutraEmpresa.sessaoAdmin,
+      fixtureOutraEmpresa.usuarioId,
+      "Chave legítima da empresa B",
+    );
+    await expect(revogarChave(fixture.sessaoAdmin, chaveDaOutraEmpresa.id)).rejects.toThrow();
+
+    const persistida = await prisma.apiKey.findUniqueOrThrow({ where: { id: chaveDaOutraEmpresa.id } });
+    expect(persistida.revogadaEm).toBeNull();
   });
 });
