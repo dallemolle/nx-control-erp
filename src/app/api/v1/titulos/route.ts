@@ -30,7 +30,19 @@ type CorpoTitulo = {
 
 export async function POST(request: Request): Promise<Response> {
   return executarRotaApi(request, async (sessao) => {
-    const corpo = (await request.json()) as CorpoTitulo;
+    let corpo: CorpoTitulo;
+    try {
+      corpo = await request.json();
+    } catch {
+      throw new ErroValidacaoApi("Corpo da requisição não é um JSON válido", []);
+    }
+
+    if (corpo?.tipo !== "PAGAR" && corpo?.tipo !== "RECEBER") {
+      throw new ErroValidacaoApi('Informe "tipo": "PAGAR" ou "RECEBER"', ["tipo"]);
+    }
+    if (!Array.isArray(corpo?.parcelas) || corpo.parcelas.length === 0) {
+      throw new ErroValidacaoApi("Informe ao menos uma parcela", ["parcelas"]);
+    }
 
     const cadastros = await carregarCadastrosParaResolucao(sessao, corpo.tipo);
     const erros: string[] = [];
@@ -43,15 +55,44 @@ export async function POST(request: Request): Promise<Response> {
       erros,
       camposComErroResolucao,
     );
-    const centroCustoId = resolverCodigoOpcional(cadastros.mapaCentroCusto, corpo.centroCusto, "Centro de custo", erros);
-    const centroLucroId = resolverCodigoOpcional(cadastros.mapaCentroLucro, corpo.centroLucro, "Centro de lucro", erros);
-    const safraId = resolverCodigoOpcional(cadastros.mapaSafra, corpo.safra, "Safra", erros);
-    const projetoId = resolverCodigoOpcional(cadastros.mapaProjeto, corpo.projeto, "Projeto", erros);
+    const centroCustoId = resolverCodigoOpcional(
+      cadastros.mapaCentroCusto,
+      corpo.centroCusto,
+      "Centro de custo",
+      "centroCusto",
+      erros,
+      camposComErroResolucao,
+    );
+    const centroLucroId = resolverCodigoOpcional(
+      cadastros.mapaCentroLucro,
+      corpo.centroLucro,
+      "Centro de lucro",
+      "centroLucro",
+      erros,
+      camposComErroResolucao,
+    );
+    const safraId = resolverCodigoOpcional(
+      cadastros.mapaSafra,
+      corpo.safra,
+      "Safra",
+      "safra",
+      erros,
+      camposComErroResolucao,
+    );
+    const projetoId = resolverCodigoOpcional(
+      cadastros.mapaProjeto,
+      corpo.projeto,
+      "Projeto",
+      "projeto",
+      erros,
+      camposComErroResolucao,
+    );
     const contaBancariaId = resolverContaBancariaOpcional(
       cadastros,
       corpo.contaBancariaAgencia,
       corpo.contaBancariaConta,
       erros,
+      camposComErroResolucao,
     );
 
     if (erros.length > 0) {
@@ -70,7 +111,7 @@ export async function POST(request: Request): Promise<Response> {
       projetoId,
       contaBancariaId,
       formaPagamento: corpo.formaPagamento,
-      parcelas: (corpo.parcelas ?? []).map((parcela, indice) => ({
+      parcelas: corpo.parcelas.map((parcela, indice) => ({
         numero: indice + 1,
         dataVencimento: parcela.dataVencimento,
         valorOriginal: parcela.valorOriginal,

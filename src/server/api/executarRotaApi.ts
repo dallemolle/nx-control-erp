@@ -33,7 +33,10 @@ export async function executarRotaApi(
     }
     if (erro instanceof ZodError) {
       return Response.json(
-        { erro: erro.issues[0]?.message ?? "Dados inválidos", campos: erro.issues.map((issue) => String(issue.path[0])) },
+        {
+          erro: erro.issues[0]?.message ?? "Dados inválidos",
+          campos: erro.issues.map((issue) => issue.path[0]).filter((p) => p !== undefined).map(String),
+        },
         { status: 422 },
       );
     }

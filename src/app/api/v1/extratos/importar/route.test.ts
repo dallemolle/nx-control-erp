@@ -60,7 +60,7 @@ describe("POST /api/v1/extratos/importar", () => {
     expect(corpo.linhasNovas).toBe(1);
   });
 
-  test("conta bancária não encontrada -> 422", async () => {
+  test("conta bancária não encontrada -> 422 com campos de requisição", async () => {
     const formData = new FormData();
     formData.set("contaBancariaAgencia", "0000");
     formData.set("contaBancariaConta", "0000-0");
@@ -68,6 +68,63 @@ describe("POST /api/v1/extratos/importar", () => {
 
     const request = new Request("http://localhost/api/v1/extratos/importar", { method: "POST", headers: headers(), body: formData });
 
-    expect((await POST(request)).status).toBe(422);
+    const resposta = await POST(request);
+    expect(resposta.status).toBe(422);
+    const corpo = await resposta.json();
+    expect(corpo.campos).toContain("contaBancariaAgencia");
+    expect(corpo.campos).toContain("contaBancariaConta");
+  });
+
+  test("agência e conta ambas em branco -> 422 'Informe a conta bancária'", async () => {
+    const formData = new FormData();
+    formData.set("arquivo", new File([OFX_EXEMPLO], "extrato.ofx", { type: "application/x-ofx" }));
+
+    const request = new Request("http://localhost/api/v1/extratos/importar", { method: "POST", headers: headers(), body: formData });
+
+    const resposta = await POST(request);
+    expect(resposta.status).toBe(422);
+    const corpo = await resposta.json();
+    expect(corpo.erro).toContain("Informe a conta bancária");
+  });
+
+  test("arquivo acima do limite de 2MB -> 422 com a mensagem original, não 500", async () => {
+    const conta = await prisma.contaBancaria.findUniqueOrThrow({ where: { id: fixture.contaBancariaId } });
+
+    const formData = new FormData();
+    formData.set("contaBancariaAgencia", conta.agencia);
+    formData.set("contaBancariaConta", conta.conta);
+    const conteudoGrande = "A".repeat(2 * 1024 * 1024 + 1);
+    formData.set("arquivo", new File([conteudoGrande], "grande.ofx", { type: "application/x-ofx" }));
+
+    const request = new Request("http://localhost/api/v1/extratos/importar", { method: "POST", headers: headers(), body: formData });
+
+    const resposta = await POST(request);
+    expect(resposta.status).toBe(422);
+    const corpo = await resposta.json();
+    expect(corpo.erro).toContain("limite");
+  });
+
+  test("OFX malformado (falta TRNAMT/DTPOSTED/FITID) -> 422 com a mensagem original, não 500", async () => {
+    const conta = await prisma.contaBancaria.findUniqueOrThrow({ where: { id: fixture.contaBancariaId } });
+    const ofxMalformado = `
+<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><BANKTRANLIST>
+<STMTTRN>
+<TRNTYPE>CREDIT
+<NAME>SEM CAMPOS OBRIGATORIOS
+</STMTTRN>
+</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>
+`;
+
+    const formData = new FormData();
+    formData.set("contaBancariaAgencia", conta.agencia);
+    formData.set("contaBancariaConta", conta.conta);
+    formData.set("arquivo", new File([ofxMalformado], "malformado.ofx", { type: "application/x-ofx" }));
+
+    const request = new Request("http://localhost/api/v1/extratos/importar", { method: "POST", headers: headers(), body: formData });
+
+    const resposta = await POST(request);
+    expect(resposta.status).toBe(422);
+    const corpo = await resposta.json();
+    expect(corpo.erro).toContain("inválida");
   });
 });

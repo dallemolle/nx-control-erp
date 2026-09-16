@@ -29,22 +29,60 @@ async function construirResolvedor(sessao: SessaoAtiva, tipo: TipoTitulo) {
     const erros: string[] = [];
     const camposComErroResolucao = new Set<string>();
 
-    const contraparteId = resolverContraparte(cadastros, bruta.cnpjCpf ?? "", erros, camposComErroResolucao);
+    // Passa o nome de campo interno do schema (não o rótulo da API) — é o que
+    // a filtragem de duplicidade abaixo (`camposComErroResolucao.has(...)`) espera.
+    const contraparteId = resolverContraparte(
+      cadastros,
+      bruta.cnpjCpf ?? "",
+      erros,
+      camposComErroResolucao,
+      "contraparteId",
+    );
     const categoriaFinanceiraId = resolverCategoriaFinanceira(
       cadastros,
       bruta.categoriaFinanceira ?? "",
       erros,
       camposComErroResolucao,
+      "categoriaFinanceiraId",
     );
-    const centroCustoId = resolverCodigoOpcional(cadastros.mapaCentroCusto, bruta.centroCusto, "Centro de custo", erros);
-    const centroLucroId = resolverCodigoOpcional(cadastros.mapaCentroLucro, bruta.centroLucro, "Centro de lucro", erros);
-    const safraId = resolverCodigoOpcional(cadastros.mapaSafra, bruta.safra, "Safra", erros);
-    const projetoId = resolverCodigoOpcional(cadastros.mapaProjeto, bruta.projeto, "Projeto", erros);
+    const centroCustoId = resolverCodigoOpcional(
+      cadastros.mapaCentroCusto,
+      bruta.centroCusto,
+      "Centro de custo",
+      "centroCustoId",
+      erros,
+      camposComErroResolucao,
+    );
+    const centroLucroId = resolverCodigoOpcional(
+      cadastros.mapaCentroLucro,
+      bruta.centroLucro,
+      "Centro de lucro",
+      "centroLucroId",
+      erros,
+      camposComErroResolucao,
+    );
+    const safraId = resolverCodigoOpcional(
+      cadastros.mapaSafra,
+      bruta.safra,
+      "Safra",
+      "safraId",
+      erros,
+      camposComErroResolucao,
+    );
+    const projetoId = resolverCodigoOpcional(
+      cadastros.mapaProjeto,
+      bruta.projeto,
+      "Projeto",
+      "projetoId",
+      erros,
+      camposComErroResolucao,
+    );
     const contaBancariaId = resolverContaBancariaOpcional(
       cadastros,
       bruta.contaBancariaAgencia,
       bruta.contaBancariaConta,
       erros,
+      camposComErroResolucao,
     );
 
     const dados = {

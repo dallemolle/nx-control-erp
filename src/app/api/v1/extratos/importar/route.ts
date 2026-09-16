@@ -1,5 +1,5 @@
 import { executarRotaApi, ErroValidacaoApi } from "@/server/api/executarRotaApi";
-import { carregarCadastrosParaResolucao, resolverContaBancariaOpcional } from "@/server/services/resolucaoCadastros";
+import { carregarContaBancariaParaResolucao, resolverContaBancariaOpcional } from "@/server/services/resolucaoCadastros";
 import { importarExtratoOfx, conciliarAutomaticamente } from "@/server/services/conciliacao";
 
 export async function POST(request: Request): Promise<Response> {
@@ -13,23 +13,32 @@ export async function POST(request: Request): Promise<Response> {
       throw new ErroValidacaoApi("Envie o arquivo OFX no campo 'arquivo'", ["arquivo"]);
     }
 
-    // "PAGAR" arbitrário — só a conta bancária é resolvida aqui.
-    const cadastros = await carregarCadastrosParaResolucao(sessao, "PAGAR");
+    const cadastros = await carregarContaBancariaParaResolucao(sessao);
     const erros: string[] = [];
+    const camposComErroResolucao = new Set<string>();
     const contaBancariaId = resolverContaBancariaOpcional(
       cadastros,
       typeof agencia === "string" ? agencia : undefined,
       typeof conta === "string" ? conta : undefined,
       erros,
+      camposComErroResolucao,
     );
-    if (!contaBancariaId) {
+    if (!contaBancariaId && erros.length === 0) {
       erros.push("Informe a conta bancária (agência e conta)");
     }
     if (erros.length > 0) {
-      throw new ErroValidacaoApi(erros.join("; "));
+      throw new ErroValidacaoApi(erros.join("; "), Array.from(camposComErroResolucao));
     }
 
-    const extrato = await importarExtratoOfx(sessao, contaBancariaId, arquivo);
+    let extrato;
+    try {
+      extrato = await importarExtratoOfx(sessao, contaBancariaId, arquivo);
+    } catch (erro) {
+      if (erro instanceof Error) {
+        throw new ErroValidacaoApi(erro.message, ["arquivo"]);
+      }
+      throw erro;
+    }
     const resumoConciliacao = await conciliarAutomaticamente(sessao, extrato.id);
 
     return Response.json({ ...extrato, ...resumoConciliacao }, { status: 201 });

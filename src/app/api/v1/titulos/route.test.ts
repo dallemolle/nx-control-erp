@@ -121,7 +121,7 @@ describe("POST/GET /api/v1/titulos", () => {
     expect(resposta.status).toBe(422);
     const corpo = await resposta.json();
     expect(corpo.erro).toContain("não encontrado");
-    expect(corpo.campos).toContain("contraparteId");
+    expect(corpo.campos).toContain("cnpjCpf");
   });
 
   test("cadastros resolvidos mas parcelas vazias -> 422 (ZodError do tituloSchema, não 500)", async () => {
@@ -180,5 +180,135 @@ describe("POST/GET /api/v1/titulos", () => {
   test("GET sem ?tipo= -> 422", async () => {
     const request = new Request("http://localhost/api/v1/titulos", { headers: headers(chaveCompleta) });
     expect((await GET(request)).status).toBe(422);
+  });
+
+  test("POST com tipo em minúsculas -> 422 com campo 'tipo'", async () => {
+    const fornecedor = await prisma.fornecedor.findUniqueOrThrow({ where: { id: fixture.fornecedorId } });
+    const categoria = await prisma.categoriaFinanceira.findUniqueOrThrow({ where: { id: fixture.categoriaFinanceiraId } });
+
+    const request = new Request("http://localhost/api/v1/titulos", {
+      method: "POST",
+      headers: headers(chaveCompleta),
+      body: JSON.stringify({
+        tipo: "pagar",
+        cnpjCpf: fornecedor.cnpjCpf,
+        documento: "NF-API-TIPO-1",
+        dataEmissao: "2026-09-01",
+        dataCompetencia: "2026-09-01",
+        categoriaFinanceira: categoria.nome,
+        parcelas: [{ dataVencimento: "2026-10-01", valorOriginal: 100 }],
+      }),
+    });
+
+    const resposta = await POST(request);
+    expect(resposta.status).toBe(422);
+    const corpo = await resposta.json();
+    expect(corpo.campos).toContain("tipo");
+  });
+
+  test("POST sem tipo -> 422 com campo 'tipo'", async () => {
+    const fornecedor = await prisma.fornecedor.findUniqueOrThrow({ where: { id: fixture.fornecedorId } });
+    const categoria = await prisma.categoriaFinanceira.findUniqueOrThrow({ where: { id: fixture.categoriaFinanceiraId } });
+
+    const request = new Request("http://localhost/api/v1/titulos", {
+      method: "POST",
+      headers: headers(chaveCompleta),
+      body: JSON.stringify({
+        cnpjCpf: fornecedor.cnpjCpf,
+        documento: "NF-API-TIPO-2",
+        dataEmissao: "2026-09-01",
+        dataCompetencia: "2026-09-01",
+        categoriaFinanceira: categoria.nome,
+        parcelas: [{ dataVencimento: "2026-10-01", valorOriginal: 100 }],
+      }),
+    });
+
+    const resposta = await POST(request);
+    expect(resposta.status).toBe(422);
+    const corpo = await resposta.json();
+    expect(corpo.campos).toContain("tipo");
+  });
+
+  test("POST com corpo que não é JSON válido -> 422, não 500", async () => {
+    const request = new Request("http://localhost/api/v1/titulos", {
+      method: "POST",
+      headers: headers(chaveCompleta),
+      body: "{ isso não é json",
+    });
+
+    const resposta = await POST(request);
+    expect(resposta.status).toBe(422);
+  });
+
+  test("POST com parcelas ausente -> 422 com campo 'parcelas'", async () => {
+    const fornecedor = await prisma.fornecedor.findUniqueOrThrow({ where: { id: fixture.fornecedorId } });
+    const categoria = await prisma.categoriaFinanceira.findUniqueOrThrow({ where: { id: fixture.categoriaFinanceiraId } });
+
+    const request = new Request("http://localhost/api/v1/titulos", {
+      method: "POST",
+      headers: headers(chaveCompleta),
+      body: JSON.stringify({
+        tipo: "PAGAR",
+        cnpjCpf: fornecedor.cnpjCpf,
+        documento: "NF-API-PARC-1",
+        dataEmissao: "2026-09-01",
+        dataCompetencia: "2026-09-01",
+        categoriaFinanceira: categoria.nome,
+      }),
+    });
+
+    const resposta = await POST(request);
+    expect(resposta.status).toBe(422);
+    const corpo = await resposta.json();
+    expect(corpo.campos).toContain("parcelas");
+  });
+
+  test("POST com parcelas não sendo array -> 422 com campo 'parcelas'", async () => {
+    const fornecedor = await prisma.fornecedor.findUniqueOrThrow({ where: { id: fixture.fornecedorId } });
+    const categoria = await prisma.categoriaFinanceira.findUniqueOrThrow({ where: { id: fixture.categoriaFinanceiraId } });
+
+    const request = new Request("http://localhost/api/v1/titulos", {
+      method: "POST",
+      headers: headers(chaveCompleta),
+      body: JSON.stringify({
+        tipo: "PAGAR",
+        cnpjCpf: fornecedor.cnpjCpf,
+        documento: "NF-API-PARC-2",
+        dataEmissao: "2026-09-01",
+        dataCompetencia: "2026-09-01",
+        categoriaFinanceira: categoria.nome,
+        parcelas: "não é array",
+      }),
+    });
+
+    const resposta = await POST(request);
+    expect(resposta.status).toBe(422);
+    const corpo = await resposta.json();
+    expect(corpo.campos).toContain("parcelas");
+  });
+
+  test("centro de custo não encontrado -> 422 com campo 'centroCusto' (nome de requisição, não interno)", async () => {
+    const fornecedor = await prisma.fornecedor.findUniqueOrThrow({ where: { id: fixture.fornecedorId } });
+    const categoria = await prisma.categoriaFinanceira.findUniqueOrThrow({ where: { id: fixture.categoriaFinanceiraId } });
+
+    const request = new Request("http://localhost/api/v1/titulos", {
+      method: "POST",
+      headers: headers(chaveCompleta),
+      body: JSON.stringify({
+        tipo: "PAGAR",
+        cnpjCpf: fornecedor.cnpjCpf,
+        documento: "NF-API-CC-1",
+        dataEmissao: "2026-09-01",
+        dataCompetencia: "2026-09-01",
+        categoriaFinanceira: categoria.nome,
+        centroCusto: "CC-INEXISTENTE-API",
+        parcelas: [{ dataVencimento: "2026-10-01", valorOriginal: 100 }],
+      }),
+    });
+
+    const resposta = await POST(request);
+    expect(resposta.status).toBe(422);
+    const corpo = await resposta.json();
+    expect(corpo.campos).toContain("centroCusto");
   });
 });

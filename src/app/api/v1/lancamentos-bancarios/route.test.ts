@@ -80,4 +80,38 @@ describe("POST/GET /api/v1/lancamentos-bancarios", () => {
     const corpo = await resposta.json();
     expect(corpo.some((l: { descricao: string }) => l.descricao === "Lançamento via API")).toBe(true);
   });
+
+  test("POST com corpo que não é JSON válido -> 422, não 500", async () => {
+    const request = new Request("http://localhost/api/v1/lancamentos-bancarios", {
+      method: "POST",
+      headers: headers(),
+      body: "{ isso não é json",
+    });
+
+    const resposta = await POST(request);
+    expect(resposta.status).toBe(422);
+  });
+
+  test("centro de custo não encontrado -> 422 com campo 'centroCusto' (nome de requisição, não interno)", async () => {
+    const conta = await prisma.contaBancaria.findUniqueOrThrow({ where: { id: fixture.contaBancariaId } });
+
+    const request = new Request("http://localhost/api/v1/lancamentos-bancarios", {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({
+        contaBancariaAgencia: conta.agencia,
+        contaBancariaConta: conta.conta,
+        data: "2026-09-10",
+        tipo: "ENTRADA",
+        valor: 1000,
+        descricao: "Não deve criar",
+        centroCusto: "CC-INEXISTENTE-API-LAN",
+      }),
+    });
+
+    const resposta = await POST(request);
+    expect(resposta.status).toBe(422);
+    const corpo = await resposta.json();
+    expect(corpo.campos).toContain("centroCusto");
+  });
 });

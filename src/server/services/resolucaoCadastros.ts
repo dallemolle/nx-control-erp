@@ -57,18 +57,39 @@ export async function carregarCadastrosParaResolucao(
   };
 }
 
+/**
+ * Versão restrita de `carregarCadastrosParaResolucao` para rotas que só
+ * precisam resolver conta bancária (agência+conta) — evita buscar
+ * fornecedores/clientes/categorias/centros/safras/projetos que não são
+ * usados (ex.: `baixas`, `extratos/importar`).
+ */
+export async function carregarContaBancariaParaResolucao(
+  sessao: SessaoAtiva,
+): Promise<Pick<CadastrosParaResolucao, "mapaContaBancaria">> {
+  const contasBancarias = await prisma.contaBancaria.findMany({
+    where: { filialId: sessao.filialId },
+    select: { id: true, agencia: true, conta: true },
+  });
+  return {
+    mapaContaBancaria: new Map(
+      contasBancarias.map((c) => [`${normalizarChave(c.agencia)}|${normalizarChave(c.conta)}`, c.id]),
+    ),
+  };
+}
+
 export function resolverContraparte(
   cadastros: CadastrosParaResolucao,
   cnpjCpfBruto: string,
   erros: string[],
   camposComErroResolucao: Set<string>,
+  campoRequisicao: string = "cnpjCpf",
 ): string {
   const valor = cnpjCpfBruto.trim();
   if (!valor) return "";
   const encontrado = cadastros.mapaContraparte.get(normalizarDocumento(valor));
   if (!encontrado) {
     erros.push(`${cadastros.rotuloContraparte} com CNPJ/CPF "${valor}" não encontrado`);
-    camposComErroResolucao.add("contraparteId");
+    camposComErroResolucao.add(campoRequisicao);
     return "";
   }
   return encontrado;
@@ -79,13 +100,14 @@ export function resolverCategoriaFinanceira(
   nomeBruto: string,
   erros: string[],
   camposComErroResolucao: Set<string>,
+  campoRequisicao: string = "categoriaFinanceira",
 ): string {
   const valor = nomeBruto.trim();
   if (!valor) return "";
   const encontrado = cadastros.mapaCategoria.get(normalizarChave(valor));
   if (!encontrado) {
     erros.push(`Categoria financeira "${valor}" não encontrada`);
-    camposComErroResolucao.add("categoriaFinanceiraId");
+    camposComErroResolucao.add(campoRequisicao);
     return "";
   }
   return encontrado;
@@ -95,34 +117,42 @@ export function resolverCodigoOpcional(
   mapa: Map<string, string>,
   valorBruto: string | undefined,
   rotulo: string,
+  campoRequisicao: string,
   erros: string[],
+  camposComErroResolucao: Set<string>,
 ): string {
   const valor = (valorBruto ?? "").trim();
   if (!valor) return "";
   const encontrado = mapa.get(normalizarChave(valor));
   if (!encontrado) {
     erros.push(`${rotulo} "${valor}" não encontrado`);
+    camposComErroResolucao.add(campoRequisicao);
     return "";
   }
   return encontrado;
 }
 
 export function resolverContaBancariaOpcional(
-  cadastros: CadastrosParaResolucao,
+  cadastros: Pick<CadastrosParaResolucao, "mapaContaBancaria">,
   agenciaBruta: string | undefined,
   contaBruta: string | undefined,
   erros: string[],
+  camposComErroResolucao: Set<string>,
 ): string {
   const agencia = (agenciaBruta ?? "").trim();
   const conta = (contaBruta ?? "").trim();
   if (!agencia && !conta) return "";
   if (!agencia || !conta) {
     erros.push("Informe agência e conta bancária juntas, ou deixe as duas em branco");
+    camposComErroResolucao.add("contaBancariaAgencia");
+    camposComErroResolucao.add("contaBancariaConta");
     return "";
   }
   const encontrado = cadastros.mapaContaBancaria.get(`${normalizarChave(agencia)}|${normalizarChave(conta)}`);
   if (!encontrado) {
     erros.push(`Conta bancária agência "${agencia}" / conta "${conta}" não encontrada`);
+    camposComErroResolucao.add("contaBancariaAgencia");
+    camposComErroResolucao.add("contaBancariaConta");
     return "";
   }
   return encontrado;

@@ -254,7 +254,13 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   aceitar um campo opcional `idExterno` no corpo de `POST /api/v1/titulos`,
   `/lancamentos-bancarios` e `/baixas`, com um índice único por
   `(usuarioId, idExterno)` — reenvio com o mesmo `idExterno` devolve o
-  recurso já criado (`200`) em vez de duplicar (`201`).
+  recurso já criado (`200`) em vez de duplicar (`201`). Exceção parcial:
+  `/extratos/importar` já tem uma proteção parcial contra reenvio — a
+  constraint única de `LinhaExtrato` (`contaBancariaId`+
+  `identificadorBancario`) combinada com `skipDuplicates: true` evita
+  duplicar as linhas de transação num retry, mas ainda cria um novo
+  registro de cabeçalho `ExtratoImportado` a cada chamada e reexecuta a
+  conciliação automática.
 
 ## Auditoria — workflow de aprovação de pagamentos (Fase 6, sub-projeto 6d)
 

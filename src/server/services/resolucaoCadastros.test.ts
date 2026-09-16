@@ -59,7 +59,7 @@ describe("resolução de cadastros por identificador natural", () => {
 
     expect(id).toBe("");
     expect(erros).toEqual([expect.stringContaining("não encontrado")]);
-    expect(campos.has("contraparteId")).toBe(true);
+    expect(campos.has("cnpjCpf")).toBe(true);
   });
 
   test("resolverContraparte com entrada vazia não gera erro", async () => {
@@ -89,14 +89,48 @@ describe("resolução de cadastros por identificador natural", () => {
   test("resolverCodigoOpcional resolve centro de custo por código, e vazio não gera erro", async () => {
     const cadastros = await carregarCadastrosParaResolucao(fixture.sessao, "PAGAR");
     const erros: string[] = [];
+    const campos = new Set<string>();
 
-    const id = resolverCodigoOpcional(cadastros.mapaCentroCusto, CENTRO_CUSTO_CODIGO, "Centro de custo", erros);
+    const id = resolverCodigoOpcional(
+      cadastros.mapaCentroCusto,
+      CENTRO_CUSTO_CODIGO,
+      "Centro de custo",
+      "centroCusto",
+      erros,
+      campos,
+    );
     expect(id).toBe(centroCustoId);
     expect(erros).toEqual([]);
+    expect(campos.size).toBe(0);
 
-    const vazio = resolverCodigoOpcional(cadastros.mapaCentroCusto, undefined, "Centro de custo", erros);
+    const vazio = resolverCodigoOpcional(
+      cadastros.mapaCentroCusto,
+      undefined,
+      "Centro de custo",
+      "centroCusto",
+      erros,
+      campos,
+    );
     expect(vazio).toBe("");
     expect(erros).toEqual([]);
+  });
+
+  test("resolverCodigoOpcional não encontrado gera erro e marca o campo informado", async () => {
+    const cadastros = await carregarCadastrosParaResolucao(fixture.sessao, "PAGAR");
+    const erros: string[] = [];
+    const campos = new Set<string>();
+
+    const id = resolverCodigoOpcional(
+      cadastros.mapaCentroCusto,
+      "CC-INEXISTENTE",
+      "Centro de custo",
+      "centroCusto",
+      erros,
+      campos,
+    );
+    expect(id).toBe("");
+    expect(erros).toEqual([expect.stringContaining("não encontrado")]);
+    expect(campos.has("centroCusto")).toBe(true);
   });
 
   test("resolverContaBancariaOpcional exige agência e conta juntas", async () => {
@@ -104,12 +138,17 @@ describe("resolução de cadastros por identificador natural", () => {
     const cadastros = await carregarCadastrosParaResolucao(fixture.sessao, "PAGAR");
 
     const erros1: string[] = [];
-    const id = resolverContaBancariaOpcional(cadastros, conta.agencia, conta.conta, erros1);
+    const campos1 = new Set<string>();
+    const id = resolverContaBancariaOpcional(cadastros, conta.agencia, conta.conta, erros1, campos1);
     expect(id).toBe(fixture.contaBancariaId);
     expect(erros1).toEqual([]);
+    expect(campos1.size).toBe(0);
 
     const erros2: string[] = [];
-    resolverContaBancariaOpcional(cadastros, conta.agencia, undefined, erros2);
+    const campos2 = new Set<string>();
+    resolverContaBancariaOpcional(cadastros, conta.agencia, undefined, erros2, campos2);
     expect(erros2).toEqual([expect.stringContaining("Informe agência e conta bancária juntas")]);
+    expect(campos2.has("contaBancariaAgencia")).toBe(true);
+    expect(campos2.has("contaBancariaConta")).toBe(true);
   });
 });

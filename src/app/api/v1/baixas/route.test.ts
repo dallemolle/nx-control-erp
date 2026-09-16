@@ -90,7 +90,7 @@ describe("POST /api/v1/baixas", () => {
     expect((await POST(request)).status).toBe(404);
   });
 
-  test("conta bancária não encontrada -> 422", async () => {
+  test("conta bancária não encontrada -> 422 com campos de requisição", async () => {
     const request = new Request("http://localhost/api/v1/baixas", {
       method: "POST",
       headers: headers(),
@@ -103,6 +103,41 @@ describe("POST /api/v1/baixas", () => {
       }),
     });
 
-    expect((await POST(request)).status).toBe(422);
+    const resposta = await POST(request);
+    expect(resposta.status).toBe(422);
+    const corpo = await resposta.json();
+    expect(corpo.campos).toContain("contaBancariaAgencia");
+    expect(corpo.campos).toContain("contaBancariaConta");
+  });
+
+  test("POST com corpo que não é JSON válido -> 422, não 500", async () => {
+    const request = new Request("http://localhost/api/v1/baixas", {
+      method: "POST",
+      headers: headers(),
+      body: "{ isso não é json",
+    });
+
+    const resposta = await POST(request);
+    expect(resposta.status).toBe(422);
+  });
+
+  test("parcelaId ausente/não-string -> 422 com campo 'parcelaId'", async () => {
+    const conta = await prisma.contaBancaria.findUniqueOrThrow({ where: { id: fixture.contaBancariaId } });
+
+    const request = new Request("http://localhost/api/v1/baixas", {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({
+        data: "2026-09-30",
+        valorPago: 300,
+        contaBancariaAgencia: conta.agencia,
+        contaBancariaConta: conta.conta,
+      }),
+    });
+
+    const resposta = await POST(request);
+    expect(resposta.status).toBe(422);
+    const corpo = await resposta.json();
+    expect(corpo.campos).toContain("parcelaId");
   });
 });

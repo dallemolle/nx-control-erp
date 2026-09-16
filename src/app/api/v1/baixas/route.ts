@@ -1,5 +1,5 @@
 import { executarRotaApi, ErroValidacaoApi } from "@/server/api/executarRotaApi";
-import { carregarCadastrosParaResolucao, resolverContaBancariaOpcional } from "@/server/services/resolucaoCadastros";
+import { carregarContaBancariaParaResolucao, resolverContaBancariaOpcional } from "@/server/services/resolucaoCadastros";
 import { baixaSchema } from "@/lib/schemas/baixa";
 import { registrarBaixa } from "@/server/services/baixa";
 
@@ -16,30 +16,40 @@ type CorpoBaixa = {
 
 export async function POST(request: Request): Promise<Response> {
   return executarRotaApi(request, async (sessao) => {
-    const corpo = (await request.json()) as CorpoBaixa;
+    let corpo: CorpoBaixa;
+    try {
+      corpo = await request.json();
+    } catch {
+      throw new ErroValidacaoApi("Corpo da requisição não é um JSON válido", []);
+    }
 
-    // "PAGAR" arbitrário — baixa não tem contraparte, só a conta bancária é resolvida aqui.
-    const cadastros = await carregarCadastrosParaResolucao(sessao, "PAGAR");
+    if (typeof corpo?.parcelaId !== "string" || !corpo.parcelaId) {
+      throw new ErroValidacaoApi("Informe parcelaId", ["parcelaId"]);
+    }
+
+    const cadastros = await carregarContaBancariaParaResolucao(sessao);
     const erros: string[] = [];
+    const camposComErroResolucao = new Set<string>();
     const contaBancariaId = resolverContaBancariaOpcional(
       cadastros,
       corpo.contaBancariaAgencia,
       corpo.contaBancariaConta,
       erros,
+      camposComErroResolucao,
     );
-    if (!contaBancariaId) {
+    if (!contaBancariaId && erros.length === 0) {
       erros.push("Informe a conta bancária (agência e conta)");
     }
     if (erros.length > 0) {
-      throw new ErroValidacaoApi(erros.join("; "));
+      throw new ErroValidacaoApi(erros.join("; "), Array.from(camposComErroResolucao));
     }
 
     const dados = baixaSchema.parse({
       data: corpo.data,
       valorPago: corpo.valorPago,
-      valorJuros: corpo.valorJuros ?? 0,
-      valorMulta: corpo.valorMulta ?? 0,
-      valorDesconto: corpo.valorDesconto ?? 0,
+      valorJuros: corpo.valorJuros,
+      valorMulta: corpo.valorMulta,
+      valorDesconto: corpo.valorDesconto,
       contaBancariaId,
     });
 
