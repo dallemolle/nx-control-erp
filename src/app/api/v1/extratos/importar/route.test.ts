@@ -23,21 +23,38 @@ const OFX_EXEMPLO = `
 describe("POST /api/v1/extratos/importar", () => {
   let fixture: FixtureFinanceiro;
   let chaveCompleta: string;
+  let chaveConsulta: string;
+  let usuarioConsultaId: string;
 
   beforeAll(async () => {
     fixture = await criarFixtureFinanceiro("APIEXT", "TESOURARIA");
     chaveCompleta = (await gerarChave(fixture.sessaoAdmin, fixture.usuarioId, "Chave tesouraria")).chaveCompleta;
+
+    const usuarioConsulta = await prisma.usuario.create({
+      data: { nome: "Consulta APIEXT", email: "consulta-apiext@teste.local", senhaHash: "x" },
+    });
+    usuarioConsultaId = usuarioConsulta.id;
+    const vinculoConsulta = await prisma.usuarioEmpresa.create({
+      data: { usuarioId: usuarioConsulta.id, empresaId: fixture.empresaId, perfil: "CONSULTA", ativo: true },
+    });
+    await prisma.usuarioEmpresaFilial.create({
+      data: { usuarioEmpresaId: vinculoConsulta.id, filialId: fixture.filialId, podeAlterar: false, ativo: true },
+    });
+    chaveConsulta = (await gerarChave(fixture.sessaoAdmin, usuarioConsulta.id, "Chave consulta")).chaveCompleta;
   });
 
   afterAll(async () => {
-    await prisma.apiKey.deleteMany({ where: { usuarioId: fixture.usuarioId } });
+    await prisma.apiKey.deleteMany({ where: { usuarioId: { in: [fixture.usuarioId, usuarioConsultaId] } } });
+    await prisma.usuarioEmpresaFilial.deleteMany({ where: { usuarioEmpresa: { usuarioId: usuarioConsultaId } } });
+    await prisma.usuarioEmpresa.deleteMany({ where: { usuarioId: usuarioConsultaId } });
+    await prisma.usuario.delete({ where: { id: usuarioConsultaId } });
     await limparFixtureFinanceiro(fixture);
     await prisma.$disconnect();
   });
 
-  function headers() {
+  function headers(chave: string = chaveCompleta) {
     return {
-      authorization: `Bearer ${chaveCompleta}`,
+      authorization: `Bearer ${chave}`,
       "x-empresa-id": fixture.empresaId,
       "x-filial-id": fixture.filialId,
     };
@@ -126,5 +143,23 @@ describe("POST /api/v1/extratos/importar", () => {
     expect(resposta.status).toBe(422);
     const corpo = await resposta.json();
     expect(corpo.erro).toContain("inválida");
+  });
+
+  test("perfil CONSULTA não consegue importar extrato -> 403, não 422", async () => {
+    const conta = await prisma.contaBancaria.findUniqueOrThrow({ where: { id: fixture.contaBancariaId } });
+
+    const formData = new FormData();
+    formData.set("contaBancariaAgencia", conta.agencia);
+    formData.set("contaBancariaConta", conta.conta);
+    formData.set("arquivo", new File([OFX_EXEMPLO], "extrato.ofx", { type: "application/x-ofx" }));
+
+    const request = new Request("http://localhost/api/v1/extratos/importar", {
+      method: "POST",
+      headers: headers(chaveConsulta),
+      body: formData,
+    });
+
+    const resposta = await POST(request);
+    expect(resposta.status).toBe(403);
   });
 });

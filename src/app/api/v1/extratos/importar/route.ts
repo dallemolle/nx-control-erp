@@ -1,6 +1,8 @@
+import { Prisma } from "@prisma/client";
 import { executarRotaApi, ErroValidacaoApi } from "@/server/api/executarRotaApi";
 import { carregarContaBancariaParaResolucao, resolverContaBancariaOpcional } from "@/server/services/resolucaoCadastros";
 import { importarExtratoOfx, conciliarAutomaticamente } from "@/server/services/conciliacao";
+import { PermissionError, FilialSomenteLeituraError } from "@/server/auth/permissions";
 
 export async function POST(request: Request): Promise<Response> {
   return executarRotaApi(request, async (sessao) => {
@@ -34,6 +36,17 @@ export async function POST(request: Request): Promise<Response> {
     try {
       extrato = await importarExtratoOfx(sessao, contaBancariaId, arquivo);
     } catch (erro) {
+      if (
+        erro instanceof PermissionError ||
+        erro instanceof FilialSomenteLeituraError ||
+        erro instanceof Prisma.PrismaClientKnownRequestError ||
+        erro instanceof Prisma.PrismaClientUnknownRequestError ||
+        erro instanceof Prisma.PrismaClientValidationError ||
+        erro instanceof Prisma.PrismaClientInitializationError ||
+        erro instanceof Prisma.PrismaClientRustPanicError
+      ) {
+        throw erro;
+      }
       if (erro instanceof Error) {
         throw new ErroValidacaoApi(erro.message, ["arquivo"]);
       }
