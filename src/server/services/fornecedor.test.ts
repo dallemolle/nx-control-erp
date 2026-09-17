@@ -15,7 +15,7 @@ describe("fornecedor - permissão de alteração por filial", () => {
       data: {
         razaoSocial: "Teste Fornecedor Filial Ltda",
         nomeFantasia: "Teste Fornecedor Filial",
-        cnpj: `${randomSuffix}/0001-99`,
+        cnpjCpf: `${randomSuffix}/0001-99`,
       },
     });
     empresaId = empresa.id;
@@ -25,7 +25,7 @@ describe("fornecedor - permissão de alteração por filial", () => {
       data: {
         empresaId,
         nome: "Filial Teste",
-        cnpj: `${randomSuffix2}/0002-99`,
+        cnpjCpf: `${randomSuffix2}/0002-99`,
         ativo: true,
       },
     });
@@ -82,13 +82,13 @@ describe("fornecedor - dados bancários", () => {
       data: {
         razaoSocial: "Teste Fornecedor Bancário Ltda",
         nomeFantasia: "Teste Fornecedor Bancário",
-        cnpj: `${sufixo}/0001-97`,
+        cnpjCpf: `${sufixo}/0001-97`,
       },
     });
     empresaId = empresa.id;
 
     const filial = await prisma.filial.create({
-      data: { empresaId, nome: "Filial Bancária", cnpj: `${sufixo}/0002-97`, ativo: true },
+      data: { empresaId, nome: "Filial Bancária", cnpjCpf: `${sufixo}/0002-97`, ativo: true },
     });
     filialId = filial.id;
 

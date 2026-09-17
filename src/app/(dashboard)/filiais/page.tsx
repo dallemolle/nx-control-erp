@@ -29,7 +29,7 @@ export default async function FiliaisPage() {
         <TableHeader>
           <TableRow>
             <TableHead>Nome</TableHead>
-            <TableHead>CNPJ</TableHead>
+            <TableHead>CNPJ/CPF</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
@@ -38,7 +38,7 @@ export default async function FiliaisPage() {
           {filiais.map((filial) => (
             <TableRow key={filial.id}>
               <TableCell className="font-medium">{filial.nome}</TableCell>
-              <TableCell>{filial.cnpj}</TableCell>
+              <TableCell>{filial.cnpjCpf}</TableCell>
               <TableCell>
                 <Badge variant={filial.ativo ? "default" : "secondary"}>
                   {filial.ativo ? "Ativa" : "Inativa"}

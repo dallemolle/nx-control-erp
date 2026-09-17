@@ -25,18 +25,18 @@ describe("centroCusto (filial-scoped)", () => {
       data: {
         razaoSocial: "Teste Centro Custo Ltda",
         nomeFantasia: "Teste Centro Custo",
-        cnpj: "33.333.333/0001-33",
+        cnpjCpf: "33.333.333/0001-33",
       },
     });
     empresaId = empresa.id;
 
     const filialA = await prisma.filial.create({
-      data: { empresaId, nome: "Filial A", cnpj: "33.333.333/0001-44" },
+      data: { empresaId, nome: "Filial A", cnpjCpf: "33.333.333/0001-44" },
     });
     filialAId = filialA.id;
 
     const filialB = await prisma.filial.create({
-      data: { empresaId, nome: "Filial B", cnpj: "33.333.333/0001-55" },
+      data: { empresaId, nome: "Filial B", cnpjCpf: "33.333.333/0001-55" },
     });
     filialBId = filialB.id;
 

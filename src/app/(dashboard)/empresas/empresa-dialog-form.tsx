@@ -17,7 +17,7 @@ type Empresa = {
   id: string;
   razaoSocial: string;
   nomeFantasia: string;
-  cnpj: string;
+  cnpjCpf: string;
   moedaPadrao: string;
 };
 
@@ -64,8 +64,8 @@ export function EmpresaDialogForm({ empresa }: { empresa?: Empresa }) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cnpj">CNPJ</Label>
-            <Input id="cnpj" name="cnpj" defaultValue={empresa?.cnpj} required />
+            <Label htmlFor="cnpjCpf">CNPJ/CPF</Label>
+            <Input id="cnpjCpf" name="cnpjCpf" defaultValue={empresa?.cnpjCpf} required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="moedaPadrao">Moeda padrão</Label>

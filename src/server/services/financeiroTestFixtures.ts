@@ -26,12 +26,12 @@ export async function criarFixtureFinanceiro(
     data: {
       razaoSocial: `Teste Financeiro ${sufixo} Ltda`,
       nomeFantasia: `Teste Financeiro ${sufixo}`,
-      cnpj: `11.111.${sufixo}/0001-11`,
+      cnpjCpf: `11.111.${sufixo}/0001-11`,
     },
   });
 
   const filial = await prisma.filial.create({
-    data: { empresaId: empresa.id, nome: `Filial ${sufixo}`, cnpj: `11.111.${sufixo}/0001-22` },
+    data: { empresaId: empresa.id, nome: `Filial ${sufixo}`, cnpjCpf: `11.111.${sufixo}/0001-22` },
   });
 
   const usuario = await prisma.usuario.create({

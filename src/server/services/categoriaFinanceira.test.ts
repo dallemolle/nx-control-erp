@@ -24,18 +24,18 @@ describe("categoriaFinanceira (filial-scoped)", () => {
       data: {
         razaoSocial: "Teste Categoria Financeira Ltda",
         nomeFantasia: "Teste Categoria Financeira",
-        cnpj: "44.444.444/0001-44",
+        cnpjCpf: "44.444.444/0001-44",
       },
     });
     empresaId = empresa.id;
 
     const filialA = await prisma.filial.create({
-      data: { empresaId, nome: "Filial A", cnpj: "44.444.444/0001-55" },
+      data: { empresaId, nome: "Filial A", cnpjCpf: "44.444.444/0001-55" },
     });
     filialAId = filialA.id;
 
     const filialB = await prisma.filial.create({
-      data: { empresaId, nome: "Filial B", cnpj: "44.444.444/0001-66" },
+      data: { empresaId, nome: "Filial B", cnpjCpf: "44.444.444/0001-66" },
     });
     filialBId = filialB.id;
 

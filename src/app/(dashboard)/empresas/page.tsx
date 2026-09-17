@@ -30,7 +30,7 @@ export default async function EmpresasPage() {
           <TableRow>
             <TableHead>Nome fantasia</TableHead>
             <TableHead>Razão social</TableHead>
-            <TableHead>CNPJ</TableHead>
+            <TableHead>CNPJ/CPF</TableHead>
             <TableHead>Moeda</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Ações</TableHead>
@@ -41,7 +41,7 @@ export default async function EmpresasPage() {
             <TableRow key={empresa.id}>
               <TableCell className="font-medium">{empresa.nomeFantasia}</TableCell>
               <TableCell>{empresa.razaoSocial}</TableCell>
-              <TableCell>{empresa.cnpj}</TableCell>
+              <TableCell>{empresa.cnpjCpf}</TableCell>
               <TableCell>{empresa.moedaPadrao}</TableCell>
               <TableCell>
                 <Badge variant={empresa.ativo ? "default" : "secondary"}>

@@ -101,7 +101,7 @@ describe("auditoria (empresa-scoped)", () => {
 
   test("listarAuditoria filtra por filialId — e as opções de filial vêm do cadastro completo, não só de quem já tem log", async () => {
     const filialIrma = await prisma.filial.create({
-      data: { empresaId: fixture.empresaId, nome: "Filial Irma AUD", cnpj: "11.111.AUD/0001-99" },
+      data: { empresaId: fixture.empresaId, nome: "Filial Irma AUD", cnpjCpf: "11.111.AUD/0001-99" },
     });
 
     await prisma.auditLog.create({
@@ -120,7 +120,7 @@ describe("auditoria (empresa-scoped)", () => {
 
     // Cadastro completo: uma filial SEM nenhum log ainda aparece nas opções.
     const outraFilialSemLog = await prisma.filial.create({
-      data: { empresaId: fixture.empresaId, nome: "Filial Sem Log AUD", cnpj: "11.111.AUD/0001-88" },
+      data: { empresaId: fixture.empresaId, nome: "Filial Sem Log AUD", cnpjCpf: "11.111.AUD/0001-88" },
     });
     const opcoes = await buscarOpcoesFiltroAuditoria(fixture.sessaoAdmin);
     expect(opcoes.filiais.some((f) => f.id === outraFilialSemLog.id)).toBe(true);
@@ -219,7 +219,7 @@ describe("auditoria (empresa-scoped)", () => {
 
   test("listarAuditoria não vaza entre empresas, mesmo com filtro que combinaria", async () => {
     const outraEmpresa = await prisma.empresa.create({
-      data: { razaoSocial: "Outra Empresa AUD Ltda", nomeFantasia: "Outra AUD", cnpj: "44.444.AUD/0001-11" },
+      data: { razaoSocial: "Outra Empresa AUD Ltda", nomeFantasia: "Outra AUD", cnpjCpf: "44.444.AUD/0001-11" },
     });
 
     await prisma.auditLog.create({

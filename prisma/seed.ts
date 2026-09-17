@@ -27,12 +27,12 @@ async function main() {
 
   const empresaCnpj = process.env.SEED_EMPRESA_CNPJ ?? "00.000.000/0001-00";
   const empresa = await prisma.empresa.upsert({
-    where: { cnpj: empresaCnpj },
+    where: { cnpjCpf: empresaCnpj },
     update: {},
     create: {
       razaoSocial: process.env.SEED_EMPRESA_RAZAO_SOCIAL ?? "Empresa Demonstração Ltda",
       nomeFantasia: process.env.SEED_EMPRESA_NOME_FANTASIA ?? "Empresa Demonstração",
-      cnpj: empresaCnpj,
+      cnpjCpf: empresaCnpj,
       moedaPadrao: "BRL",
     },
   });
@@ -41,12 +41,12 @@ async function main() {
   // existiam na hora da migração. Um banco criado do zero (CI, dev novo)
   // depende do seed pra ter a Filial.
   const filial = await prisma.filial.upsert({
-    where: { cnpj: empresaCnpj },
+    where: { cnpjCpf: empresaCnpj },
     update: {},
     create: {
       empresaId: empresa.id,
       nome: "Matriz",
-      cnpj: empresaCnpj,
+      cnpjCpf: empresaCnpj,
     },
   });
 

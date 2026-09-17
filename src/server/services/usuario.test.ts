@@ -23,14 +23,14 @@ describe("usuario", () => {
       data: {
         razaoSocial: "Teste Usuario Ltda",
         nomeFantasia: "Teste Usuario",
-        cnpj: `${randomSuffix}/0001-01`,
+        cnpjCpf: `${randomSuffix}/0001-01`,
       },
     });
     empresaId = empresa.id;
     empresasCriadasIds.push(empresaId);
 
     const filial = await prisma.filial.create({
-      data: { nome: "Filial Teste Usuario", cnpj: `${randomSuffix}/0002-02`, empresaId },
+      data: { nome: "Filial Teste Usuario", cnpjCpf: `${randomSuffix}/0002-02`, empresaId },
     });
     filialId = filial.id;
 

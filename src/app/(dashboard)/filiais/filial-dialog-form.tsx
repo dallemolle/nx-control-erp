@@ -16,7 +16,7 @@ import { criarFilialAction, atualizarFilialAction, type FormState } from "./acti
 type Filial = {
   id: string;
   nome: string;
-  cnpj: string;
+  cnpjCpf: string;
 };
 
 const ESTADO_INICIAL: FormState = {};
@@ -48,8 +48,8 @@ export function FilialDialogForm({ filial }: { filial?: Filial }) {
             <Input id="nome" name="nome" defaultValue={filial?.nome} required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cnpj">CNPJ</Label>
-            <Input id="cnpj" name="cnpj" defaultValue={filial?.cnpj} required />
+            <Label htmlFor="cnpjCpf">CNPJ/CPF</Label>
+            <Input id="cnpjCpf" name="cnpjCpf" defaultValue={filial?.cnpjCpf} required />
           </div>
           {state.erro ? <p className="text-sm text-destructive">{state.erro}</p> : null}
           <Button type="submit" className="w-full" disabled={pendente}>

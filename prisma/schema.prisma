@@ -60,7 +60,7 @@ model Empresa {
   id           String   @id @default(uuid())
   razaoSocial  String
   nomeFantasia String
-  cnpj         String   @unique
+  cnpjCpf      String   @unique
   moedaPadrao  String   @default("BRL")
   ativo        Boolean  @default(true)
   criadoEm     DateTime @default(now())
@@ -99,7 +99,7 @@ model Filial {
   id           String   @id @default(uuid())
   empresaId    String
   nome         String
-  cnpj         String   @unique
+  cnpjCpf      String   @unique
   ativo        Boolean  @default(true)
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt

@@ -44,7 +44,7 @@ export async function atualizarFilial(sessao: SessaoAtiva, id: string, dados: Fi
     entidade: "Filial",
     entidadeId: id,
     acao: "ATUALIZAR",
-    anterior: { nome: anterior.nome, cnpj: anterior.cnpj },
+    anterior: { nome: anterior.nome, cnpjCpf: anterior.cnpjCpf },
     novo: dados,
   });
 
