@@ -27,8 +27,7 @@ describe("GET /api/v1/categorias-financeiras", () => {
     const request = new Request("http://localhost/api/v1/categorias-financeiras", {
       headers: {
         authorization: `Bearer ${chaveCompleta}`,
-        "x-empresa-id": fixture.empresaId,
-        "x-filial-id": fixture.filialId,
+        "x-filial-cnpjcpf": fixture.filialCnpjCpf,
       },
     });
 
@@ -40,7 +39,7 @@ describe("GET /api/v1/categorias-financeiras", () => {
 
   test("sem chave -> 401", async () => {
     const request = new Request("http://localhost/api/v1/categorias-financeiras", {
-      headers: { "x-empresa-id": fixture.empresaId, "x-filial-id": fixture.filialId },
+      headers: { "x-filial-cnpjcpf": fixture.filialCnpjCpf },
     });
     expect((await GET(request)).status).toBe(401);
   });

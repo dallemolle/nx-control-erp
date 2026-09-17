@@ -33,8 +33,7 @@ describe("GET /api/v1/centros-de-lucro", () => {
     const request = new Request("http://localhost/api/v1/centros-de-lucro", {
       headers: {
         authorization: `Bearer ${chaveCompleta}`,
-        "x-empresa-id": fixture.empresaId,
-        "x-filial-id": fixture.filialId,
+        "x-filial-cnpjcpf": fixture.filialCnpjCpf,
       },
     });
 
@@ -46,7 +45,7 @@ describe("GET /api/v1/centros-de-lucro", () => {
 
   test("sem chave -> 401", async () => {
     const request = new Request("http://localhost/api/v1/centros-de-lucro", {
-      headers: { "x-empresa-id": fixture.empresaId, "x-filial-id": fixture.filialId },
+      headers: { "x-filial-cnpjcpf": fixture.filialCnpjCpf },
     });
     expect((await GET(request)).status).toBe(401);
   });

@@ -55,8 +55,7 @@ describe("POST /api/v1/extratos/importar", () => {
   function headers(chave: string = chaveCompleta) {
     return {
       authorization: `Bearer ${chave}`,
-      "x-empresa-id": fixture.empresaId,
-      "x-filial-id": fixture.filialId,
+      "x-filial-cnpjcpf": fixture.filialCnpjCpf,
     };
   }
 

@@ -43,8 +43,7 @@ describe("POST/GET /api/v1/titulos", () => {
   function headers(chave: string) {
     return {
       authorization: `Bearer ${chave}`,
-      "x-empresa-id": fixture.empresaId,
-      "x-filial-id": fixture.filialId,
+      "x-filial-cnpjcpf": fixture.filialCnpjCpf,
       "content-type": "application/json",
     };
   }

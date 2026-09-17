@@ -44,8 +44,7 @@ describe("POST /api/v1/baixas", () => {
   function headers() {
     return {
       authorization: `Bearer ${chaveCompleta}`,
-      "x-empresa-id": fixture.empresaId,
-      "x-filial-id": fixture.filialId,
+      "x-filial-cnpjcpf": fixture.filialCnpjCpf,
       "content-type": "application/json",
     };
   }

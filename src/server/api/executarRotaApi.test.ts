@@ -14,8 +14,7 @@ function requisicaoAutenticada(fixture: FixtureFinanceiro, chaveCompleta: string
   return new Request("http://localhost/api/v1/teste", {
     headers: {
       authorization: `Bearer ${chaveCompleta}`,
-      "x-empresa-id": fixture.empresaId,
-      "x-filial-id": fixture.filialId,
+      "x-filial-cnpjcpf": fixture.filialCnpjCpf,
     },
   });
 }
@@ -48,7 +47,7 @@ describe("executarRotaApi", () => {
 
   test("chave inválida devolve 401 antes de chamar o handler", async () => {
     const request = new Request("http://localhost/api/v1/teste", {
-      headers: { authorization: "Bearer sk_invalida", "x-empresa-id": fixture.empresaId, "x-filial-id": fixture.filialId },
+      headers: { authorization: "Bearer sk_invalida", "x-filial-cnpjcpf": fixture.filialCnpjCpf },
     });
     let handlerChamado = false;
 

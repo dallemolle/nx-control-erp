@@ -28,12 +28,11 @@ describe("requireSessaoApi", () => {
     await prisma.$disconnect();
   });
 
-  test("chave válida resolve a sessão do usuário dono da chave", async () => {
+  test("chave válida + CNPJ/CPF da filial resolve a sessão do usuário dono da chave", async () => {
     const sessao = await requireSessaoApi(
       requisicao({
         authorization: `Bearer ${chaveCompleta}`,
-        "x-empresa-id": fixture.empresaId,
-        "x-filial-id": fixture.filialId,
+        "x-filial-cnpjcpf": fixture.filialCnpjCpf,
       }),
     );
 
@@ -42,6 +41,19 @@ describe("requireSessaoApi", () => {
     expect(sessao.filialId).toBe(fixture.filialId);
     expect(sessao.perfil).toBe("FINANCEIRO");
     expect(sessao.podeAlterarFilial).toBe(true);
+  });
+
+  test("resolve mesmo com pontuação diferente da armazenada", async () => {
+    const semPontuacao = fixture.filialCnpjCpf.replace(/\D/g, "");
+
+    const sessao = await requireSessaoApi(
+      requisicao({
+        authorization: `Bearer ${chaveCompleta}`,
+        "x-filial-cnpjcpf": semPontuacao,
+      }),
+    );
+
+    expect(sessao.filialId).toBe(fixture.filialId);
   });
 
   test("atualiza ultimoUsoEm a cada chamada bem-sucedida", async () => {
@@ -53,8 +65,7 @@ describe("requireSessaoApi", () => {
     await requireSessaoApi(
       requisicao({
         authorization: `Bearer ${chaveCompleta}`,
-        "x-empresa-id": fixture.empresaId,
-        "x-filial-id": fixture.filialId,
+        "x-filial-cnpjcpf": fixture.filialCnpjCpf,
       }),
     );
 
@@ -64,7 +75,7 @@ describe("requireSessaoApi", () => {
 
   test("sem header Authorization -> 401", async () => {
     await expect(
-      requireSessaoApi(requisicao({ "x-empresa-id": fixture.empresaId, "x-filial-id": fixture.filialId })),
+      requireSessaoApi(requisicao({ "x-filial-cnpjcpf": fixture.filialCnpjCpf })),
     ).rejects.toMatchObject({ status: 401 });
   });
 
@@ -73,8 +84,7 @@ describe("requireSessaoApi", () => {
       requireSessaoApi(
         requisicao({
           authorization: "Bearer sk_chave_que_nao_existe",
-          "x-empresa-id": fixture.empresaId,
-          "x-filial-id": fixture.filialId,
+          "x-filial-cnpjcpf": fixture.filialCnpjCpf,
         }),
       ),
     ).rejects.toBeInstanceOf(ApiAuthError);
@@ -88,41 +98,43 @@ describe("requireSessaoApi", () => {
       requireSessaoApi(
         requisicao({
           authorization: `Bearer ${gerada.chaveCompleta}`,
-          "x-empresa-id": fixture.empresaId,
-          "x-filial-id": fixture.filialId,
+          "x-filial-cnpjcpf": fixture.filialCnpjCpf,
         }),
       ),
     ).rejects.toMatchObject({ status: 401 });
   });
 
-  test("sem X-Empresa-Id ou X-Filial-Id -> 400", async () => {
+  test("sem X-Filial-CnpjCpf -> 400", async () => {
     await expect(
       requireSessaoApi(requisicao({ authorization: `Bearer ${chaveCompleta}` })),
     ).rejects.toMatchObject({ status: 400 });
   });
 
-  test("empresa sem vínculo -> 403", async () => {
+  test("CNPJ/CPF que não corresponde a nenhuma filial -> 403", async () => {
     await expect(
       requireSessaoApi(
         requisicao({
           authorization: `Bearer ${chaveCompleta}`,
-          "x-empresa-id": "00000000-0000-0000-0000-000000000000",
-          "x-filial-id": fixture.filialId,
+          "x-filial-cnpjcpf": "00.000.000/0000-00",
         }),
       ),
     ).rejects.toMatchObject({ status: 403 });
   });
 
-  test("filial sem vínculo -> 403", async () => {
-    await expect(
-      requireSessaoApi(
-        requisicao({
-          authorization: `Bearer ${chaveCompleta}`,
-          "x-empresa-id": fixture.empresaId,
-          "x-filial-id": "00000000-0000-0000-0000-000000000000",
-        }),
-      ),
-    ).rejects.toMatchObject({ status: 403 });
+  test("filial existe mas usuário não tem vínculo -> 403", async () => {
+    const outraFixture = await criarFixtureFinanceiro("SESAPI2");
+    try {
+      await expect(
+        requireSessaoApi(
+          requisicao({
+            authorization: `Bearer ${chaveCompleta}`,
+            "x-filial-cnpjcpf": outraFixture.filialCnpjCpf,
+          }),
+        ),
+      ).rejects.toMatchObject({ status: 403 });
+    } finally {
+      await limparFixtureFinanceiro(outraFixture);
+    }
   });
 
   test("usuário desativado globalmente -> 401, mesmo com chave válida e vínculo ativo", async () => {
@@ -135,8 +147,7 @@ describe("requireSessaoApi", () => {
         requireSessaoApi(
           requisicao({
             authorization: `Bearer ${gerada.chaveCompleta}`,
-            "x-empresa-id": fixture.empresaId,
-            "x-filial-id": fixture.filialId,
+            "x-filial-cnpjcpf": fixture.filialCnpjCpf,
           }),
         ),
       ).rejects.toMatchObject({ status: 401 });
