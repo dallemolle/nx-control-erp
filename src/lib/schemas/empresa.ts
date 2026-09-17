@@ -1,9 +1,10 @@
 import { z } from "zod";
+import { cnpjCpfSchema } from "@/lib/cnpjCpf";
 
 export const empresaSchema = z.object({
   razaoSocial: z.string().trim().min(3, "Informe a razão social"),
   nomeFantasia: z.string().trim().min(2, "Informe o nome fantasia"),
-  cnpjCpf: z.string().trim().min(11, "CNPJ/CPF inválido"),
+  cnpjCpf: cnpjCpfSchema,
   moedaPadrao: z
     .string()
     .trim()
