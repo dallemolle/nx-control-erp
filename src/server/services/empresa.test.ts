@@ -46,7 +46,7 @@ describe("criarEmpresa", () => {
     const empresa = await criarEmpresa(sessao, {
       razaoSocial: "Nova Empresa Ltda",
       nomeFantasia: "Nova Empresa",
-      cnpj: `${randomSuffix}/0001-01`,
+      cnpjCpf: `${randomSuffix}/0001-01`,
       moedaPadrao: "BRL",
     });
     novaEmpresaId = empresa.id;

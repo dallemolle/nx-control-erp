@@ -9,6 +9,7 @@ import { listarAcessosFiliaisDoUsuario } from "@/server/services/usuarioEmpresaF
 import { NovoUsuarioDialog } from "./novo-usuario-dialog";
 import { PerfilForm } from "./perfil-form";
 import { AcessoFilialForm } from "./acesso-filial-form";
+import { ChavesApiDialog } from "./chaves-api-dialog";
 import { alternarAtivoUsuarioAction } from "./actions";
 
 export default async function UsuariosPage() {
@@ -59,13 +60,16 @@ export default async function UsuariosPage() {
                 </Badge>
               </TableCell>
               <TableCell className="text-right">
-                <form action={alternarAtivoUsuarioAction}>
-                  <input type="hidden" name="usuarioId" value={vinculo.usuarioId} />
-                  <input type="hidden" name="ativo" value={(!vinculo.ativo).toString()} />
-                  <Button type="submit" variant="outline" size="sm">
-                    {vinculo.ativo ? "Desativar" : "Reativar"}
-                  </Button>
-                </form>
+                <div className="flex justify-end gap-2">
+                  <ChavesApiDialog usuarioId={vinculo.usuarioId} />
+                  <form action={alternarAtivoUsuarioAction}>
+                    <input type="hidden" name="usuarioId" value={vinculo.usuarioId} />
+                    <input type="hidden" name="ativo" value={(!vinculo.ativo).toString()} />
+                    <Button type="submit" variant="outline" size="sm">
+                      {vinculo.ativo ? "Desativar" : "Reativar"}
+                    </Button>
+                  </form>
+                </div>
               </TableCell>
             </TableRow>
           ))}

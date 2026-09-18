@@ -73,3 +73,20 @@ Se o job falhar com **`P3005` ("The database schema is not empty")**, veja o
 procedimento de baseline na
 [nota de deploy correspondente](./docs/fases/fase-1-fundacao.md#nota-de-deploy-erro-p3005-the-database-schema-is-not-empty)
 — nunca use `prisma migrate reset` para resolver isso, apaga o banco.
+
+## Versionamento
+
+Commits seguem [Conventional Commits](https://www.conventionalcommits.org/)
+(`feat:`, `fix:`, `docs:`, `refactor:`, ...). O
+[release-please](https://github.com/googleapis/release-please) roda a cada
+push em `main` (`.github/workflows/release-please.yml`) e mantém aberto um PR
+"chore: release X.Y.Z" com o `CHANGELOG.md` atualizado a partir desses
+commits — `feat:` sobe a versão minor, `fix:` sobe a patch. Merge esse PR pra
+oficializar a release: `package.json` é atualizado, uma tag `vX.Y.Z` é criada
+e uma Release aparece no GitHub.
+
+A versão e a data da última alteração ficam visíveis no rodapé do menu
+lateral do sistema, sem precisar abrir o git — geradas em build por
+`scripts/gerar-versao-build.ts` (`npm run predev`/`prebuild`), que grava
+`src/generated/versao.json` (não versionado) com a versão do `package.json`,
+o SHA curto e a data do último commit.

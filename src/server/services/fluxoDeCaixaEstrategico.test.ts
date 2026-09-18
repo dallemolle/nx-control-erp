@@ -115,7 +115,7 @@ describe("garantirCenariosEstrategicos / listarCenariosEstrategicos / listarProj
 
   test("buscarAnoBaseConsolidado soma os últimos 12 meses de 2 filiais da mesma empresa", async () => {
     const filial2 = await prisma.filial.create({
-      data: { empresaId: fixture.empresaId, nome: "Filial 2 FCE", cnpj: `88.888.FCE2/0001-99` },
+      data: { empresaId: fixture.empresaId, nome: "Filial 2 FCE", cnpjCpf: `88.888.FCE2/0001-99` },
     });
     const banco = await prisma.banco.create({ data: { codigo: `FCEB${Date.now()}`, nome: "Banco FCE" } });
     const contaFilial2 = await prisma.contaBancaria.create({

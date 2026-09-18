@@ -5,6 +5,8 @@ import type { Perfil } from "@prisma/client";
 export type FixtureFinanceiro = {
   empresaId: string;
   filialId: string;
+  /** CNPJ/CPF da filial — usado para autenticar chamadas na API REST (header X-Filial-CnpjCpf). */
+  filialCnpjCpf: string;
   usuarioId: string;
   usuarioAdminId: string;
   fornecedorId: string;
@@ -22,16 +24,22 @@ export async function criarFixtureFinanceiro(
   sufixo: string,
   perfil: Perfil = "FINANCEIRO",
 ): Promise<FixtureFinanceiro> {
+  // A API resolve filial pelo CNPJ/CPF normalizado (só dígitos) — um sufixo
+  // alfabético (ex.: "APIFORN") desapareceria na normalização e colidiria com
+  // o de qualquer outro teste. `digitosUnicos` garante um valor só-dígito
+  // realmente único entre chamadas concorrentes desta fixture.
+  const digitosUnicos = `${Date.now()}${Math.floor(Math.random() * 1000000)}`;
+
   const empresa = await prisma.empresa.create({
     data: {
       razaoSocial: `Teste Financeiro ${sufixo} Ltda`,
       nomeFantasia: `Teste Financeiro ${sufixo}`,
-      cnpj: `11.111.${sufixo}/0001-11`,
+      cnpjCpf: `11.111.${digitosUnicos}/0001-11`,
     },
   });
 
   const filial = await prisma.filial.create({
-    data: { empresaId: empresa.id, nome: `Filial ${sufixo}`, cnpj: `11.111.${sufixo}/0001-22` },
+    data: { empresaId: empresa.id, nome: `Filial ${sufixo}`, cnpjCpf: `11.111.${digitosUnicos}/0001-22` },
   });
 
   const usuario = await prisma.usuario.create({
@@ -97,6 +105,7 @@ export async function criarFixtureFinanceiro(
   return {
     empresaId: empresa.id,
     filialId: filial.id,
+    filialCnpjCpf: filial.cnpjCpf,
     usuarioId: usuario.id,
     usuarioAdminId: usuarioAdmin.id,
     fornecedorId: fornecedor.id,

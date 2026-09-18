@@ -47,3 +47,6 @@ next-env.d.ts
 
 # superpowers scratch (sdd ledgers, brainstorm sessions)
 /.superpowers/
+
+# metadados de versao gerados no build (scripts/gerar-versao-build.ts)
+/src/generated/

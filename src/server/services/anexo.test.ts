@@ -77,7 +77,7 @@ describe("anexo (Vercel Blob mockado — não é o banco de dados)", () => {
 
   test("listarAnexos não vaza anexos de outra filial", async () => {
     const filialIrma = await prisma.filial.create({
-      data: { empresaId: fixture.empresaId, nome: "Filial Irma ANEX", cnpj: "11.111.ANEX/0001-99" },
+      data: { empresaId: fixture.empresaId, nome: "Filial Irma ANEX", cnpjCpf: "11.111.ANEX/0001-99" },
     });
 
     const anexos = await listarAnexos(filialIrma.id, tituloId);

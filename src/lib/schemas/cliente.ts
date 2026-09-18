@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { MEIO_PAGAMENTO, TIPO_CHAVE_PIX, TIPO_CONTA_TERCEIRO, SEM_VALOR } from "./enums";
+import { cnpjCpfSchema } from "@/lib/cnpjCpf";
 
 export const clienteSchema = z
   .object({
     nome: z.string().trim().min(2, "Informe o nome"),
-    cnpjCpf: z.string().trim().min(11, "CNPJ/CPF inválido"),
+    cnpjCpf: cnpjCpfSchema,
     contato: z.string().trim().optional().or(z.literal("")),
     email: z.string().trim().email("Email inválido").optional().or(z.literal("")),
     telefone: z.string().trim().optional().or(z.literal("")),

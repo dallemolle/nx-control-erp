@@ -13,7 +13,7 @@ describe("requireVinculoAtivo", () => {
       data: {
         razaoSocial: "Teste Vinculo Ltda",
         nomeFantasia: "Teste Vinculo",
-        cnpj: "22.222.222/0001-22",
+        cnpjCpf: "22.222.222/0001-22",
       },
     });
     empresaId = empresa.id;

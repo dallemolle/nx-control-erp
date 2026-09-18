@@ -10,7 +10,7 @@ describe("registrarAuditoria", () => {
       data: {
         razaoSocial: "Teste Auditoria Ltda",
         nomeFantasia: "Teste Auditoria",
-        cnpj: "11.111.111/0001-11",
+        cnpjCpf: "11.111.111/0001-11",
       },
     });
     empresaId = empresa.id;

@@ -203,7 +203,7 @@ describe("titulo (filial-scoped)", () => {
 
   test("listarTitulos isola por filial — título de uma filial irmã não aparece", async () => {
     const filialIrma = await prisma.filial.create({
-      data: { empresaId: fixture.empresaId, nome: "Filial Irma TIT", cnpj: "11.111.TIT/0001-99" },
+      data: { empresaId: fixture.empresaId, nome: "Filial Irma TIT", cnpjCpf: "11.111.TIT/0001-99" },
     });
     // A categoria precisa ser da PRÓPRIA filial irmã: referências são validadas por filial.
     const categoriaDaIrma = await prisma.categoriaFinanceira.create({
@@ -292,7 +292,7 @@ describe("titulo (filial-scoped)", () => {
 
   test("rejeita criação quando a categoria pertence a outra filial", async () => {
     const filialIrma = await prisma.filial.create({
-      data: { empresaId: fixture.empresaId, nome: "Filial Irma REF", cnpj: "11.111.REF/0001-99" },
+      data: { empresaId: fixture.empresaId, nome: "Filial Irma REF", cnpjCpf: "11.111.REF/0001-99" },
     });
     const categoriaDaIrma = await prisma.categoriaFinanceira.create({
       data: { filialId: filialIrma.id, nome: "Categoria Irma REF", tipo: "DESPESA" },
@@ -324,7 +324,7 @@ describe("titulo (filial-scoped)", () => {
       data: {
         razaoSocial: "Outra Empresa TIT Ltda",
         nomeFantasia: "Outra TIT",
-        cnpj: "44.444.TIT/0001-11",
+        cnpjCpf: "44.444.TIT/0001-11",
       },
     });
     const fornecedorAlheio = await prisma.fornecedor.create({
@@ -659,7 +659,7 @@ describe("titulo (filial-scoped)", () => {
 
   test("listarTitulos com filtro não vaza entre filiais mesmo quando os valores do filtro combinam", async () => {
     const filialIrma = await prisma.filial.create({
-      data: { empresaId: fixture.empresaId, nome: "Filial Irma Filtro TIT", cnpj: "11.111.FLT/0001-99" },
+      data: { empresaId: fixture.empresaId, nome: "Filial Irma Filtro TIT", cnpjCpf: "11.111.FLT/0001-99" },
     });
     const categoriaDaIrma = await prisma.categoriaFinanceira.create({
       data: { filialId: filialIrma.id, nome: "Categoria Irma Filtro TIT", tipo: "DESPESA" },

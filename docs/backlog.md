@@ -237,6 +237,31 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   (`FiltroTitulos`-equivalente + `BarraDeFiltros`-equivalente por tela),
   não redesenho.
 
+## API REST de automação (lançamentos via agente)
+
+- **Sem idempotência no v1.** Um reenvio de `POST /api/v1/titulos` (retry
+  de rede do agente, timeout, script rodado duas vezes por engano) cria
+  um título duplicado — a API não detecta nem rejeita o reenvio. Decisão
+  consciente ao aprovar o desenho (2026-09-15): aceitável porque é
+  automação interna do próprio usuário contra sua própria instância, não
+  uma API pública para clientes de terceiros. **Importância: média-alta**
+  — se o agente de IA reintentar automaticamente após timeout/erro de
+  rede sem antes checar se o lançamento já existe, duplicar contas a
+  pagar/receber ou lançamentos bancários tem impacto financeiro real
+  (double-booking), não é só um dado repetido inofensivo. Retomar se isso
+  ocorrer na prática ou antes de dar ao agente permissão para reintentar
+  automaticamente. Caminho de correção mais simples quando for retomado:
+  aceitar um campo opcional `idExterno` no corpo de `POST /api/v1/titulos`,
+  `/lancamentos-bancarios` e `/baixas`, com um índice único por
+  `(usuarioId, idExterno)` — reenvio com o mesmo `idExterno` devolve o
+  recurso já criado (`200`) em vez de duplicar (`201`). Exceção parcial:
+  `/extratos/importar` já tem uma proteção parcial contra reenvio — a
+  constraint única de `LinhaExtrato` (`contaBancariaId`+
+  `identificadorBancario`) combinada com `skipDuplicates: true` evita
+  duplicar as linhas de transação num retry, mas ainda cria um novo
+  registro de cabeçalho `ExtratoImportado` a cada chamada e reexecuta a
+  conciliação automática.
+
 ## Auditoria — workflow de aprovação de pagamentos (Fase 6, sub-projeto 6d)
 
 - **Workflow de aprovação de pagamentos de 5 passos** (cadastro →

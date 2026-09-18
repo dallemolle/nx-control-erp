@@ -5,6 +5,7 @@ import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { criarUsuarioSchema, verificarEmailSchema, atualizarPerfilSchema } from "@/lib/schemas/usuario";
 import * as usuarioService from "@/server/services/usuario";
 import * as usuarioEmpresaFilialService from "@/server/services/usuarioEmpresaFilial";
+import * as apiKeyService from "@/server/services/apiKey";
 
 export type FormState = { erro?: string; sucesso?: boolean };
 
@@ -95,4 +96,34 @@ export async function atualizarAcessoFilialAction(formData: FormData): Promise<v
     podeAlterar,
   });
   revalidatePath("/usuarios");
+}
+
+export type GerarChaveState = FormState & { chaveCompleta?: string };
+
+export async function listarChavesAction(usuarioId: string) {
+  const sessao = await requireSessaoAtiva();
+  return apiKeyService.listarChaves(sessao, usuarioId);
+}
+
+export async function gerarChaveAction(_prev: GerarChaveState, formData: FormData): Promise<GerarChaveState> {
+  const sessao = await requireSessaoAtiva();
+  const usuarioId = String(formData.get("usuarioId") ?? "");
+  const nome = String(formData.get("nome") ?? "").trim();
+
+  if (!nome) {
+    return { erro: "Informe um nome para a chave" };
+  }
+
+  try {
+    const resultado = await apiKeyService.gerarChave(sessao, usuarioId, nome);
+    return { sucesso: true, chaveCompleta: resultado.chaveCompleta };
+  } catch (erro) {
+    return { erro: mensagemErro(erro) };
+  }
+}
+
+export async function revogarChaveAction(formData: FormData): Promise<void> {
+  const sessao = await requireSessaoAtiva();
+  const chaveId = String(formData.get("chaveId") ?? "");
+  await apiKeyService.revogarChave(sessao, chaveId);
 }

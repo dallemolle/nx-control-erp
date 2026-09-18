@@ -21,7 +21,7 @@ describe("filial", () => {
       data: {
         razaoSocial: "Teste Filial Empresa A Ltda",
         nomeFantasia: "Teste Filial Empresa A",
-        cnpj: `${randomSuffix}/0001-01`,
+        cnpjCpf: `${randomSuffix}/0001-01`,
       },
     });
     empresaAId = empresaA.id;
@@ -30,7 +30,7 @@ describe("filial", () => {
       data: {
         razaoSocial: "Teste Filial Empresa B Ltda",
         nomeFantasia: "Teste Filial Empresa B",
-        cnpj: `${randomSuffix}/0002-02`,
+        cnpjCpf: `${randomSuffix}/0002-02`,
       },
     });
     empresaBId = empresaB.id;
@@ -52,13 +52,13 @@ describe("filial", () => {
 
     const filialEmpresaA = await criarFilial(sessaoAdministrador, {
       nome: "Filial Empresa A",
-      cnpj: `${randomSuffix}/0003-03`,
+      cnpjCpf: `${randomSuffix}/0003-03`,
     });
     filialEmpresaAId = filialEmpresaA.id;
 
     const filialEmpresaB = await criarFilial({ ...sessaoAdministrador, empresaId: empresaBId }, {
       nome: "Filial Empresa B",
-      cnpj: `${randomSuffix}/0004-04`,
+      cnpjCpf: `${randomSuffix}/0004-04`,
     });
     filialEmpresaBId = filialEmpresaB.id;
   });
@@ -75,15 +75,15 @@ describe("filial", () => {
 
   test("criarFilial exige a permissão filial:gerenciar", async () => {
     await expect(
-      criarFilial(sessaoFinanceiro, { nome: "Sem permissão", cnpj: "99.999.999/0001-99" }),
+      criarFilial(sessaoFinanceiro, { nome: "Sem permissão", cnpjCpf: "99.999.999/0001-99" }),
     ).rejects.toThrow(PermissionError);
   });
 
-  test("violação do cnpj único gera erro", async () => {
+  test("violação do cnpjCpf único gera erro", async () => {
     await expect(
       criarFilial(sessaoAdministrador, {
         nome: "Filial Duplicada",
-        cnpj: (await prisma.filial.findUniqueOrThrow({ where: { id: filialEmpresaAId } })).cnpj,
+        cnpjCpf: (await prisma.filial.findUniqueOrThrow({ where: { id: filialEmpresaAId } })).cnpjCpf,
       }),
     ).rejects.toThrow();
   });

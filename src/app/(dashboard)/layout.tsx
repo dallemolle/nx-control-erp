@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/server/db/client";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
+import { obterVersaoInfo } from "@/lib/versao";
 import { Sidebar } from "./sidebar";
 import { ThemeToggle } from "./theme-toggle";
 import { sair } from "./actions";
@@ -11,10 +12,11 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const sessao = await requireSessaoAtiva();
   const empresa = await prisma.empresa.findUniqueOrThrow({ where: { id: sessao.empresaId } });
   const filial = await prisma.filial.findUniqueOrThrow({ where: { id: sessao.filialId } });
+  const versaoInfo = obterVersaoInfo();
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar perfil={sessao.perfil} />
+      <Sidebar perfil={sessao.perfil} versaoInfo={versaoInfo} />
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-app-header-foreground/10 bg-app-header px-6 py-3 text-app-header-foreground">
           <div className="text-sm">

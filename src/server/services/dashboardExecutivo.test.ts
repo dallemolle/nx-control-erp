@@ -55,7 +55,7 @@ describe("buscarIndicadoresExecutivos (integração)", () => {
     });
 
     const outraFilial = await prisma.filial.create({
-      data: { empresaId: fixture.empresaId, nome: "Filial DASH 2", cnpj: "44.444.DASH/0002-55" },
+      data: { empresaId: fixture.empresaId, nome: "Filial DASH 2", cnpjCpf: "44.444.DASH/0002-55" },
     });
     outraFilialId = outraFilial.id;
     const outraConta = await prisma.contaBancaria.create({

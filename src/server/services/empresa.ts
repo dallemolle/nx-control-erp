@@ -17,7 +17,7 @@ export async function criarEmpresa(sessao: SessaoAtiva, dados: EmpresaFormValues
       data: { usuarioId: sessao.usuarioId, empresaId: novaEmpresa.id, perfil: "ADMINISTRADOR" },
     });
     const matriz = await tx.filial.create({
-      data: { empresaId: novaEmpresa.id, nome: "Matriz", cnpj: dados.cnpj },
+      data: { empresaId: novaEmpresa.id, nome: "Matriz", cnpjCpf: dados.cnpjCpf },
     });
     await tx.usuarioEmpresaFilial.create({
       data: { usuarioEmpresaId: vinculo.id, filialId: matriz.id, podeAlterar: true, ativo: true },
@@ -55,7 +55,7 @@ export async function atualizarEmpresa(sessao: SessaoAtiva, id: string, dados: E
     anterior: {
       razaoSocial: anterior.razaoSocial,
       nomeFantasia: anterior.nomeFantasia,
-      cnpj: anterior.cnpj,
+      cnpjCpf: anterior.cnpjCpf,
       moedaPadrao: anterior.moedaPadrao,
     },
     novo: dados,

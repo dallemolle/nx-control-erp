@@ -28,7 +28,7 @@ describe("usuarioEmpresaFilial", () => {
       data: {
         razaoSocial: "Teste UEF Empresa A Ltda",
         nomeFantasia: "Teste UEF Empresa A",
-        cnpj: `${randomSuffix}/0001-01`,
+        cnpjCpf: `${randomSuffix}/0001-01`,
       },
     });
     empresaAId = empresaA.id;
@@ -37,18 +37,18 @@ describe("usuarioEmpresaFilial", () => {
       data: {
         razaoSocial: "Teste UEF Empresa B Ltda",
         nomeFantasia: "Teste UEF Empresa B",
-        cnpj: `${randomSuffix}/0002-02`,
+        cnpjCpf: `${randomSuffix}/0002-02`,
       },
     });
     empresaBId = empresaB.id;
 
     const filialEmpresaA = await prisma.filial.create({
-      data: { nome: "Filial A", cnpj: `${randomSuffix}/0003-03`, empresaId: empresaAId },
+      data: { nome: "Filial A", cnpjCpf: `${randomSuffix}/0003-03`, empresaId: empresaAId },
     });
     filialEmpresaAId = filialEmpresaA.id;
 
     const filialEmpresaB = await prisma.filial.create({
-      data: { nome: "Filial B", cnpj: `${randomSuffix}/0004-04`, empresaId: empresaBId },
+      data: { nome: "Filial B", cnpjCpf: `${randomSuffix}/0004-04`, empresaId: empresaBId },
     });
     filialEmpresaBId = filialEmpresaB.id;
 
@@ -188,7 +188,7 @@ describe("requireVinculoFilialAtivo", () => {
       data: {
         razaoSocial: "Teste RVFA Empresa X Ltda",
         nomeFantasia: "Teste RVFA Empresa X",
-        cnpj: `${randomSuffix}/0011-11`,
+        cnpjCpf: `${randomSuffix}/0011-11`,
       },
     });
     empresaXId = empresaX.id;
@@ -197,7 +197,7 @@ describe("requireVinculoFilialAtivo", () => {
       data: {
         razaoSocial: "Teste RVFA Empresa Y Ltda",
         nomeFantasia: "Teste RVFA Empresa Y",
-        cnpj: `${randomSuffix}/0012-12`,
+        cnpjCpf: `${randomSuffix}/0012-12`,
       },
     });
     empresaYId = empresaY.id;
@@ -206,7 +206,7 @@ describe("requireVinculoFilialAtivo", () => {
       data: {
         razaoSocial: "Teste RVFA Empresa Z Ltda",
         nomeFantasia: "Teste RVFA Empresa Z",
-        cnpj: `${randomSuffix}/0013-13`,
+        cnpjCpf: `${randomSuffix}/0013-13`,
       },
     });
     empresaZId = empresaZ.id;
@@ -232,7 +232,7 @@ describe("requireVinculoFilialAtivo", () => {
     usuarioEmpresaZId = usuarioEmpresaZ.id;
 
     const filialAtivaPodeAlterar = await prisma.filial.create({
-      data: { nome: "X Ativa Alteração", cnpj: `${randomSuffix}/0014-14`, empresaId: empresaXId },
+      data: { nome: "X Ativa Alteração", cnpjCpf: `${randomSuffix}/0014-14`, empresaId: empresaXId },
     });
     filialAtivaPodeAlterarId = filialAtivaPodeAlterar.id;
     await prisma.usuarioEmpresaFilial.create({
@@ -245,7 +245,7 @@ describe("requireVinculoFilialAtivo", () => {
     });
 
     const filialAtivaSoLeitura = await prisma.filial.create({
-      data: { nome: "X Ativa Leitura", cnpj: `${randomSuffix}/0015-15`, empresaId: empresaXId },
+      data: { nome: "X Ativa Leitura", cnpjCpf: `${randomSuffix}/0015-15`, empresaId: empresaXId },
     });
     filialAtivaSoLeituraId = filialAtivaSoLeitura.id;
     await prisma.usuarioEmpresaFilial.create({
@@ -260,7 +260,7 @@ describe("requireVinculoFilialAtivo", () => {
     const filialInativa = await prisma.filial.create({
       data: {
         nome: "X Inativa",
-        cnpj: `${randomSuffix}/0016-16`,
+        cnpjCpf: `${randomSuffix}/0016-16`,
         empresaId: empresaXId,
         ativo: false,
       },
@@ -276,7 +276,7 @@ describe("requireVinculoFilialAtivo", () => {
     });
 
     const filialVinculoInativo = await prisma.filial.create({
-      data: { nome: "X Vínculo Inativo", cnpj: `${randomSuffix}/0017-17`, empresaId: empresaXId },
+      data: { nome: "X Vínculo Inativo", cnpjCpf: `${randomSuffix}/0017-17`, empresaId: empresaXId },
     });
     filialVinculoInativoId = filialVinculoInativo.id;
     await prisma.usuarioEmpresaFilial.create({
@@ -289,12 +289,12 @@ describe("requireVinculoFilialAtivo", () => {
     });
 
     const filialSemAcesso = await prisma.filial.create({
-      data: { nome: "X Sem Acesso", cnpj: `${randomSuffix}/0018-18`, empresaId: empresaXId },
+      data: { nome: "X Sem Acesso", cnpjCpf: `${randomSuffix}/0018-18`, empresaId: empresaXId },
     });
     filialSemAcessoId = filialSemAcesso.id;
 
     const filialY = await prisma.filial.create({
-      data: { nome: "Y Filial", cnpj: `${randomSuffix}/0019-19`, empresaId: empresaYId },
+      data: { nome: "Y Filial", cnpjCpf: `${randomSuffix}/0019-19`, empresaId: empresaYId },
     });
     filialYId = filialY.id;
     await prisma.usuarioEmpresaFilial.create({
@@ -302,7 +302,7 @@ describe("requireVinculoFilialAtivo", () => {
     });
 
     const filialZ = await prisma.filial.create({
-      data: { nome: "Z Filial", cnpj: `${randomSuffix}/0020-20`, empresaId: empresaZId },
+      data: { nome: "Z Filial", cnpjCpf: `${randomSuffix}/0020-20`, empresaId: empresaZId },
     });
     filialZId = filialZ.id;
     await prisma.usuarioEmpresaFilial.create({
