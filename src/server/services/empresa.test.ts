@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, test, vi, type Mock } from "vitest";
 
 vi.mock("@vercel/blob", () => ({
   put: vi.fn(async (pathname: string) => ({ url: `https://blob.test/${pathname}` })),
@@ -213,10 +213,16 @@ describe("atualizarEmpresa — cor e logo", () => {
     expect(empresa.logoUrl).toContain("blob.test");
   });
 
-  test("trocar o logo existente apaga o blob antigo antes de subir o novo", async () => {
+  test("trocar o logo existente sobe o novo antes de apagar o antigo", async () => {
     const arquivo = new File([Buffer.from("fake-png-3")], "logo3.png", { type: "image/png" });
     const antes = await prisma.empresa.findUniqueOrThrow({ where: { id: empresaId } });
     expect(antes.logoUrl).not.toBeNull();
+
+    // Mocks não são resetados entre testes (sem clearMocks no vitest.config.ts), então
+    // marcamos quantas chamadas já existiam antes desta chamada para comparar a ordem
+    // relativa das chamadas feitas POR ESTE teste, não do histórico acumulado do arquivo.
+    const putChamadasAntes = (put as Mock).mock.invocationCallOrder.length;
+    const delChamadasAntes = (del as Mock).mock.invocationCallOrder.length;
 
     await atualizarEmpresa(
       sessao,
@@ -232,6 +238,11 @@ describe("atualizarEmpresa — cor e logo", () => {
     );
 
     expect(del).toHaveBeenCalledWith(antes.logoUrl);
+    const ordemPut = (put as Mock).mock.invocationCallOrder[putChamadasAntes];
+    const ordemDel = (del as Mock).mock.invocationCallOrder[delChamadasAntes];
+    expect(ordemPut).toBeDefined();
+    expect(ordemDel).toBeDefined();
+    expect(ordemPut!).toBeLessThan(ordemDel!);
   });
 
   test("removerLogo:true sem novo arquivo limpa logoUrl e apaga o blob", async () => {

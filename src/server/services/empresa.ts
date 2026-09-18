@@ -26,10 +26,10 @@ async function processarLogo(
 ): Promise<string | null | undefined> {
   if (arquivo && arquivo.size > 0) {
     validarArquivoLogo(arquivo);
-    if (logoUrlAtual) await del(logoUrlAtual).catch(() => {});
     const blob = await put(`empresas/${empresaId}/logo-${Date.now()}`, arquivo, {
       access: "public",
     });
+    if (logoUrlAtual) await del(logoUrlAtual).catch(() => {});
     return blob.url;
   }
   if (removerLogo && logoUrlAtual) {
@@ -64,9 +64,13 @@ export async function criarEmpresa(sessao: SessaoAtiva, dados: EmpresaFormValues
   });
 
   if (logo && logo.size > 0) {
-    const logoUrl = await processarLogo(empresa.id, null, logo, false);
-    if (logoUrl) {
-      empresa = await prisma.empresa.update({ where: { id: empresa.id }, data: { logoUrl } });
+    try {
+      const logoUrl = await processarLogo(empresa.id, null, logo, false);
+      if (logoUrl) {
+        empresa = await prisma.empresa.update({ where: { id: empresa.id }, data: { logoUrl } });
+      }
+    } catch (erro) {
+      console.warn(`Falha ao subir logo da empresa ${empresa.id} recem-criada:`, erro);
     }
   }
 
@@ -78,7 +82,7 @@ export async function criarEmpresa(sessao: SessaoAtiva, dados: EmpresaFormValues
     entidadeId: empresa.id,
     acao: "CRIAR",
     anterior: null,
-    novo: dados,
+    novo: { ...dados, logoUrl: empresa.logoUrl },
   });
 
   return empresa;
