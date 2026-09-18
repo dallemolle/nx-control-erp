@@ -62,6 +62,8 @@ model Empresa {
   nomeFantasia String
   cnpjCpf      String   @unique
   moedaPadrao  String   @default("BRL")
+  corPrimaria  String?
+  logoUrl      String?
   ativo        Boolean  @default(true)
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
