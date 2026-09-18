@@ -58,4 +58,11 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/dashboard-executivo", label: "Dashboard executivo", permitido: ["ADMINISTRADOR", "GESTOR", "AUDITOR"] },
     ],
   },
+  {
+    titulo: "Ajuda",
+    itens: [
+      { href: "/ajuda/passo-a-passo", label: "Passo a passo" },
+      { href: "/ajuda/novidades", label: "Novidades" },
+    ],
+  },
 ];

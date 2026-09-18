@@ -1,10 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // src/generated/versao.json é lido via fs em tempo de execução (não importado),
-  // então o rastreamento automático de arquivos do build não o inclui sozinho.
+  // Lidos via fs em tempo de execução (não importados), então o rastreamento
+  // automático de arquivos do build não os inclui sozinho. CHANGELOG.md só passa
+  // a existir depois da primeira release cortada pelo release-please — o padrão
+  // ainda cobre esse caso.
   outputFileTracingIncludes: {
-    "/*": ["src/generated/versao.json"],
+    "/*": ["src/generated/versao.json", "content/ajuda/passo-a-passo.md", "CHANGELOG.md"],
   },
 };
 
