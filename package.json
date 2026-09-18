@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "tsx scripts/gerar-versao-build.ts",
     "dev": "next dev",
     "postinstall": "prisma generate",
+    "prebuild": "tsx scripts/gerar-versao-build.ts",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",

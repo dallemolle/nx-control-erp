@@ -5,10 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Perfil } from "@prisma/client";
 import { cn } from "@/lib/utils";
+import type { VersaoInfo } from "@/lib/versao";
 import { Accordion, AccordionItem, AccordionPanel, AccordionTrigger } from "@/components/ui/accordion";
 import { NAV_SECTIONS } from "./nav-items";
+import { VersaoBadge } from "./versao-badge";
 
-export function Sidebar({ perfil }: { perfil: Perfil }) {
+export function Sidebar({ perfil, versaoInfo }: { perfil: Perfil; versaoInfo: VersaoInfo }) {
   const pathname = usePathname();
 
   const secoesVisiveis = NAV_SECTIONS.map((secao) => ({
@@ -55,6 +57,9 @@ export function Sidebar({ perfil }: { perfil: Perfil }) {
           </AccordionItem>
         ))}
       </Accordion>
+      <div className="mt-auto">
+        <VersaoBadge versaoInfo={versaoInfo} />
+      </div>
     </nav>
   );
 }
