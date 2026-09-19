@@ -1,6 +1,6 @@
 {
   "name": "nx-control-erp",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "scripts": {
     "predev": "tsx scripts/gerar-versao-build.ts",
