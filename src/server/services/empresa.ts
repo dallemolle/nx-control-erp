@@ -8,6 +8,16 @@ import type { EmpresaFormValues } from "@/lib/schemas/empresa";
 export const TAMANHO_MAXIMO_LOGO_BYTES = 1 * 1024 * 1024;
 const TIPOS_LOGO_ACEITOS = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"];
 
+/**
+ * Logo usa um Blob Store público separado do store privado dos anexos de título.
+ * Com dois stores conectados ao projeto, o SDK precisa do storeId explícito pra saber
+ * qual usar via OIDC — na Vercel isso funciona sem nenhum token manual; localmente
+ * requer `vercel link && vercel env pull` uma vez (ver .env.example).
+ */
+function storeIdBlobLogo(): string | undefined {
+  return process.env.BLOB_LOGO_READ_WRITE_TOKEN_STORE_ID;
+}
+
 function validarArquivoLogo(arquivo: File): void {
   if (arquivo.size > TAMANHO_MAXIMO_LOGO_BYTES) {
     throw new Error(`Logo maior que o limite de ${TAMANHO_MAXIMO_LOGO_BYTES / (1024 * 1024)} MB`);
@@ -28,12 +38,13 @@ async function processarLogo(
     validarArquivoLogo(arquivo);
     const blob = await put(`empresas/${empresaId}/logo-${Date.now()}`, arquivo, {
       access: "public",
+      storeId: storeIdBlobLogo(),
     });
-    if (logoUrlAtual) await del(logoUrlAtual).catch(() => {});
+    if (logoUrlAtual) await del(logoUrlAtual, { storeId: storeIdBlobLogo() }).catch(() => {});
     return blob.url;
   }
   if (removerLogo && logoUrlAtual) {
-    await del(logoUrlAtual).catch(() => {});
+    await del(logoUrlAtual, { storeId: storeIdBlobLogo() }).catch(() => {});
     return null;
   }
   return undefined;
