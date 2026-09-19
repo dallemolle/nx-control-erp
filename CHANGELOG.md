@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.4](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.3...nx-control-erp-v0.1.4) (2026-09-19)
+
+
+### Bug Fixes
+
+* logo de empresa usa Blob Store publico separado do de anexos ([c4f3f28](https://github.com/dallemolle/nx-control-erp/commit/c4f3f2836cf19374e9ef36981ad2f26235ecf21b))
+* logo de empresa usa Blob Store publico separado do de anexos ([a47fc31](https://github.com/dallemolle/nx-control-erp/commit/a47fc31ce72e06cb81138fa1632ac7e2e24b6f7d))
+
 ## [0.1.3](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.2...nx-control-erp-v0.1.3) (2026-09-19)
 
 
