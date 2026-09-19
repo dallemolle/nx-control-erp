@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/*": ["src/generated/versao.json", "content/ajuda/passo-a-passo.md", "CHANGELOG.md"],
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "2mb",
+    },
+  },
 };
 
 export default nextConfig;

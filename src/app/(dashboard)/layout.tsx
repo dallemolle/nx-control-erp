@@ -1,9 +1,10 @@
-import type { ReactNode } from "react";
+import type { ReactNode, CSSProperties } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/server/db/client";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { obterVersaoInfo } from "@/lib/versao";
+import { corDeTextoContrastante } from "@/lib/corContraste";
 import { Sidebar } from "./sidebar";
 import { ThemeToggle } from "./theme-toggle";
 import { sair } from "./actions";
@@ -14,9 +15,21 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const filial = await prisma.filial.findUniqueOrThrow({ where: { id: sessao.filialId } });
   const versaoInfo = obterVersaoInfo();
 
+  const estiloSidebar: CSSProperties | undefined = empresa.corPrimaria
+    ? ({
+        "--sidebar": empresa.corPrimaria,
+        "--sidebar-foreground": corDeTextoContrastante(empresa.corPrimaria),
+      } as CSSProperties)
+    : undefined;
+
   return (
     <div className="flex min-h-screen">
-      <Sidebar perfil={sessao.perfil} versaoInfo={versaoInfo} />
+      <Sidebar
+        perfil={sessao.perfil}
+        versaoInfo={versaoInfo}
+        estilo={estiloSidebar}
+        logoUrl={empresa.logoUrl}
+      />
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-app-header-foreground/10 bg-app-header px-6 py-3 text-app-header-foreground">
           <div className="text-sm">

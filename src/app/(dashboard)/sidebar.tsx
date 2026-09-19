@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Perfil } from "@prisma/client";
@@ -10,7 +10,14 @@ import { Accordion, AccordionItem, AccordionPanel, AccordionTrigger } from "@/co
 import { NAV_SECTIONS } from "./nav-items";
 import { VersaoBadge } from "./versao-badge";
 
-export function Sidebar({ perfil, versaoInfo }: { perfil: Perfil; versaoInfo: VersaoInfo }) {
+type SidebarProps = {
+  perfil: Perfil;
+  versaoInfo: VersaoInfo;
+  estilo?: CSSProperties;
+  logoUrl?: string | null;
+};
+
+export function Sidebar({ perfil, versaoInfo, estilo, logoUrl }: SidebarProps) {
   const pathname = usePathname();
 
   const secoesVisiveis = NAV_SECTIONS.map((secao) => ({
@@ -31,10 +38,19 @@ export function Sidebar({ perfil, versaoInfo }: { perfil: Perfil; versaoInfo: Ve
   }, [secaoAtiva]);
 
   return (
-    <nav className="flex w-60 shrink-0 flex-col gap-4 border-r border-sidebar-border bg-sidebar p-4 text-sidebar-foreground">
-      <Link href="/" className="px-2 text-sm font-semibold">
-        NX Control
-      </Link>
+    <nav
+      style={estilo}
+      className="flex w-60 shrink-0 flex-col gap-4 border-r border-sidebar-border bg-sidebar p-4 text-sidebar-foreground"
+    >
+      <div className="flex items-center gap-2 px-2">
+        {logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={logoUrl} alt="" className="size-6 rounded object-contain" />
+        ) : null}
+        <Link href="/" className="text-sm font-semibold">
+          NX Control
+        </Link>
+      </div>
       <Accordion multiple value={abertas} onValueChange={(valor) => setAbertas(valor as string[])}>
         {secoesVisiveis.map((secao) => (
           <AccordionItem key={secao.titulo} value={secao.titulo}>
