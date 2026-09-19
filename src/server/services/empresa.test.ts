@@ -107,7 +107,7 @@ describe("criarEmpresa", () => {
     expect(put).toHaveBeenCalledWith(
       expect.stringContaining(`empresas/${empresa.id}/logo-`),
       arquivo,
-      { access: "public", token: undefined },
+      { access: "public", storeId: undefined },
     );
 
     await prisma.usuarioEmpresaFilial.deleteMany({ where: { usuarioEmpresa: { empresaId: empresa.id } } });
@@ -237,7 +237,7 @@ describe("atualizarEmpresa — cor e logo", () => {
       arquivo,
     );
 
-    expect(del).toHaveBeenCalledWith(antes.logoUrl, { token: undefined });
+    expect(del).toHaveBeenCalledWith(antes.logoUrl, { storeId: undefined });
     const ordemPut = (put as Mock).mock.invocationCallOrder[putChamadasAntes];
     const ordemDel = (del as Mock).mock.invocationCallOrder[delChamadasAntes];
     expect(ordemPut).toBeDefined();
@@ -264,7 +264,7 @@ describe("atualizarEmpresa — cor e logo", () => {
     );
 
     expect(empresa.logoUrl).toBeNull();
-    expect(del).toHaveBeenCalledWith(antes.logoUrl, { token: undefined });
+    expect(del).toHaveBeenCalledWith(antes.logoUrl, { storeId: undefined });
   });
 
   test("arquivo de tipo não aceito é rejeitado, logoUrl não muda", async () => {
