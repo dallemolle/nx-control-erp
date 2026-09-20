@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.6](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.5...nx-control-erp-v0.1.6) (2026-09-20)
+
+
+### Features
+
+* deriva tons de hover/item-ativo da cor da empresa na sidebar ([0ddd2b0](https://github.com/dallemolle/nx-control-erp/commit/0ddd2b0529c4bf87de3c9788a20f4a5883d5c795))
+* deriva tons de hover/item-ativo da cor da empresa na sidebar ([723f337](https://github.com/dallemolle/nx-control-erp/commit/723f33721b2ede3c306e1ffefc9ece858d02a34b))
+
 ## [0.1.5](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.4...nx-control-erp-v0.1.5) (2026-09-19)
 
 
