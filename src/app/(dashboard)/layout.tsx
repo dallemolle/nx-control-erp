@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { prisma } from "@/server/db/client";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { obterVersaoInfo } from "@/lib/versao";
-import { corDeTextoContrastante } from "@/lib/corContraste";
+import { corDeTextoContrastante, tomDestaque } from "@/lib/corContraste";
 import { Sidebar } from "./sidebar";
 import { ThemeToggle } from "./theme-toggle";
 import { sair } from "./actions";
@@ -19,6 +19,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     ? ({
         "--sidebar": empresa.corPrimaria,
         "--sidebar-foreground": corDeTextoContrastante(empresa.corPrimaria),
+        "--sidebar-accent": tomDestaque(empresa.corPrimaria, 8),
+        "--sidebar-accent-foreground": corDeTextoContrastante(tomDestaque(empresa.corPrimaria, 8)),
+        "--sidebar-primary": tomDestaque(empresa.corPrimaria, 16),
+        "--sidebar-primary-foreground": corDeTextoContrastante(tomDestaque(empresa.corPrimaria, 16)),
       } as CSSProperties)
     : undefined;
 
