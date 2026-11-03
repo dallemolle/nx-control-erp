@@ -5,7 +5,7 @@
 > Alvo técnico: repositório `nx-control-erp` (Next.js 16 App Router · TypeScript · Prisma 7 + PostgreSQL · Auth.js v5 · shadcn/ui (base-nova) · Zod 4 · Vitest · Vercel/Neon).
 > Data da análise: 02/11/2026 — baseado no commit `723f337` (branch atual) e nas 17 migrations existentes até `20260918000000_add_identidade_visual_empresa`.
 >
-> **Revisão 1.1 (03/11/2026) — PRÉ-REQUISITO:** implementar antes o recurso de classificação **Fiscal × Gerencial** (`PLANO_IMPLEMENT_FISCAL-GERENCIAL.md`). Este documento passa a usar os enums `ClassificacaoFiscal` e `TipoComprovante`, os campos fiscais de `Titulo`, o `classificacaoFiscalPadrao` de `Cliente`/`Fornecedor` e as funções `validarComprovante`/`resolverClassificacao`/`whereParcelaPorClassificacao` de `src/server/services/classificacaoFiscal.ts`, criados por aquele plano. Os trechos alterados nesta revisão estão marcados com **[FG]**.
+> **Revisão 1.1 (03/11/2026) — PRÉ-REQUISITO:** implementar antes o recurso de classificação **Fiscal × Gerencial** (`PLANO_IMPLEMENTACAO_FISCAL_GERENCIAL.md`). Este documento passa a usar os enums `ClassificacaoFiscal` e `TipoComprovante`, os campos fiscais de `Titulo`, o `classificacaoFiscalPadrao` de `Cliente`/`Fornecedor` e as funções `validarComprovante`/`resolverClassificacao`/`whereParcelaPorClassificacao` de `src/server/services/classificacaoFiscal.ts`, criados por aquele plano. Os trechos alterados nesta revisão estão marcados com **[FG]**.
 
 **Antes de escrever qualquer código, o Claude Code deve:**
 
@@ -1245,7 +1245,7 @@ Validação de não-regressão obrigatória antes do merge: `npm run lint`, `npm
 
 ### 6.0 Preparação
 
-- [ ] 6.0.0 **[FG]** Confirmar que `PLANO_IMPLEMENT_FISCAL-GERENCIAL.md` está implementado e em produção/staging (migration `add_classificacao_fiscal` aplicada, `src/server/services/classificacaoFiscal.ts` existente). Se não estiver, parar e implementá-lo primeiro.
+- [ ] 6.0.0 **[FG]** Confirmar que `PLANO_IMPLEMENTACAO_FISCAL_GERENCIAL.md` está implementado e em produção/staging (migration `add_classificacao_fiscal` aplicada, `src/server/services/classificacaoFiscal.ts` existente). Se não estiver, parar e implementá-lo primeiro.
 - [ ] 6.0.1 Ler `AGENTS.md`, `docs/fases/fase-1-fundacao.md` (arquitetura/padrões), `node_modules/next/dist/docs/01-app` (rotas dinâmicas, Server Actions, `params` Promise).
 - [ ] 6.0.2 Ler os arquivos-modelo: `cadastros/safras/*`, `server/services/safra.ts`, `server/services/titulo.ts`, `server/services/baixa.ts` (transação), `financeiro/_titulos/*` (listas dinâmicas, filtros URL), `financeiro/contas-a-receber/export/route.ts`, `api/v1/titulos/route.ts` + `.test.ts`, `server/services/financeiroTestFixtures.ts`.
 - [ ] 6.0.3 `docker compose up -d && npm install && npm run db:migrate && npm run test` — registrar a linha de base (todos verdes).
