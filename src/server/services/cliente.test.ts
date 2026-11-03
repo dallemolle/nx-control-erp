@@ -3,7 +3,7 @@ import { prisma } from "@/server/db/client";
 import { criarCliente, atualizarCliente } from "./cliente";
 import { FilialSomenteLeituraError } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
-import type { ClienteFormValues } from "@/lib/schemas/cliente";
+import { clienteSchema, type ClienteFormValues } from "@/lib/schemas/cliente";
 
 describe("cliente - permissão de alteração por filial", () => {
   let empresaId: string;
@@ -121,7 +121,6 @@ describe("cliente - dados bancários", () => {
   });
 
   test("PIX sem chave falha na validação do schema", async () => {
-    const { clienteSchema } = await import("@/lib/schemas/cliente");
     const resultado = clienteSchema.safeParse({
       ...dadosBase,
       meioPagamento: "PIX",

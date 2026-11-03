@@ -3,7 +3,7 @@ import { prisma } from "@/server/db/client";
 import { criarFornecedor, atualizarFornecedor } from "./fornecedor";
 import { FilialSomenteLeituraError } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
-import type { FornecedorFormValues } from "@/lib/schemas/fornecedor";
+import { fornecedorSchema, type FornecedorFormValues } from "@/lib/schemas/fornecedor";
 
 describe("fornecedor - permissão de alteração por filial", () => {
   let empresaId: string;
@@ -121,7 +121,6 @@ describe("fornecedor - dados bancários", () => {
   });
 
   test("PIX sem chave falha na validação do schema", async () => {
-    const { fornecedorSchema } = await import("@/lib/schemas/fornecedor");
     const resultado = fornecedorSchema.safeParse({
       ...dadosBase,
       meioPagamento: "PIX",
