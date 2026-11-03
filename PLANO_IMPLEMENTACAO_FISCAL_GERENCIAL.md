@@ -188,7 +188,7 @@ model Titulo {
 
 model LancamentoBancario {
   // ...campos existentes inalterados...
-  classificacaoFiscal ClassificacaoFiscal?   // null apenas para TRANSFERENCIA
+  classificacaoFiscal ClassificacaoFiscal? @default(FISCAL)   // null apenas para TRANSFERENCIA
   tipoComprovante     TipoComprovante?
   numeroComprovante   String?
 
@@ -217,6 +217,7 @@ Correspondência com os campos sugeridos no pedido:
 Decisões de modelagem:
 
 - **Colunas no próprio `Titulo`** (e não tabela 1:1): ~10 consultas de fluxo/orçamento/dashboard filtram por elas; uma tabela à parte obrigaria join em todas. Com default/nullable, nenhum `create`/`select` existente quebra.
+- **`LancamentoBancario.classificacaoFiscal` é nullable com `@default(FISCAL)`** (corrigido na implementação): sem o default, a CHECK `lancamentos_classificacao_chk` faria falhar todo código que cria lançamento sem informar a classificação, inclusive o código em produção no intervalo entre a migration e o deploy e as fixtures de teste (47 testes quebraram na 1ª tentativa). Com o default, só `criarTransferencia` precisa gravar `null` explicitamente.
 - **Cópia em `LancamentoBancario.classificacaoFiscal`**: as consultas de realizado fazem `groupBy` direto em `lancamentos_bancarios`; derivar via `baixa → parcela → titulo` impediria o `groupBy`. A consistência é garantida na aprovação da baixa e na reclassificação (1.4).
 - **Uma nota → um título** (com N parcelas). Unicidade da chave por filial é verificada no service (índice simples, não único: índice parcial não é representável no Prisma e acusaria *drift*).
 - Regime tributário / inscrição estadual da contraparte **não** entram agora (não são necessários para a classificação); ficam para o módulo de Vendas/NF-e, se houver emissão (seção 5).
@@ -228,7 +229,7 @@ Decisões de modelagem:
 ```sql
 -- (gerado) CREATE TYPE "ClassificacaoFiscal" ...; CREATE TYPE "TipoComprovante" ...;
 -- (gerado) ALTER TABLE "titulos" ADD COLUMN "classificacaoFiscal" "ClassificacaoFiscal" NOT NULL DEFAULT 'FISCAL', ADD COLUMN ...;
--- (gerado) ALTER TABLE "lancamentos_bancarios" ADD COLUMN "classificacaoFiscal" "ClassificacaoFiscal", ...;
+-- (gerado) ALTER TABLE "lancamentos_bancarios" ADD COLUMN "classificacaoFiscal" "ClassificacaoFiscal" DEFAULT 'FISCAL', ...;
 -- (gerado) ALTER TABLE "clientes" ADD COLUMN "classificacaoFiscalPadrao" "ClassificacaoFiscal";
 -- (gerado) ALTER TABLE "fornecedores" ADD COLUMN "classificacaoFiscalPadrao" "ClassificacaoFiscal";
 -- (gerado) CREATE INDEX ...
@@ -241,8 +242,8 @@ UPDATE "lancamentos_bancarios" l
   JOIN "titulos"  t ON t."id" = p."tituloId"
  WHERE l."baixaId" = b."id";
 
-UPDATE "lancamentos_bancarios" SET "classificacaoFiscal" = 'FISCAL'
- WHERE "classificacaoFiscal" IS NULL AND "origem" <> 'TRANSFERENCIA';
+UPDATE "lancamentos_bancarios" SET "classificacaoFiscal" = NULL
+ WHERE "origem" = 'TRANSFERENCIA';
 
 -- Integridade
 ALTER TABLE "lancamentos_bancarios" ADD CONSTRAINT "lancamentos_classificacao_chk"
@@ -488,15 +489,15 @@ O `DOCTO_IMPLEMENT_PROD-VEND.md` (Revisão 1.1) já foi ajustado para essas depe
 
 ### 1. `[ ] Banco de Dados & Migrations`
 
-- [ ] 1.1 Adicionar enums `ClassificacaoFiscal` e `TipoComprovante` ao `schema.prisma` (2.1).
-- [ ] 1.2 Adicionar campos e índices em `Titulo`, `LancamentoBancario`, `Cliente`, `Fornecedor` (2.2).
-- [ ] 1.3 `npx prisma migrate dev --name add_classificacao_fiscal --create-only`.
-- [ ] 1.4 Revisar o SQL: só `CREATE TYPE`, `ADD COLUMN`, `CREATE INDEX`; nada de `DROP`/`ALTER COLUMN`/`RENAME`/`SET NOT NULL` em coluna existente.
-- [ ] 1.5 Acrescentar ao final o backfill e as CHECKs (2.3).
-- [ ] 1.6 `npm run db:migrate && npm run db:generate`.
-- [ ] 1.7 `npm run build && npm run test`: **suíte existente 100% verde sem alterar nenhum teste**.
-- [ ] 1.8 Conferir no banco de dev: `SELECT "classificacaoFiscal", "origem", count(*) FROM lancamentos_bancarios GROUP BY 1,2` (transferências = NULL; demais preenchidos) e `SELECT count(*) FROM titulos WHERE "classificacaoFiscal" IS NULL` = 0.
-- [ ] 1.9 Commit `feat(db): classificação fiscal × gerencial (migration aditiva)`.
+- [x] 1.1 Adicionar enums `ClassificacaoFiscal` e `TipoComprovante` ao `schema.prisma` (2.1).
+- [x] 1.2 Adicionar campos e índices em `Titulo`, `LancamentoBancario`, `Cliente`, `Fornecedor` (2.2).
+- [x] 1.3 `npx prisma migrate dev --name add_classificacao_fiscal --create-only`.
+- [x] 1.4 Revisar o SQL: só `CREATE TYPE`, `ADD COLUMN`, `CREATE INDEX`; nada de `DROP`/`ALTER COLUMN`/`RENAME`/`SET NOT NULL` em coluna existente.
+- [x] 1.5 Acrescentar ao final o backfill e as CHECKs (2.3).
+- [x] 1.6 `npm run db:migrate && npm run db:generate`.
+- [x] 1.7 `tsc --noEmit && npm run test`: **suíte existente 100% verde sem alterar nenhum teste** (499/499).
+- [x] 1.8 Conferido no banco de dev: 17 títulos e 18 lançamentos (15 manuais, 3 de baixa) ficaram FISCAL; não havia transferências.
+- [x] 1.9 Commit `feat(db): classificação fiscal × gerencial (migration aditiva)`.
 
 ### 2. `[ ] Backend (Tipos, DTOs, Services, Routes)`
 
