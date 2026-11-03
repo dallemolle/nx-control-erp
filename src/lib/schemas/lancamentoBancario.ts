@@ -1,18 +1,46 @@
 import { z } from "zod";
-import { TIPO_LANCAMENTO, SEM_VALOR } from "./enums";
+import { CLASSIFICACAO_FISCAL, TIPO_COMPROVANTE, TIPO_LANCAMENTO, SEM_VALOR } from "./enums";
+import { grupoDoComprovante } from "@/lib/classificacaoFiscal";
 
-export const lancamentoManualSchema = z.object({
-  contaBancariaId: z.string().trim().min(1, "Selecione a conta bancária"),
-  data: z.coerce.date(),
-  tipo: z.enum(TIPO_LANCAMENTO),
-  valor: z.coerce.number().positive("Informe um valor maior que zero"),
-  descricao: z.string().trim().min(2, "Informe uma descrição"),
-  categoriaFinanceiraId: z.string().trim().optional().or(z.literal(SEM_VALOR)),
-  centroCustoId: z.string().trim().optional().or(z.literal(SEM_VALOR)),
-  centroLucroId: z.string().trim().optional().or(z.literal(SEM_VALOR)),
-  safraId: z.string().trim().optional().or(z.literal(SEM_VALOR)),
-  projetoId: z.string().trim().optional().or(z.literal(SEM_VALOR)),
-});
+/** Classificação + comprovante de um lançamento avulso (manual ou criado na conciliação). */
+export const camposClassificacaoLancamento = {
+  // Opcional (não `.default`) para não exigir o campo de quem já chama os services; o
+  // service aplica FISCAL quando omitido.
+  classificacaoFiscal: z.enum(CLASSIFICACAO_FISCAL).optional(),
+  tipoComprovante: z.enum(TIPO_COMPROVANTE).optional().or(z.literal(SEM_VALOR)).or(z.literal("")),
+  numeroComprovante: z.string().trim().optional().or(z.literal("")),
+};
+
+export function refinarComprovanteDoLancamento(
+  dados: { classificacaoFiscal?: (typeof CLASSIFICACAO_FISCAL)[number]; tipoComprovante?: string },
+  ctx: z.RefinementCtx,
+) {
+  const tipo = dados.tipoComprovante;
+  if (!tipo || tipo === SEM_VALOR) return;
+  if (grupoDoComprovante(tipo as (typeof TIPO_COMPROVANTE)[number]) !== (dados.classificacaoFiscal ?? "FISCAL")) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["tipoComprovante"],
+      message: "Tipo de comprovante não combina com a classificação",
+    });
+  }
+}
+
+export const lancamentoManualSchema = z
+  .object({
+    contaBancariaId: z.string().trim().min(1, "Selecione a conta bancária"),
+    data: z.coerce.date(),
+    tipo: z.enum(TIPO_LANCAMENTO),
+    valor: z.coerce.number().positive("Informe um valor maior que zero"),
+    descricao: z.string().trim().min(2, "Informe uma descrição"),
+    categoriaFinanceiraId: z.string().trim().optional().or(z.literal(SEM_VALOR)),
+    centroCustoId: z.string().trim().optional().or(z.literal(SEM_VALOR)),
+    centroLucroId: z.string().trim().optional().or(z.literal(SEM_VALOR)),
+    safraId: z.string().trim().optional().or(z.literal(SEM_VALOR)),
+    projetoId: z.string().trim().optional().or(z.literal(SEM_VALOR)),
+    ...camposClassificacaoLancamento,
+  })
+  .superRefine(refinarComprovanteDoLancamento);
 export type LancamentoManualFormValues = z.infer<typeof lancamentoManualSchema>;
 
 export const transferenciaSchema = z

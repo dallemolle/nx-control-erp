@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 import { PermissionError, FilialSomenteLeituraError } from "@/server/auth/permissions";
 import { ApiAuthError, requireSessaoApi } from "./sessaoApi";
+import { ErroClassificacaoFiscal } from "@/server/services/classificacaoFiscal";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 
 export class ErroValidacaoApi extends Error {
@@ -28,7 +29,7 @@ export async function executarRotaApi(
     if (erro instanceof PermissionError || erro instanceof FilialSomenteLeituraError) {
       return Response.json({ erro: erro.message }, { status: 403 });
     }
-    if (erro instanceof ErroValidacaoApi) {
+    if (erro instanceof ErroValidacaoApi || erro instanceof ErroClassificacaoFiscal) {
       return Response.json({ erro: erro.message, campos: erro.campos }, { status: 422 });
     }
     if (erro instanceof ZodError) {

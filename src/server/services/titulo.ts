@@ -3,8 +3,13 @@ import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permiss
 import { registrarAuditoria, type ClientePrisma } from "@/server/audit/registrar";
 import { recalcularEPersistirStatusParcela, calcularStatusParcela } from "@/server/services/parcela";
 import { SEM_VALOR } from "@/lib/schemas/enums";
+import {
+  ErroClassificacaoFiscal,
+  garantirComprovanteValido,
+  resolverClassificacao,
+} from "@/server/services/classificacaoFiscal";
 import type { SessaoAtiva } from "@/server/auth/sessao";
-import type { StatusParcela, TipoTitulo } from "@prisma/client";
+import type { ClassificacaoFiscal, StatusParcela, TipoComprovante, TipoTitulo } from "@prisma/client";
 import type { TituloFormValues, TituloHeaderFormValues } from "@/lib/schemas/titulo";
 
 export type FiltroTitulos = {
@@ -17,6 +22,7 @@ export type FiltroTitulos = {
   status?: StatusParcela;
   vencimentoDe?: Date;
   vencimentoAte?: Date;
+  classificacao?: ClassificacaoFiscal;
 };
 
 export function parcelaBateFiltroDeParcela(
@@ -62,6 +68,66 @@ function camposNormalizados(tipo: TipoTitulo, dados: TituloHeaderFormValues) {
   };
 }
 
+/** Dados do documento fiscal já normalizados, para a classificação já resolvida. */
+function camposFiscaisNormalizados(dados: TituloHeaderFormValues, classificacaoFiscal: ClassificacaoFiscal) {
+  return {
+    classificacaoFiscal,
+    tipoComprovante: normalizarOpcional(dados.tipoComprovante) as TipoComprovante | null,
+    numeroDocumentoFiscal: normalizarOpcional(dados.numeroDocumentoFiscal),
+    serieDocumentoFiscal: normalizarOpcional(dados.serieDocumentoFiscal),
+    chaveAcesso: normalizarOpcional(dados.chaveAcesso),
+    dataEmissaoDocumentoFiscal: dados.dataEmissaoDocumentoFiscal instanceof Date ? dados.dataEmissaoDocumentoFiscal : null,
+    // Motivo de "sem nota" só faz sentido no gerencial.
+    motivoSemDocumento: classificacaoFiscal === "GERENCIAL" ? normalizarOpcional(dados.motivoSemDocumento) : null,
+  };
+}
+
+type CamposFiscais = ReturnType<typeof camposFiscaisNormalizados>;
+
+/**
+ * Impede lançar a mesma nota duas vezes na filial: pela chave de acesso, ou por
+ * contraparte + tipo + série + número. Títulos inativos não contam.
+ */
+async function garantirNotaNaoDuplicada(
+  db: ClientePrisma,
+  filialId: string,
+  tipo: TipoTitulo,
+  contraparteId: string,
+  fiscais: CamposFiscais,
+  tituloIdIgnorado?: string,
+): Promise<void> {
+  const base = { filialId, ativo: true, ...(tituloIdIgnorado && { id: { not: tituloIdIgnorado } }) };
+
+  if (fiscais.chaveAcesso) {
+    const existente = await db.titulo.findFirst({
+      where: { ...base, chaveAcesso: fiscais.chaveAcesso },
+      select: { documento: true },
+    });
+    if (existente) {
+      throw new ErroClassificacaoFiscal(`Esta nota já está lançada no título ${existente.documento}`, ["chaveAcesso"]);
+    }
+  }
+
+  if (fiscais.numeroDocumentoFiscal && fiscais.tipoComprovante) {
+    const existente = await db.titulo.findFirst({
+      where: {
+        ...base,
+        ...contraparteCampo(tipo, contraparteId),
+        tipoComprovante: fiscais.tipoComprovante,
+        serieDocumentoFiscal: fiscais.serieDocumentoFiscal,
+        numeroDocumentoFiscal: fiscais.numeroDocumentoFiscal,
+      },
+      select: { documento: true },
+    });
+    if (existente) {
+      throw new ErroClassificacaoFiscal(
+        `Esta nota (mesmo número e série) já está lançada para esta contraparte no título ${existente.documento}`,
+        ["numeroDocumentoFiscal"],
+      );
+    }
+  }
+}
+
 /**
  * Garante que todo id referenciado pelo título pertence à filial/empresa da sessão.
  * A FK do banco só prova que a linha existe em *alguma* filial — sem esta checagem
@@ -72,7 +138,7 @@ export async function validarReferenciasDoTitulo(
   tipo: TipoTitulo,
   dados: TituloHeaderFormValues,
   db: ClientePrisma = prisma,
-): Promise<void> {
+): Promise<{ classificacaoFiscalPadrao: ClassificacaoFiscal | null }> {
   const campos = camposNormalizados(tipo, dados);
   const filialId = sessao.filialId;
 
@@ -112,6 +178,8 @@ export async function validarReferenciasDoTitulo(
       `${tipo === "PAGAR" ? "Fornecedor" : "Cliente"} não pertence à empresa ativa`,
     );
   }
+
+  return { classificacaoFiscalPadrao: contraparte.classificacaoFiscalPadrao };
 }
 
 export async function listarTitulos(filialId: string, tipo: TipoTitulo, filtros: FiltroTitulos = {}) {
@@ -126,8 +194,10 @@ export async function listarTitulos(filialId: string, tipo: TipoTitulo, filtros:
       ...(filtros.centroLucroId && { centroLucroId: filtros.centroLucroId }),
       ...(filtros.safraId && { safraId: filtros.safraId }),
       ...(filtros.projetoId && { projetoId: filtros.projetoId }),
+      ...(filtros.classificacao && { classificacaoFiscal: filtros.classificacao }),
     },
     include: {
+      _count: { select: { anexos: true } },
       fornecedor: true,
       cliente: true,
       categoriaFinanceira: true,
@@ -190,13 +260,19 @@ export async function criarTitulo(
   requirePermission(sessao.perfil, "titulo:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
-  await validarReferenciasDoTitulo(sessao, tipo, dados, db);
+  const { classificacaoFiscalPadrao } = await validarReferenciasDoTitulo(sessao, tipo, dados, db);
+
+  const classificacaoFiscal = resolverClassificacao(dados.classificacaoFiscal || undefined, classificacaoFiscalPadrao);
+  const fiscais = camposFiscaisNormalizados(dados, classificacaoFiscal);
+  garantirComprovanteValido(fiscais);
+  await garantirNotaNaoDuplicada(db, sessao.filialId, tipo, dados.contraparteId, fiscais);
 
   const titulo = await db.titulo.create({
     data: {
       filialId: sessao.filialId,
       tipo,
       ...camposNormalizados(tipo, dados),
+      ...fiscais,
       parcelas: {
         create: dados.parcelas.map((parcela) => ({
           numero: parcela.numero,
@@ -218,7 +294,7 @@ export async function criarTitulo(
       entidadeId: titulo.id,
       acao: "CRIAR",
       anterior: null,
-      novo: { tipo, documento: dados.documento, parcelas: titulo.parcelas.length },
+      novo: { tipo, documento: dados.documento, parcelas: titulo.parcelas.length, classificacaoFiscal },
     },
     db,
   );
@@ -236,36 +312,96 @@ export async function atualizarTitulo(sessao: SessaoAtiva, id: string, dados: Ti
 
   const campos = camposNormalizados(anterior.tipo, dados);
 
-  const titulo = await prisma.titulo.update({ where: { id }, data: campos });
+  // Na edição, a contraparte não reclassifica sozinha: sem classificação informada, mantém a atual.
+  const classificacaoFiscal = dados.classificacaoFiscal || anterior.classificacaoFiscal;
+  const reclassificou = classificacaoFiscal !== anterior.classificacaoFiscal;
+  const motivoReclassificacao = normalizarOpcional(dados.motivoReclassificacao);
+  if (reclassificou && !motivoReclassificacao) {
+    throw new ErroClassificacaoFiscal("Informe o motivo da reclassificação", ["motivoReclassificacao"]);
+  }
 
-  await registrarAuditoria({
-    empresaId: sessao.empresaId,
-    filialId: sessao.filialId,
-    usuarioId: sessao.usuarioId,
-    entidade: "Titulo",
-    entidadeId: id,
-    acao: "ATUALIZAR",
-    // `anterior` e `novo` precisam estar na MESMA forma (fornecedorId/clienteId e
-    // `null` nos opcionais vazios), senão o diff acusa alteração em todo campo a
-    // cada edição — mesmo quando nada mudou.
-    anterior: {
-      fornecedorId: anterior.fornecedorId,
-      clienteId: anterior.clienteId,
-      documento: anterior.documento,
-      dataEmissao: anterior.dataEmissao,
-      dataCompetencia: anterior.dataCompetencia,
-      categoriaFinanceiraId: anterior.categoriaFinanceiraId,
-      centroCustoId: anterior.centroCustoId,
-      centroLucroId: anterior.centroLucroId,
-      safraId: anterior.safraId,
-      projetoId: anterior.projetoId,
-      contaBancariaId: anterior.contaBancariaId,
-      formaPagamento: anterior.formaPagamento,
-    },
-    novo: campos,
+  // Campo fiscal ausente (undefined) mantém o valor gravado — quem não conhece os
+  // campos novos não os apaga sem querer. Campo enviado vazio ("") limpa.
+  const fiscaisInformados = camposFiscaisNormalizados(dados, classificacaoFiscal);
+  const fiscais: CamposFiscais = {
+    ...fiscaisInformados,
+    tipoComprovante: dados.tipoComprovante === undefined ? anterior.tipoComprovante : fiscaisInformados.tipoComprovante,
+    numeroDocumentoFiscal:
+      dados.numeroDocumentoFiscal === undefined ? anterior.numeroDocumentoFiscal : fiscaisInformados.numeroDocumentoFiscal,
+    serieDocumentoFiscal:
+      dados.serieDocumentoFiscal === undefined ? anterior.serieDocumentoFiscal : fiscaisInformados.serieDocumentoFiscal,
+    chaveAcesso: dados.chaveAcesso === undefined ? anterior.chaveAcesso : fiscaisInformados.chaveAcesso,
+    dataEmissaoDocumentoFiscal:
+      dados.dataEmissaoDocumentoFiscal === undefined
+        ? anterior.dataEmissaoDocumentoFiscal
+        : fiscaisInformados.dataEmissaoDocumentoFiscal,
+    motivoSemDocumento:
+      dados.motivoSemDocumento === undefined && classificacaoFiscal === "GERENCIAL"
+        ? anterior.motivoSemDocumento
+        : fiscaisInformados.motivoSemDocumento,
+  };
+  garantirComprovanteValido(fiscais);
+  await garantirNotaNaoDuplicada(prisma, sessao.filialId, anterior.tipo, dados.contraparteId, fiscais, id);
+
+  const mudouDadosDosLancamentos =
+    reclassificou ||
+    fiscais.tipoComprovante !== anterior.tipoComprovante ||
+    fiscais.numeroDocumentoFiscal !== anterior.numeroDocumentoFiscal;
+
+  return prisma.$transaction(async (tx) => {
+    const titulo = await tx.titulo.update({ where: { id }, data: { ...campos, ...fiscais } });
+
+    // Lançamentos das baixas já aprovadas acompanham o título (cópia usada nos relatórios de realizado).
+    if (mudouDadosDosLancamentos) {
+      await tx.lancamentoBancario.updateMany({
+        where: { baixa: { parcela: { tituloId: id } } },
+        data: {
+          classificacaoFiscal: fiscais.classificacaoFiscal,
+          tipoComprovante: fiscais.tipoComprovante,
+          numeroComprovante: fiscais.numeroDocumentoFiscal,
+        },
+      });
+    }
+
+    await registrarAuditoria(
+      {
+        empresaId: sessao.empresaId,
+        filialId: sessao.filialId,
+        usuarioId: sessao.usuarioId,
+        entidade: "Titulo",
+        entidadeId: id,
+        acao: reclassificou ? "RECLASSIFICAR" : "ATUALIZAR",
+        // `anterior` e `novo` precisam estar na MESMA forma (fornecedorId/clienteId e
+        // `null` nos opcionais vazios), senão o diff acusa alteração em todo campo a
+        // cada edição — mesmo quando nada mudou.
+        anterior: {
+          fornecedorId: anterior.fornecedorId,
+          clienteId: anterior.clienteId,
+          documento: anterior.documento,
+          dataEmissao: anterior.dataEmissao,
+          dataCompetencia: anterior.dataCompetencia,
+          categoriaFinanceiraId: anterior.categoriaFinanceiraId,
+          centroCustoId: anterior.centroCustoId,
+          centroLucroId: anterior.centroLucroId,
+          safraId: anterior.safraId,
+          projetoId: anterior.projetoId,
+          contaBancariaId: anterior.contaBancariaId,
+          formaPagamento: anterior.formaPagamento,
+          classificacaoFiscal: anterior.classificacaoFiscal,
+          tipoComprovante: anterior.tipoComprovante,
+          numeroDocumentoFiscal: anterior.numeroDocumentoFiscal,
+          serieDocumentoFiscal: anterior.serieDocumentoFiscal,
+          chaveAcesso: anterior.chaveAcesso,
+          dataEmissaoDocumentoFiscal: anterior.dataEmissaoDocumentoFiscal,
+          motivoSemDocumento: anterior.motivoSemDocumento,
+        },
+        novo: { ...campos, ...fiscais, ...(reclassificou && { motivoReclassificacao }) },
+      },
+      tx,
+    );
+
+    return titulo;
   });
-
-  return titulo;
 }
 
 export async function alterarVencimentoParcela(sessao: SessaoAtiva, parcelaId: string, novoVencimento: Date) {

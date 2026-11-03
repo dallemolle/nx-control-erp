@@ -9,6 +9,12 @@ import type {
   SaldoBancarioFormValues,
 } from "@/lib/schemas/lancamentoBancario";
 import { SEM_VALOR } from "@/lib/schemas/enums";
+import {
+  garantirComprovanteValido,
+  whereLancamentoPorClassificacao,
+  type FiltroClassificacao,
+} from "@/server/services/classificacaoFiscal";
+import type { TipoComprovante } from "@prisma/client";
 
 function normalizarOpcional<T extends string>(valor: T | typeof SEM_VALOR | undefined): T | null {
   return valor && valor.length > 0 && valor !== SEM_VALOR ? valor : null;
@@ -58,9 +64,9 @@ async function validarDimensoesDaFilial(
   }
 }
 
-export async function listarLancamentos(filialId: string) {
+export async function listarLancamentos(filialId: string, opcoes: { classificacao?: FiltroClassificacao } = {}) {
   return prisma.lancamentoBancario.findMany({
-    where: { filialId },
+    where: { filialId, ...whereLancamentoPorClassificacao(opcoes.classificacao) },
     include: { contaBancaria: { include: { banco: true } } },
     orderBy: { data: "desc" },
   });
@@ -116,6 +122,10 @@ export async function criarLancamentoManual(sessao: SessaoAtiva, dados: Lancamen
   const projetoId = normalizarOpcional(dados.projetoId);
   await validarDimensoesDaFilial(sessao.filialId, { centroCustoId, centroLucroId, safraId, projetoId });
 
+  const classificacaoFiscal = dados.classificacaoFiscal ?? "FISCAL";
+  const tipoComprovante = normalizarOpcional(dados.tipoComprovante) as TipoComprovante | null;
+  garantirComprovanteValido({ classificacaoFiscal, tipoComprovante });
+
   const dadosNormalizados = {
     filialId: sessao.filialId,
     contaBancariaId: dados.contaBancariaId,
@@ -129,6 +139,9 @@ export async function criarLancamentoManual(sessao: SessaoAtiva, dados: Lancamen
     centroLucroId,
     safraId,
     projetoId,
+    classificacaoFiscal,
+    tipoComprovante,
+    numeroComprovante: normalizarOpcional(dados.numeroComprovante),
     usuarioId: sessao.usuarioId,
   };
 
@@ -168,6 +181,8 @@ export async function criarTransferencia(sessao: SessaoAtiva, dados: Transferenc
         descricao: dados.descricao,
         origem: "TRANSFERENCIA",
         transferenciaId,
+        // Transferência não é receita nem despesa: fica fora dos filtros Fiscal/Gerencial.
+        classificacaoFiscal: null,
         usuarioId: sessao.usuarioId,
       },
     }),
@@ -181,6 +196,7 @@ export async function criarTransferencia(sessao: SessaoAtiva, dados: Transferenc
         descricao: dados.descricao,
         origem: "TRANSFERENCIA",
         transferenciaId,
+        classificacaoFiscal: null,
         usuarioId: sessao.usuarioId,
       },
     }),
