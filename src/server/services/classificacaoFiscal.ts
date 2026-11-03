@@ -38,6 +38,11 @@ export function whereLancamentoPorClassificacao(
   return classificacao ? { classificacaoFiscal: classificacao } : {};
 }
 
+/** Filtro de `titulo` por classificação (para compor com outros filtros de título); `undefined` = todos. */
+export function whereTituloPorClassificacao(classificacao: FiltroClassificacao): Prisma.TituloWhereInput {
+  return classificacao ? { classificacaoFiscal: classificacao } : {};
+}
+
 /** Filtro de `parcela` pela classificação do título; `undefined` = todos (consulta inalterada). */
 export function whereParcelaPorClassificacao(classificacao: FiltroClassificacao): Prisma.ParcelaWhereInput {
   return classificacao ? { titulo: { classificacaoFiscal: classificacao } } : {};

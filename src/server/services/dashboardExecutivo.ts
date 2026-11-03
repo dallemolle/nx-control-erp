@@ -4,6 +4,7 @@ import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { StatusParcela } from "@prisma/client";
 import { buscarSaldoEmCaixaAte, fimDoDiaUTC } from "./fluxoDeCaixa";
 import { saldoRemanescenteParcela } from "./fluxoDeCaixaProjetado";
+import { buscarPendenciasFiscaisDaFilial, percentualGerencial } from "./relatorioFiscalGerencial";
 
 export type IndicadoresExecutivos = {
   caixaDisponivel: number;
@@ -237,4 +238,58 @@ export async function buscarGraficosExecutivos(sessao: SessaoAtiva): Promise<Gra
   const aging = await buscarAgingConsolidado(filiais, inicioDeHoje);
 
   return { entradasSaidas, evolucaoSaldo, aging };
+}
+
+export type ResumoFiscalGerencial = {
+  entradasFiscal: number;
+  entradasGerencial: number;
+  saidasFiscal: number;
+  saidasGerencial: number;
+  percentualGerencialEntradas: number | null;
+  pendenciasFiscais: number;
+};
+
+/**
+ * Bloco "Fiscal × gerencial" do mês corrente, consolidado por empresa — mesmo
+ * escopo e permissão dos demais indicadores. Transferências (sem
+ * classificação) não entram.
+ */
+export async function buscarResumoFiscalGerencial(sessao: SessaoAtiva): Promise<ResumoFiscalGerencial> {
+  requirePermission(sessao.perfil, "dashboardExecutivo:ler");
+
+  const filiais = await prisma.filial.findMany({ where: { empresaId: sessao.empresaId }, select: { id: true } });
+  const hoje = new Date();
+  const inicioMesAtual = inicioDoMes(hoje.getUTCFullYear(), hoje.getUTCMonth() + 1);
+
+  const resumo = { entradasFiscal: 0, entradasGerencial: 0, saidasFiscal: 0, saidasGerencial: 0, pendenciasFiscais: 0 };
+
+  for (const filial of filiais) {
+    const somas = await prisma.lancamentoBancario.groupBy({
+      by: ["tipo", "classificacaoFiscal"],
+      where: {
+        filialId: filial.id,
+        conciliado: true,
+        classificacaoFiscal: { not: null },
+        data: { gte: inicioMesAtual, lte: hoje },
+        contaBancaria: { ativo: true },
+      },
+      _sum: { valor: true },
+    });
+    for (const soma of somas) {
+      const valor = Number(soma._sum.valor ?? 0);
+      const gerencial = soma.classificacaoFiscal === "GERENCIAL";
+      if (soma.tipo === "ENTRADA") {
+        if (gerencial) resumo.entradasGerencial += valor;
+        else resumo.entradasFiscal += valor;
+      } else if (gerencial) resumo.saidasGerencial += valor;
+      else resumo.saidasFiscal += valor;
+    }
+
+    resumo.pendenciasFiscais += (await buscarPendenciasFiscaisDaFilial(filial.id)).length;
+  }
+
+  return {
+    ...resumo,
+    percentualGerencialEntradas: percentualGerencial(resumo.entradasFiscal, resumo.entradasGerencial),
+  };
 }
