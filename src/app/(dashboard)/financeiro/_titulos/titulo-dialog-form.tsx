@@ -12,16 +12,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { TipoTitulo } from "@prisma/client";
+import type { ClassificacaoFiscal, TipoTitulo } from "@prisma/client";
 import { SEM_VALOR } from "@/lib/schemas/enums";
 import { criarTituloAction, atualizarTituloAction, type FormState } from "./actions";
+import { SecaoDocumentoFiscal, type DocumentoFiscalEditavel } from "./secao-documento-fiscal";
 
 type Opcao = { id: string; nome: string };
+
+/** Fornecedor/cliente com a classificação padrão que pré-preenche títulos novos. */
+type OpcaoContraparte = Opcao & { classificacaoFiscalPadrao?: ClassificacaoFiscal | null };
 
 type ParcelaLinha = { numero: number; dataVencimento: string; valorOriginal: string };
 
 /** Cabeçalho do título já achatado para o formulário (ver `tituloParaFormulario`). */
-export type TituloEditavel = {
+export type TituloEditavel = DocumentoFiscalEditavel & {
   id: string;
   contraparteId: string;
   documento: string;
@@ -60,7 +64,7 @@ export function TituloDialogForm({
 }: {
   tipo: TipoTitulo;
   titulo?: TituloEditavel;
-  contrapartes: Opcao[];
+  contrapartes: OpcaoContraparte[];
   categorias: Opcao[];
   centrosCusto: Opcao[];
   centrosLucro: Opcao[];
@@ -77,9 +81,24 @@ export function TituloDialogForm({
     { numero: 1, dataVencimento: "", valorOriginal: "" },
   ]);
 
+  const [classificacao, setClassificacao] = useState<ClassificacaoFiscal>(titulo?.classificacaoFiscal ?? "FISCAL");
+
   useEffect(() => {
     if (state.sucesso) setAberto(false);
   }, [state.sucesso]);
+
+  function aoAbrirOuFechar(abrir: boolean) {
+    // Cada abertura parte da classificação gravada (edição) ou de FISCAL (criação).
+    if (abrir) setClassificacao(titulo?.classificacaoFiscal ?? "FISCAL");
+    setAberto(abrir);
+  }
+
+  /** Na criação, o padrão do fornecedor/cliente pré-seleciona a classificação. Na edição, não reclassifica sozinho. */
+  function aoEscolherContraparte(contraparteId: string | null) {
+    if (titulo) return;
+    const padrao = contrapartes.find((opcao) => opcao.id === contraparteId)?.classificacaoFiscalPadrao;
+    if (padrao) setClassificacao(padrao);
+  }
 
   function adicionarParcela() {
     setParcelas((atual) => [...atual, { numero: atual.length + 1, dataVencimento: "", valorOriginal: "" }]);
@@ -90,11 +109,11 @@ export function TituloDialogForm({
   }
 
   return (
-    <Dialog open={aberto} onOpenChange={setAberto}>
+    <Dialog open={aberto} onOpenChange={aoAbrirOuFechar}>
       <DialogTrigger render={<Button variant={titulo ? "outline" : "default"} size={titulo ? "sm" : "default"} />}>
         {titulo ? "Editar" : `Novo título ${tipo === "PAGAR" ? "a pagar" : "a receber"}`}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{titulo ? "Editar título" : "Novo título"}</DialogTitle>
         </DialogHeader>
@@ -104,7 +123,7 @@ export function TituloDialogForm({
 
           <div className="space-y-2">
             <Label htmlFor="contraparteId">{tipo === "PAGAR" ? "Fornecedor" : "Cliente"}</Label>
-            <Select name="contraparteId" defaultValue={titulo?.contraparteId}>
+            <Select name="contraparteId" defaultValue={titulo?.contraparteId} onValueChange={aoEscolherContraparte}>
               <SelectTrigger id="contraparteId" className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -224,6 +243,13 @@ export function TituloDialogForm({
               placeholder="Opcional (ex.: Boleto, PIX)"
             />
           </div>
+
+          <SecaoDocumentoFiscal
+            classificacao={classificacao}
+            aoMudarClassificacao={setClassificacao}
+            inicial={titulo}
+            classificacaoOriginal={titulo?.classificacaoFiscal}
+          />
 
           {!titulo && (
             <div className="space-y-2">

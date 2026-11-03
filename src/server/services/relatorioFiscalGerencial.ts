@@ -169,6 +169,7 @@ export async function obterTopContrapartesGerenciais(
 export type PendenciaFiscalTitulo = {
   tituloId: string;
   documento: string;
+  contraparteId: string | null;
   contraparte: string;
   tipo: TipoTitulo;
   dataEmissao: Date;
@@ -192,6 +193,8 @@ export async function buscarPendenciasFiscaisDaFilial(
       tipoComprovante: true,
       numeroDocumentoFiscal: true,
       chaveAcesso: true,
+      fornecedorId: true,
+      clienteId: true,
       fornecedor: { select: { nome: true } },
       cliente: { select: { nome: true } },
       parcelas: { where: { status: { notIn: STATUS_SEM_VALOR } }, select: { valorAtualizado: true } },
@@ -208,6 +211,7 @@ export async function buscarPendenciasFiscaisDaFilial(
     resultado.push({
       tituloId: titulo.id,
       documento: titulo.documento,
+      contraparteId: titulo.fornecedorId ?? titulo.clienteId,
       contraparte: titulo.fornecedor?.nome ?? titulo.cliente?.nome ?? "",
       tipo: titulo.tipo,
       dataEmissao: titulo.dataEmissao,
