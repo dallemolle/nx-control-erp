@@ -499,22 +499,22 @@ O `DOCTO_IMPLEMENT_PROD-VEND.md` (Revisão 1.1) já foi ajustado para essas depe
 - [x] 1.8 Conferido no banco de dev: 17 títulos e 18 lançamentos (15 manuais, 3 de baixa) ficaram FISCAL; não havia transferências.
 - [x] 1.9 Commit `feat(db): classificação fiscal × gerencial (migration aditiva)`.
 
-### 2. `[ ] Backend (Tipos, DTOs, Services, Routes)`
+### 2. `[x] Backend (Tipos, DTOs, Services, Routes)`
 
-- [ ] 2.1 Consts e rótulos em `lib/schemas/enums.ts` (só acréscimos).
-- [ ] 2.2 `server/services/classificacaoFiscal.ts` + `classificacaoFiscal.test.ts` (DV da chave, coerência de grupo, pendências, `resolverClassificacao`, `classificacaoDaUrl`).
-- [ ] 2.3 Schemas Zod: `titulo.ts`, `lancamentoBancario.ts`, `conciliacao.ts`, `cliente.ts`, `fornecedor.ts` (3.2).
-- [ ] 2.4 `cliente.ts`/`fornecedor.ts` (services): gravar e auditar `classificacaoFiscalPadrao` + testes.
-- [ ] 2.5 `titulo.ts`: criação (padrão da contraparte, duplicidade de nota/chave), atualização (reclassificação + propagação + auditoria `RECLASSIFICAR`), filtro `classificacao`, `_count.anexos`. Testes de integração: padrão do fornecedor aplicado; classificação informada vence o padrão; chave duplicada → erro; mesma chave em **outra filial** não conflita; reclassificar propaga aos lançamentos de baixas aprovadas; reclassificar sem motivo → erro; filial somente leitura → erro.
-- [ ] 2.6 `baixa.ts`: cópia da classificação em `aprovarBaixa` + teste.
-- [ ] 2.7 `lancamentoBancario.ts` (manual, transferência `null`, filtro) e `conciliacao.ts` (`criarLancamentoDaLinha`) + testes.
-- [ ] 2.8 `opcoes.classificacao` em fluxo realizado, projetado, por dimensão, orçamento e comparação de safras. Para cada um, teste com dados mistos: **sem `opcoes` = resultado anterior** e **Todos = Fiscal + Gerencial** (+ transferências, no realizado).
-- [ ] 2.9 `relatorioFiscalGerencial.ts` + `buscarResumoFiscalGerencial` (dashboard) + testes.
-- [ ] 2.10 `importacaoTitulo.ts` (colunas opcionais) + teste com CSV antigo (sem as colunas) e novo (com erros de coerência por linha).
-- [ ] 2.11 API v1 (3.7) + `route.test.ts`: corpo antigo continua 201; classificação/chave inválida → 422; `?classificacao=` filtra; GET devolve os campos novos.
-- [ ] 2.12 Exports (3.8) + `docs/api-v1.md`.
+- [x] 2.1 Consts e rótulos em `lib/schemas/enums.ts` (só acréscimos).
+- [x] 2.2 Regras puras em **`src/lib/classificacaoFiscal.ts`** (+ `classificacaoFiscal.test.ts`), reexportadas por `server/services/classificacaoFiscal.ts`, que acrescenta `where*PorClassificacao`, `ErroClassificacaoFiscal` e `garantirComprovanteValido`. *Ajuste:* as regras ficaram em `lib/` porque schemas Zod e o formulário (navegador) também as usam; o import pelo caminho do servidor, citado no DOCTO, continua válido.
+- [x] 2.3 Schemas Zod: `titulo.ts` (objeto base + `superRefine` nos dois schemas — Zod 4 não permite `.extend` após refinamento), `lancamentoBancario.ts`, `conciliacao.ts`, `cliente.ts`, `fornecedor.ts`. *Ajuste:* a classificação do lançamento é `.optional()` (não `.default`), e o service aplica FISCAL — `.default` tornaria o campo obrigatório no tipo e quebraria quem já chama o service.
+- [x] 2.4 `cliente.ts`/`fornecedor.ts` (services): gravar e auditar `classificacaoFiscalPadrao` + testes.
+- [x] 2.5 `titulo.ts` + `tituloClassificacao.test.ts` (13 testes). *Acréscimo:* na edição, campo fiscal **ausente** mantém o valor gravado (vazio limpa) — quem não conhece os campos novos não apaga dados da nota.
+- [x] 2.6 `baixa.ts`: cópia da classificação em `aprovarBaixa` (coberto pelo teste de reclassificação).
+- [x] 2.7 `lancamentoBancario.ts` (manual, transferência `null`, filtro) e `conciliacao.ts` (`criarLancamentoDaLinha`) + testes.
+- [x] 2.8 `opcoes.classificacao` em fluxo realizado, projetado, por dimensão, orçamento e comparação de safras + `classificacaoRelatorios.test.ts`. *Ajuste:* o retorno do fluxo **não** ganhou `filtrado`; na visão filtrada o saldo inicial é 0 (acumulado) e a página, que passa o filtro, troca os rótulos. O projetado filtrado não emite alerta de saldo negativo.
+- [x] 2.9 `relatorioFiscalGerencial.ts` + `buscarResumoFiscalGerencial` (dashboard) + testes.
+- [x] 2.10 `importacaoTitulo.ts` (colunas opcionais) + testes (CSV antigo segue válido; erros por linha; sem classificação valida contra o padrão da contraparte; nota repetida no mesmo arquivo derruba a importação).
+- [x] 2.11 API v1 + `route.test.ts`. `?classificacao=` inválido → 422 (`classificacaoDaQuery`).
+- [x] 2.12 Exports de contas a pagar/receber (colunas fiscais ao final) e fluxo de caixa (filtro + "Acumulado") + `docs/api-v1.md`. O filtro `classificacao` em `filtro-titulos-url.ts` (previsto em 3.5) foi feito aqui, porque os exports dependem dele. O export de `/controladoria/fiscal-gerencial` fica com a página (3.11).
 - [x] 2.13 ~~(Só se FG3 = sim)~~ **Não se aplica** (FG3 = não). Ação `gerencial:escrever` + `podeEscreverGerencial` + testes em `permissions.test.ts`.
-- [ ] 2.14 Commits por bloco (`feat(financeiro): ...`, `feat(api): ...`).
+- [x] 2.14 Commits `96a01de`, `ce35bbb`, `86c5789`. Suíte: 572 testes passando.
 
 ### 3. `[ ] Frontend (Formulários, Listagens, Filtros)`
 
@@ -522,7 +522,7 @@ O `DOCTO_IMPLEMENT_PROD-VEND.md` (Revisão 1.1) já foi ajustado para essas depe
 - [ ] 3.2 Cadastros de cliente e fornecedor: `Select` de classificação padrão.
 - [ ] 3.3 `titulo-dialog-form.tsx`: seção "Documento fiscal", pré-seleção pelo padrão da contraparte, motivo de reclassificação na edição.
 - [ ] 3.4 `titulo-table.tsx`: badge + nº da nota + alerta de pendências.
-- [ ] 3.5 `barra-de-filtros.tsx` + `filtro-titulos-url.ts`: filtro Classificação (+ testes).
+- [ ] 3.5 `barra-de-filtros.tsx`: filtro Classificação (o parser `filtro-titulos-url.ts` + testes já foi feito em 2.12).
 - [ ] 3.6 `importar-csv-dialog.tsx`: ajuda com as colunas novas.
 - [ ] 3.7 Tesouraria (form, badge, filtro) e conciliação (form de criar lançamento).
 - [ ] 3.8 Fluxo realizado e projetado: seletor + aviso + "Acumulado" na visão filtrada.
