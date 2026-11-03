@@ -95,8 +95,34 @@ Permissão: `titulo:escrever`.
 - `parcelas`: array, não precisa de `numero` (é atribuído automaticamente por ordem) — pode ter 1 ou várias.
 - Resposta `201` com o título criado, incluindo `parcelas[].id` (guarde esse id se for dar baixa depois).
 
+**Classificação fiscal × gerencial (todos opcionais).** Quem já integra sem esses campos continua funcionando: o título nasce com o padrão do fornecedor/cliente (cadastro → "Classificação padrão dos títulos") ou, sem padrão, `FISCAL`.
+
+| Campo | Valores | Observação |
+|---|---|---|
+| `classificacaoFiscal` | `FISCAL` \| `GERENCIAL` | `FISCAL` = com documento fiscal/oficial; `GERENCIAL` = negociação sem nota |
+| `tipoComprovante` | fiscais: `NFE`, `NFCE`, `NFSE`, `CTE`, `NF_PRODUTOR`, `NF_ENTRADA`, `GUIA_TRIBUTO`, `FOLHA_PAGAMENTO`, `TARIFA_BANCARIA`, `CONTRATO`, `OUTRO_FISCAL` · gerenciais: `RECIBO`, `PEDIDO_INTERNO`, `SEM_COMPROVANTE` | Precisa ser do mesmo grupo da classificação |
+| `numeroDocumentoFiscal`, `serieDocumentoFiscal` | texto | Só em `FISCAL`; número exige `tipoComprovante` |
+| `chaveAcesso` | 44 dígitos (pontuação é ignorada) | Só para `NFE`/`NFCE`/`CTE`; o dígito verificador é conferido |
+| `dataEmissaoDocumentoFiscal` | `AAAA-MM-DD` | Data da nota |
+| `motivoSemDocumento` | texto | Só em `GERENCIAL` (ex.: "produtor não emite nota") |
+
+```json
+{
+  "...": "campos do exemplo acima",
+  "classificacaoFiscal": "FISCAL",
+  "tipoComprovante": "NFE",
+  "numeroDocumentoFiscal": "20456",
+  "serieDocumentoFiscal": "1",
+  "chaveAcesso": "3524 0312 3456 7800 0195 5500 1000 0012 3411 2345 6782"
+}
+```
+
+Erros `422` (com `campos`): classificação/tipo inválidos, tipo de comprovante do grupo errado, chave inválida, ou **nota já lançada** na filial (mesma chave de acesso, ou mesmo fornecedor/cliente + tipo + série + número).
+
 ### `GET /titulos?tipo=PAGAR` (ou `RECEBER`)
 Permissão: `titulo:ler`. Sem corpo. `?tipo=` é obrigatório.
+- `?classificacao=FISCAL` ou `?classificacao=GERENCIAL` (opcional): filtra pela classificação. Sem o parâmetro, devolve todos. Valor diferente desses dois → `422`.
+- Cada título traz `classificacaoFiscal`, `tipoComprovante`, `numeroDocumentoFiscal`, `serieDocumentoFiscal`, `chaveAcesso`, `dataEmissaoDocumentoFiscal`, `motivoSemDocumento`.
 
 ### `POST /lancamentos-bancarios` — lançamento manual
 Permissão: `lancamento:escrever`.
@@ -119,9 +145,11 @@ Permissão: `lancamento:escrever`.
 - `contaBancariaAgencia`/`contaBancariaConta`: **obrigatórios** aqui (diferente de título).
 - `tipo`: `"ENTRADA"` ou `"SAIDA"`.
 - `categoriaFinanceira`, `centroCusto`, `centroLucro`, `safra`, `projeto`: opcionais.
+- `classificacaoFiscal` (`FISCAL` \| `GERENCIAL`, padrão `FISCAL`), `tipoComprovante` (mesmos valores e regra de grupo do título) e `numeroComprovante` (texto livre): opcionais.
 
 ### `GET /lancamentos-bancarios`
-Permissão: `lancamento:ler`. Sem corpo, sem filtro de query.
+Permissão: `lancamento:ler`. Sem corpo.
+- `?classificacao=FISCAL` ou `?classificacao=GERENCIAL` (opcional). Transferências entre contas não têm classificação (`classificacaoFiscal: null`) e só aparecem sem o filtro.
 
 ### `POST /baixas` — dar baixa numa parcela (marcar como paga/recebida)
 Permissão: `titulo:baixar`.
@@ -170,6 +198,8 @@ Todas: permissão `cadastro:ler`, `GET`, sem corpo, devolvem um array `200`.
 | `GET /contas-bancarias` | filial |
 
 Use essas rotas pra conferir o nome/código/CNPJ exato antes de montar o corpo de uma rota de escrita.
+
+`GET /fornecedores` e `GET /clientes` trazem também `classificacaoFiscalPadrao` (`FISCAL`, `GERENCIAL` ou `null`): é a classificação que um título novo daquele parceiro recebe quando o corpo não informa `classificacaoFiscal`.
 
 ---
 

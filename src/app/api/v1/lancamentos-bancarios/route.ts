@@ -1,4 +1,4 @@
-import { executarRotaApi, ErroValidacaoApi } from "@/server/api/executarRotaApi";
+import { executarRotaApi, ErroValidacaoApi, classificacaoDaQuery } from "@/server/api/executarRotaApi";
 import {
   carregarCadastrosParaResolucao,
   resolverCodigoOpcional,
@@ -20,6 +20,10 @@ type CorpoLancamento = {
   centroLucro?: string;
   safra?: string;
   projeto?: string;
+  /** Omitida = FISCAL. */
+  classificacaoFiscal?: "FISCAL" | "GERENCIAL";
+  tipoComprovante?: string;
+  numeroComprovante?: string;
 };
 
 export async function POST(request: Request): Promise<Response> {
@@ -103,6 +107,9 @@ export async function POST(request: Request): Promise<Response> {
       centroLucroId,
       safraId,
       projetoId,
+      classificacaoFiscal: corpo.classificacaoFiscal,
+      tipoComprovante: corpo.tipoComprovante,
+      numeroComprovante: corpo.numeroComprovante,
     });
 
     const lancamento = await criarLancamentoManual(sessao, dados);
@@ -113,7 +120,8 @@ export async function POST(request: Request): Promise<Response> {
 export async function GET(request: Request): Promise<Response> {
   return executarRotaApi(request, async (sessao) => {
     requirePermission(sessao.perfil, "lancamento:ler");
-    const lancamentos = await listarLancamentos(sessao.filialId);
+    const classificacao = classificacaoDaQuery(new URL(request.url));
+    const lancamentos = await listarLancamentos(sessao.filialId, { classificacao });
     return Response.json(lancamentos, { status: 200 });
   });
 }

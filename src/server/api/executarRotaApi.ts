@@ -4,6 +4,7 @@ import { PermissionError, FilialSomenteLeituraError } from "@/server/auth/permis
 import { ApiAuthError, requireSessaoApi } from "./sessaoApi";
 import { ErroClassificacaoFiscal } from "@/server/services/classificacaoFiscal";
 import type { SessaoAtiva } from "@/server/auth/sessao";
+import type { ClassificacaoFiscal } from "@prisma/client";
 
 export class ErroValidacaoApi extends Error {
   campos: string[];
@@ -13,6 +14,19 @@ export class ErroValidacaoApi extends Error {
     this.name = "ErroValidacaoApi";
     this.campos = campos;
   }
+}
+
+/**
+ * Lê `?classificacao=FISCAL|GERENCIAL`. Ausente = todos; valor desconhecido é
+ * 422 (na API o erro é explícito, ao contrário do filtro de URL das telas).
+ */
+export function classificacaoDaQuery(url: URL): ClassificacaoFiscal | undefined {
+  const valor = url.searchParams.get("classificacao");
+  if (valor === null || valor === "") return undefined;
+  if (valor !== "FISCAL" && valor !== "GERENCIAL") {
+    throw new ErroValidacaoApi('Use ?classificacao=FISCAL ou ?classificacao=GERENCIAL', ["classificacao"]);
+  }
+  return valor;
 }
 
 export async function executarRotaApi(

@@ -310,4 +310,72 @@ describe("POST/GET /api/v1/titulos", () => {
     const corpo = await resposta.json();
     expect(corpo.campos).toContain("centroCusto");
   });
+
+  describe("classificação fiscal × gerencial", () => {
+    async function corpoBase(documento: string) {
+      const fornecedor = await prisma.fornecedor.findUniqueOrThrow({ where: { id: fixture.fornecedorId } });
+      const categoria = await prisma.categoriaFinanceira.findUniqueOrThrow({ where: { id: fixture.categoriaFinanceiraId } });
+      return {
+        tipo: "PAGAR",
+        cnpjCpf: fornecedor.cnpjCpf,
+        documento,
+        dataEmissao: "2026-09-01",
+        dataCompetencia: "2026-09-01",
+        categoriaFinanceira: categoria.nome,
+        parcelas: [{ dataVencimento: "2026-10-01", valorOriginal: 100 }],
+      };
+    }
+
+    function post(corpo: unknown) {
+      return POST(
+        new Request("http://localhost/api/v1/titulos", { method: "POST", headers: headers(chaveCompleta), body: JSON.stringify(corpo) }),
+      );
+    }
+
+    test("corpo sem os campos novos continua 201 e o título nasce FISCAL", async () => {
+      const resposta = await post(await corpoBase("NF-API-FG-1"));
+      expect(resposta.status).toBe(201);
+      expect((await resposta.json()).classificacaoFiscal).toBe("FISCAL");
+    });
+
+    test("aceita GERENCIAL com recibo e devolve os campos novos", async () => {
+      const resposta = await post({
+        ...(await corpoBase("NF-API-FG-2")),
+        classificacaoFiscal: "GERENCIAL",
+        tipoComprovante: "RECIBO",
+        motivoSemDocumento: "Produtor não emite nota",
+      });
+      expect(resposta.status).toBe(201);
+      const corpo = await resposta.json();
+      expect(corpo.classificacaoFiscal).toBe("GERENCIAL");
+      expect(corpo.tipoComprovante).toBe("RECIBO");
+    });
+
+    test("classificação inválida -> 422 com o campo", async () => {
+      const resposta = await post({ ...(await corpoBase("NF-API-FG-3")), classificacaoFiscal: "OUTRA" });
+      expect(resposta.status).toBe(422);
+      expect((await resposta.json()).campos).toContain("classificacaoFiscal");
+    });
+
+    test("recibo com a classificação resolvida como FISCAL -> 422 (regra do service, não do schema)", async () => {
+      const resposta = await post({ ...(await corpoBase("NF-API-FG-4")), tipoComprovante: "RECIBO" });
+      expect(resposta.status).toBe(422);
+      expect((await resposta.json()).campos).toContain("tipoComprovante");
+    });
+
+    test("GET ?classificacao= filtra; valor desconhecido -> 422", async () => {
+      const get = (query: string) =>
+        GET(new Request(`http://localhost/api/v1/titulos?tipo=PAGAR${query}`, { headers: headers(chaveCompleta) }));
+
+      const gerenciais = await (await get("&classificacao=GERENCIAL")).json();
+      expect(gerenciais.length).toBeGreaterThan(0);
+      expect(gerenciais.every((t: { classificacaoFiscal: string }) => t.classificacaoFiscal === "GERENCIAL")).toBe(true);
+
+      const todos = await (await get("")).json();
+      const fiscais = await (await get("&classificacao=FISCAL")).json();
+      expect(fiscais.length + gerenciais.length).toBe(todos.length);
+
+      expect((await get("&classificacao=fiscal")).status).toBe(422);
+    });
+  });
 });

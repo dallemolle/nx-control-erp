@@ -5,6 +5,7 @@ import { formatarRotuloPeriodo } from "../../_fluxo-de-caixa/formatar-rotulo-per
 import { dataValida } from "../../_fluxo-de-caixa/data-valida";
 import { type ColunaExport } from "@/lib/export/csv";
 import { responderExport } from "@/lib/export/responder";
+import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 
 const GRANULARIDADES_VALIDAS: Granularidade[] = ["DIA", "SEMANA", "MES", "ANO"];
 
@@ -21,14 +22,17 @@ type LinhaExport = {
   saldoFinal: number;
 };
 
-const COLUNAS: ColunaExport<LinhaExport>[] = [
-  { rotulo: "Período", valor: (l) => l.periodo },
-  { rotulo: "Saldo inicial", valor: (l) => l.saldoInicial },
-  { rotulo: "Entradas", valor: (l) => l.entradas },
-  { rotulo: "Saídas", valor: (l) => l.saidas },
-  { rotulo: "Geração líquida", valor: (l) => l.geracaoLiquida },
-  { rotulo: "Saldo final", valor: (l) => l.saldoFinal },
-];
+/** Na visão filtrada por classificação o saldo vira "acumulado" (o saldo bancário não se divide). */
+function colunas(filtrado: boolean): ColunaExport<LinhaExport>[] {
+  return [
+    { rotulo: "Período", valor: (l) => l.periodo },
+    { rotulo: filtrado ? "Acumulado inicial" : "Saldo inicial", valor: (l) => l.saldoInicial },
+    { rotulo: "Entradas", valor: (l) => l.entradas },
+    { rotulo: "Saídas", valor: (l) => l.saidas },
+    { rotulo: "Geração líquida", valor: (l) => l.geracaoLiquida },
+    { rotulo: filtrado ? "Acumulado final" : "Saldo final", valor: (l) => l.saldoFinal },
+  ];
+}
 
 export async function GET(request: Request) {
   const sessao = await requireSessaoAtiva();
@@ -40,7 +44,9 @@ export async function GET(request: Request) {
   const granularidade = granularidadeValida(url.searchParams.get("granularidade"));
   const dataReferencia = dataValida(url.searchParams.get("data") ?? undefined);
 
-  const periodos = await listarFluxoDeCaixaRealizado(sessao, granularidade, dataReferencia);
+  const classificacao = classificacaoDaUrl(url.searchParams.get("classificacao") ?? undefined);
+
+  const periodos = await listarFluxoDeCaixaRealizado(sessao, granularidade, dataReferencia, { classificacao });
   const linhas: LinhaExport[] = periodos.map((periodo) => ({
     periodo: formatarRotuloPeriodo(granularidade, periodo.inicio, periodo.fim),
     saldoInicial: periodo.saldoInicial,
@@ -51,5 +57,9 @@ export async function GET(request: Request) {
   }));
 
   const formato = url.searchParams.get("formato");
-  return responderExport(linhas, COLUNAS, { nomeArquivo: "fluxo-de-caixa", nomeAba: "Fluxo de caixa", formato });
+  return responderExport(linhas, colunas(classificacao !== undefined), {
+    nomeArquivo: classificacao ? `fluxo-de-caixa-${classificacao.toLowerCase()}` : "fluxo-de-caixa",
+    nomeAba: "Fluxo de caixa",
+    formato,
+  });
 }
