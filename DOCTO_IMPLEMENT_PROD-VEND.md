@@ -4,6 +4,8 @@
 > Origem funcional: planilha `Hortitex - Controle produção e vendas V1.4.3.xlsx` (26 abas, Excel 365 sem macros).
 > Alvo técnico: repositório `nx-control-erp` (Next.js 16 App Router · TypeScript · Prisma 7 + PostgreSQL · Auth.js v5 · shadcn/ui (base-nova) · Zod 4 · Vitest · Vercel/Neon).
 > Data da análise: 02/11/2026 — baseado no commit `723f337` (branch atual) e nas 17 migrations existentes até `20260918000000_add_identidade_visual_empresa`.
+>
+> **Revisão 1.1 (03/11/2026) — PRÉ-REQUISITO:** implementar antes o recurso de classificação **Fiscal × Gerencial** (`PLANO_IMPLEMENT_FISCAL-GERENCIAL.md`). Este documento passa a usar os enums `ClassificacaoFiscal` e `TipoComprovante`, os campos fiscais de `Titulo`, o `classificacaoFiscalPadrao` de `Cliente`/`Fornecedor` e as funções `validarComprovante`/`resolverClassificacao`/`whereParcelaPorClassificacao` de `src/server/services/classificacaoFiscal.ts`, criados por aquele plano. Os trechos alterados nesta revisão estão marcados com **[FG]**.
 
 **Antes de escrever qualquer código, o Claude Code deve:**
 
@@ -89,6 +91,7 @@ gera LOTES DE POLPA (PROC_PRODUCAO)  (AMC-260927-02) ──► ESTOQUE_LOTES (sa
 | API REST v1 (`executarRotaApi`) | novos endpoints em `/api/v1/producao/*` | opcional (fase 2 do módulo) |
 | Exportação (`responderExport`) | relatórios exportáveis em CSV/XLSX | obrigatório |
 | `Empresa.nomeFantasia` | substitui `CONFIG!B4` (nome na etiqueta/títulos) | obrigatório |
+| **[FG]** Classificação Fiscal × Gerencial | `RecepcaoFruto` (de terceiro) e `PedidoVenda` têm `classificacaoFiscal` + dados do comprovante, pré-preenchidos por `Fornecedor/Cliente.classificacaoFiscalPadrao`; os títulos gerados herdam esses dados | obrigatório |
 
 ### 1.6 Melhorias deliberadas em relação à planilha
 
@@ -331,7 +334,12 @@ model RecepcaoFruto {
   descarteKg   Decimal         @default(0) @db.Decimal(14, 3)
   precoKg      Decimal         @default(0) @db.Decimal(18, 4)
   qualidade    QualidadeFruto?
-  romaneioNf   String?
+  romaneio     String?                      // nº do romaneio de campo (não é nota)
+  classificacaoFiscal   ClassificacaoFiscal?   // [FG] null para PROPRIA; obrigatória para TERCEIRO
+  tipoComprovante       TipoComprovante?       // [FG]
+  numeroDocumentoFiscal String?                // [FG]
+  serieDocumentoFiscal  String?                // [FG]
+  chaveAcesso           String?                // [FG]
   obs          String?
   tituloId     String?         @unique      // título a PAGAR gerado (opcional)
   usuarioId    String
@@ -463,6 +471,11 @@ model PedidoVenda {
   formaPagamento     FormaPagamentoVenda
   statusPagamento    StatusPagamentoVenda
   dataPagamento      DateTime?            @db.Date
+  classificacaoFiscal   ClassificacaoFiscal  // [FG] padrão do cliente → FISCAL
+  tipoComprovante       TipoComprovante?     // [FG]
+  numeroDocumentoFiscal String?              // [FG]
+  serieDocumentoFiscal  String?              // [FG]
+  chaveAcesso           String?              // [FG]
   status             StatusPedidoVenda    @default(ATIVO)
   motivoCancelamento String?
   obs                String?
@@ -617,6 +630,20 @@ ALTER TABLE "itens_pedido_venda" ADD CONSTRAINT "itens_pedido_venda_valores_chk"
   CHECK ("quantidadeKg" > 0 AND "precoKg" >= 0 AND "custoKg" >= 0);
 ALTER TABLE "ajustes_estoque" ADD CONSTRAINT "ajustes_estoque_qtd_chk" CHECK ("quantidadeKg" <> 0);
 ALTER TABLE "produtos_producao" ADD CONSTRAINT "produtos_producao_validade_chk" CHECK ("validadeDias" >= 0);
+
+-- [FG] Coerência fiscal (mesmas regras de "titulos")
+ALTER TABLE "recepcoes_fruto" ADD CONSTRAINT "recepcoes_fruto_classificacao_chk"
+  CHECK ("tipoOrigem" = 'PROPRIA' OR "classificacaoFiscal" IS NOT NULL);
+ALTER TABLE "recepcoes_fruto" ADD CONSTRAINT "recepcoes_fruto_comprovante_chk" CHECK (
+  "tipoComprovante" IS NULL
+  OR ("classificacaoFiscal" = 'FISCAL'    AND "tipoComprovante" NOT IN ('RECIBO','PEDIDO_INTERNO','SEM_COMPROVANTE'))
+  OR ("classificacaoFiscal" = 'GERENCIAL' AND "tipoComprovante"     IN ('RECIBO','PEDIDO_INTERNO','SEM_COMPROVANTE')));
+ALTER TABLE "pedidos_venda" ADD CONSTRAINT "pedidos_venda_comprovante_chk" CHECK (
+  "tipoComprovante" IS NULL
+  OR ("classificacaoFiscal" = 'FISCAL'    AND "tipoComprovante" NOT IN ('RECIBO','PEDIDO_INTERNO','SEM_COMPROVANTE'))
+  OR ("classificacaoFiscal" = 'GERENCIAL' AND "tipoComprovante"     IN ('RECIBO','PEDIDO_INTERNO','SEM_COMPROVANTE')));
+ALTER TABLE "recepcoes_fruto" ADD CONSTRAINT "recepcoes_fruto_chave_chk" CHECK ("chaveAcesso" IS NULL OR "chaveAcesso" ~ '^[0-9]{44}$');
+ALTER TABLE "pedidos_venda"  ADD CONSTRAINT "pedidos_venda_chave_chk"  CHECK ("chaveAcesso" IS NULL OR "chaveAcesso" ~ '^[0-9]{44}$');
 ```
 
 4. Aplicar local: `npm run db:migrate`; depois `npm run db:generate` e `npm run build` (type-check).
@@ -733,6 +760,8 @@ A `@@unique([filialId, codigo])` é a última barreira: em `P2002`, recalcular u
 
 Validações: produto ativo e `categoria = FRUTO`; `pesoBruto > 0`; `0 ≤ descarte ≤ bruto`; `preco ≥ 0`; `TERCEIRO ⇒ fornecedorId` (da empresa); `PROPRIA ⇒ fornecedorId = null` e `talhaoId` recomendado (o talhão deve ser da filial e da mesma fruta do produto); data não futura.
 
+**[FG]** Classificação: `PROPRIA ⇒ classificacaoFiscal = null` (não há operação com terceiro); `TERCEIRO ⇒ classificacaoFiscal = resolverClassificacao(informada, fornecedor.classificacaoFiscalPadrao)`. Comprovante validado com `validarComprovante()` (mesmas regras do título: grupo do tipo, chave de 44 dígitos com DV, dados de nota vazios se GERENCIAL). Compra FISCAL de produtor pessoa física normalmente usa `NF_PRODUTOR` ou `NF_ENTRADA`. FISCAL sem número de nota não bloqueia — entra nas pendências fiscais do título gerado.
+
 Efeito: cria `RecepcaoFruto` + `Lote` (FRUTO, `quantidadeKg = pesoLiquido`, `localId = null`) na mesma transação. Edição de pesos atualiza `Lote.quantidadeKg`; se o novo líquido < (consumido + vendido − ajustes) do lote, bloquear.
 
 #### 3.3.3 Ordem de processamento (`PROCESSAMENTO`, `PROC_CONSUMO`, `PROC_PRODUCAO`, `PROC_INSUMOS`)
@@ -775,6 +804,7 @@ Regras:
 Regras:
 
 - Pedido tem ≥ 1 item; cliente ativo da empresa; não repetir o mesmo lote em dois itens do mesmo pedido (somar).
+- **[FG]** `classificacaoFiscal = resolverClassificacao(informada, cliente.classificacaoFiscalPadrao)`; comprovante validado com `validarComprovante()`. Venda FISCAL normalmente com `NFE`/`NFCE`; GERENCIAL com `RECIBO`/`PEDIDO_INTERNO`/`SEM_COMPROVANTE`. Alterar a classificação de um pedido com título gerado → exige motivo e reclassifica o título pelo `atualizarTitulo()` do financeiro (que propaga aos lançamentos).
 - Lote da filial, saldo suficiente se `bloquearSaldoNegativo` (3.3.5).
 - Se `pedido.data > lote.dataValidade` e o item não vier com `confirmarLoteVencido = true` → erro de validação `LOTE_VENCIDO` (UI mostra confirmação; ao confirmar grava `alertaValidadeConfirmado = true`).
 - `custoKg` do item = custo atual do lote (fruto: preço da recepção; polpa: custo/kg da OP).
@@ -835,6 +865,9 @@ Filtros globais: `de`/`ate` (período) e `ano` (mensal), via `searchParams` — 
 | | Rendimento por fruta | polpa da fruta / fruto consumido da fruta |
 | | Custo médio da polpa por fruta (R$/kg) | Σ custoTotal OPs da fruta / Σ polpa OPs da fruta |
 | Vendas | Faturamento total, fruto in natura, polpa por fruta (R$) | Σ valor itens de pedidos ATIVOS no período, por categoria/fruta |
+| **[FG]** Vendas | Faturamento fiscal · gerencial · % gerencial | Σ valor por `pedido.classificacaoFiscal` |
+| **[FG]** Recepção | Fruto de terceiros comprado fiscal · gerencial (kg e R$) | Σ por `recepcao.classificacaoFiscal` |
+| **[FG]** Filtro | Painel e todos os relatórios aceitam `?classificacao=FISCAL\|GERENCIAL` (padrão: todos) | aplica-se a pedidos e recepções de terceiro; recepção própria só aparece com "todos" |
 | | Kg vendidos · Preço médio (R$/kg) | Σ kg · faturamento / kg |
 | | Margem bruta (R$ e %) | Σ margem · margem / faturamento |
 | | Nº de pedidos · Ticket médio | count pedidos ATIVOS · faturamento / nº pedidos |
@@ -871,8 +904,8 @@ Filtros globais: `de`/`ate` (período) e `ano` (mensal), via `searchParams` — 
 
 Somente quando `ConfigProducao.integrarFinanceiro = true` e a categoria correspondente estiver configurada (senão erro "Configure a categoria financeira de ... em Produção › Configurações").
 
-- `gerarTituloReceberDoPedido(sessao, pedidoId)`: exige `titulo:escrever` (além de `venda:escrever`); idempotente (erro se `tituloId` já existe); usa **`criarTitulo(sessao, "RECEBER", dados, tx)`** com `contraparteId = clienteId`, `documento = "PV-<numero>"`, `dataEmissao = dataCompetencia = pedido.data`, `categoriaFinanceiraId = categoriaReceitaVendaId`, `safraId` (se houver), `formaPagamento = rótulo`, 1 parcela `{ numero: 1, dataVencimento: dataPagamento ?? data, valorOriginal: total }`; grava `pedido.tituloId`.
-- `gerarTituloPagarDaRecepcao(sessao, recepcaoId)`: só `tipoOrigem = TERCEIRO` e valor > 0; `criarTitulo(sessao, "PAGAR", ...)` com `documento = romaneioNf ?? "RF-<codigoLote>"`, `categoriaDespesaFrutoId`.
+- `gerarTituloReceberDoPedido(sessao, pedidoId)`: exige `titulo:escrever` (além de `venda:escrever`); idempotente (erro se `tituloId` já existe); usa **`criarTitulo(sessao, "RECEBER", dados, tx)`** com `contraparteId = clienteId`, `documento = "PV-<numero>"`, **[FG]** `classificacaoFiscal`, `tipoComprovante`, `numeroDocumentoFiscal`, `serieDocumentoFiscal`, `chaveAcesso` copiados do pedido, `dataEmissao = dataCompetencia = pedido.data`, `categoriaFinanceiraId = categoriaReceitaVendaId`, `safraId` (se houver), `formaPagamento = rótulo`, 1 parcela `{ numero: 1, dataVencimento: dataPagamento ?? data, valorOriginal: total }`; grava `pedido.tituloId`.
+- `gerarTituloPagarDaRecepcao(sessao, recepcaoId)`: só `tipoOrigem = TERCEIRO` e valor > 0; `criarTitulo(sessao, "PAGAR", ...)` com `documento = romaneio ?? "RF-<codigoLote>"`, `categoriaDespesaFrutoId` e **[FG]** classificação + dados do comprovante copiados da recepção.
 - Chamada automática na criação do pedido/recepção **apenas** se o perfil da sessão tiver `titulo:escrever`; caso contrário o pedido é criado sem título e o botão "Gerar título" aparece para quem tem a permissão (perfil FINANCEIRO).
 - O status de pagamento financeiro passa a ser o da parcela (baixa pelo fluxo existente de contas a receber, com aprovação). `PedidoVenda.statusPagamento` continua como informação operacional.
 
@@ -912,7 +945,13 @@ export const recepcaoFrutoSchema = z.object({
   descarteKg: z.coerce.number().min(0).default(0),
   precoKg: z.coerce.number().min(0).default(0),
   qualidade: z.enum(QUALIDADE_FRUTO).optional().or(z.literal(SEM_VALOR)),
-  romaneioNf: z.string().trim().optional().or(z.literal("")),
+  romaneio: z.string().trim().optional().or(z.literal("")),
+  // [FG] mesmos campos/regras do título (validarComprovante no superRefine)
+  classificacaoFiscal: z.enum(CLASSIFICACAO_FISCAL).optional(),
+  tipoComprovante: z.enum(TIPO_COMPROVANTE).optional().or(z.literal(SEM_VALOR)),
+  numeroDocumentoFiscal: z.string().trim().optional().or(z.literal("")),
+  serieDocumentoFiscal: z.string().trim().optional().or(z.literal("")),
+  chaveAcesso: z.string().trim().optional().or(z.literal("")),
   codigoManual: z.string().trim().toUpperCase().optional().or(z.literal("")),
   obs: z.string().trim().optional().or(z.literal("")),
 }).superRefine((d, ctx) => {
@@ -951,6 +990,12 @@ export const pedidoVendaSchema = z.object({
   clienteId: z.string().trim().min(1, "Selecione o cliente"),
   formaPagamento: z.enum(FORMA_PAGAMENTO_VENDA),
   statusPagamento: z.enum(STATUS_PAGAMENTO_VENDA),
+  // [FG]
+  classificacaoFiscal: z.enum(CLASSIFICACAO_FISCAL).optional(),
+  tipoComprovante: z.enum(TIPO_COMPROVANTE).optional().or(z.literal(SEM_VALOR)),
+  numeroDocumentoFiscal: z.string().trim().optional().or(z.literal("")),
+  serieDocumentoFiscal: z.string().trim().optional().or(z.literal("")),
+  chaveAcesso: z.string().trim().optional().or(z.literal("")),
   dataPagamento: z.coerce.date().optional().or(z.literal("")),
   obs: z.string().trim().optional().or(z.literal("")),
   confirmarLoteVencido: z.coerce.boolean().default(false),
@@ -1027,11 +1072,11 @@ Mesmo contrato de `docs/api-v1.md`: headers `Authorization: Bearer <chave>` + `X
 | GET | `/api/v1/producao/produtos` | `producao:ler` | — | `ProdutoProducao[]` | 200 |
 | GET | `/api/v1/producao/lotes?categoria=&status=&somenteComSaldo=true&dataReferencia=` | `estoque:ler` | query | `LoteComSaldo[]` | 200 / 422 |
 | GET | `/api/v1/producao/lotes/{codigo}/rastreabilidade` | `producao:ler` | — | `Rastreio` | 200 / 404 |
-| POST | `/api/v1/producao/recepcoes` | `producao:escrever` | `{ data, produtoCodigo, tipoOrigem, fornecedorCnpjCpf?, talhao?, safra?, pesoBrutoKg, descarteKg?, precoKg?, qualidade?, romaneioNf?, loteManual?, obs? }` | `{ id, lote: { codigo, quantidadeKg, dataValidade } }` | 201 / 422 |
+| POST | `/api/v1/producao/recepcoes` | `producao:escrever` | `{ data, produtoCodigo, tipoOrigem, fornecedorCnpjCpf?, talhao?, safra?, pesoBrutoKg, descarteKg?, precoKg?, qualidade?, romaneio?, classificacaoFiscal?, tipoComprovante?, numeroDocumentoFiscal?, serieDocumentoFiscal?, chaveAcesso?, loteManual?, obs? }` | `{ id, lote: { codigo, quantidadeKg, dataValidade } }` | 201 / 422 |
 | GET | `/api/v1/producao/recepcoes?de=&ate=` | `producao:ler` | query | lista | 200 |
 | POST | `/api/v1/producao/ordens` | `producao:escrever` | `{ data, fruta, responsavel?, branqueamentoTempC?, branqueamentoTempoS?, aguaAdicionadaL?, residuoKg?, perdaKg?, safra?, obs?, consumos: [{ loteCodigo, quantidadeKg }], insumos?: [{ insumo, quantidade, custoUnitario? }], producao: [{ produtoCodigo, quantidadeKg, local, numeroEmbalagens?, loteManual? }], encerrar?: boolean }` | `{ id, numero, indicadores: IndicadoresOrdem, lotes: [{ codigo, dataValidade }] }` | 201 / 422 |
 | GET | `/api/v1/producao/ordens/{numero}` | `producao:ler` | — | OP + indicadores | 200 / 404 |
-| POST | `/api/v1/producao/pedidos` | `venda:escrever` | `{ data, clienteCnpjCpf, formaPagamento, statusPagamento, dataPagamento?, obs?, confirmarLoteVencido?, itens: [{ loteCodigo, quantidadeKg, precoKg }] }` | `PedidoVendaResumo` | 201 / 422 |
+| POST | `/api/v1/producao/pedidos` | `venda:escrever` | `{ data, clienteCnpjCpf, formaPagamento, statusPagamento, dataPagamento?, obs?, classificacaoFiscal?, tipoComprovante?, numeroDocumentoFiscal?, serieDocumentoFiscal?, chaveAcesso?, confirmarLoteVencido?, itens: [{ loteCodigo, quantidadeKg, precoKg }] }` | `PedidoVendaResumo` | 201 / 422 |
 | GET | `/api/v1/producao/pedidos?de=&ate=&status=` | `venda:ler` | query | `PedidoVendaResumo[]` | 200 |
 | POST | `/api/v1/producao/pedidos/{numero}/cancelar` | `venda:escrever` | `{ motivo }` | `PedidoVendaResumo` | 200 / 404 / 422 |
 | POST | `/api/v1/producao/ajustes` | `estoque:ajustar` | `{ data, loteCodigo, quantidadeKg, motivo, obs? }` | `{ id, saldoKg }` | 201 / 422 |
@@ -1078,13 +1123,13 @@ Acrescentar **uma nova seção** em `src/app/(dashboard)/nav-items.ts` (sem alte
 | Rota | Tipo | Conteúdo | Permissão (ler / escrever) |
 |---|---|---|---|
 | `painel/page.tsx` | Server | Filtro período (de/até) + `dataReferencia`; 3 colunas de `Card` (Recepção e processamento · Vendas · Estoque e alertas); tabelas "Estoque atual por produto" e "Vendas no período por produto"; alertas com `Badge` (vencendo/vencido/verificar) linkando para as listas filtradas | `producao:ler` |
-| `recepcao/page.tsx` | Server + dialog | Tabela de recepções (lote, data, produto, origem, talhão, bruto, descarte, líquido, % desc., preço, valor, qualidade, romaneio) com filtro período/origem/fruta; botão "Nova recepção"; ações Editar/Excluir/Gerar título a pagar/Etiqueta; `ExportarLinks` | `producao:ler` / `producao:escrever` |
-| `recepcao/recepcao-dialog-form.tsx` | Client | Campos da 3.5; `tipoOrigem` alterna Fornecedor × Talhão; auxiliar "caixas × kg/caixa" (preenche bruto) e "preço por caixa" (preenche R$/kg) usando `kgPorCaixaPadrao`; mostra líquido/valor calculados ao vivo | — |
+| `recepcao/page.tsx` | Server + dialog | Tabela de recepções (lote, data, produto, origem, talhão, bruto, descarte, líquido, % desc., preço, valor, qualidade, romaneio, **[FG]** `Badge` Fiscal/Gerencial + nº da nota) com filtro período/origem/fruta/**classificação**; botão "Nova recepção"; ações Editar/Excluir/Gerar título a pagar/Etiqueta; `ExportarLinks` | `producao:ler` / `producao:escrever` |
+| `recepcao/recepcao-dialog-form.tsx` | Client | Campos da 3.5; `tipoOrigem` alterna Fornecedor × Talhão; auxiliar "caixas × kg/caixa" (preenche bruto) e "preço por caixa" (preenche R$/kg) usando `kgPorCaixaPadrao`; mostra líquido/valor calculados ao vivo; **[FG]** seção "Documento fiscal" (só para TERCEIRO) igual à do formulário de título, pré-preenchida pelo padrão do fornecedor | — |
 | `ordens/page.tsx` | Server | Lista de OPs (nº, data, fruta, fruto kg, polpa kg, rendimento, balanço %, status balanço, branqueamento, custo/kg, status OP) + "Nova OP" | `producao:ler` / `producao:escrever` |
 | `ordens/[id]/page.tsx` | Server | Cabeçalho editável (dialog) + **cartão de indicadores** (3.3.3) + 3 seções: **Lotes de fruto consumidos** (tabela + dialog "Adicionar consumo" com `Select` de lotes FRUTO ativos da mesma fruta, mostrando saldo), **Polpa produzida** (tabela de lotes gerados + dialog "Adicionar lote de polpa", link etiqueta), **Insumos** (tabela + dialog); botões Encerrar/Reabrir | idem |
 | `estoque/page.tsx` | Server | Tabela `LoteComSaldo` com filtros (categoria, produto, local, status, "somente com saldo", `dataReferencia`); `Badge` de status por cor; link para rastreabilidade e etiqueta; `ExportarLinks` | `estoque:ler` |
 | `vendas/page.tsx` | Server | Lista de pedidos (nº, data, cliente, canal, kg, valor, margem, pagamento, status, entrega, alertas) com filtros período/cliente/status pagamento/status; "Novo pedido" mostra **Próximo nº** | `venda:ler` / `venda:escrever` |
-| `vendas/pedido-dialog-form.tsx` | Client | Cabeçalho + **itens dinâmicos** (lote via `Select` de lotes ativos com saldo/validade/produto exibidos; kg; R$/kg com default `precoReferenciaKg`; total da linha) serializados em `<input type="hidden" name="itens">`; totais; fluxo de confirmação de lote vencido | — |
+| `vendas/pedido-dialog-form.tsx` | Client | Cabeçalho + **itens dinâmicos** (lote via `Select` de lotes ativos com saldo/validade/produto exibidos; kg; R$/kg com default `precoReferenciaKg`; total da linha) serializados em `<input type="hidden" name="itens">`; totais; fluxo de confirmação de lote vencido; **[FG]** seção "Documento fiscal" igual à do formulário de título, pré-preenchida pelo padrão do cliente | — |
 | `vendas/[id]/page.tsx` | Server | Detalhe do pedido: itens com custo/margem, entrega, título financeiro vinculado (link para contas a receber), ações Editar/Cancelar/Registrar pagamento/Gerar título | idem |
 | `entregas/page.tsx` | Server + dialog | Pedidos ATIVOS com/sem entrega: cliente, kg, valor, data prevista/realizada, local, responsável/veículo, status, atraso (dias) | `venda:ler` / `venda:escrever` |
 | `ajustes/page.tsx` | Server + dialog | Lista de ajustes + "Novo ajuste" (lote ativo, kg ±, motivo, obs) | `estoque:ler` / `estoque:ajustar` |
@@ -1188,6 +1233,7 @@ Isolamento:
 | R11 | Edição de `nav-items.ts` | Menu quebrado | Apenas adicionar um objeto ao array; teste manual de cada perfil |
 | R12 | Nome de modelo colidir com futuro módulo de estoque/compras | Refactor futuro | Nomes específicos (`ProdutoProducao`, `LocalArmazenamento`, `PedidoVenda`) e tabelas próprias |
 | R13 | `ALTER TYPE ... ADD VALUE` em transação | Falha no deploy | Migration separada se necessário (2.6 item 6) |
+| R14 **[FG]** | Implementar o módulo antes do recurso Fiscal × Gerencial | Schema não compila (enums/campos ausentes) | Checklist 6.0.0: confirmar que a migration `add_classificacao_fiscal` já está aplicada |
 
 Validação de não-regressão obrigatória antes do merge: `npm run lint`, `npm run test` (suíte inteira, não só o módulo), `npm run build`, revisão manual do `migration.sql`, smoke test das telas existentes (contas a receber, fluxo de caixa, cadastros de clientes/fornecedores, auditoria) com cada perfil.
 
@@ -1199,6 +1245,7 @@ Validação de não-regressão obrigatória antes do merge: `npm run lint`, `npm
 
 ### 6.0 Preparação
 
+- [ ] 6.0.0 **[FG]** Confirmar que `PLANO_IMPLEMENT_FISCAL-GERENCIAL.md` está implementado e em produção/staging (migration `add_classificacao_fiscal` aplicada, `src/server/services/classificacaoFiscal.ts` existente). Se não estiver, parar e implementá-lo primeiro.
 - [ ] 6.0.1 Ler `AGENTS.md`, `docs/fases/fase-1-fundacao.md` (arquitetura/padrões), `node_modules/next/dist/docs/01-app` (rotas dinâmicas, Server Actions, `params` Promise).
 - [ ] 6.0.2 Ler os arquivos-modelo: `cadastros/safras/*`, `server/services/safra.ts`, `server/services/titulo.ts`, `server/services/baixa.ts` (transação), `financeiro/_titulos/*` (listas dinâmicas, filtros URL), `financeiro/contas-a-receber/export/route.ts`, `api/v1/titulos/route.ts` + `.test.ts`, `server/services/financeiroTestFixtures.ts`.
 - [ ] 6.0.3 `docker compose up -d && npm install && npm run db:migrate && npm run test` — registrar a linha de base (todos verdes).
@@ -1288,6 +1335,7 @@ Validação de não-regressão obrigatória antes do merge: `npm run lint`, `npm
 - [ ] 6.5.1 `scripts/importar-planilha-producao.ts` (tsx, usa `exceljs` já instalado): lê `CAD_*`, `ENTRADA_FRUTO`, `PROCESSAMENTO`, `PROC_*`, `VENDAS`, `ENTREGAS`, `AJUSTES` (linhas a partir da 5; valores calculados), parâmetros `--arquivo`, `--filial-cnpjcpf`, `--usuario-email`, `--dry-run`.
 - [ ] 6.5.2 Preservar códigos de lote/OP **exatamente** como estão na planilha (gravar como `codigoManual = true`) — já podem estar impressos em etiquetas/comunicados à ADEPARA; preservar nº de pedido.
 - [ ] 6.5.3 Clientes/fornecedores da planilha sem CPF/CNPJ: relatório de pendências no `--dry-run` (não inventar documento); casar por nome com `Cliente`/`Fornecedor` existentes (normalizado).
+- [ ] 6.5.3a **[FG]** A planilha não registra nota nas vendas nem nas recepções: parâmetro `--classificacao-padrao=FISCAL|GERENCIAL` (obrigatório), sobrescrito pelo `classificacaoFiscalPadrao` do cliente/fornecedor quando existir; recepções próprias ficam `null`.
 - [ ] 6.5.4 Agrupar linhas de `VENDAS` por nº de pedido (cabeçalho = primeira linha); divergências de cliente/pagamento entre linhas do mesmo pedido → relatório.
 - [ ] 6.5.5 Rodar em staging, conferir Painel × aba `PAINEL`, depois produção.
 
@@ -1303,7 +1351,7 @@ Validação de não-regressão obrigatória antes do merge: `npm run lint`, `npm
 | ENTRADA_FRUTO!D | Origem / fornecedor | `tipoOrigem` + `fornecedorId` | enum + FK |
 | ENTRADA_FRUTO!E | Talhão | `talhaoId` | FK |
 | ENTRADA_FRUTO!F,G,H | Bruto, descarte, preço | `pesoBrutoKg`, `descarteKg`, `precoKg` | decimal |
-| ENTRADA_FRUTO!I,J,K | Qualidade, romaneio/NF, obs | `qualidade`, `romaneioNf`, `obs` | |
+| ENTRADA_FRUTO!I,J,K | Qualidade, romaneio/NF, obs | `qualidade`, `romaneio` + **[FG]** `numeroDocumentoFiscal` (quando o valor for nota), `obs` | classificação definida pela importação |
 | ENTRADA_FRUTO!L | Lote manual | `Lote.codigo` + `codigoManual=true` | |
 | ENTRADA_FRUTO!M–R | tipo, fruta, líquido, %, valor, idx | derivados | não persistir (exceto `Lote.quantidadeKg = líquido`) |
 | PROCESSAMENTO!A–J | OP, data, fruta, responsável, branq. °C/s, água, resíduo, perda, obs | `OrdemProducao.*` | |
