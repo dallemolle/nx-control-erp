@@ -385,3 +385,60 @@ describe("buscarGraficosExecutivos (integração)", () => {
     expect(totalAgingDepois - totalAgingAntes).toBeLessThan(275);
   });
 });
+
+describe("evolucaoSaldo e entradasSaidas — valores por mês com várias filiais", () => {
+  let fixture: FixtureFinanceiro;
+  let outraFilialId: string;
+  let outraContaId: string;
+
+  /** Dia 15 do mês `mesesAtras` meses antes do atual, ao meio-dia UTC. */
+  function noMes(mesesAtras: number): Date {
+    const hoje = new Date();
+    return new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() - mesesAtras, 15, 12));
+  }
+
+  async function lancar(filialId: string, contaBancariaId: string, data: Date, tipo: "ENTRADA" | "SAIDA", valor: number, conciliado = true) {
+    await prisma.lancamentoBancario.create({
+      data: { filialId, contaBancariaId, data, tipo, valor, descricao: "evolução", origem: "MANUAL", usuarioId: fixture.usuarioId, conciliado },
+    });
+  }
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("DASHE", "GESTOR");
+    const outraFilial = await prisma.filial.create({
+      data: { empresaId: fixture.empresaId, nome: "Filial DASHE 2", cnpjCpf: "44.444.DASHE/0002-55" },
+    });
+    outraFilialId = outraFilial.id;
+    const outraConta = await prisma.contaBancaria.create({
+      data: { filialId: outraFilialId, bancoId: fixture.bancoId, agencia: "0004", conta: "dashe-2", saldoInicial: 1000 },
+    });
+    outraContaId = outraConta.id;
+
+    await lancar(fixture.filialId, fixture.contaBancariaId, noMes(8), "ENTRADA", 300); // antes da janela
+    await lancar(outraFilialId, outraContaId, noMes(3), "ENTRADA", 200);
+    await lancar(fixture.filialId, fixture.contaBancariaId, noMes(1), "SAIDA", 50);
+    await lancar(fixture.filialId, fixture.contaBancariaId, noMes(1), "SAIDA", 999, false); // não conciliado: fora
+    await lancar(fixture.filialId, fixture.contaBancariaId, new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)), "ENTRADA", 100);
+  });
+
+  afterAll(async () => {
+    await prisma.filial.delete({ where: { id: outraFilialId } });
+    await limparFixtureFinanceiro(fixture);
+    await prisma.$disconnect();
+  });
+
+  test("saldo de fim de mês encadeado a partir do histórico, somando as filiais", async () => {
+    const graficos = await buscarGraficosExecutivos(fixture.sessao);
+
+    // 1000 (saldo inicial filial 2) + 300 (antes da janela), depois +200, -50, +100.
+    expect(graficos.evolucaoSaldo.map((p) => p.saldo)).toEqual([1300, 1300, 1500, 1500, 1450, 1550]);
+    expect(graficos.entradasSaidas.map((p) => [p.entradas, p.saidas])).toEqual([
+      [0, 0],
+      [0, 0],
+      [200, 0],
+      [0, 0],
+      [0, 50],
+      [100, 0],
+    ]);
+  });
+});

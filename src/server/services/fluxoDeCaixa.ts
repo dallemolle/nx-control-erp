@@ -107,17 +107,25 @@ export function calcularPeriodosFluxoDeCaixa(
 }
 
 export async function buscarSaldoEmCaixaAte(filialId: string, data: Date): Promise<number> {
-  const contas = await prisma.contaBancaria.findMany({ where: { filialId, ativo: true } });
-  const saldoInicialTotal = contas.reduce((soma, conta) => soma + Number(conta.saldoInicial), 0);
+  return buscarSaldoEmCaixaAteDasFiliais([filialId], data);
+}
+
+/** Saldo somado de várias filiais (consolidação por empresa) em 2 queries, sem loop por filial. */
+export async function buscarSaldoEmCaixaAteDasFiliais(filialIds: string[], data: Date): Promise<number> {
+  const filtroFilial = { filialId: { in: filialIds } };
 
   // "-1ms antes do início da janela" (ver chamador) só é exato porque
   // `LancamentoBancario.data` é TIMESTAMP(3) — uma migração futura pra
   // precisão maior exigiria revisitar essa conta.
-  const somas = await prisma.lancamentoBancario.groupBy({
-    by: ["tipo"],
-    where: { filialId, conciliado: true, data: { lte: data }, contaBancaria: { ativo: true } },
-    _sum: { valor: true },
-  });
+  const [saldosIniciais, somas] = await Promise.all([
+    prisma.contaBancaria.aggregate({ where: { ...filtroFilial, ativo: true }, _sum: { saldoInicial: true } }),
+    prisma.lancamentoBancario.groupBy({
+      by: ["tipo"],
+      where: { ...filtroFilial, conciliado: true, data: { lte: data }, contaBancaria: { ativo: true } },
+      _sum: { valor: true },
+    }),
+  ]);
+  const saldoInicialTotal = Number(saldosIniciais._sum.saldoInicial ?? 0);
 
   const entradas = Number(somas.find((s) => s.tipo === "ENTRADA")?._sum.valor ?? 0);
   const saidas = Number(somas.find((s) => s.tipo === "SAIDA")?._sum.valor ?? 0);
