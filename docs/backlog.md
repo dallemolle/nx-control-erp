@@ -151,16 +151,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
 
 ## Qualidade de testes
 
-- **`src/lib/versao.test.ts` estoura o timeout de 5s de forma intermitente
-  na suíte completa** (visto em 2026-11-03; passa isolado e na maioria das
-  rodadas completas). Mesma causa dos testes de schema de cliente/fornecedor
-  corrigidos no commit `a2d8fc5` — `await import()` dentro do teste sob a
-  carga da suíte paralela —, mas aqui o import dinâmico é necessário
-  (`vi.doMock("node:fs")` + `vi.resetModules()`), então a troca por import
-  estático não se aplica. Caminhos: aumentar o timeout só deste arquivo
-  (`describe(..., { timeout: 15_000 })`) ou trocar o `doMock` por
-  `vi.mock` hoisted com `mockReturnValueOnce` por teste.
-
 - **Teste de rollback do orçamento não exercita falha real de transação**
   (Fase 5, sub-projeto 1 — Orçamento, `salvarValoresOrcamentoDoAno`). O
   teste de rollback simula a falha mas não força um erro genuíno no meio
