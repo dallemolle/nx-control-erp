@@ -2,7 +2,7 @@
 
 API programática para automatizar lançamentos financeiros (contas a pagar/receber, movimentação bancária) sem passar pela tela do navegador — pensada para um agente de IA ou script externo.
 
-Ver também: `docs/superpowers/specs/2026-09-15-api-rest-automacao-design.md` (desenho original) e `docs/backlog.md` (limitações conhecidas, ex.: sem idempotência).
+Ver também: `docs/superpowers/specs/2026-09-15-api-rest-automacao-design.md` (desenho original) e `docs/backlog.md` (limitações conhecidas).
 
 ## 1. Gerar uma chave de API
 
@@ -56,6 +56,7 @@ http://localhost:3000/api/v1
 | Campo obrigatório faltando / identificador (CNPJ, código, nome) não encontrado | 422 |
 | Perfil sem permissão pra ação | 403 |
 | Recurso referenciado não existe (ex.: `parcelaId`) | 404 |
+| `Idempotency-Key` ainda em processamento (ver abaixo) | 409 |
 | Erro inesperado | 500 |
 
 ## 5. Regra geral: identificadores por CNPJ/código/nome, não por UUID interno
@@ -63,6 +64,26 @@ http://localhost:3000/api/v1
 Em vez de IDs internos, os campos de fornecedor/cliente/categoria/etc. usam o que você já tem: **CNPJ/CPF** (fornecedor/cliente), **código** (centro de custo, centro de lucro, projeto — o mesmo código que aparece no cadastro), **nome** (categoria financeira, safra — comparação sem diferenciar maiúsc./minúsc.), **agência + conta** (conta bancária). Se não encontrar, a API devolve erro claro em vez de criar o cadastro sozinha. A única exceção é `parcelaId` na baixa (você pega esse ID chamando `GET /titulos` antes).
 
 ---
+
+### Reenvio seguro — `Idempotency-Key` (opcional, recomendado)
+
+Todo `POST` aceita o header `Idempotency-Key` (1 a 255 caracteres; use um UUID gerado **por operação**, e repita o mesmo valor ao reenviar a mesma operação após timeout ou erro de rede):
+
+```
+Idempotency-Key: 6f1c2e8a-3b4d-4c5e-9f00-1a2b3c4d5e6f
+```
+
+| Situação | Resposta |
+|---|---|
+| Primeira vez | executa normalmente (`201`) |
+| Reenvio depois de sucesso | **não executa de novo**: devolve a mesma resposta (mesmo status e corpo) com o header `Idempotent-Replayed: true` |
+| Reenvio enquanto a original ainda está rodando | `409` — espere e reenvie |
+| Mesma chave com outro corpo JSON | `422` — gere uma chave nova para uma operação diferente |
+| A original falhou (`4xx`/`5xx`) | a chave é liberada: corrija e reenvie com a mesma chave |
+
+A chave vale por usuário + filial + rota e não expira. Sem o header, cada `POST` cria um registro novo (comportamento anterior). Em `/extratos/importar` (multipart) a comparação de corpo não é feita, só a da chave.
+
+Raro: se o servidor cair depois de gravar e antes de responder, a chave fica "em processamento" (`409`) para sempre — confira pelo `GET` se o registro foi criado antes de tentar com uma chave nova.
 
 ## 6. Rotas de escrita
 

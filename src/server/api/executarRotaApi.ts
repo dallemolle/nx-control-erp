@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 import { PermissionError, FilialSomenteLeituraError } from "@/server/auth/permissions";
 import { ApiAuthError, requireSessaoApi } from "./sessaoApi";
+import { comIdempotencia, ErroIdempotencia } from "./idempotencia";
 import { ErroClassificacaoFiscal } from "@/server/services/classificacaoFiscal";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { ClassificacaoFiscal } from "@prisma/client";
@@ -35,9 +36,9 @@ export async function executarRotaApi(
 ): Promise<Response> {
   try {
     const sessao = await requireSessaoApi(request);
-    return await handler(sessao);
+    return await comIdempotencia(request, sessao, () => handler(sessao));
   } catch (erro) {
-    if (erro instanceof ApiAuthError) {
+    if (erro instanceof ApiAuthError || erro instanceof ErroIdempotencia) {
       return Response.json({ erro: erro.message }, { status: erro.status });
     }
     if (erro instanceof PermissionError || erro instanceof FilialSomenteLeituraError) {
