@@ -191,13 +191,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   UTC-3), o arquivo é nomeado com a data de amanhã. Cosmético, e
   consistente com a convenção UTC já usada em todo o projeto.
 
-- **`import * as Papa from "papaparse"` em `csv.ts` diverge do
-  `import Papa from "papaparse"` já usado em `importacaoTitulo.ts`.**
-  Ambos compilam (foi uma correção necessária de interop de módulo feita
-  pelo implementador da Task 1), mas os dois estilos convivendo no projeto
-  é uma pequena inconsistência — padronizar em um dos dois quando algum
-  desses arquivos for tocado de novo.
-
 - **`exceljs` é uma dependência pesada** (traz `archiver`, `unzipper`,
   `glob@7`, `fstream`, algumas já descontinuadas). Só é importado por
   Route Handlers hoje (nunca por um componente client), o que é o correto
