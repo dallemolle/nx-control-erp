@@ -17,6 +17,7 @@ import { FiltroStatus } from "./filtro-status";
 import { ImportarExtratoDialogForm } from "./importar-extrato-dialog-form";
 import { ReconciliarPendentesButton } from "./reconciliar-pendentes-button";
 import { LinhaExtratoActions } from "./linha-extrato-actions";
+import { formatarData, formatarMoeda } from "@/lib/formatacao";
 
 function statusValido(valor: string | undefined): StatusLinhaExtrato | undefined {
   return STATUS_LINHA_EXTRATO.includes(valor as (typeof STATUS_LINHA_EXTRATO)[number])
@@ -84,12 +85,12 @@ export default async function ConciliacaoPage({
         <TableBody>
           {linhas.map((linha) => (
             <TableRow key={linha.id}>
-              <TableCell>{new Date(linha.data).toLocaleDateString("pt-BR")}</TableCell>
+              <TableCell>{formatarData(linha.data)}</TableCell>
               <TableCell>
                 {linha.contaBancaria.banco.nome} - Ag {linha.contaBancaria.agencia}/CC {linha.contaBancaria.conta}
               </TableCell>
               <TableCell>{linha.historico}</TableCell>
-              <TableCell>{Number(linha.valor).toFixed(2)}</TableCell>
+              <TableCell>{formatarMoeda(linha.valor)}</TableCell>
               <TableCell>
                 <Badge variant={linha.status === "CONCILIADO" ? "default" : "secondary"}>
                   {STATUS_LABEL[linha.status] ?? linha.status}

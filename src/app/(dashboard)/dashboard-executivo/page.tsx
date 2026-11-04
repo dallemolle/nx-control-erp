@@ -10,10 +10,7 @@ import {
 import { EntradasSaidasChart } from "./entradas-saidas-chart";
 import { EvolucaoSaldoChart } from "./evolucao-saldo-chart";
 import { AgingChart } from "./aging-chart";
-
-function formatarMoeda(valor: number): string {
-  return valor.toFixed(2);
-}
+import { formatarMoeda } from "@/lib/formatacao";
 
 export default async function DashboardExecutivoPage() {
   const sessao = await requireSessaoAtiva();

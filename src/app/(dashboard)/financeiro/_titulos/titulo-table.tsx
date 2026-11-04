@@ -13,13 +13,14 @@ import { BadgeClassificacao } from "../../_shared/badge-classificacao";
 import { alterarVencimentoParcelaAction, cancelarParcelaAction } from "./actions";
 import { AnexosPanel } from "./anexos-panel";
 import { TituloDialogForm, paraInputDate, type TituloEditavel } from "./titulo-dialog-form";
+import { formatarData, formatarMoeda } from "@/lib/formatacao";
 
 type ParcelaLinha = {
   id: string;
   numero: number;
   dataVencimento: Date;
   /** Vem como Decimal do Prisma ou string após a serialização servidor→cliente. */
-  valorAtualizado: unknown;
+  valorAtualizado: number | string | { toString(): string };
   status: string;
 };
 
@@ -55,14 +56,6 @@ type TituloLinha = {
   _count: { anexos: number };
   parcelas: ParcelaLinha[];
 };
-
-function formatarData(data: Date): string {
-  return new Date(data).toLocaleDateString("pt-BR");
-}
-
-function formatarMoeda(valor: unknown): string {
-  return Number(valor as string | number).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
 
 export type OpcoesTitulo = {
   contrapartes: { id: string; nome: string; classificacaoFiscalPadrao?: ClassificacaoFiscal | null }[];

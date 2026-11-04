@@ -114,13 +114,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   compartilhado `buscarFiliaisDaEmpresa(empresaId)` que decidisse isso uma
   vez só, em vez de replicar a escolha a cada novo serviço consolidado).
 
-- **Sem formatador de moeda compartilhado.** `formatarMoeda` em
-  `dashboard-executivo/page.tsx` é só `valor.toFixed(2)` — sem separador de
-  milhar, sem `R$` — mesmo padrão já usado em 13 arquivos do projeto, mas
-  este é o primeiro dashboard "executivo" com números de 7 dígitos, onde a
-  falta de formatação mais pesa. Bom gatilho para extrair um formatador
-  compartilhado em `src/lib/` quando a próxima tela financeira for tocada.
-
 ## Cobertura de relatórios
 
 - **Projeto como dimensão de relatório** (Fase 5, sub-projeto 2a — Fluxo
@@ -167,22 +160,20 @@ para ser retomado sem precisar reconstruir o raciocínio original.
 
 ## Exibição de datas
 
-- **Datas aparecem um dia antes nas telas que formatam sem fuso**
-  (visto em 2026-11-03 ao testar a tela Fiscal × gerencial). Datas de
-  título/parcela/lançamento são gravadas à meia-noite UTC (`2026-11-03T00:00Z`)
-  e várias telas fazem `new Date(d).toLocaleDateString("pt-BR")` sem
-  `timeZone`, o que no horário de Brasília (UTC-3) mostra 02/11. Ocorre em
-  `titulo-table.tsx` (`formatarData`) e mais ~4 lugares
-  (`grep -rn 'toLocaleDateString("pt-BR")' src/app`). A tela
-  `/controladoria/fiscal-gerencial` já usa `{ timeZone: "UTC" }`. Correção:
-  um `formatarDataBR` compartilhado em `src/lib/` com `timeZone: "UTC"`,
-  junto do formatador de moeda já citado neste backlog.
-
 - **Aviso "Only plain objects can be passed to Client Components" (Decimal)**
   em Contas a pagar/receber: a página passa títulos com `parcelas[].valorAtualizado`
   e `baixas[].valorPago` como `Decimal` do Prisma para o `TituloTable` (client).
   Funciona (o tipo já prevê "Decimal ou string"), mas polui o console em dev.
   Correção: converter para `number` na página antes de passar ao client.
+
+## Qualidade de código
+
+- **21 erros de lint pré-existentes (`react-hooks/set-state-in-effect`)**
+  nos formulários em diálogo (`*-dialog-form.tsx`), que resetam o estado com
+  `setState` dentro de `useEffect` ao abrir/fechar. Funciona, mas `npm run
+  lint` não passa limpo. Correção: resetar no handler `onOpenChange` (padrão
+  já usado em `titulo-dialog-form.tsx`, `aoAbrirOuFechar`) ou remontar o
+  formulário com `key`.
 
 ## Qualidade de testes
 

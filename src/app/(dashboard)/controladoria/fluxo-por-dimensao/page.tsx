@@ -6,6 +6,7 @@ import { SeletorAnoMes } from "../_shared/seletor-ano-mes";
 import { SeletorDimensao } from "./seletor-dimensao";
 import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
+import { formatarMoeda } from "@/lib/formatacao";
 
 const DIMENSOES_VALIDAS: TipoDimensao[] = ["CENTRO_CUSTO", "CENTRO_LUCRO", "SAFRA"];
 
@@ -86,12 +87,12 @@ export default async function FluxoPorDimensaoPage({
             return (
               <TableRow key={linha.dimensaoId ?? "nao-classificado"}>
                 <TableCell className="font-medium">{linha.dimensaoNome}</TableCell>
-                <TableCell>{linha.entradasRealizadas.toFixed(2)}</TableCell>
-                <TableCell>{linha.saidasRealizadas.toFixed(2)}</TableCell>
-                <TableCell>{linha.entradasProjetadas.toFixed(2)}</TableCell>
-                <TableCell>{linha.saidasProjetadas.toFixed(2)}</TableCell>
+                <TableCell>{formatarMoeda(linha.entradasRealizadas)}</TableCell>
+                <TableCell>{formatarMoeda(linha.saidasRealizadas)}</TableCell>
+                <TableCell>{formatarMoeda(linha.entradasProjetadas)}</TableCell>
+                <TableCell>{formatarMoeda(linha.saidasProjetadas)}</TableCell>
                 <TableCell className={saldo < 0 ? "font-medium text-destructive" : undefined}>
-                  {saldo.toFixed(2)}
+                  {formatarMoeda(saldo)}
                 </TableCell>
               </TableRow>
             );

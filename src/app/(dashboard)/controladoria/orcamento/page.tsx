@@ -7,6 +7,7 @@ import { LinhaOrcamentoForm } from "./linha-orcamento-form";
 import { SeletorAnoMes } from "../_shared/seletor-ano-mes";
 import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
+import { formatarMoeda } from "@/lib/formatacao";
 
 function anoValido(valor: string | undefined): number {
   const numero = Number(valor);
@@ -102,12 +103,12 @@ export default async function OrcamentoPage({
             {linhasDoMes.map((linha) => (
               <TableRow key={linha.categoriaFinanceiraId} className={linha.alerta ? "bg-destructive/10" : undefined}>
                 <TableCell className="font-medium">{linha.categoriaNome}</TableCell>
-                <TableCell>{linha.orcado.toFixed(2)}</TableCell>
-                <TableCell>{linha.realizado.toFixed(2)}</TableCell>
-                <TableCell>{linha.projetado.toFixed(2)}</TableCell>
+                <TableCell>{formatarMoeda(linha.orcado)}</TableCell>
+                <TableCell>{formatarMoeda(linha.realizado)}</TableCell>
+                <TableCell>{formatarMoeda(linha.projetado)}</TableCell>
                 <TableCell className={linha.alerta ? "font-medium text-destructive" : undefined}>
                   <div className="flex items-center gap-2">
-                    {linha.variacaoAbsolutaRealizado.toFixed(2)}
+                    {formatarMoeda(linha.variacaoAbsolutaRealizado)}
                     {linha.alerta && <Badge variant="destructive">Estouro</Badge>}
                   </div>
                 </TableCell>

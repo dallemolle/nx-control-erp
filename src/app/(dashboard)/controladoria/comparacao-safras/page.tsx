@@ -5,6 +5,7 @@ import { listarComparativoSafras } from "@/server/services/orcamentoSafra";
 import { LinhaSafraForm } from "./linha-safra-form";
 import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
+import { formatarMoeda } from "@/lib/formatacao";
 
 export default async function ComparacaoSafrasPage({
   searchParams,
@@ -63,10 +64,10 @@ export default async function ComparacaoSafrasPage({
               <TableCell>
                 <LinhaSafraForm safraId={linha.safraId} valorOrcado={linha.orcado} somenteLeitura={somenteLeitura} />
               </TableCell>
-              <TableCell>{linha.realizado.toFixed(2)}</TableCell>
-              <TableCell>{linha.projetado.toFixed(2)}</TableCell>
+              <TableCell>{formatarMoeda(linha.realizado)}</TableCell>
+              <TableCell>{formatarMoeda(linha.projetado)}</TableCell>
               <TableCell>
-                {linha.variacaoAbsolutaRealizado.toFixed(2)}
+                {formatarMoeda(linha.variacaoAbsolutaRealizado)}
                 {linha.variacaoPercentualRealizado !== null
                   ? ` (${(linha.variacaoPercentualRealizado * 100).toFixed(1)}%)`
                   : null}

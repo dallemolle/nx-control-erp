@@ -9,6 +9,7 @@ import { ExportarLinks } from "../../_shared/exportar-links";
 import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
 import { AvisoVisaoFiltrada } from "../_fluxo-de-caixa/aviso-visao-filtrada";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
+import { formatarMoeda } from "@/lib/formatacao";
 
 const GRANULARIDADES_VALIDAS: Granularidade[] = ["DIA", "SEMANA", "MES", "ANO"];
 
@@ -78,11 +79,11 @@ export default async function FluxoDeCaixaPage({
           {periodos.map((periodo) => (
             <TableRow key={periodo.inicio.toISOString()}>
               <TableCell>{formatarRotuloPeriodo(granularidade, periodo.inicio, periodo.fim)}</TableCell>
-              <TableCell>{periodo.saldoInicial.toFixed(2)}</TableCell>
-              <TableCell>{periodo.entradas.toFixed(2)}</TableCell>
-              <TableCell>{periodo.saidas.toFixed(2)}</TableCell>
-              <TableCell>{periodo.geracaoLiquida.toFixed(2)}</TableCell>
-              <TableCell>{periodo.saldoFinal.toFixed(2)}</TableCell>
+              <TableCell>{formatarMoeda(periodo.saldoInicial)}</TableCell>
+              <TableCell>{formatarMoeda(periodo.entradas)}</TableCell>
+              <TableCell>{formatarMoeda(periodo.saidas)}</TableCell>
+              <TableCell>{formatarMoeda(periodo.geracaoLiquida)}</TableCell>
+              <TableCell>{formatarMoeda(periodo.saldoFinal)}</TableCell>
             </TableRow>
           ))}
         </TableBody>
