@@ -91,19 +91,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   visão consolidada por empresa, que depende da mesma solução do item
   acima.
 
-- **Volume de queries por render (~23 × número de filiais, sequenciais).**
-  `dashboardExecutivo.ts` roda a consolidação inteira dentro de loops
-  `for...await` (não `Promise.all`), e `buscarSaldoEmCaixaAte` recalcula um
-  agregado de todo o histórico 7 vezes por filial (6 fins de mês + agora).
-  Não é um problema hoje (poucas filiais por empresa, mesmo padrão já
-  aceito em `fluxoDeCaixaEstrategico.ts`), mas é o ponto mais provável de
-  reclamação de performance conforme o número de filiais crescer. Ganhos
-  mais baratos, em ordem: paralelizar os loops por filial com
-  `Promise.all`; trocar `include` (todas as colunas de `Parcela`) por
-  `select` nos dois `findMany` de parcela; a longo prazo, derivar os 6
-  saldos de fim de mês de um único agregado em vez de 6 chamadas a
-  `buscarSaldoEmCaixaAte`.
-
 - **`filial.findMany` da consolidação não filtra `ativo: true`.** Uma
   filial desativada ainda entra nos indicadores/gráficos consolidados.
   Decisão consciente: mantém o mesmo comportamento de
