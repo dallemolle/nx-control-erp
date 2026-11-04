@@ -2,7 +2,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission } from "@/server/auth/permissions";
 import { listarAuditoria, buscarOpcoesFiltroAuditoria } from "@/server/services/auditoria";
-import { filtroAuditoriaDaUrl, paginaDaUrl } from "./filtro-auditoria-url";
+import { filtroAuditoriaDaUrl, paginaDaUrl, queryStringDoFiltroAuditoria } from "./filtro-auditoria-url";
+import { ExportarLinks } from "../_shared/exportar-links";
 import { BarraDeFiltrosAuditoria } from "./barra-de-filtros";
 import { Paginacao } from "./paginacao";
 
@@ -47,6 +48,8 @@ export default async function AuditoriaPage({ searchParams }: { searchParams: Pr
       </div>
 
       <BarraDeFiltrosAuditoria opcoes={opcoes} />
+
+      <ExportarLinks baseHref="/auditoria/export" queryString={queryStringDoFiltroAuditoria(get)} />
 
       <Table>
         <TableHeader>

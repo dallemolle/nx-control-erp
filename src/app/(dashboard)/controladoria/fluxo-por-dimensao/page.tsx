@@ -5,6 +5,7 @@ import { listarFluxoDeCaixaPorDimensao, type TipoDimensao } from "@/server/servi
 import { SeletorAnoMes } from "../_shared/seletor-ano-mes";
 import { SeletorDimensao } from "./seletor-dimensao";
 import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
+import { ExportarLinks } from "../../_shared/exportar-links";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 import { formatarMoeda } from "@/lib/formatacao";
 
@@ -67,6 +68,10 @@ export default async function FluxoPorDimensaoPage({
         <SeletorDimensao dimensao={dimensao} ano={ano} mes={mes} />
         <SeletorAnoMes ano={ano} mes={mes} />
         <SeletorClassificacao classificacao={classificacao} />
+        <ExportarLinks
+          baseHref="/controladoria/fluxo-por-dimensao/export"
+          queryString={`dimensao=${dimensao}&ano=${ano}&mes=${mes}${classificacao ? `&classificacao=${classificacao}` : ""}`}
+        />
       </div>
 
       <Table>
