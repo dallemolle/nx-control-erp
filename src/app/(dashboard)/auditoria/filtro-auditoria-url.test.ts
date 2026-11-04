@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { filtroAuditoriaDaUrl, paginaDaUrl } from "./filtro-auditoria-url";
+import { filtroAuditoriaDaUrl, paginaDaUrl, queryStringDoFiltroAuditoria } from "./filtro-auditoria-url";
 
 describe("filtroAuditoriaDaUrl", () => {
   test("nenhum param presente devolve filtro totalmente vazio", () => {
@@ -59,5 +59,21 @@ describe("paginaDaUrl", () => {
 
   test("valor válido devolve o número", () => {
     expect(paginaDaUrl((campo) => (campo === "pagina" ? "5" : undefined))).toBe(5);
+  });
+});
+
+describe("queryStringDoFiltroAuditoria", () => {
+  test("repassa só os filtros preenchidos, sem pagina nem sentinela", () => {
+    const params: Record<string, string> = {
+      entidade: "Titulo",
+      acao: "__nenhum__",
+      dataDe: "2026-11-01",
+      pagina: "3",
+    };
+    expect(queryStringDoFiltroAuditoria((campo) => params[campo])).toBe("entidade=Titulo&dataDe=2026-11-01");
+  });
+
+  test("codifica valores com caracteres especiais", () => {
+    expect(queryStringDoFiltroAuditoria((campo) => (campo === "acao" ? "A&B" : undefined))).toBe("acao=A%26B");
   });
 });

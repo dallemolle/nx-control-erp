@@ -169,16 +169,14 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   criar um terceiro `gerarPdf` ao lado de `gerarCsv`/`gerarExcel`, sem
   tocar nas rotas já existentes além de adicionar o novo `formato=pdf`.
 
-- **Wiring dos ~8 relatórios restantes.** O mecanismo genérico está
-  validado com 2 relatórios (contas a pagar/receber, fluxo de caixa
-  realizado). Os demais da lista original da Fase 6 — fluxo de caixa
-  projetado, conciliação bancária, orçado x realizado, caixa por centro
-  de custo/lucro/safra, obrigações e recebimentos futuros, movimentação
-  bancária, auditoria de alterações — ficam para wiring futuro repetitivo
-  sobre o mesmo `gerarCsv`/`gerarExcel`/`responderExport`/`ExportarLinks`.
-  "Necessidade de capital de giro" fica de fora até existir modelo de
-  dados para o conceito (mesma decisão já registrada para o Dashboard
-  executivo).
+- **Relatórios ainda sem export.** Em 2026-11-04 ganharam export o fluxo
+  projetado, o orçado × realizado (ano inteiro), o fluxo por dimensão, a
+  movimentação bancária (Tesouraria), a conciliação e a auditoria (até 10 mil
+  registros, `LIMITE_EXPORT_AUDITORIA`). "Obrigações e recebimentos futuros"
+  já sai pelo export de Contas a pagar/receber com filtro de vencimento.
+  Faltam a comparação entre safras e o fluxo estratégico (mesmo padrão
+  `responderExport`). "Necessidade de capital de giro" segue fora até existir
+  modelo de dados para o conceito.
 
 - **`?formato=` desconhecido cai silenciosamente em CSV.** Hoje só existem
   `csv`/`xlsx`, então qualquer outro valor (incluindo erro de digitação)

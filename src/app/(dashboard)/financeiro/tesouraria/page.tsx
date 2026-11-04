@@ -15,6 +15,7 @@ import { SaldoBancarioDialogForm } from "./saldo-bancario-dialog-form";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
 import { BadgeClassificacao } from "../../_shared/badge-classificacao";
+import { ExportarLinks } from "../../_shared/exportar-links";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
 
 const ORIGEM_LABEL: Record<string, string> = {
@@ -111,7 +112,13 @@ export default async function TesourariaPage({
 
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-sm font-medium">Lançamentos</h2>
-        <SeletorClassificacao classificacao={classificacao} />
+        <div className="flex flex-wrap items-center gap-4">
+          <ExportarLinks
+            baseHref="/financeiro/tesouraria/export"
+            queryString={classificacao ? `classificacao=${classificacao}` : undefined}
+          />
+          <SeletorClassificacao classificacao={classificacao} />
+        </div>
       </div>
 
       <Table>

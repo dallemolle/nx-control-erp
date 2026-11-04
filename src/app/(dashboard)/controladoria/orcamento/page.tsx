@@ -6,6 +6,7 @@ import { listarComparativoOrcamento } from "@/server/services/orcamento";
 import { LinhaOrcamentoForm } from "./linha-orcamento-form";
 import { SeletorAnoMes } from "../_shared/seletor-ano-mes";
 import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
+import { ExportarLinks } from "../../_shared/exportar-links";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 import { formatarMoeda } from "@/lib/formatacao";
 
@@ -64,6 +65,10 @@ export default async function OrcamentoPage({
       <div className="flex flex-wrap items-center gap-4">
         <SeletorAnoMes ano={ano} mes={mes} />
         <SeletorClassificacao classificacao={classificacao} />
+        <ExportarLinks
+          baseHref="/controladoria/orcamento/export"
+          queryString={`ano=${ano}${classificacao ? `&classificacao=${classificacao}` : ""}`}
+        />
       </div>
       {classificacao ? (
         <p className="text-sm text-muted-foreground" role="note">

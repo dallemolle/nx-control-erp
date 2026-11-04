@@ -20,10 +20,11 @@ export type OpcoesFiltroAuditoria = {
   filiais: { id: string; nome: string }[];
 };
 
-export async function listarAuditoria(sessao: SessaoAtiva, filtro: FiltroAuditoria, pagina: number) {
-  requirePermission(sessao.perfil, "auditoria:ler");
+/** Teto do export: um filtro vazio numa empresa antiga não pode gerar um arquivo sem fim. */
+export const LIMITE_EXPORT_AUDITORIA = 10_000;
 
-  const where = {
+function whereDaAuditoria(sessao: SessaoAtiva, filtro: FiltroAuditoria) {
+  return {
     empresaId: sessao.empresaId,
     ...(filtro.entidade && { entidade: filtro.entidade }),
     ...(filtro.acao && { acao: filtro.acao }),
@@ -36,17 +37,26 @@ export async function listarAuditoria(sessao: SessaoAtiva, filtro: FiltroAuditor
       },
     }),
   };
+}
 
+const INCLUDE_AUDITORIA = {
+  usuario: { select: { id: true, nome: true } },
+  filial: { select: { id: true, nome: true } },
+} as const;
+
+const ORDEM_AUDITORIA = [{ criadoEm: "desc" as const }, { id: "desc" as const }];
+
+export async function listarAuditoria(sessao: SessaoAtiva, filtro: FiltroAuditoria, pagina: number) {
+  requirePermission(sessao.perfil, "auditoria:ler");
+
+  const where = whereDaAuditoria(sessao, filtro);
   const paginaSegura = Math.max(pagina, 1);
 
   const [logs, total] = await Promise.all([
     prisma.auditLog.findMany({
       where,
-      include: {
-        usuario: { select: { id: true, nome: true } },
-        filial: { select: { id: true, nome: true } },
-      },
-      orderBy: [{ criadoEm: "desc" }, { id: "desc" }],
+      include: INCLUDE_AUDITORIA,
+      orderBy: ORDEM_AUDITORIA,
       skip: (paginaSegura - 1) * TAMANHO_PAGINA,
       take: TAMANHO_PAGINA,
     }),
@@ -54,6 +64,18 @@ export async function listarAuditoria(sessao: SessaoAtiva, filtro: FiltroAuditor
   ]);
 
   return { logs, totalPaginas: Math.max(Math.ceil(total / TAMANHO_PAGINA), 1) };
+}
+
+/** Mesmo filtro da tela, sem paginação (até `LIMITE_EXPORT_AUDITORIA` registros, os mais recentes). */
+export async function listarAuditoriaParaExport(sessao: SessaoAtiva, filtro: FiltroAuditoria) {
+  requirePermission(sessao.perfil, "auditoria:ler");
+
+  return prisma.auditLog.findMany({
+    where: whereDaAuditoria(sessao, filtro),
+    include: INCLUDE_AUDITORIA,
+    orderBy: ORDEM_AUDITORIA,
+    take: LIMITE_EXPORT_AUDITORIA,
+  });
 }
 
 export async function buscarOpcoesFiltroAuditoria(sessao: SessaoAtiva): Promise<OpcoesFiltroAuditoria> {
