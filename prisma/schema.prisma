@@ -92,11 +92,11 @@ model Empresa {
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  usuarios     UsuarioEmpresa[]
-  filiais      Filial[]
-  clientes     Cliente[]
-  fornecedores Fornecedor[]
-  auditLogs    AuditLog[]
+  usuarios             UsuarioEmpresa[]
+  filiais              Filial[]
+  clientes             Cliente[]
+  fornecedores         Fornecedor[]
+  auditLogs            AuditLog[]
   cenariosEstrategicos CenarioEstrategico[]
 
   @@map("empresas")
@@ -132,19 +132,20 @@ model Filial {
 
   empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
 
-  usuariosFiliais       UsuarioEmpresaFilial[]
-  centrosCusto          CentroCusto[]
-  centrosLucro          CentroLucro[]
-  safras                Safra[]
-  projetos              Projeto[]
-  categoriasFinanceiras CategoriaFinanceira[]
-  contasBancarias       ContaBancaria[]
-  titulos               Titulo[]
-  auditLogs             AuditLog[]
-  lancamentosBancarios  LancamentoBancario[]
-  extratosImportados    ExtratoImportado[]
-  orcamentos            Orcamento[]
-  orcamentosSafra       OrcamentoSafra[]
+  usuariosFiliais         UsuarioEmpresaFilial[]
+  centrosCusto            CentroCusto[]
+  centrosLucro            CentroLucro[]
+  safras                  Safra[]
+  projetos                Projeto[]
+  categoriasFinanceiras   CategoriaFinanceira[]
+  contasBancarias         ContaBancaria[]
+  titulos                 Titulo[]
+  auditLogs               AuditLog[]
+  lancamentosBancarios    LancamentoBancario[]
+  extratosImportados      ExtratoImportado[]
+  orcamentos              Orcamento[]
+  orcamentosSafra         OrcamentoSafra[]
+  requisicoesIdempotentes RequisicaoIdempotente[]
 
   @@index([empresaId])
   @@map("filiais")
@@ -168,6 +169,7 @@ model Usuario {
   saldosBancariosInformados SaldoBancarioInformado[]
   extratosImportados        ExtratoImportado[]
   apiKeys                   ApiKey[]
+  requisicoesIdempotentes   RequisicaoIdempotente[]
 
   @@map("usuarios")
 }
@@ -186,6 +188,29 @@ model ApiKey {
 
   @@index([usuarioId])
   @@map("api_keys")
+}
+
+/// Proteção contra reenvio de POST na API v1 (cabeçalho `Idempotency-Key`).
+/// Enquanto `statusHttp` é nulo a requisição original está em andamento; depois
+/// guarda a resposta de sucesso, que é devolvida de novo em qualquer reenvio.
+model RequisicaoIdempotente {
+  id          String    @id @default(uuid())
+  usuarioId   String
+  filialId    String
+  rota        String
+  chave       String
+  /// sha256 do corpo JSON; nulo em multipart (o boundary muda a cada envio).
+  hashCorpo   String?
+  statusHttp  Int?
+  resposta    Json?
+  criadoEm    DateTime  @default(now())
+  concluidaEm DateTime?
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  filial  Filial  @relation(fields: [filialId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, filialId, rota, chave])
+  @@map("requisicoes_idempotentes")
 }
 
 model UsuarioEmpresa {
@@ -232,10 +257,10 @@ model CentroCusto {
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  filial  Filial        @relation(fields: [filialId], references: [id], onDelete: Cascade)
-  parent  CentroCusto?  @relation("CentroCustoHierarquia", fields: [parentId], references: [id])
-  filhos  CentroCusto[] @relation("CentroCustoHierarquia")
-  titulos Titulo[]
+  filial               Filial               @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  parent               CentroCusto?         @relation("CentroCustoHierarquia", fields: [parentId], references: [id])
+  filhos               CentroCusto[]        @relation("CentroCustoHierarquia")
+  titulos              Titulo[]
   lancamentosBancarios LancamentoBancario[]
 
   @@unique([filialId, codigo])
@@ -252,8 +277,8 @@ model CentroLucro {
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  filial  Filial   @relation(fields: [filialId], references: [id], onDelete: Cascade)
-  titulos Titulo[]
+  filial               Filial               @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  titulos              Titulo[]
   lancamentosBancarios LancamentoBancario[]
 
   @@unique([filialId, codigo])
@@ -272,10 +297,10 @@ model Safra {
   criadoEm     DateTime           @default(now())
   atualizadoEm DateTime           @updatedAt
 
-  filial  Filial   @relation(fields: [filialId], references: [id], onDelete: Cascade)
-  titulos Titulo[]
+  filial               Filial               @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  titulos              Titulo[]
   lancamentosBancarios LancamentoBancario[]
-  orcamentosSafra OrcamentoSafra[]
+  orcamentosSafra      OrcamentoSafra[]
 
   @@unique([filialId, nome])
   @@index([filialId])
@@ -292,8 +317,8 @@ model Projeto {
   criadoEm     DateTime           @default(now())
   atualizadoEm DateTime           @updatedAt
 
-  filial  Filial   @relation(fields: [filialId], references: [id], onDelete: Cascade)
-  titulos Titulo[]
+  filial               Filial               @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  titulos              Titulo[]
   lancamentosBancarios LancamentoBancario[]
 
   @@unique([filialId, codigo])
@@ -323,14 +348,14 @@ model CategoriaFinanceira {
 }
 
 model Orcamento {
-  id                    String              @id @default(uuid())
+  id                    String   @id @default(uuid())
   filialId              String
   categoriaFinanceiraId String
   ano                   Int
   mes                   Int
-  valor                 Decimal             @db.Decimal(18, 2)
-  criadoEm              DateTime            @default(now())
-  atualizadoEm          DateTime            @updatedAt
+  valor                 Decimal  @db.Decimal(18, 2)
+  criadoEm              DateTime @default(now())
+  atualizadoEm          DateTime @updatedAt
 
   filial              Filial              @relation(fields: [filialId], references: [id], onDelete: Cascade)
   categoriaFinanceira CategoriaFinanceira @relation(fields: [categoriaFinanceiraId], references: [id])

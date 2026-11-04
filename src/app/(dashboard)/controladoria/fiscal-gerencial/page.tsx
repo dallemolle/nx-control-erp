@@ -14,6 +14,7 @@ import {
 import { ROTULOS_PENDENCIA_FISCAL, type PendenciaFiscal } from "@/lib/classificacaoFiscal";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { ComparativoChart } from "./comparativo-chart";
+import { formatarData, formatarMoeda } from "@/lib/formatacao";
 
 const MESES_CURTOS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 const PENDENCIAS = Object.keys(ROTULOS_PENDENCIA_FISCAL) as PendenciaFiscal[];
@@ -25,10 +26,6 @@ function anoValido(valor: string | undefined): number {
 
 function pendenciaValida(valor: string | undefined): PendenciaFiscal | undefined {
   return PENDENCIAS.includes(valor as PendenciaFiscal) ? (valor as PendenciaFiscal) : undefined;
-}
-
-function formatarMoeda(valor: number): string {
-  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 function formatarPercentual(valor: number | null): string {
@@ -271,7 +268,7 @@ export default async function FiscalGerencialPage({
                     <TableCell>{titulo.contraparte}</TableCell>
                     <TableCell>{titulo.tipo === "PAGAR" ? "A pagar" : "A receber"}</TableCell>
                     {/* Datas são gravadas à meia-noite UTC; sem o fuso fixo, no Brasil apareceria o dia anterior. */}
-                    <TableCell>{new Date(titulo.dataEmissao).toLocaleDateString("pt-BR", { timeZone: "UTC" })}</TableCell>
+                    <TableCell>{formatarData(titulo.dataEmissao)}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatarMoeda(titulo.valor)}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">

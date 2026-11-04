@@ -9,6 +9,7 @@ import { dataValida } from "../_fluxo-de-caixa/data-valida";
 import { AvisoVisaoFiltrada } from "../_fluxo-de-caixa/aviso-visao-filtrada";
 import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
+import { formatarMoeda } from "@/lib/formatacao";
 
 const MODOS_VALIDOS: ModoJanelaProjetado[] = ["MOVEL", "ANO_CIVIL"];
 
@@ -72,13 +73,13 @@ export default async function FluxoDeCaixaProjetadoPage({
           {periodos.map((periodo) => (
             <TableRow key={periodo.inicio.toISOString()} className={periodo.alerta ? "bg-destructive/10" : undefined}>
               <TableCell>{formatarRotuloPeriodo("MES", periodo.inicio, periodo.fim)}</TableCell>
-              <TableCell>{periodo.saldoInicial.toFixed(2)}</TableCell>
-              <TableCell>{periodo.entradasProjetadas.toFixed(2)}</TableCell>
-              <TableCell>{periodo.saidasProjetadas.toFixed(2)}</TableCell>
-              <TableCell>{periodo.geracaoLiquida.toFixed(2)}</TableCell>
+              <TableCell>{formatarMoeda(periodo.saldoInicial)}</TableCell>
+              <TableCell>{formatarMoeda(periodo.entradasProjetadas)}</TableCell>
+              <TableCell>{formatarMoeda(periodo.saidasProjetadas)}</TableCell>
+              <TableCell>{formatarMoeda(periodo.geracaoLiquida)}</TableCell>
               <TableCell className={periodo.alerta ? "font-medium text-destructive" : undefined}>
                 <div className="flex items-center gap-2">
-                  {periodo.saldoFinal.toFixed(2)}
+                  {formatarMoeda(periodo.saldoFinal)}
                   {periodo.alerta && <Badge variant="destructive">Saldo negativo</Badge>}
                 </div>
               </TableCell>

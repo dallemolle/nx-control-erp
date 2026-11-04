@@ -7,6 +7,7 @@ import { requirePermission } from "@/server/auth/permissions";
 import * as conciliacaoService from "@/server/services/conciliacao";
 import { lancamentoDaLinhaSchema } from "@/lib/schemas/conciliacao";
 import { SEM_VALOR } from "@/lib/schemas/enums";
+import { formatarData, formatarMoeda } from "@/lib/formatacao";
 
 export type FormState = { erro?: string; sucesso?: boolean };
 
@@ -69,8 +70,8 @@ export async function buscarCandidatosAction(linhaExtratoId: string) {
   const candidatos = await conciliacaoService.buscarCandidatosDaLinha(sessao, linhaExtratoId);
   return candidatos.map((c) => ({
     id: c.id,
-    data: new Date(c.data).toLocaleDateString("pt-BR"),
-    valor: Number(c.valor).toFixed(2),
+    data: formatarData(c.data),
+    valor: formatarMoeda(c.valor),
     descricao: c.descricao,
     conciliado: c.conciliado,
   }));

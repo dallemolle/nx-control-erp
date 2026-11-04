@@ -15,6 +15,7 @@ import { SaldoBancarioDialogForm } from "./saldo-bancario-dialog-form";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
 import { BadgeClassificacao } from "../../_shared/badge-classificacao";
+import { formatarData, formatarMoeda } from "@/lib/formatacao";
 
 const ORIGEM_LABEL: Record<string, string> = {
   MANUAL: "Manual",
@@ -87,16 +88,16 @@ export default async function TesourariaPage({
               </CardHeader>
               <CardContent className="space-y-1 text-sm">
                 <p>
-                  Saldo contábil: <span className="font-medium">{saldoContabil.toFixed(2)}</span>
+                  Saldo contábil: <span className="font-medium">{formatarMoeda(saldoContabil)}</span>
                 </p>
                 {ultimoSaldoInformado ? (
                   <>
                     <p className="text-muted-foreground">
-                      Saldo bancário informado: {Number(ultimoSaldoInformado.saldo).toFixed(2)} em{" "}
-                      {new Date(ultimoSaldoInformado.data).toLocaleDateString("pt-BR")}
+                      Saldo bancário informado: {formatarMoeda(ultimoSaldoInformado.saldo)} em{" "}
+                      {formatarData(ultimoSaldoInformado.data)}
                     </p>
                     <p className={diferenca !== 0 ? "text-destructive" : "text-muted-foreground"}>
-                      Diferença: {diferenca?.toFixed(2)}
+                      Diferença: {diferenca === null ? "—" : formatarMoeda(diferenca)}
                     </p>
                   </>
                 ) : (
@@ -128,7 +129,7 @@ export default async function TesourariaPage({
         <TableBody>
           {lancamentos.map((lancamento) => (
             <TableRow key={lancamento.id}>
-              <TableCell>{new Date(lancamento.data).toLocaleDateString("pt-BR")}</TableCell>
+              <TableCell>{formatarData(lancamento.data)}</TableCell>
               <TableCell>
                 {lancamento.contaBancaria.banco.nome} - Ag {lancamento.contaBancaria.agencia}/CC{" "}
                 {lancamento.contaBancaria.conta}
@@ -138,7 +139,7 @@ export default async function TesourariaPage({
                   {lancamento.tipo === "ENTRADA" ? "Entrada" : "Saída"}
                 </Badge>
               </TableCell>
-              <TableCell>{Number(lancamento.valor).toFixed(2)}</TableCell>
+              <TableCell>{formatarMoeda(lancamento.valor)}</TableCell>
               <TableCell>
                 <Badge variant="outline">{ORIGEM_LABEL[lancamento.origem]}</Badge>
               </TableCell>
