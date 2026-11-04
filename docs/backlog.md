@@ -116,15 +116,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
 
 ## Cobertura de relatórios
 
-- **Projeto como dimensão de relatório** (Fase 5, sub-projeto 2a — Fluxo
-  de caixa por dimensão). O dado já é capturado (`LancamentoBancario.
-  projetoId`, `Titulo.projetoId`) e passa pela mesma validação de
-  filial/fallback via baixa que Centro de Custo/Lucro/Safra, mas a tela
-  `/controladoria/fluxo-por-dimensao` hoje só oferece `CENTRO_CUSTO`,
-  `CENTRO_LUCRO` e `SAFRA` no seletor. Adicionar `"PROJETO"` a
-  `TipoDimensao` e ao seletor é a extensão mais barata do backlog — a
-  infraestrutura de dados já suporta.
-
 - **Rollup hierárquico de Centro de Custo** (Fase 5, sub-projeto 2a). Se
   `CentroCusto` vier a ter hierarquia (centro-pai/centro-filho), o
   relatório por dimensão hoje trata cada `centroCustoId` como uma linha

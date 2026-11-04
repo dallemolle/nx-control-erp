@@ -8,7 +8,7 @@ import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 import { formatarMoeda } from "@/lib/formatacao";
 
-const DIMENSOES_VALIDAS: TipoDimensao[] = ["CENTRO_CUSTO", "CENTRO_LUCRO", "SAFRA"];
+const DIMENSOES_VALIDAS: TipoDimensao[] = ["CENTRO_CUSTO", "CENTRO_LUCRO", "SAFRA", "PROJETO"];
 
 function dimensaoValida(valor: string | undefined): TipoDimensao {
   return DIMENSOES_VALIDAS.includes(valor as TipoDimensao) ? (valor as TipoDimensao) : "CENTRO_CUSTO";
@@ -57,8 +57,8 @@ export default async function FluxoPorDimensaoPage({
         <h1 className="text-lg font-semibold">Fluxo de caixa por dimensão</h1>
         <p className="text-sm text-muted-foreground">
           Realizado (movimentações conciliadas) e projetado (títulos em
-          aberto) do mês, agrupados por centro de custo, centro de lucro ou
-          safra. &quot;Não classificado&quot; reúne o que não tem essa dimensão
+          aberto) do mês, agrupados por centro de custo, centro de lucro,
+          safra ou projeto. &quot;Não classificado&quot; reúne o que não tem essa dimensão
           preenchida.
         </p>
       </div>
