@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.1.7](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.6...nx-control-erp-v0.1.7) (2026-11-04)
+
+
+### Features
+
+* **api:** classificação fiscal × gerencial na API v1, importação CSV e exports ([86c5789](https://github.com/dallemolle/nx-control-erp/commit/86c5789ef430802421a60291796b43eacd0d0d6c))
+* **api:** Idempotency-Key nos POST da API v1 ([d241acb](https://github.com/dallemolle/nx-control-erp/commit/d241acb3f0d821ed7549e6dd67d4f4dc1cce058c))
+* **controladoria:** filtro fiscal × gerencial nos relatórios e relatório próprio ([ce35bbb](https://github.com/dallemolle/nx-control-erp/commit/ce35bbb8d5ffbcf1c1967bee61042c640dac01fe))
+* **db:** classificação fiscal × gerencial (migration aditiva) ([8548a3b](https://github.com/dallemolle/nx-control-erp/commit/8548a3bea683c9a70a265cfb09b0a025a745cc64))
+* **financeiro:** classificação fiscal × gerencial em títulos e lançamentos ([96a01de](https://github.com/dallemolle/nx-control-erp/commit/96a01de857d25f954dc59b75f93aa86e99f4a533))
+* **ui:** classificação fiscal × gerencial nas telas ([427c3cf](https://github.com/dallemolle/nx-control-erp/commit/427c3cf3ccee25b5131343b4687eb6a8fe8b20cb))
+* **ui:** formatadores compartilhados de moeda e data ([bf4f13c](https://github.com/dallemolle/nx-control-erp/commit/bf4f13c34d2523538f4b6c362a7d9b0df7613ce8))
+
+
+### Bug Fixes
+
+* **financeiro:** títulos sem Decimal ao passar para a tabela client ([31eaaa9](https://github.com/dallemolle/nx-control-erp/commit/31eaaa956331949370d869f4b54f05ff65f209eb))
+* **ui:** data de emissão em UTC na tela fiscal × gerencial; checklist e backlog ([13cbb95](https://github.com/dallemolle/nx-control-erp/commit/13cbb951aee7a75f0ce96bc74b5be9d306198bb5))
+
 ## [0.1.6](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.5...nx-control-erp-v0.1.6) (2026-09-20)
 
 
