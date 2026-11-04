@@ -1,4 +1,11 @@
-import type { StatusLinhaExtrato, TipoLancamento, Prisma } from "@prisma/client";
+import type {
+  ClassificacaoFiscal,
+  StatusLinhaExtrato,
+  TipoComprovante,
+  TipoLancamento,
+  Prisma,
+} from "@prisma/client";
+import { garantirComprovanteValido } from "@/server/services/classificacaoFiscal";
 import { prisma } from "@/server/db/client";
 import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permissions";
 import { registrarAuditoria } from "@/server/audit/registrar";
@@ -405,6 +412,9 @@ export async function criarLancamentoDaLinha(
     centroLucroId: string | null;
     safraId: string | null;
     projetoId: string | null;
+    /** Omitida = FISCAL (tarifas, IOF e rendimentos são documentos bancários). */
+    classificacaoFiscal?: ClassificacaoFiscal;
+    tipoComprovante?: TipoComprovante | null;
   },
 ) {
   requirePermission(sessao.perfil, "conciliacao:escrever");
@@ -428,6 +438,10 @@ export async function criarLancamentoDaLinha(
     projetoId: dados.projetoId,
   });
 
+  const classificacaoFiscal = dados.classificacaoFiscal ?? "FISCAL";
+  const tipoComprovante = dados.tipoComprovante ?? null;
+  garantirComprovanteValido({ classificacaoFiscal, tipoComprovante });
+
   const lancamento = await prisma.$transaction(async (tx) => {
     const criado = await tx.lancamentoBancario.create({
       data: {
@@ -443,6 +457,8 @@ export async function criarLancamentoDaLinha(
         centroLucroId: dados.centroLucroId,
         safraId: dados.safraId,
         projetoId: dados.projetoId,
+        classificacaoFiscal,
+        tipoComprovante,
         usuarioId: sessao.usuarioId,
         conciliado: true,
       },

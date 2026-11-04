@@ -13,6 +13,7 @@ import { ContasClientePanel } from "../_titulos/contas-client-panel";
 import { BarraDeFiltros } from "../_titulos/barra-de-filtros";
 import { filtroTitulosDaUrl, algumFiltroAtivo, queryStringDosFiltros } from "../_titulos/filtro-titulos-url";
 import { ExportarLinks } from "../../_shared/exportar-links";
+import { titulosParaCliente } from "../_titulos/titulos-para-cliente";
 
 function paramCru(valor: string | string[] | undefined): string | undefined {
   return Array.isArray(valor) ? valor[0] : valor;
@@ -102,7 +103,7 @@ export default async function ContasAReceberPage({ searchParams }: { searchParam
       />
       <ContasClientePanel
         tipo="RECEBER"
-        titulos={titulos}
+        titulos={titulosParaCliente(titulos)}
         opcoes={opcoes}
         podeEscrever={podeEscrever}
         podeBaixar={podeBaixar}

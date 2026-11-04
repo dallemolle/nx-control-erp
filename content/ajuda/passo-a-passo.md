@@ -74,6 +74,19 @@ Os links "Exportar CSV" e "Exportar Excel", no topo da tela, geram um arquivo co
 
 > Renegociar e cancelar são operações finais: uma parcela renegociada ou cancelada não pode receber baixa nem ser renegociada de novo.
 
+**Lançamentos fiscais e gerenciais**
+
+Todo título é classificado como **Fiscal** (tem documento fiscal ou oficial: NF-e, NFS-e, nota do produtor, guia de tributo, tarifa bancária, contrato…) ou **Gerencial** (negociação sem nota, com pequenos clientes ou fornecedores, controlada só internamente — com recibo, pedido interno ou sem comprovante). A classificação aparece como uma etiqueta "Fiscal"/"Gerencial" ao lado do documento na lista.
+
+- No formulário do título, a seção **Documento fiscal** tem a classificação, o tipo de comprovante (a lista muda conforme a classificação) e, para notas, número, série, data de emissão e chave de acesso. A chave de 44 dígitos pode ser colada do DANFE com espaços; o sistema confere o dígito verificador.
+- Para quem nunca emite nota, configure no cadastro do fornecedor/cliente a **Classificação padrão dos títulos** = Gerencial: os títulos novos daquele parceiro já vêm marcados assim.
+- O título fiscal pode ser salvo sem o número da nota (ela pode chegar depois). Enquanto faltar tipo de documento, número, chave ou anexo, ele aparece com um ícone de alerta na lista e na tela **Controladoria → Fiscal × gerencial**, em "Pendências fiscais".
+- A mesma nota não pode ser lançada duas vezes na filial (mesma chave de acesso, ou mesmo parceiro + tipo + série + número).
+- **Mudar a classificação** de um título já salvo pede um motivo, que fica registrado na auditoria. Os lançamentos bancários das baixas já aprovadas daquele título acompanham a mudança.
+- Títulos cadastrados antes deste recurso foram marcados como Fiscal. Os que na verdade são gerenciais devem ser reclassificados pela edição do título.
+
+A barra de filtros tem o filtro **Classificação** (Todas / Fiscal / Gerencial), que também vale para a exportação. Na importação via CSV, as colunas `classificacaoFiscal`, `tipoComprovante`, `numeroDocumentoFiscal`, `serieDocumentoFiscal` e `chaveAcesso` são opcionais — planilhas antigas continuam funcionando.
+
 ### 3.2. Aprovações pendentes
 
 Quando alguém do perfil Financeiro registra uma baixa (pagamento ou recebimento) em uma parcela, ela não é efetivada na hora — fica pendente de aprovação. Esta tela lista todas as baixas aguardando aprovação da filial atual, com o valor pago, quem registrou, e os botões Aprovar/Rejeitar.
@@ -85,6 +98,8 @@ Aprovar uma baixa efetiva o pagamento: gera automaticamente um lançamento banc�
 ### 3.3. Tesouraria
 
 A tela de Tesouraria mostra o saldo contábil de cada conta bancária da filial e permite três operações que não passam pelo fluxo de título/baixa: lançamento manual (uma entrada ou saída avulsa, como uma tarifa bancária ou uma venda de sucata), transferência entre contas da mesma filial, e informar o saldo bancário (para conferência com o extrato do banco).
+
+O lançamento manual também é classificado como Fiscal (padrão) ou Gerencial, com o tipo e o número do comprovante. Transferências entre contas não têm classificação — não são receita nem despesa. A lista de lançamentos tem o filtro Todos / Fiscal / Gerencial.
 
 ### 3.4. Conciliação bancária
 
@@ -103,6 +118,8 @@ O botão "Reconciliar pendentes" reprocessa todas as linhas ainda não conciliad
 ### 3.5. Fluxo de caixa
 
 Mostra, por período (dia, semana, mês ou ano), o saldo inicial, entradas, saídas, geração de caixa (entradas menos saídas) e saldo final — tudo a partir dos lançamentos bancários já conciliados. É o retrato do que já aconteceu na conta bancária, período a período, com navegação para períodos anteriores/seguintes.
+
+O seletor **Todos / Fiscal / Gerencial** mostra só o movimento de uma classificação. Nessa visão as colunas de saldo viram **Acumulado** (começam em zero), porque o saldo do banco é um só e não se divide entre fiscal e gerencial; transferências entre contas também ficam de fora. O mesmo seletor existe no fluxo de caixa projetado, no orçamento, no fluxo por dimensão e na comparação entre safras (nesses dois últimos, o orçado não muda com o filtro).
 
 ### 3.6. Fluxo de caixa projetado
 
@@ -128,13 +145,17 @@ O mesmo tipo de relatório do fluxo de caixa, mas agrupado por uma dimensão ana
 
 Permite orçar um valor único por safra (sem grade mensal, já que cada safra tem seu próprio período de início e fim) e comparar entre todas as safras cadastradas — planejadas, em andamento ou já encerradas — o orçado, o realizado e o projetado de cada uma.
 
+### 4.4. Fiscal × gerencial
+
+Mostra, para a filial atual e o ano escolhido, quanto do movimento tem documento fiscal e quanto é negociado sem nota: entradas e saídas realizadas por mês (com o percentual gerencial), o que está em aberto hoje a pagar e a receber em cada classificação, os parceiros com maior valor em títulos gerenciais e a lista de **pendências fiscais** — títulos fiscais ainda sem tipo de documento, número, chave de acesso ou anexo. Clicar no documento leva à lista de títulos já filtrada pelo parceiro. Os dois relatórios (comparativo mensal e pendências) podem ser exportados em CSV ou Excel.
+
 ## 5. Cadastros
 
 Os cadastros auxiliares alimentam os formulários de título e lançamento em todo o sistema. Clientes e Fornecedores pertencem à empresa (são compartilhados entre todas as filiais); os demais cadastros desta seção pertencem à filial atual.
 
 ### 5.1. Clientes e Fornecedores
 
-Cadastro de nome, CNPJ/CPF, contato e, opcionalmente, dados bancários para pagamento (PIX ou depósito bancário). São usados como contraparte dos títulos a receber (clientes) e a pagar (fornecedores).
+Cadastro de nome, CNPJ/CPF, contato e, opcionalmente, dados bancários para pagamento (PIX ou depósito bancário). São usados como contraparte dos títulos a receber (clientes) e a pagar (fornecedores). A **Classificação padrão dos títulos** (Nenhuma, Fiscal ou Gerencial) pré-preenche a classificação dos títulos novos daquele parceiro — use Gerencial para quem não emite nota.
 
 ### 5.2. Categorias financeiras
 
@@ -180,7 +201,7 @@ Registra automaticamente toda alteração relevante feita no sistema — quem fe
 
 ### 7.1. Dashboard executivo
 
-Visão consolidada de todas as filiais da empresa, pensada para quem acompanha o negócio como um todo (Administrador, Gestor, Auditor). Reúne os principais indicadores financeiros (caixa disponível, contas a pagar/receber em aberto, inadimplência, geração de caixa do mês, obrigações dos próximos 7/30 dias, recebimentos esperados e saldo projetado) e três gráficos: entradas x saídas dos últimos 6 meses, evolução do saldo, e aging (distribuição por faixa de atraso/vencimento) das contas a pagar e a receber.
+Visão consolidada de todas as filiais da empresa, pensada para quem acompanha o negócio como um todo (Administrador, Gestor, Auditor). Reúne os principais indicadores financeiros (caixa disponível, contas a pagar/receber em aberto, inadimplência, geração de caixa do mês, obrigações dos próximos 7/30 dias, recebimentos esperados e saldo projetado), um bloco **Fiscal × gerencial** do mês (entradas fiscais e gerenciais, percentual gerencial e número de pendências fiscais) e três gráficos: entradas x saídas dos últimos 6 meses, evolução do saldo, e aging (distribuição por faixa de atraso/vencimento) das contas a pagar e a receber.
 
 ## 8. Glossário
 
@@ -196,4 +217,7 @@ Visão consolidada de todas as filiais da empresa, pensada para quem acompanha o
 | Safra | Um ciclo de produção agrícola, com período próprio de início e fim. |
 | Centro de custo / Centro de lucro | Dimensões analíticas para agrupar receitas e despesas além da categoria financeira. |
 | Aging | Distribuição de valores em aberto por faixa de dias de atraso (ou a vencer). |
+| Fiscal / Gerencial | Classificação de títulos e lançamentos: Fiscal tem documento fiscal ou oficial; Gerencial é negociação sem nota, controlada só internamente. |
+| Pendência fiscal | Título fiscal ainda sem tipo de documento, número da nota, chave de acesso ou anexo. Não bloqueia nada — é um lembrete para completar o cadastro. |
+| Chave de acesso | Código de 44 dígitos que identifica uma NF-e, NFC-e ou CT-e, impresso no DANFE. |
 | Auditoria (AuditLog) | Registro automático de quem alterou o quê e quando, em todo o sistema. |

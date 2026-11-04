@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SEM_VALOR } from "@/lib/schemas/enums";
 import { criarLancamentoManualAction, type FormState } from "./actions";
+import { CamposClassificacaoLancamento } from "../../_shared/campos-classificacao-lancamento";
 
 const ESTADO_INICIAL: FormState = {};
 
@@ -42,7 +43,7 @@ export function LancamentoDialogForm({
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>Novo lançamento</DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Novo lançamento</DialogTitle>
         </DialogHeader>
@@ -88,6 +89,7 @@ export function LancamentoDialogForm({
             <Label htmlFor="descricao">Descrição</Label>
             <Input id="descricao" name="descricao" required />
           </div>
+          <CamposClassificacaoLancamento comNumero />
           <div className="space-y-2">
             <Label htmlFor="categoriaFinanceiraId">Categoria financeira</Label>
             <Select name="categoriaFinanceiraId" defaultValue={SEM_VALOR}>

@@ -5,17 +5,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { TipoTitulo } from "@prisma/client";
+import type { ClassificacaoFiscal, TipoComprovante, TipoTitulo } from "@prisma/client";
+import { TriangleAlert } from "lucide-react";
+import { ROTULOS_TIPO_COMPROVANTE } from "@/lib/schemas/enums";
+import { pendenciasFiscaisDoTitulo, ROTULOS_PENDENCIA_FISCAL } from "@/lib/classificacaoFiscal";
+import { BadgeClassificacao } from "../../_shared/badge-classificacao";
 import { alterarVencimentoParcelaAction, cancelarParcelaAction } from "./actions";
 import { AnexosPanel } from "./anexos-panel";
 import { TituloDialogForm, paraInputDate, type TituloEditavel } from "./titulo-dialog-form";
+import { formatarData, formatarMoeda } from "@/lib/formatacao";
 
 type ParcelaLinha = {
   id: string;
   numero: number;
   dataVencimento: Date;
-  /** Vem como Decimal do Prisma ou string após a serialização servidor→cliente. */
-  valorAtualizado: unknown;
+  valorAtualizado: number;
   status: string;
 };
 
@@ -41,19 +45,19 @@ type TituloLinha = {
   contaBancariaId: string | null;
   contaBancaria: { agencia: string; conta: string; banco: { nome: string } } | null;
   formaPagamento: string | null;
+  classificacaoFiscal: ClassificacaoFiscal;
+  tipoComprovante: TipoComprovante | null;
+  numeroDocumentoFiscal: string | null;
+  serieDocumentoFiscal: string | null;
+  chaveAcesso: string | null;
+  dataEmissaoDocumentoFiscal: Date | null;
+  motivoSemDocumento: string | null;
+  _count: { anexos: number };
   parcelas: ParcelaLinha[];
 };
 
-function formatarData(data: Date): string {
-  return new Date(data).toLocaleDateString("pt-BR");
-}
-
-function formatarMoeda(valor: unknown): string {
-  return Number(valor as string | number).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-
 export type OpcoesTitulo = {
-  contrapartes: { id: string; nome: string }[];
+  contrapartes: { id: string; nome: string; classificacaoFiscalPadrao?: ClassificacaoFiscal | null }[];
   categorias: { id: string; nome: string }[];
   centrosCusto: { id: string; nome: string }[];
   centrosLucro: { id: string; nome: string }[];
@@ -86,6 +90,13 @@ function tituloParaFormulario(titulo: TituloLinha): TituloEditavel {
     projetoId: titulo.projetoId,
     contaBancariaId: titulo.contaBancariaId,
     formaPagamento: titulo.formaPagamento,
+    classificacaoFiscal: titulo.classificacaoFiscal,
+    tipoComprovante: titulo.tipoComprovante,
+    numeroDocumentoFiscal: titulo.numeroDocumentoFiscal,
+    serieDocumentoFiscal: titulo.serieDocumentoFiscal,
+    chaveAcesso: titulo.chaveAcesso,
+    dataEmissaoDocumentoFiscal: titulo.dataEmissaoDocumentoFiscal ? paraInputDate(titulo.dataEmissaoDocumentoFiscal) : null,
+    motivoSemDocumento: titulo.motivoSemDocumento,
   };
 }
 
@@ -122,133 +133,184 @@ export function TituloTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {titulos.map((titulo) => (
-          <Fragment key={titulo.id}>
-            <TableRow className="cursor-pointer" onClick={() => setExpandidoId(expandidoId === titulo.id ? null : titulo.id)}>
-              <TableCell className="font-medium">{titulo.documento}</TableCell>
-              <TableCell>{(titulo.fornecedor ?? titulo.cliente)?.nome}</TableCell>
-              <TableCell>{titulo.categoriaFinanceira.nome}</TableCell>
-              <TableCell className="text-right">{titulo.parcelas.length}</TableCell>
-              {/* stopPropagation: o clique na linha alterna a expansão e fecharia o dialog. */}
-              <TableCell className="text-right" onClick={(evento) => evento.stopPropagation()}>
-                {podeEscrever && (
-                  <TituloDialogForm
-                    tipo={tipo}
-                    titulo={tituloParaFormulario(titulo)}
-                    contrapartes={opcoes.contrapartes}
-                    categorias={opcoes.categorias}
-                    centrosCusto={opcoes.centrosCusto}
-                    centrosLucro={opcoes.centrosLucro}
-                    safras={opcoes.safras}
-                    projetos={opcoes.projetos}
-                    contasBancarias={opcoes.contasBancarias}
-                  />
-                )}
-              </TableCell>
-            </TableRow>
-            {expandidoId === titulo.id && (
-              <TableRow className="bg-muted/30">
-                <TableCell colSpan={5}>
-                  <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
-                    <div className="flex gap-1">
-                      <dt className="text-muted-foreground">Emissão:</dt>
-                      <dd>{formatarData(titulo.dataEmissao)}</dd>
+        {titulos.map((titulo) => {
+          const pendencias = pendenciasFiscaisDoTitulo(titulo, titulo._count.anexos);
+          const rotuloPendencias = pendencias.map((pendencia) => ROTULOS_PENDENCIA_FISCAL[pendencia]).join(", ");
+          return (
+            <Fragment key={titulo.id}>
+              <TableRow className="cursor-pointer" onClick={() => setExpandidoId(expandidoId === titulo.id ? null : titulo.id)}>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{titulo.documento}</span>
+                    <BadgeClassificacao classificacao={titulo.classificacaoFiscal} />
+                    {pendencias.length > 0 && (
+                      <TriangleAlert
+                        className="size-4 text-amber-600 dark:text-amber-500"
+                        role="img"
+                        aria-label={`Pendências fiscais: ${rotuloPendencias}`}
+                      >
+                        <title>{`Pendências fiscais: ${rotuloPendencias}`}</title>
+                      </TriangleAlert>
+                    )}
+                  </div>
+                  {titulo.numeroDocumentoFiscal && (
+                    <div className="text-xs text-muted-foreground">
+                      {titulo.tipoComprovante ? ROTULOS_TIPO_COMPROVANTE[titulo.tipoComprovante] : "Nota"} nº{" "}
+                      {titulo.numeroDocumentoFiscal}
+                      {titulo.serieDocumentoFiscal ? ` / série ${titulo.serieDocumentoFiscal}` : ""}
                     </div>
-                    <div className="flex gap-1">
-                      <dt className="text-muted-foreground">Competência:</dt>
-                      <dd>{formatarData(titulo.dataCompetencia)}</dd>
-                    </div>
-                    <div className="flex gap-1">
-                      <dt className="text-muted-foreground">Centro de custo:</dt>
-                      <dd>{titulo.centroCusto?.nome ?? "—"}</dd>
-                    </div>
-                    <div className="flex gap-1">
-                      <dt className="text-muted-foreground">Centro de lucro:</dt>
-                      <dd>{titulo.centroLucro?.nome ?? "—"}</dd>
-                    </div>
-                    <div className="flex gap-1">
-                      <dt className="text-muted-foreground">Safra:</dt>
-                      <dd>{titulo.safra?.nome ?? "—"}</dd>
-                    </div>
-                    <div className="flex gap-1">
-                      <dt className="text-muted-foreground">Projeto:</dt>
-                      <dd>{titulo.projeto?.nome ?? "—"}</dd>
-                    </div>
-                    <div className="flex gap-1">
-                      <dt className="text-muted-foreground">Conta bancária:</dt>
-                      <dd>
-                        {titulo.contaBancaria
-                          ? `${titulo.contaBancaria.banco.nome} - Ag ${titulo.contaBancaria.agencia}/CC ${titulo.contaBancaria.conta}`
-                          : "—"}
-                      </dd>
-                    </div>
-                    <div className="flex gap-1">
-                      <dt className="text-muted-foreground">Forma de pagamento:</dt>
-                      <dd>{titulo.formaPagamento ?? "—"}</dd>
-                    </div>
-                  </dl>
+                  )}
+                </TableCell>
+                <TableCell>{(titulo.fornecedor ?? titulo.cliente)?.nome}</TableCell>
+                <TableCell>{titulo.categoriaFinanceira.nome}</TableCell>
+                <TableCell className="text-right">{titulo.parcelas.length}</TableCell>
+                {/* stopPropagation: o clique na linha alterna a expansão e fecharia o dialog. */}
+                <TableCell className="text-right" onClick={(evento) => evento.stopPropagation()}>
+                  {podeEscrever && (
+                    <TituloDialogForm
+                      tipo={tipo}
+                      titulo={tituloParaFormulario(titulo)}
+                      contrapartes={opcoes.contrapartes}
+                      categorias={opcoes.categorias}
+                      centrosCusto={opcoes.centrosCusto}
+                      centrosLucro={opcoes.centrosLucro}
+                      safras={opcoes.safras}
+                      projetos={opcoes.projetos}
+                      contasBancarias={opcoes.contasBancarias}
+                    />
+                  )}
                 </TableCell>
               </TableRow>
-            )}
-            {expandidoId === titulo.id &&
-              titulo.parcelas.map((parcela) => (
-                <TableRow key={parcela.id} className="bg-muted/30">
-                  <TableCell colSpan={3} className="pl-8">
-                    Parcela {parcela.numero} — venc. {formatarData(parcela.dataVencimento)} — valor{" "}
-                    {formatarMoeda(parcela.valorAtualizado)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={VARIANTE_STATUS[parcela.status] ?? "secondary"}>{parcela.status}</Badge>
-                  </TableCell>
-                  <TableCell className="flex flex-wrap items-center justify-end gap-2">
-                    {podeEscrever && !STATUS_TERMINAIS.includes(parcela.status) && (
-                      <form action={alterarVencimentoParcelaAction} className="flex items-center gap-1">
-                        <input type="hidden" name="parcelaId" value={parcela.id} />
-                        <input type="hidden" name="tipo" value={tipo} />
-                        <Input
-                          type="date"
-                          name="dataVencimento"
-                          aria-label={`Novo vencimento da parcela ${parcela.numero}`}
-                          defaultValue={paraInputDate(parcela.dataVencimento)}
-                          className="h-8 w-auto"
-                          required
-                        />
-                        <Button type="submit" variant="outline" size="sm">
-                          Alterar vencimento
-                        </Button>
-                      </form>
-                    )}
-                    {podeBaixar && !STATUS_TERMINAIS.includes(parcela.status) && (
-                      <Button type="button" size="sm" onClick={() => onAbrirBaixa(parcela.id)}>
-                        Baixar
-                      </Button>
-                    )}
-                    {podeEscrever && parcela.status === "VENCIDO" && (
-                      <Button type="button" variant="outline" size="sm" onClick={() => onAbrirRenegociacao(parcela.id)}>
-                        Renegociar
-                      </Button>
-                    )}
-                    {podeEscrever && !STATUS_TERMINAIS.includes(parcela.status) && (
-                      <form action={cancelarParcelaAction}>
-                        <input type="hidden" name="parcelaId" value={parcela.id} />
-                        <input type="hidden" name="tipo" value={tipo} />
-                        <Button type="submit" variant="outline" size="sm">
-                          Cancelar
-                        </Button>
-                      </form>
-                    )}
+              {expandidoId === titulo.id && (
+                <TableRow className="bg-muted/30">
+                  <TableCell colSpan={5}>
+                    <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
+                      <div className="flex gap-1">
+                        <dt className="text-muted-foreground">Emissão:</dt>
+                        <dd>{formatarData(titulo.dataEmissao)}</dd>
+                      </div>
+                      <div className="flex gap-1">
+                        <dt className="text-muted-foreground">Competência:</dt>
+                        <dd>{formatarData(titulo.dataCompetencia)}</dd>
+                      </div>
+                      <div className="flex gap-1">
+                        <dt className="text-muted-foreground">Centro de custo:</dt>
+                        <dd>{titulo.centroCusto?.nome ?? "—"}</dd>
+                      </div>
+                      <div className="flex gap-1">
+                        <dt className="text-muted-foreground">Centro de lucro:</dt>
+                        <dd>{titulo.centroLucro?.nome ?? "—"}</dd>
+                      </div>
+                      <div className="flex gap-1">
+                        <dt className="text-muted-foreground">Safra:</dt>
+                        <dd>{titulo.safra?.nome ?? "—"}</dd>
+                      </div>
+                      <div className="flex gap-1">
+                        <dt className="text-muted-foreground">Projeto:</dt>
+                        <dd>{titulo.projeto?.nome ?? "—"}</dd>
+                      </div>
+                      <div className="flex gap-1">
+                        <dt className="text-muted-foreground">Conta bancária:</dt>
+                        <dd>
+                          {titulo.contaBancaria
+                            ? `${titulo.contaBancaria.banco.nome} - Ag ${titulo.contaBancaria.agencia}/CC ${titulo.contaBancaria.conta}`
+                            : "—"}
+                        </dd>
+                      </div>
+                      <div className="flex gap-1">
+                        <dt className="text-muted-foreground">Forma de pagamento:</dt>
+                        <dd>{titulo.formaPagamento ?? "—"}</dd>
+                      </div>
+                      <div className="flex gap-1">
+                        <dt className="text-muted-foreground">Classificação:</dt>
+                        <dd>{titulo.classificacaoFiscal === "FISCAL" ? "Fiscal" : "Gerencial"}</dd>
+                      </div>
+                      <div className="flex gap-1">
+                        <dt className="text-muted-foreground">Comprovante:</dt>
+                        <dd>{titulo.tipoComprovante ? ROTULOS_TIPO_COMPROVANTE[titulo.tipoComprovante] : "—"}</dd>
+                      </div>
+                      {titulo.chaveAcesso && (
+                        <div className="flex gap-1 sm:col-span-3">
+                          <dt className="text-muted-foreground">Chave de acesso:</dt>
+                          <dd className="font-mono text-xs break-all">{titulo.chaveAcesso}</dd>
+                        </div>
+                      )}
+                      {titulo.motivoSemDocumento && (
+                        <div className="flex gap-1 sm:col-span-3">
+                          <dt className="text-muted-foreground">Motivo sem nota:</dt>
+                          <dd>{titulo.motivoSemDocumento}</dd>
+                        </div>
+                      )}
+                      {pendencias.length > 0 && (
+                        <div className="flex gap-1 sm:col-span-3">
+                          <dt className="text-muted-foreground">Pendências fiscais:</dt>
+                          <dd className="text-amber-700 dark:text-amber-500">{rotuloPendencias}</dd>
+                        </div>
+                      )}
+                    </dl>
                   </TableCell>
                 </TableRow>
-              ))}
-            {expandidoId === titulo.id && (
-              <TableRow className="bg-muted/30">
-                <TableCell colSpan={5}>
-                  <AnexosPanel tituloId={titulo.id} podeEscrever={podeEscrever} />
-                </TableCell>
-              </TableRow>
-            )}
-          </Fragment>
-        ))}
+              )}
+              {expandidoId === titulo.id &&
+                titulo.parcelas.map((parcela) => (
+                  <TableRow key={parcela.id} className="bg-muted/30">
+                    <TableCell colSpan={3} className="pl-8">
+                      Parcela {parcela.numero} — venc. {formatarData(parcela.dataVencimento)} — valor{" "}
+                      {formatarMoeda(parcela.valorAtualizado)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={VARIANTE_STATUS[parcela.status] ?? "secondary"}>{parcela.status}</Badge>
+                    </TableCell>
+                    <TableCell className="flex flex-wrap items-center justify-end gap-2">
+                      {podeEscrever && !STATUS_TERMINAIS.includes(parcela.status) && (
+                        <form action={alterarVencimentoParcelaAction} className="flex items-center gap-1">
+                          <input type="hidden" name="parcelaId" value={parcela.id} />
+                          <input type="hidden" name="tipo" value={tipo} />
+                          <Input
+                            type="date"
+                            name="dataVencimento"
+                            aria-label={`Novo vencimento da parcela ${parcela.numero}`}
+                            defaultValue={paraInputDate(parcela.dataVencimento)}
+                            className="h-8 w-auto"
+                            required
+                          />
+                          <Button type="submit" variant="outline" size="sm">
+                            Alterar vencimento
+                          </Button>
+                        </form>
+                      )}
+                      {podeBaixar && !STATUS_TERMINAIS.includes(parcela.status) && (
+                        <Button type="button" size="sm" onClick={() => onAbrirBaixa(parcela.id)}>
+                          Baixar
+                        </Button>
+                      )}
+                      {podeEscrever && parcela.status === "VENCIDO" && (
+                        <Button type="button" variant="outline" size="sm" onClick={() => onAbrirRenegociacao(parcela.id)}>
+                          Renegociar
+                        </Button>
+                      )}
+                      {podeEscrever && !STATUS_TERMINAIS.includes(parcela.status) && (
+                        <form action={cancelarParcelaAction}>
+                          <input type="hidden" name="parcelaId" value={parcela.id} />
+                          <input type="hidden" name="tipo" value={tipo} />
+                          <Button type="submit" variant="outline" size="sm">
+                            Cancelar
+                          </Button>
+                        </form>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              {expandidoId === titulo.id && (
+                <TableRow className="bg-muted/30">
+                  <TableCell colSpan={5}>
+                    <AnexosPanel tituloId={titulo.id} podeEscrever={podeEscrever} />
+                  </TableCell>
+                </TableRow>
+              )}
+            </Fragment>
+          );
+        })}
         {titulos.length === 0 && (
           <TableRow>
             <TableCell colSpan={5} className="text-center text-muted-foreground">

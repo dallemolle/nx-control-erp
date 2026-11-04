@@ -24,6 +24,19 @@ const COLUNAS_CSV = [
   { nome: "numeroParcela", obrigatoria: false, descricao: "Número da parcela (padrão: 1)" },
   { nome: "dataVencimento", obrigatoria: true, descricao: "Data de vencimento da parcela (aaaa-mm-dd)" },
   { nome: "valorOriginal", obrigatoria: true, descricao: "Valor da parcela (ex.: 1500.00)" },
+  {
+    nome: "classificacaoFiscal",
+    obrigatoria: false,
+    descricao: "FISCAL ou GERENCIAL (aceita F/G). Vazio: usa o padrão do cadastro do parceiro ou FISCAL",
+  },
+  {
+    nome: "tipoComprovante",
+    obrigatoria: false,
+    descricao: "NFE, NFCE, NFSE, CTE, NF_PRODUTOR, NF_ENTRADA, GUIA_TRIBUTO, … (fiscal) ou RECIBO, PEDIDO_INTERNO, SEM_COMPROVANTE (gerencial)",
+  },
+  { nome: "numeroDocumentoFiscal", obrigatoria: false, descricao: "Número da nota (só em lançamento fiscal)" },
+  { nome: "serieDocumentoFiscal", obrigatoria: false, descricao: "Série da nota" },
+  { nome: "chaveAcesso", obrigatoria: false, descricao: "Chave de acesso de 44 dígitos (NF-e, NFC-e, CT-e)" },
 ] as const;
 
 function montarModeloCsv(tipo: TipoTitulo): string {
@@ -45,6 +58,11 @@ function montarModeloCsv(tipo: TipoTitulo): string {
     "1",
     "2026-10-01",
     "1500.00",
+    "FISCAL",
+    "NFE",
+    "1234",
+    "1",
+    "",
   ].join(",");
   return `${cabecalho}\n${linhaExemplo}\n`;
 }
@@ -89,7 +107,7 @@ export function ImportarCsvDialog({ tipo }: { tipo: TipoTitulo }) {
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
       <DialogTrigger render={<Button variant="outline" />}>Importar CSV</DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Importar títulos via CSV</DialogTitle>
         </DialogHeader>

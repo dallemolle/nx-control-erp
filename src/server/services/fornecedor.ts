@@ -39,7 +39,11 @@ export async function criarFornecedor(sessao: SessaoAtiva, dados: FornecedorForm
   requirePermission(sessao.perfil, "cadastro:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
-  const dadosNormalizados = { ...dados, ...camposBancariosNormalizados(dados) };
+  const dadosNormalizados = {
+    ...dados,
+    ...camposBancariosNormalizados(dados),
+    classificacaoFiscalPadrao: normalizarOpcional(dados.classificacaoFiscalPadrao),
+  };
   const fornecedor = await prisma.fornecedor.create({
     data: { ...dadosNormalizados, empresaId: sessao.empresaId },
   });
@@ -69,7 +73,11 @@ export async function atualizarFornecedor(
   const anterior = await prisma.fornecedor.findUniqueOrThrow({
     where: { id, empresaId: sessao.empresaId },
   });
-  const dadosNormalizados = { ...dados, ...camposBancariosNormalizados(dados) };
+  const dadosNormalizados = {
+    ...dados,
+    ...camposBancariosNormalizados(dados),
+    classificacaoFiscalPadrao: normalizarOpcional(dados.classificacaoFiscalPadrao),
+  };
   const fornecedor = await prisma.fornecedor.update({ where: { id }, data: dadosNormalizados });
 
   await registrarAuditoria({
@@ -93,6 +101,7 @@ export async function atualizarFornecedor(
       conta: anterior.conta,
       tipoContaTerceiro: anterior.tipoContaTerceiro,
       titularConta: anterior.titularConta,
+      classificacaoFiscalPadrao: anterior.classificacaoFiscalPadrao,
     },
     novo: dadosNormalizados,
   });

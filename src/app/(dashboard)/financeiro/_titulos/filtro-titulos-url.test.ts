@@ -14,6 +14,7 @@ describe("filtroTitulosDaUrl", () => {
       status: undefined,
       vencimentoDe: undefined,
       vencimentoAte: undefined,
+      classificacao: undefined,
     });
   });
 
@@ -89,5 +90,23 @@ describe("queryStringDosFiltros", () => {
   test('omite params com sentinela "__nenhum__"', () => {
     const query = queryStringDosFiltros((campo) => (campo === "categoria" ? "__nenhum__" : undefined));
     expect(query).toBe("");
+  });
+});
+
+describe("filtro de classificação fiscal × gerencial", () => {
+  test("aceita FISCAL e GERENCIAL; ausente, sentinela ou inválido = todos", () => {
+    const comValor = (valor: string | undefined) =>
+      filtroTitulosDaUrl((campo) => (campo === "classificacao" ? valor : undefined)).classificacao;
+    expect(comValor("FISCAL")).toBe("FISCAL");
+    expect(comValor("GERENCIAL")).toBe("GERENCIAL");
+    expect(comValor(undefined)).toBeUndefined();
+    expect(comValor("__nenhum__")).toBeUndefined();
+    expect(comValor("OUTRA")).toBeUndefined();
+  });
+
+  test("conta como filtro ativo e entra na query string (para os exports)", () => {
+    const get = (campo: string) => (campo === "classificacao" ? "GERENCIAL" : undefined);
+    expect(algumFiltroAtivo(filtroTitulosDaUrl(get))).toBe(true);
+    expect(queryStringDosFiltros(get)).toBe("classificacao=GERENCIAL");
   });
 });

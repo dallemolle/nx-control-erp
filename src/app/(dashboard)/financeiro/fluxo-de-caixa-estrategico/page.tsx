@@ -3,6 +3,7 @@ import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeExecutar } from "@/server/auth/permissions";
 import { listarProjecaoEstrategica, TIPOS_CENARIO } from "@/server/services/fluxoDeCaixaEstrategico";
 import { PremissasForm } from "./premissas-form";
+import { formatarMoeda } from "@/lib/formatacao";
 
 const LABEL_CENARIO: Record<(typeof TIPOS_CENARIO)[number], string> = {
   BASE: "Base",
@@ -50,38 +51,38 @@ export default async function FluxoDeCaixaEstrategicoPage() {
               <TableRow>
                 <TableCell className="font-medium">Receita</TableCell>
                 {projecoes[tipo].map((ano) => (
-                  <TableCell key={ano.ano}>{ano.receita.toFixed(2)}</TableCell>
+                  <TableCell key={ano.ano}>{formatarMoeda(ano.receita)}</TableCell>
                 ))}
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Custo operacional</TableCell>
                 {projecoes[tipo].map((ano) => (
-                  <TableCell key={ano.ano}>{ano.custoOperacional.toFixed(2)}</TableCell>
+                  <TableCell key={ano.ano}>{formatarMoeda(ano.custoOperacional)}</TableCell>
                 ))}
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">CAPEX</TableCell>
                 {projecoes[tipo].map((ano) => (
-                  <TableCell key={ano.ano}>{ano.capex.toFixed(2)}</TableCell>
+                  <TableCell key={ano.ano}>{formatarMoeda(ano.capex)}</TableCell>
                 ))}
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Juros</TableCell>
                 {projecoes[tipo].map((ano) => (
-                  <TableCell key={ano.ano}>{ano.jurosSobreDivida.toFixed(2)}</TableCell>
+                  <TableCell key={ano.ano}>{formatarMoeda(ano.jurosSobreDivida)}</TableCell>
                 ))}
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Geração líquida</TableCell>
                 {projecoes[tipo].map((ano) => (
-                  <TableCell key={ano.ano}>{ano.geracaoLiquida.toFixed(2)}</TableCell>
+                  <TableCell key={ano.ano}>{formatarMoeda(ano.geracaoLiquida)}</TableCell>
                 ))}
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Saldo de caixa</TableCell>
                 {projecoes[tipo].map((ano) => (
                   <TableCell key={ano.ano} className={ano.saldoCaixa < 0 ? "font-medium text-destructive" : undefined}>
-                    {ano.saldoCaixa.toFixed(2)}
+                    {formatarMoeda(ano.saldoCaixa)}
                   </TableCell>
                 ))}
               </TableRow>

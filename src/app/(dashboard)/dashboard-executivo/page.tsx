@@ -1,22 +1,25 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission } from "@/server/auth/permissions";
-import { buscarIndicadoresExecutivos, buscarGraficosExecutivos } from "@/server/services/dashboardExecutivo";
+import Link from "next/link";
+import {
+  buscarIndicadoresExecutivos,
+  buscarGraficosExecutivos,
+  buscarResumoFiscalGerencial,
+} from "@/server/services/dashboardExecutivo";
 import { EntradasSaidasChart } from "./entradas-saidas-chart";
 import { EvolucaoSaldoChart } from "./evolucao-saldo-chart";
 import { AgingChart } from "./aging-chart";
-
-function formatarMoeda(valor: number): string {
-  return valor.toFixed(2);
-}
+import { formatarMoeda } from "@/lib/formatacao";
 
 export default async function DashboardExecutivoPage() {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "dashboardExecutivo:ler");
 
-  const [indicadores, graficos] = await Promise.all([
+  const [indicadores, graficos, resumoFiscal] = await Promise.all([
     buscarIndicadoresExecutivos(sessao),
     buscarGraficosExecutivos(sessao),
+    buscarResumoFiscalGerencial(sessao),
   ]);
 
   const cards = [
@@ -52,6 +55,54 @@ export default async function DashboardExecutivoPage() {
           </Card>
         ))}
       </div>
+
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-base font-semibold">Fiscal × gerencial (mês atual)</h2>
+          <Link href="/controladoria/fiscal-gerencial" className="text-sm text-primary underline-offset-4 hover:underline">
+            Ver relatório da filial ativa
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Entradas fiscais</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-semibold">{formatarMoeda(resumoFiscal.entradasFiscal)}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Entradas gerenciais</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-semibold">{formatarMoeda(resumoFiscal.entradasGerencial)}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">% gerencial nas entradas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-semibold">
+                {resumoFiscal.percentualGerencialEntradas === null
+                  ? "—"
+                  : `${resumoFiscal.percentualGerencialEntradas.toFixed(1)}%`}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Pendências fiscais</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-semibold">{resumoFiscal.pendenciasFiscais}</p>
+              <p className="text-xs text-muted-foreground">Títulos fiscais sem nota, chave ou anexo</p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="space-y-2">

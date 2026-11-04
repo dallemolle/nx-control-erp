@@ -1,6 +1,7 @@
 import { prisma } from "@/server/db/client";
 import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
+import { whereLancamentoPorClassificacao, type FiltroClassificacao } from "./classificacaoFiscal";
 
 export type Granularidade = "DIA" | "SEMANA" | "MES" | "ANO";
 
@@ -124,10 +125,17 @@ export async function buscarSaldoEmCaixaAte(filialId: string, data: Date): Promi
   return saldoInicialTotal + entradas - saidas;
 }
 
+/**
+ * Com `opcoes.classificacao`, só o movimento daquela classificação entra e o
+ * saldo inicial é 0: o saldo bancário é único e não se divide entre fiscal e
+ * gerencial, então a visão filtrada mostra o *acumulado* do período (e as
+ * transferências, sem classificação, ficam de fora).
+ */
 export async function listarFluxoDeCaixaRealizado(
   sessao: SessaoAtiva,
   granularidade: Granularidade,
   dataReferencia: Date,
+  opcoes: { classificacao?: FiltroClassificacao } = {},
 ): Promise<PeriodoFluxoDeCaixa[]> {
   requirePermission(sessao.perfil, "lancamento:ler");
 
@@ -136,13 +144,16 @@ export async function listarFluxoDeCaixaRealizado(
   const fimDaJanela = periodos[periodos.length - 1].fim;
 
   const [saldoInicialAbsoluto, lancamentos] = await Promise.all([
-    buscarSaldoEmCaixaAte(sessao.filialId, new Date(inicioDaJanela.getTime() - 1)),
+    opcoes.classificacao
+      ? Promise.resolve(0)
+      : buscarSaldoEmCaixaAte(sessao.filialId, new Date(inicioDaJanela.getTime() - 1)),
     prisma.lancamentoBancario.findMany({
       where: {
         filialId: sessao.filialId,
         conciliado: true,
         data: { gte: inicioDaJanela, lte: fimDaJanela },
         contaBancaria: { ativo: true },
+        ...whereLancamentoPorClassificacao(opcoes.classificacao),
       },
     }),
   ]);

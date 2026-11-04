@@ -9,14 +9,58 @@ import {
   resolverCodigoOpcional,
   resolverContaBancariaOpcional,
 } from "@/server/services/resolucaoCadastros";
+import {
+  normalizarChaveAcesso,
+  resolverClassificacao,
+  validarComprovante,
+} from "@/server/services/classificacaoFiscal";
+import { TIPO_COMPROVANTE } from "@/lib/schemas/enums";
 import type { SessaoAtiva } from "@/server/auth/sessao";
-import type { TipoTitulo } from "@prisma/client";
+import type { ClassificacaoFiscal, TipoComprovante, TipoTitulo } from "@prisma/client";
 
 export type LinhaImportacao = {
   linha: number;
   bruta: Record<string, string>;
   erros: string[];
 };
+
+const CLASSIFICACAO_POR_SIGLA: Record<string, ClassificacaoFiscal> = {
+  FISCAL: "FISCAL",
+  F: "FISCAL",
+  GERENCIAL: "GERENCIAL",
+  G: "GERENCIAL",
+};
+
+/** Aceita FISCAL/GERENCIAL/F/G sem diferenciar maiúsculas; vazio = omitida. */
+function classificacaoDaPlanilha(
+  valor: string | undefined,
+  erros: string[],
+  camposComErro: Set<string>,
+): ClassificacaoFiscal | undefined {
+  const normalizado = valor?.trim().toUpperCase();
+  if (!normalizado) return undefined;
+  const classificacao = CLASSIFICACAO_POR_SIGLA[normalizado];
+  if (!classificacao) {
+    erros.push(`Classificação "${valor}" inválida — use FISCAL ou GERENCIAL`);
+    camposComErro.add("classificacaoFiscal");
+  }
+  return classificacao;
+}
+
+function tipoComprovanteDaPlanilha(
+  valor: string | undefined,
+  erros: string[],
+  camposComErro: Set<string>,
+): TipoComprovante | undefined {
+  const normalizado = valor?.trim().toUpperCase();
+  if (!normalizado) return undefined;
+  if (!(TIPO_COMPROVANTE as readonly string[]).includes(normalizado)) {
+    erros.push(`Tipo de comprovante "${valor}" inválido — use um de: ${TIPO_COMPROVANTE.join(", ")}`);
+    camposComErro.add("tipoComprovante");
+    return undefined;
+  }
+  return normalizado as TipoComprovante;
+}
 
 async function construirResolvedor(sessao: SessaoAtiva, tipo: TipoTitulo) {
   const cadastros = await carregarCadastrosParaResolucao(sessao, tipo);
@@ -85,6 +129,28 @@ async function construirResolvedor(sessao: SessaoAtiva, tipo: TipoTitulo) {
       camposComErroResolucao,
     );
 
+    // Colunas fiscais são opcionais: planilhas antigas (sem elas) continuam válidas.
+    const classificacaoFiscal = classificacaoDaPlanilha(bruta.classificacaoFiscal, erros, camposComErroResolucao);
+    const tipoComprovante = tipoComprovanteDaPlanilha(bruta.tipoComprovante, erros, camposComErroResolucao);
+    const numeroDocumentoFiscal = bruta.numeroDocumentoFiscal?.trim() || undefined;
+    const serieDocumentoFiscal = bruta.serieDocumentoFiscal?.trim() || undefined;
+    const chaveAcesso = bruta.chaveAcesso ? normalizarChaveAcesso(bruta.chaveAcesso) || undefined : undefined;
+
+    // Classificação informada é validada pelo schema; omitida, vale o padrão da contraparte.
+    if (!classificacaoFiscal && contraparteId && !camposComErroResolucao.has("tipoComprovante")) {
+      const resolvida = resolverClassificacao(undefined, cadastros.classificacaoPadraoPorContraparte.get(contraparteId));
+      for (const erro of validarComprovante({
+        classificacaoFiscal: resolvida,
+        tipoComprovante: tipoComprovante ?? null,
+        numeroDocumentoFiscal: numeroDocumentoFiscal ?? null,
+        serieDocumentoFiscal: serieDocumentoFiscal ?? null,
+        chaveAcesso: chaveAcesso ?? null,
+      })) {
+        erros.push(erro.mensagem);
+        camposComErroResolucao.add(erro.campo);
+      }
+    }
+
     const dados = {
       contraparteId,
       documento: bruta.documento,
@@ -97,6 +163,11 @@ async function construirResolvedor(sessao: SessaoAtiva, tipo: TipoTitulo) {
       projetoId,
       contaBancariaId,
       formaPagamento: bruta.formaPagamento,
+      classificacaoFiscal,
+      tipoComprovante,
+      numeroDocumentoFiscal,
+      serieDocumentoFiscal,
+      chaveAcesso,
       parcelas: [
         {
           numero: bruta.numeroParcela || "1",

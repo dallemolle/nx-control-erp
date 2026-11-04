@@ -4,6 +4,9 @@ import { requirePermission } from "@/server/auth/permissions";
 import { listarFluxoDeCaixaPorDimensao, type TipoDimensao } from "@/server/services/fluxoDeCaixaPorDimensao";
 import { SeletorAnoMes } from "../_shared/seletor-ano-mes";
 import { SeletorDimensao } from "./seletor-dimensao";
+import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
+import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
+import { formatarMoeda } from "@/lib/formatacao";
 
 const DIMENSOES_VALIDAS: TipoDimensao[] = ["CENTRO_CUSTO", "CENTRO_LUCRO", "SAFRA"];
 
@@ -24,7 +27,12 @@ function mesValido(valor: string | undefined): number {
 export default async function FluxoPorDimensaoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ dimensao?: string | string[]; ano?: string | string[]; mes?: string | string[] }>;
+  searchParams: Promise<{
+    dimensao?: string | string[];
+    ano?: string | string[];
+    mes?: string | string[];
+    classificacao?: string | string[];
+  }>;
 }) {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "titulo:ler");
@@ -37,8 +45,11 @@ export default async function FluxoPorDimensaoPage({
   const dimensao = dimensaoValida(dimensaoParam);
   const ano = anoValido(anoParam);
   const mes = mesValido(mesParam);
+  const classificacao = classificacaoDaUrl(
+    Array.isArray(params.classificacao) ? params.classificacao[0] : params.classificacao,
+  );
 
-  const linhas = await listarFluxoDeCaixaPorDimensao(sessao, dimensao, ano, mes);
+  const linhas = await listarFluxoDeCaixaPorDimensao(sessao, dimensao, ano, mes, { classificacao });
 
   return (
     <div className="space-y-8">
@@ -52,9 +63,10 @@ export default async function FluxoPorDimensaoPage({
         </p>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         <SeletorDimensao dimensao={dimensao} ano={ano} mes={mes} />
         <SeletorAnoMes ano={ano} mes={mes} />
+        <SeletorClassificacao classificacao={classificacao} />
       </div>
 
       <Table>
@@ -75,12 +87,12 @@ export default async function FluxoPorDimensaoPage({
             return (
               <TableRow key={linha.dimensaoId ?? "nao-classificado"}>
                 <TableCell className="font-medium">{linha.dimensaoNome}</TableCell>
-                <TableCell>{linha.entradasRealizadas.toFixed(2)}</TableCell>
-                <TableCell>{linha.saidasRealizadas.toFixed(2)}</TableCell>
-                <TableCell>{linha.entradasProjetadas.toFixed(2)}</TableCell>
-                <TableCell>{linha.saidasProjetadas.toFixed(2)}</TableCell>
+                <TableCell>{formatarMoeda(linha.entradasRealizadas)}</TableCell>
+                <TableCell>{formatarMoeda(linha.saidasRealizadas)}</TableCell>
+                <TableCell>{formatarMoeda(linha.entradasProjetadas)}</TableCell>
+                <TableCell>{formatarMoeda(linha.saidasProjetadas)}</TableCell>
                 <TableCell className={saldo < 0 ? "font-medium text-destructive" : undefined}>
-                  {saldo.toFixed(2)}
+                  {formatarMoeda(saldo)}
                 </TableCell>
               </TableRow>
             );

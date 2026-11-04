@@ -12,6 +12,10 @@ import { listarProjetos } from "@/server/services/projeto";
 import { LancamentoDialogForm } from "./lancamento-dialog-form";
 import { TransferenciaDialogForm } from "./transferencia-dialog-form";
 import { SaldoBancarioDialogForm } from "./saldo-bancario-dialog-form";
+import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
+import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
+import { BadgeClassificacao } from "../../_shared/badge-classificacao";
+import { formatarData, formatarMoeda } from "@/lib/formatacao";
 
 const ORIGEM_LABEL: Record<string, string> = {
   MANUAL: "Manual",
@@ -19,14 +23,22 @@ const ORIGEM_LABEL: Record<string, string> = {
   TRANSFERENCIA: "Transferência",
 };
 
-export default async function TesourariaPage() {
+export default async function TesourariaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ classificacao?: string | string[] }>;
+}) {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "lancamento:ler");
   const podeEscrever = podeEscreverLancamento(sessao.perfil, sessao.podeAlterarFilial);
+  const params = await searchParams;
+  const classificacao = classificacaoDaUrl(
+    Array.isArray(params.classificacao) ? params.classificacao[0] : params.classificacao,
+  );
 
   const [resumoContas, lancamentos, categorias, centrosCusto, centrosLucro, safras, projetos] = await Promise.all([
     listarResumoContas(sessao.filialId),
-    listarLancamentos(sessao.filialId),
+    listarLancamentos(sessao.filialId, { classificacao }),
     listarCategoriasFinanceiras(sessao.filialId),
     listarCentrosCusto(sessao.filialId),
     listarCentrosLucro(sessao.filialId),
@@ -76,16 +88,16 @@ export default async function TesourariaPage() {
               </CardHeader>
               <CardContent className="space-y-1 text-sm">
                 <p>
-                  Saldo contábil: <span className="font-medium">{saldoContabil.toFixed(2)}</span>
+                  Saldo contábil: <span className="font-medium">{formatarMoeda(saldoContabil)}</span>
                 </p>
                 {ultimoSaldoInformado ? (
                   <>
                     <p className="text-muted-foreground">
-                      Saldo bancário informado: {Number(ultimoSaldoInformado.saldo).toFixed(2)} em{" "}
-                      {new Date(ultimoSaldoInformado.data).toLocaleDateString("pt-BR")}
+                      Saldo bancário informado: {formatarMoeda(ultimoSaldoInformado.saldo)} em{" "}
+                      {formatarData(ultimoSaldoInformado.data)}
                     </p>
                     <p className={diferenca !== 0 ? "text-destructive" : "text-muted-foreground"}>
-                      Diferença: {diferenca?.toFixed(2)}
+                      Diferença: {diferenca === null ? "—" : formatarMoeda(diferenca)}
                     </p>
                   </>
                 ) : (
@@ -97,6 +109,11 @@ export default async function TesourariaPage() {
         })}
       </div>
 
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-sm font-medium">Lançamentos</h2>
+        <SeletorClassificacao classificacao={classificacao} />
+      </div>
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -105,13 +122,14 @@ export default async function TesourariaPage() {
             <TableHead>Tipo</TableHead>
             <TableHead>Valor</TableHead>
             <TableHead>Origem</TableHead>
+            <TableHead>Classificação</TableHead>
             <TableHead>Descrição</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {lancamentos.map((lancamento) => (
             <TableRow key={lancamento.id}>
-              <TableCell>{new Date(lancamento.data).toLocaleDateString("pt-BR")}</TableCell>
+              <TableCell>{formatarData(lancamento.data)}</TableCell>
               <TableCell>
                 {lancamento.contaBancaria.banco.nome} - Ag {lancamento.contaBancaria.agencia}/CC{" "}
                 {lancamento.contaBancaria.conta}
@@ -121,9 +139,15 @@ export default async function TesourariaPage() {
                   {lancamento.tipo === "ENTRADA" ? "Entrada" : "Saída"}
                 </Badge>
               </TableCell>
-              <TableCell>{Number(lancamento.valor).toFixed(2)}</TableCell>
+              <TableCell>{formatarMoeda(lancamento.valor)}</TableCell>
               <TableCell>
                 <Badge variant="outline">{ORIGEM_LABEL[lancamento.origem]}</Badge>
+              </TableCell>
+              <TableCell>
+                <BadgeClassificacao classificacao={lancamento.classificacaoFiscal} />
+                {lancamento.numeroComprovante ? (
+                  <span className="ml-2 text-xs text-muted-foreground">{lancamento.numeroComprovante}</span>
+                ) : null}
               </TableCell>
               <TableCell>{lancamento.descricao}</TableCell>
             </TableRow>

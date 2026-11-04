@@ -1,4 +1,4 @@
-import { executarRotaApi, ErroValidacaoApi } from "@/server/api/executarRotaApi";
+import { executarRotaApi, ErroValidacaoApi, classificacaoDaQuery } from "@/server/api/executarRotaApi";
 import {
   carregarCadastrosParaResolucao,
   resolverContraparte,
@@ -25,6 +25,14 @@ type CorpoTitulo = {
   contaBancariaAgencia?: string;
   contaBancariaConta?: string;
   formaPagamento?: string;
+  /** Omitida = padrão do fornecedor/cliente, ou FISCAL. */
+  classificacaoFiscal?: "FISCAL" | "GERENCIAL";
+  tipoComprovante?: string;
+  numeroDocumentoFiscal?: string;
+  serieDocumentoFiscal?: string;
+  chaveAcesso?: string;
+  dataEmissaoDocumentoFiscal?: string;
+  motivoSemDocumento?: string;
   parcelas: { dataVencimento: string; valorOriginal: number }[];
 };
 
@@ -111,6 +119,13 @@ export async function POST(request: Request): Promise<Response> {
       projetoId,
       contaBancariaId,
       formaPagamento: corpo.formaPagamento,
+      classificacaoFiscal: corpo.classificacaoFiscal,
+      tipoComprovante: corpo.tipoComprovante,
+      numeroDocumentoFiscal: corpo.numeroDocumentoFiscal,
+      serieDocumentoFiscal: corpo.serieDocumentoFiscal,
+      chaveAcesso: corpo.chaveAcesso,
+      dataEmissaoDocumentoFiscal: corpo.dataEmissaoDocumentoFiscal,
+      motivoSemDocumento: corpo.motivoSemDocumento,
       parcelas: corpo.parcelas.map((parcela, indice) => ({
         numero: indice + 1,
         dataVencimento: parcela.dataVencimento,
@@ -133,7 +148,7 @@ export async function GET(request: Request): Promise<Response> {
       throw new ErroValidacaoApi('Informe ?tipo=PAGAR ou ?tipo=RECEBER', ["tipo"]);
     }
 
-    const titulos = await listarTitulos(sessao.filialId, tipo);
+    const titulos = await listarTitulos(sessao.filialId, tipo, { classificacao: classificacaoDaQuery(url) });
     return Response.json(titulos, { status: 200 });
   });
 }

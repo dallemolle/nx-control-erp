@@ -5,6 +5,7 @@ import { requirePermission } from "@/server/auth/permissions";
 import { listarBaixasPendentes } from "@/server/services/baixa";
 import { aprovarBaixaAction } from "./actions";
 import { RejeitarBaixaForm } from "./rejeitar-baixa-form";
+import { formatarMoeda } from "@/lib/formatacao";
 
 export default async function AprovacoesPage() {
   const sessao = await requireSessaoAtiva();
@@ -35,7 +36,7 @@ export default async function AprovacoesPage() {
               <TableCell>
                 {(baixa.parcela.titulo.fornecedor ?? baixa.parcela.titulo.cliente)?.nome}
               </TableCell>
-              <TableCell>{Number(baixa.valorPago).toFixed(2)}</TableCell>
+              <TableCell>{formatarMoeda(baixa.valorPago)}</TableCell>
               <TableCell>{baixa.usuario.nome}</TableCell>
               <TableCell className="flex justify-end gap-2">
                 <form action={aprovarBaixaAction}>

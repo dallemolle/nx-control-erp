@@ -577,10 +577,36 @@ describe("criarLancamentoDaLinha", () => {
     expect(Number(lancamento.valor)).toBe(150);
     expect(lancamento.tipo).toBe("SAIDA");
     expect(lancamento.origem).toBe("MANUAL");
+    expect(lancamento.classificacaoFiscal).toBe("FISCAL");
 
     const linhaAtualizada = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } });
     expect(linhaAtualizada.status).toBe("CONCILIADO");
     expect(linhaAtualizada.lancamentoBancarioId).toBe(lancamento.id);
+  });
+
+  test("grava a classificação e o comprovante informados", async () => {
+    const extrato = await importarExtratoOfx(
+      fixture.sessao,
+      fixture.contaBancariaId,
+      arquivoOfx(OFX_DUAS_TRANSACOES("CRIA-C-1", "CRIA-C-2")),
+    );
+    const linha = await prisma.linhaExtrato.findFirstOrThrow({
+      where: { extratoImportadoId: extrato.id, identificadorBancario: "CRIA-C-1" },
+    });
+
+    const lancamento = await criarLancamentoDaLinha(fixture.sessao, linha.id, {
+      descricao: "Pagamento ao produtor (sem nota)",
+      categoriaFinanceiraId: null,
+      centroCustoId: null,
+      centroLucroId: null,
+      safraId: null,
+      projetoId: null,
+      classificacaoFiscal: "GERENCIAL",
+      tipoComprovante: "RECIBO",
+    });
+
+    expect(lancamento.classificacaoFiscal).toBe("GERENCIAL");
+    expect(lancamento.tipoComprovante).toBe("RECIBO");
   });
 
   test("grava as 4 dimensões quando informadas", async () => {

@@ -5,6 +5,9 @@ import { requirePermission, podeEscreverOrcamento } from "@/server/auth/permissi
 import { listarComparativoOrcamento } from "@/server/services/orcamento";
 import { LinhaOrcamentoForm } from "./linha-orcamento-form";
 import { SeletorAnoMes } from "../_shared/seletor-ano-mes";
+import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
+import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
+import { formatarMoeda } from "@/lib/formatacao";
 
 function anoValido(valor: string | undefined): number {
   const numero = Number(valor);
@@ -19,7 +22,7 @@ function mesValido(valor: string | undefined): number {
 export default async function OrcamentoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ano?: string | string[]; mes?: string | string[] }>;
+  searchParams: Promise<{ ano?: string | string[]; mes?: string | string[]; classificacao?: string | string[] }>;
 }) {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "orcamento:ler");
@@ -29,8 +32,11 @@ export default async function OrcamentoPage({
   const mesParam = Array.isArray(params.mes) ? params.mes[0] : params.mes;
   const ano = anoValido(anoParam);
   const mes = mesValido(mesParam);
+  const classificacao = classificacaoDaUrl(
+    Array.isArray(params.classificacao) ? params.classificacao[0] : params.classificacao,
+  );
 
-  const linhas = await listarComparativoOrcamento(sessao, ano);
+  const linhas = await listarComparativoOrcamento(sessao, ano, { classificacao });
   const somenteLeitura = !podeEscreverOrcamento(sessao.perfil, sessao.podeAlterarFilial);
 
   const categoriasUnicas = Array.from(new Set(linhas.map((l) => l.categoriaFinanceiraId))).map((id) => {
@@ -55,7 +61,16 @@ export default async function OrcamentoPage({
         </p>
       </div>
 
-      <SeletorAnoMes ano={ano} mes={mes} />
+      <div className="flex flex-wrap items-center gap-4">
+        <SeletorAnoMes ano={ano} mes={mes} />
+        <SeletorClassificacao classificacao={classificacao} />
+      </div>
+      {classificacao ? (
+        <p className="text-sm text-muted-foreground" role="note">
+          Realizado e projetado mostram só o movimento {classificacao === "FISCAL" ? "fiscal" : "gerencial"}; o
+          orçado é um só e não é dividido por classificação.
+        </p>
+      ) : null}
 
       <section className="space-y-2">
         <h2 className="text-base font-semibold">Valores orçados — {ano}</h2>
@@ -88,12 +103,12 @@ export default async function OrcamentoPage({
             {linhasDoMes.map((linha) => (
               <TableRow key={linha.categoriaFinanceiraId} className={linha.alerta ? "bg-destructive/10" : undefined}>
                 <TableCell className="font-medium">{linha.categoriaNome}</TableCell>
-                <TableCell>{linha.orcado.toFixed(2)}</TableCell>
-                <TableCell>{linha.realizado.toFixed(2)}</TableCell>
-                <TableCell>{linha.projetado.toFixed(2)}</TableCell>
+                <TableCell>{formatarMoeda(linha.orcado)}</TableCell>
+                <TableCell>{formatarMoeda(linha.realizado)}</TableCell>
+                <TableCell>{formatarMoeda(linha.projetado)}</TableCell>
                 <TableCell className={linha.alerta ? "font-medium text-destructive" : undefined}>
                   <div className="flex items-center gap-2">
-                    {linha.variacaoAbsolutaRealizado.toFixed(2)}
+                    {formatarMoeda(linha.variacaoAbsolutaRealizado)}
                     {linha.alerta && <Badge variant="destructive">Estouro</Badge>}
                   </div>
                 </TableCell>

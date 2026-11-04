@@ -113,4 +113,40 @@ describe("POST/GET /api/v1/lancamentos-bancarios", () => {
     const corpo = await resposta.json();
     expect(corpo.campos).toContain("centroCusto");
   });
+
+  test("classificação: omitida nasce FISCAL, GERENCIAL é gravada e GET filtra", async () => {
+    const conta = await prisma.contaBancaria.findUniqueOrThrow({ where: { id: fixture.contaBancariaId } });
+    const corpo = {
+      contaBancariaAgencia: conta.agencia,
+      contaBancariaConta: conta.conta,
+      data: "2026-09-11",
+      tipo: "SAIDA",
+      valor: 20,
+      descricao: "Classificado via API",
+    };
+    const post = (extra: object) =>
+      POST(
+        new Request("http://localhost/api/v1/lancamentos-bancarios", {
+          method: "POST",
+          headers: headers(),
+          body: JSON.stringify({ ...corpo, ...extra }),
+        }),
+      );
+
+    expect((await (await post({})).json()).classificacaoFiscal).toBe("FISCAL");
+
+    const gerencial = await post({ classificacaoFiscal: "GERENCIAL", tipoComprovante: "RECIBO", numeroComprovante: "R-1" });
+    expect(gerencial.status).toBe(201);
+    expect((await gerencial.json()).numeroComprovante).toBe("R-1");
+
+    const incoerente = await post({ classificacaoFiscal: "GERENCIAL", tipoComprovante: "NFE" });
+    expect(incoerente.status).toBe(422);
+
+    const lista = await GET(
+      new Request("http://localhost/api/v1/lancamentos-bancarios?classificacao=GERENCIAL", { headers: headers() }),
+    );
+    const gerenciais = await lista.json();
+    expect(gerenciais.length).toBe(1);
+    expect(gerenciais[0].classificacaoFiscal).toBe("GERENCIAL");
+  });
 });

@@ -6,6 +6,10 @@ import { SeletorPeriodo } from "./seletor-periodo";
 import { formatarRotuloPeriodo } from "../_fluxo-de-caixa/formatar-rotulo-periodo";
 import { dataValida } from "../_fluxo-de-caixa/data-valida";
 import { ExportarLinks } from "../../_shared/exportar-links";
+import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
+import { AvisoVisaoFiltrada } from "../_fluxo-de-caixa/aviso-visao-filtrada";
+import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
+import { formatarMoeda } from "@/lib/formatacao";
 
 const GRANULARIDADES_VALIDAS: Granularidade[] = ["DIA", "SEMANA", "MES", "ANO"];
 
@@ -16,7 +20,11 @@ function granularidadeValida(valor: string | undefined): Granularidade {
 export default async function FluxoDeCaixaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ granularidade?: string | string[]; data?: string | string[] }>;
+  searchParams: Promise<{
+    granularidade?: string | string[];
+    data?: string | string[];
+    classificacao?: string | string[];
+  }>;
 }) {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "lancamento:ler");
@@ -26,8 +34,12 @@ export default async function FluxoDeCaixaPage({
   const dataParam = Array.isArray(params.data) ? params.data[0] : params.data;
   const granularidade = granularidadeValida(granularidadeParam);
   const dataReferencia = dataValida(dataParam);
+  const classificacao = classificacaoDaUrl(
+    Array.isArray(params.classificacao) ? params.classificacao[0] : params.classificacao,
+  );
+  const rotuloSaldo = classificacao ? "Acumulado" : "Saldo";
 
-  const periodos = await listarFluxoDeCaixaRealizado(sessao, granularidade, dataReferencia);
+  const periodos = await listarFluxoDeCaixaRealizado(sessao, granularidade, dataReferencia, { classificacao });
 
   return (
     <div className="space-y-6">
@@ -38,33 +50,40 @@ export default async function FluxoDeCaixaPage({
         </p>
       </div>
 
-      <SeletorPeriodo granularidade={granularidade} dataReferencia={dataReferencia.toISOString().slice(0, 10)} />
+      <div className="flex flex-wrap items-center gap-4">
+        <SeletorPeriodo granularidade={granularidade} dataReferencia={dataReferencia.toISOString().slice(0, 10)} />
+        <SeletorClassificacao classificacao={classificacao} />
+      </div>
+
+      <AvisoVisaoFiltrada classificacao={classificacao} />
 
       <ExportarLinks
         baseHref="/financeiro/fluxo-de-caixa/export"
-        queryString={`granularidade=${granularidade}&data=${dataReferencia.toISOString().slice(0, 10)}`}
+        queryString={`granularidade=${granularidade}&data=${dataReferencia.toISOString().slice(0, 10)}${
+          classificacao ? `&classificacao=${classificacao}` : ""
+        }`}
       />
 
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Período</TableHead>
-            <TableHead>Saldo inicial</TableHead>
+            <TableHead>{rotuloSaldo} inicial</TableHead>
             <TableHead>Entradas</TableHead>
             <TableHead>Saídas</TableHead>
             <TableHead>Geração de caixa</TableHead>
-            <TableHead>Saldo final</TableHead>
+            <TableHead>{rotuloSaldo} final</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {periodos.map((periodo) => (
             <TableRow key={periodo.inicio.toISOString()}>
               <TableCell>{formatarRotuloPeriodo(granularidade, periodo.inicio, periodo.fim)}</TableCell>
-              <TableCell>{periodo.saldoInicial.toFixed(2)}</TableCell>
-              <TableCell>{periodo.entradas.toFixed(2)}</TableCell>
-              <TableCell>{periodo.saidas.toFixed(2)}</TableCell>
-              <TableCell>{periodo.geracaoLiquida.toFixed(2)}</TableCell>
-              <TableCell>{periodo.saldoFinal.toFixed(2)}</TableCell>
+              <TableCell>{formatarMoeda(periodo.saldoInicial)}</TableCell>
+              <TableCell>{formatarMoeda(periodo.entradas)}</TableCell>
+              <TableCell>{formatarMoeda(periodo.saidas)}</TableCell>
+              <TableCell>{formatarMoeda(periodo.geracaoLiquida)}</TableCell>
+              <TableCell>{formatarMoeda(periodo.saldoFinal)}</TableCell>
             </TableRow>
           ))}
         </TableBody>

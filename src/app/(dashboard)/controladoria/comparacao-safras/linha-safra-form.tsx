@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { salvarOrcamentoSafraAction, type FormState } from "./actions";
+import { formatarMoeda } from "@/lib/formatacao";
 
 const ESTADO_INICIAL: FormState = {};
 
@@ -19,7 +20,7 @@ export function LinhaSafraForm({
   const [state, formAction, pendente] = useActionState(salvarOrcamentoSafraAction, ESTADO_INICIAL);
 
   if (somenteLeitura) {
-    return <span>{valorOrcado.toFixed(2)}</span>;
+    return <span>{formatarMoeda(valorOrcado)}</span>;
   }
 
   return (

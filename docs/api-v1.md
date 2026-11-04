@@ -2,7 +2,7 @@
 
 API programática para automatizar lançamentos financeiros (contas a pagar/receber, movimentação bancária) sem passar pela tela do navegador — pensada para um agente de IA ou script externo.
 
-Ver também: `docs/superpowers/specs/2026-09-15-api-rest-automacao-design.md` (desenho original) e `docs/backlog.md` (limitações conhecidas, ex.: sem idempotência).
+Ver também: `docs/superpowers/specs/2026-09-15-api-rest-automacao-design.md` (desenho original) e `docs/backlog.md` (limitações conhecidas).
 
 ## 1. Gerar uma chave de API
 
@@ -56,6 +56,7 @@ http://localhost:3000/api/v1
 | Campo obrigatório faltando / identificador (CNPJ, código, nome) não encontrado | 422 |
 | Perfil sem permissão pra ação | 403 |
 | Recurso referenciado não existe (ex.: `parcelaId`) | 404 |
+| `Idempotency-Key` ainda em processamento (ver abaixo) | 409 |
 | Erro inesperado | 500 |
 
 ## 5. Regra geral: identificadores por CNPJ/código/nome, não por UUID interno
@@ -63,6 +64,26 @@ http://localhost:3000/api/v1
 Em vez de IDs internos, os campos de fornecedor/cliente/categoria/etc. usam o que você já tem: **CNPJ/CPF** (fornecedor/cliente), **código** (centro de custo, centro de lucro, projeto — o mesmo código que aparece no cadastro), **nome** (categoria financeira, safra — comparação sem diferenciar maiúsc./minúsc.), **agência + conta** (conta bancária). Se não encontrar, a API devolve erro claro em vez de criar o cadastro sozinha. A única exceção é `parcelaId` na baixa (você pega esse ID chamando `GET /titulos` antes).
 
 ---
+
+### Reenvio seguro — `Idempotency-Key` (opcional, recomendado)
+
+Todo `POST` aceita o header `Idempotency-Key` (1 a 255 caracteres; use um UUID gerado **por operação**, e repita o mesmo valor ao reenviar a mesma operação após timeout ou erro de rede):
+
+```
+Idempotency-Key: 6f1c2e8a-3b4d-4c5e-9f00-1a2b3c4d5e6f
+```
+
+| Situação | Resposta |
+|---|---|
+| Primeira vez | executa normalmente (`201`) |
+| Reenvio depois de sucesso | **não executa de novo**: devolve a mesma resposta (mesmo status e corpo) com o header `Idempotent-Replayed: true` |
+| Reenvio enquanto a original ainda está rodando | `409` — espere e reenvie |
+| Mesma chave com outro corpo JSON | `422` — gere uma chave nova para uma operação diferente |
+| A original falhou (`4xx`/`5xx`) | a chave é liberada: corrija e reenvie com a mesma chave |
+
+A chave vale por usuário + filial + rota e não expira. Sem o header, cada `POST` cria um registro novo (comportamento anterior). Em `/extratos/importar` (multipart) a comparação de corpo não é feita, só a da chave.
+
+Raro: se o servidor cair depois de gravar e antes de responder, a chave fica "em processamento" (`409`) para sempre — confira pelo `GET` se o registro foi criado antes de tentar com uma chave nova.
 
 ## 6. Rotas de escrita
 
@@ -95,8 +116,34 @@ Permissão: `titulo:escrever`.
 - `parcelas`: array, não precisa de `numero` (é atribuído automaticamente por ordem) — pode ter 1 ou várias.
 - Resposta `201` com o título criado, incluindo `parcelas[].id` (guarde esse id se for dar baixa depois).
 
+**Classificação fiscal × gerencial (todos opcionais).** Quem já integra sem esses campos continua funcionando: o título nasce com o padrão do fornecedor/cliente (cadastro → "Classificação padrão dos títulos") ou, sem padrão, `FISCAL`.
+
+| Campo | Valores | Observação |
+|---|---|---|
+| `classificacaoFiscal` | `FISCAL` \| `GERENCIAL` | `FISCAL` = com documento fiscal/oficial; `GERENCIAL` = negociação sem nota |
+| `tipoComprovante` | fiscais: `NFE`, `NFCE`, `NFSE`, `CTE`, `NF_PRODUTOR`, `NF_ENTRADA`, `GUIA_TRIBUTO`, `FOLHA_PAGAMENTO`, `TARIFA_BANCARIA`, `CONTRATO`, `OUTRO_FISCAL` · gerenciais: `RECIBO`, `PEDIDO_INTERNO`, `SEM_COMPROVANTE` | Precisa ser do mesmo grupo da classificação |
+| `numeroDocumentoFiscal`, `serieDocumentoFiscal` | texto | Só em `FISCAL`; número exige `tipoComprovante` |
+| `chaveAcesso` | 44 dígitos (pontuação é ignorada) | Só para `NFE`/`NFCE`/`CTE`; o dígito verificador é conferido |
+| `dataEmissaoDocumentoFiscal` | `AAAA-MM-DD` | Data da nota |
+| `motivoSemDocumento` | texto | Só em `GERENCIAL` (ex.: "produtor não emite nota") |
+
+```json
+{
+  "...": "campos do exemplo acima",
+  "classificacaoFiscal": "FISCAL",
+  "tipoComprovante": "NFE",
+  "numeroDocumentoFiscal": "20456",
+  "serieDocumentoFiscal": "1",
+  "chaveAcesso": "3524 0312 3456 7800 0195 5500 1000 0012 3411 2345 6782"
+}
+```
+
+Erros `422` (com `campos`): classificação/tipo inválidos, tipo de comprovante do grupo errado, chave inválida, ou **nota já lançada** na filial (mesma chave de acesso, ou mesmo fornecedor/cliente + tipo + série + número).
+
 ### `GET /titulos?tipo=PAGAR` (ou `RECEBER`)
 Permissão: `titulo:ler`. Sem corpo. `?tipo=` é obrigatório.
+- `?classificacao=FISCAL` ou `?classificacao=GERENCIAL` (opcional): filtra pela classificação. Sem o parâmetro, devolve todos. Valor diferente desses dois → `422`.
+- Cada título traz `classificacaoFiscal`, `tipoComprovante`, `numeroDocumentoFiscal`, `serieDocumentoFiscal`, `chaveAcesso`, `dataEmissaoDocumentoFiscal`, `motivoSemDocumento`.
 
 ### `POST /lancamentos-bancarios` — lançamento manual
 Permissão: `lancamento:escrever`.
@@ -119,9 +166,11 @@ Permissão: `lancamento:escrever`.
 - `contaBancariaAgencia`/`contaBancariaConta`: **obrigatórios** aqui (diferente de título).
 - `tipo`: `"ENTRADA"` ou `"SAIDA"`.
 - `categoriaFinanceira`, `centroCusto`, `centroLucro`, `safra`, `projeto`: opcionais.
+- `classificacaoFiscal` (`FISCAL` \| `GERENCIAL`, padrão `FISCAL`), `tipoComprovante` (mesmos valores e regra de grupo do título) e `numeroComprovante` (texto livre): opcionais.
 
 ### `GET /lancamentos-bancarios`
-Permissão: `lancamento:ler`. Sem corpo, sem filtro de query.
+Permissão: `lancamento:ler`. Sem corpo.
+- `?classificacao=FISCAL` ou `?classificacao=GERENCIAL` (opcional). Transferências entre contas não têm classificação (`classificacaoFiscal: null`) e só aparecem sem o filtro.
 
 ### `POST /baixas` — dar baixa numa parcela (marcar como paga/recebida)
 Permissão: `titulo:baixar`.
@@ -170,6 +219,8 @@ Todas: permissão `cadastro:ler`, `GET`, sem corpo, devolvem um array `200`.
 | `GET /contas-bancarias` | filial |
 
 Use essas rotas pra conferir o nome/código/CNPJ exato antes de montar o corpo de uma rota de escrita.
+
+`GET /fornecedores` e `GET /clientes` trazem também `classificacaoFiscalPadrao` (`FISCAL`, `GERENCIAL` ou `null`): é a classificação que um título novo daquele parceiro recebe quando o corpo não informa `classificacaoFiscal`.
 
 ---
 

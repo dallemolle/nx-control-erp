@@ -114,13 +114,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   compartilhado `buscarFiliaisDaEmpresa(empresaId)` que decidisse isso uma
   vez só, em vez de replicar a escolha a cada novo serviço consolidado).
 
-- **Sem formatador de moeda compartilhado.** `formatarMoeda` em
-  `dashboard-executivo/page.tsx` é só `valor.toFixed(2)` — sem separador de
-  milhar, sem `R$` — mesmo padrão já usado em 13 arquivos do projeto, mas
-  este é o primeiro dashboard "executivo" com números de 7 dígitos, onde a
-  falta de formatação mais pesa. Bom gatilho para extrair um formatador
-  compartilhado em `src/lib/` quando a próxima tela financeira for tocada.
-
 ## Cobertura de relatórios
 
 - **Projeto como dimensão de relatório** (Fase 5, sub-projeto 2a — Fluxo
@@ -150,7 +143,41 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   distante. Reconstruir a cadeia completa através de anos não exibidos
   ficou para uma iteração futura.
 
+## Classificação Fiscal × Gerencial
+
+- **Filtro de classificação no Fluxo de caixa estratégico** (decisão FG5
+  de `PLANO_IMPLEMENTACAO_FISCAL_GERENCIAL.md`, confirmada em 2026-11-03).
+  A primeira entrega aplica o filtro `?classificacao=FISCAL|GERENCIAL` ao
+  fluxo realizado/projetado, orçamento, fluxo por dimensão, comparação de
+  safras e dashboard, mas não ao estratégico: as premissas dos cenários
+  (`CenarioEstrategico`) e o ano-base consolidado
+  (`buscarAnoBaseConsolidado` em `fluxoDeCaixaEstrategico.ts`) usam a base
+  total. Para retomar: passar `opcoes.classificacao` a
+  `buscarAnoBaseConsolidado` (mesmo `whereLancamentoPorClassificacao` de
+  `classificacaoFiscal.ts`) e decidir se a projeção filtrada parte de um
+  "acumulado" zerado (como o fluxo realizado filtrado) ou do saldo total,
+  já que o saldo bancário não se divide por classificação.
+
+## Qualidade de código
+
+- **21 erros de lint pré-existentes (`react-hooks/set-state-in-effect`)**
+  nos formulários em diálogo (`*-dialog-form.tsx`), que resetam o estado com
+  `setState` dentro de `useEffect` ao abrir/fechar. Funciona, mas `npm run
+  lint` não passa limpo. Correção: resetar no handler `onOpenChange` (padrão
+  já usado em `titulo-dialog-form.tsx`, `aoAbrirOuFechar`) ou remontar o
+  formulário com `key`.
+
 ## Qualidade de testes
+
+- **`src/lib/versao.test.ts` estoura o timeout de 5s de forma intermitente
+  na suíte completa** (visto em 2026-11-03; passa isolado e na maioria das
+  rodadas completas). Mesma causa dos testes de schema de cliente/fornecedor
+  corrigidos no commit `a2d8fc5` — `await import()` dentro do teste sob a
+  carga da suíte paralela —, mas aqui o import dinâmico é necessário
+  (`vi.doMock("node:fs")` + `vi.resetModules()`), então a troca por import
+  estático não se aplica. Caminhos: aumentar o timeout só deste arquivo
+  (`describe(..., { timeout: 15_000 })`) ou trocar o `doMock` por
+  `vi.mock` hoisted com `mockReturnValueOnce` por teste.
 
 - **Teste de rollback do orçamento não exercita falha real de transação**
   (Fase 5, sub-projeto 1 — Orçamento, `salvarValoresOrcamentoDoAno`). O
@@ -239,28 +266,15 @@ para ser retomado sem precisar reconstruir o raciocínio original.
 
 ## API REST de automação (lançamentos via agente)
 
-- **Sem idempotência no v1.** Um reenvio de `POST /api/v1/titulos` (retry
-  de rede do agente, timeout, script rodado duas vezes por engano) cria
-  um título duplicado — a API não detecta nem rejeita o reenvio. Decisão
-  consciente ao aprovar o desenho (2026-09-15): aceitável porque é
-  automação interna do próprio usuário contra sua própria instância, não
-  uma API pública para clientes de terceiros. **Importância: média-alta**
-  — se o agente de IA reintentar automaticamente após timeout/erro de
-  rede sem antes checar se o lançamento já existe, duplicar contas a
-  pagar/receber ou lançamentos bancários tem impacto financeiro real
-  (double-booking), não é só um dado repetido inofensivo. Retomar se isso
-  ocorrer na prática ou antes de dar ao agente permissão para reintentar
-  automaticamente. Caminho de correção mais simples quando for retomado:
-  aceitar um campo opcional `idExterno` no corpo de `POST /api/v1/titulos`,
-  `/lancamentos-bancarios` e `/baixas`, com um índice único por
-  `(usuarioId, idExterno)` — reenvio com o mesmo `idExterno` devolve o
-  recurso já criado (`200`) em vez de duplicar (`201`). Exceção parcial:
-  `/extratos/importar` já tem uma proteção parcial contra reenvio — a
-  constraint única de `LinhaExtrato` (`contaBancariaId`+
-  `identificadorBancario`) combinada com `skipDuplicates: true` evita
-  duplicar as linhas de transação num retry, mas ainda cria um novo
-  registro de cabeçalho `ExtratoImportado` a cada chamada e reexecuta a
-  conciliação automática.
+- **Idempotência é opt-in.** Resolvido em 2026-11-03 com o header
+  `Idempotency-Key` (tabela `requisicoes_idempotentes`, ver
+  `docs/api-v1.md`), mas um cliente que não envia o header continua sem
+  proteção contra reenvio. Tornar obrigatório em `POST` quebraria
+  integrações existentes — reavaliar se aparecer duplicidade vinda de um
+  cliente que não manda a chave. Também em aberto: chaves não expiram
+  (a tabela cresce com o volume de POSTs com chave) e uma requisição
+  interrompida depois de gravar fica em `409` para sempre (sem
+  "destravamento" automático).
 
 ## Auditoria — workflow de aprovação de pagamentos (Fase 6, sub-projeto 6d)
 

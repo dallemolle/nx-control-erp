@@ -39,7 +39,11 @@ export async function criarCliente(sessao: SessaoAtiva, dados: ClienteFormValues
   requirePermission(sessao.perfil, "cadastro:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
-  const dadosNormalizados = { ...dados, ...camposBancariosNormalizados(dados) };
+  const dadosNormalizados = {
+    ...dados,
+    ...camposBancariosNormalizados(dados),
+    classificacaoFiscalPadrao: normalizarOpcional(dados.classificacaoFiscalPadrao),
+  };
   const cliente = await prisma.cliente.create({
     data: { ...dadosNormalizados, empresaId: sessao.empresaId },
   });
@@ -69,7 +73,11 @@ export async function atualizarCliente(
   const anterior = await prisma.cliente.findUniqueOrThrow({
     where: { id, empresaId: sessao.empresaId },
   });
-  const dadosNormalizados = { ...dados, ...camposBancariosNormalizados(dados) };
+  const dadosNormalizados = {
+    ...dados,
+    ...camposBancariosNormalizados(dados),
+    classificacaoFiscalPadrao: normalizarOpcional(dados.classificacaoFiscalPadrao),
+  };
   const cliente = await prisma.cliente.update({ where: { id }, data: dadosNormalizados });
 
   await registrarAuditoria({
@@ -93,6 +101,7 @@ export async function atualizarCliente(
       conta: anterior.conta,
       tipoContaTerceiro: anterior.tipoContaTerceiro,
       titularConta: anterior.titularConta,
+      classificacaoFiscalPadrao: anterior.classificacaoFiscalPadrao,
     },
     novo: dadosNormalizados,
   });

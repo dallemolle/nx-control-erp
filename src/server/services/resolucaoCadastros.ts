@@ -1,6 +1,6 @@
 import { prisma } from "@/server/db/client";
 import type { SessaoAtiva } from "@/server/auth/sessao";
-import type { TipoTitulo } from "@prisma/client";
+import type { ClassificacaoFiscal, TipoTitulo } from "@prisma/client";
 
 /** Compara CNPJ/CPF ignorando pontuação — o cadastro não normaliza o valor digitado. */
 export function normalizarDocumento(valor: string): string {
@@ -21,6 +21,8 @@ export type CadastrosParaResolucao = {
   mapaSafra: Map<string, string>;
   mapaProjeto: Map<string, string>;
   mapaContaBancaria: Map<string, string>;
+  /** id da contraparte → classificação padrão (para validar o comprovante quando a classificação é omitida). */
+  classificacaoPadraoPorContraparte: Map<string, ClassificacaoFiscal | null>;
 };
 
 export async function carregarCadastrosParaResolucao(
@@ -30,8 +32,14 @@ export async function carregarCadastrosParaResolucao(
   const [contrapartes, categorias, centrosCusto, centrosLucro, safras, projetos, contasBancarias] =
     await Promise.all([
       tipo === "PAGAR"
-        ? prisma.fornecedor.findMany({ where: { empresaId: sessao.empresaId }, select: { id: true, cnpjCpf: true } })
-        : prisma.cliente.findMany({ where: { empresaId: sessao.empresaId }, select: { id: true, cnpjCpf: true } }),
+        ? prisma.fornecedor.findMany({
+            where: { empresaId: sessao.empresaId },
+            select: { id: true, cnpjCpf: true, classificacaoFiscalPadrao: true },
+          })
+        : prisma.cliente.findMany({
+            where: { empresaId: sessao.empresaId },
+            select: { id: true, cnpjCpf: true, classificacaoFiscalPadrao: true },
+          }),
       prisma.categoriaFinanceira.findMany({ where: { filialId: sessao.filialId }, select: { id: true, nome: true } }),
       prisma.centroCusto.findMany({ where: { filialId: sessao.filialId }, select: { id: true, codigo: true } }),
       prisma.centroLucro.findMany({ where: { filialId: sessao.filialId }, select: { id: true, codigo: true } }),
@@ -54,6 +62,7 @@ export async function carregarCadastrosParaResolucao(
     mapaContaBancaria: new Map(
       contasBancarias.map((c) => [`${normalizarChave(c.agencia)}|${normalizarChave(c.conta)}`, c.id]),
     ),
+    classificacaoPadraoPorContraparte: new Map(contrapartes.map((c) => [c.id, c.classificacaoFiscalPadrao])),
   };
 }
 

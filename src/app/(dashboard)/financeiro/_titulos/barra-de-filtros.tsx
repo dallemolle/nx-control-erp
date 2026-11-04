@@ -71,6 +71,20 @@ export function BarraDeFiltros({
   return (
     <div className="flex flex-wrap items-end gap-3">
       <div className="flex flex-col gap-1">
+        <span className="text-xs text-muted-foreground">Classificação</span>
+        <Select value={valorSelect("classificacao")} onValueChange={aoMudarSelect("classificacao")}>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={SEM_VALOR}>Todas</SelectItem>
+            <SelectItem value="FISCAL">Fiscal</SelectItem>
+            <SelectItem value="GERENCIAL">Gerencial</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex flex-col gap-1">
         <span className="text-xs text-muted-foreground">Categoria</span>
         <Select value={valorSelect("categoria")} onValueChange={aoMudarSelect("categoria")}>
           <SelectTrigger className="w-48">
