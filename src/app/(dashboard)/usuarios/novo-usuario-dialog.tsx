@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,21 +15,17 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PERFIS } from "@/lib/schemas/usuario";
 import { criarUsuarioAction, verificarEmailAction, type FormState } from "./actions";
+import { useAcaoDoDialogo } from "../_shared/use-acao-do-dialogo";
 
 const ESTADO_INICIAL: FormState = {};
 
 export function NovoUsuarioDialog() {
-  const [aberto, setAberto] = useState(false);
-  const [state, formAction, pendente] = useActionState(criarUsuarioAction, ESTADO_INICIAL);
+  const { aberto, setAberto, state, formAction, pendente } = useAcaoDoDialogo(criarUsuarioAction, ESTADO_INICIAL);
 
   const [email, setEmail] = useState("");
   const [verificando, setVerificando] = useState(false);
   const [usuarioEncontrado, setUsuarioEncontrado] = useState<string | null>(null);
   const [concederAcesso, setConcederAcesso] = useState(true);
-
-  useEffect(() => {
-    if (state.sucesso) setAberto(false);
-  }, [state.sucesso]);
 
   function reiniciar() {
     setEmail("");

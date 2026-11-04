@@ -1,6 +1,5 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { criarTransferenciaAction, type FormState } from "./actions";
+import { useAcaoDoDialogo } from "../../_shared/use-acao-do-dialogo";
 
 const ESTADO_INICIAL: FormState = {};
 
@@ -21,12 +21,7 @@ export function TransferenciaDialogForm({
 }: {
   contasBancarias: { id: string; nome: string }[];
 }) {
-  const [aberto, setAberto] = useState(false);
-  const [state, formAction, pendente] = useActionState(criarTransferenciaAction, ESTADO_INICIAL);
-
-  useEffect(() => {
-    if (state.sucesso) setAberto(false);
-  }, [state.sucesso]);
+  const { aberto, setAberto, state, formAction, pendente } = useAcaoDoDialogo(criarTransferenciaAction, ESTADO_INICIAL);
 
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>

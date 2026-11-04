@@ -1,7 +1,6 @@
 // src/app/(dashboard)/financeiro/conciliacao/criar-lancamento-dialog-form.tsx
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { SEM_VALOR } from "@/lib/schemas/enums";
 import { criarLancamentoDaLinhaAction, type FormState } from "./actions";
 import { CamposClassificacaoLancamento } from "../../_shared/campos-classificacao-lancamento";
+import { useAcaoDoDialogo } from "../../_shared/use-acao-do-dialogo";
 
 const ESTADO_INICIAL: FormState = {};
 
@@ -28,12 +28,7 @@ export function CriarLancamentoDialogForm({
   safras: { id: string; nome: string }[];
   projetos: { id: string; nome: string }[];
 }) {
-  const [aberto, setAberto] = useState(false);
-  const [state, formAction, pendente] = useActionState(criarLancamentoDaLinhaAction, ESTADO_INICIAL);
-
-  useEffect(() => {
-    if (state.sucesso) setAberto(false);
-  }, [state.sucesso]);
+  const { aberto, setAberto, state, formAction, pendente } = useAcaoDoDialogo(criarLancamentoDaLinhaAction, ESTADO_INICIAL);
 
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>

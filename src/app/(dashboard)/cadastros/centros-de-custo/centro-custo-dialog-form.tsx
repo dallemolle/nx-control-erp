@@ -1,6 +1,5 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { criarCentroCustoAction, atualizarCentroCustoAction, type FormState } from "./actions";
+import { useAcaoDoDialogo } from "../../_shared/use-acao-do-dialogo";
 
 type CentroCusto = { id: string; nome: string; codigo: string; parentId: string | null };
 
@@ -26,13 +26,8 @@ export function CentroCustoDialogForm({
   centro?: CentroCusto;
   opcoesPai: CentroCusto[];
 }) {
-  const [aberto, setAberto] = useState(false);
   const action = centro ? atualizarCentroCustoAction : criarCentroCustoAction;
-  const [state, formAction, pendente] = useActionState(action, ESTADO_INICIAL);
-
-  useEffect(() => {
-    if (state.sucesso) setAberto(false);
-  }, [state.sucesso]);
+  const { aberto, setAberto, state, formAction, pendente } = useAcaoDoDialogo(action, ESTADO_INICIAL);
 
   const opcoesFiltradas = opcoesPai.filter((opcao) => opcao.id !== centro?.id);
 

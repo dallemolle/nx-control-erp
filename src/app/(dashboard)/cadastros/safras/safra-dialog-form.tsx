@@ -1,6 +1,5 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { STATUS_SAFRA_PROJETO } from "@/lib/schemas/enums";
 import { criarSafraAction, atualizarSafraAction, type FormState } from "./actions";
+import { useAcaoDoDialogo } from "../../_shared/use-acao-do-dialogo";
 
 type Safra = {
   id: string;
@@ -30,13 +30,8 @@ function paraDataInput(data?: Date): string | undefined {
 }
 
 export function SafraDialogForm({ safra }: { safra?: Safra }) {
-  const [aberto, setAberto] = useState(false);
   const action = safra ? atualizarSafraAction : criarSafraAction;
-  const [state, formAction, pendente] = useActionState(action, ESTADO_INICIAL);
-
-  useEffect(() => {
-    if (state.sucesso) setAberto(false);
-  }, [state.sucesso]);
+  const { aberto, setAberto, state, formAction, pendente } = useAcaoDoDialogo(action, ESTADO_INICIAL);
 
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>

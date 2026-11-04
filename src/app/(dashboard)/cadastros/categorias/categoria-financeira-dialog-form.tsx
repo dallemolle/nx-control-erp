@@ -1,6 +1,5 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +17,7 @@ import {
   atualizarCategoriaFinanceiraAction,
   type FormState,
 } from "./actions";
+import { useAcaoDoDialogo } from "../../_shared/use-acao-do-dialogo";
 
 type CategoriaFinanceira = {
   id: string;
@@ -36,13 +36,8 @@ export function CategoriaFinanceiraDialogForm({
   categoria?: CategoriaFinanceira;
   opcoesPai: CategoriaFinanceira[];
 }) {
-  const [aberto, setAberto] = useState(false);
   const action = categoria ? atualizarCategoriaFinanceiraAction : criarCategoriaFinanceiraAction;
-  const [state, formAction, pendente] = useActionState(action, ESTADO_INICIAL);
-
-  useEffect(() => {
-    if (state.sucesso) setAberto(false);
-  }, [state.sucesso]);
+  const { aberto, setAberto, state, formAction, pendente } = useAcaoDoDialogo(action, ESTADO_INICIAL);
 
   const opcoesFiltradas = opcoesPai.filter((opcao) => opcao.id !== categoria?.id);
 

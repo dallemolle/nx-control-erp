@@ -158,15 +158,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   "acumulado" zerado (como o fluxo realizado filtrado) ou do saldo total,
   já que o saldo bancário não se divide por classificação.
 
-## Qualidade de código
-
-- **21 erros de lint pré-existentes (`react-hooks/set-state-in-effect`)**
-  nos formulários em diálogo (`*-dialog-form.tsx`), que resetam o estado com
-  `setState` dentro de `useEffect` ao abrir/fechar. Funciona, mas `npm run
-  lint` não passa limpo. Correção: resetar no handler `onOpenChange` (padrão
-  já usado em `titulo-dialog-form.tsx`, `aoAbrirOuFechar`) ou remontar o
-  formulário com `key`.
-
 ## Qualidade de testes
 
 - **`src/lib/versao.test.ts` estoura o timeout de 5s de forma intermitente

@@ -1,6 +1,5 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { SEM_VALOR } from "@/lib/schemas/enums";
 import { criarLancamentoManualAction, type FormState } from "./actions";
 import { CamposClassificacaoLancamento } from "../../_shared/campos-classificacao-lancamento";
+import { useAcaoDoDialogo } from "../../_shared/use-acao-do-dialogo";
 
 const ESTADO_INICIAL: FormState = {};
 
@@ -33,12 +33,7 @@ export function LancamentoDialogForm({
   safras: { id: string; nome: string }[];
   projetos: { id: string; nome: string }[];
 }) {
-  const [aberto, setAberto] = useState(false);
-  const [state, formAction, pendente] = useActionState(criarLancamentoManualAction, ESTADO_INICIAL);
-
-  useEffect(() => {
-    if (state.sucesso) setAberto(false);
-  }, [state.sucesso]);
+  const { aberto, setAberto, state, formAction, pendente } = useAcaoDoDialogo(criarLancamentoManualAction, ESTADO_INICIAL);
 
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
