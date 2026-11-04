@@ -19,8 +19,7 @@ type ParcelaLinha = {
   id: string;
   numero: number;
   dataVencimento: Date;
-  /** Vem como Decimal do Prisma ou string após a serialização servidor→cliente. */
-  valorAtualizado: number | string | { toString(): string };
+  valorAtualizado: number;
   status: string;
 };
 

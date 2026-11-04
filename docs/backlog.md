@@ -158,14 +158,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   "acumulado" zerado (como o fluxo realizado filtrado) ou do saldo total,
   já que o saldo bancário não se divide por classificação.
 
-## Exibição de datas
-
-- **Aviso "Only plain objects can be passed to Client Components" (Decimal)**
-  em Contas a pagar/receber: a página passa títulos com `parcelas[].valorAtualizado`
-  e `baixas[].valorPago` como `Decimal` do Prisma para o `TituloTable` (client).
-  Funciona (o tipo já prevê "Decimal ou string"), mas polui o console em dev.
-  Correção: converter para `number` na página antes de passar ao client.
-
 ## Qualidade de código
 
 - **21 erros de lint pré-existentes (`react-hooks/set-state-in-effect`)**
