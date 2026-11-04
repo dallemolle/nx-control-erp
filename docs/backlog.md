@@ -191,11 +191,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   UTC-3), o arquivo é nomeado com a data de amanhã. Cosmético, e
   consistente com a convenção UTC já usada em todo o projeto.
 
-- **Rótulo diferente entre tela e export do Fluxo de caixa.** A tabela usa
-  "Geração de caixa"; o export usa "Geração líquida" (nome que a spec
-  já definia). O export está de acordo com o desenho; a tela é que ficou
-  destoante — alinhar os dois nomes quando a tela for tocada de novo.
-
 - **`import * as Papa from "papaparse"` em `csv.ts` diverge do
   `import Papa from "papaparse"` já usado em `importacaoTitulo.ts`.**
   Ambos compilam (foi uma correção necessária de interop de módulo feita
