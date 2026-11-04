@@ -270,7 +270,8 @@ export default async function FiscalGerencialPage({
                     </TableCell>
                     <TableCell>{titulo.contraparte}</TableCell>
                     <TableCell>{titulo.tipo === "PAGAR" ? "A pagar" : "A receber"}</TableCell>
-                    <TableCell>{new Date(titulo.dataEmissao).toLocaleDateString("pt-BR")}</TableCell>
+                    {/* Datas são gravadas à meia-noite UTC; sem o fuso fixo, no Brasil apareceria o dia anterior. */}
+                    <TableCell>{new Date(titulo.dataEmissao).toLocaleDateString("pt-BR", { timeZone: "UTC" })}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatarMoeda(titulo.valor)}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">

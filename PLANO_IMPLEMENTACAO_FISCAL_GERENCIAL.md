@@ -516,30 +516,30 @@ O `DOCTO_IMPLEMENT_PROD-VEND.md` (Revisão 1.1) já foi ajustado para essas depe
 - [x] 2.13 ~~(Só se FG3 = sim)~~ **Não se aplica** (FG3 = não). Ação `gerencial:escrever` + `podeEscreverGerencial` + testes em `permissions.test.ts`.
 - [x] 2.14 Commits `96a01de`, `ce35bbb`, `86c5789`. Suíte: 572 testes passando.
 
-### 3. `[ ] Frontend (Formulários, Listagens, Filtros)`
+### 3. `[x] Frontend (Formulários, Listagens, Filtros)`
 
-- [ ] 3.1 `_shared/badge-classificacao.tsx` e `_shared/seletor-classificacao.tsx` (+ teste da função de URL).
-- [ ] 3.2 Cadastros de cliente e fornecedor: `Select` de classificação padrão.
-- [ ] 3.3 `titulo-dialog-form.tsx`: seção "Documento fiscal", pré-seleção pelo padrão da contraparte, motivo de reclassificação na edição.
-- [ ] 3.4 `titulo-table.tsx`: badge + nº da nota + alerta de pendências.
-- [ ] 3.5 `barra-de-filtros.tsx`: filtro Classificação (o parser `filtro-titulos-url.ts` + testes já foi feito em 2.12).
-- [ ] 3.6 `importar-csv-dialog.tsx`: ajuda com as colunas novas.
-- [ ] 3.7 Tesouraria (form, badge, filtro) e conciliação (form de criar lançamento).
-- [ ] 3.8 Fluxo realizado e projetado: seletor + aviso + "Acumulado" na visão filtrada.
-- [ ] 3.9 Orçamento, fluxo por dimensão, comparação de safras: seletor.
-- [ ] 3.10 Dashboard executivo: bloco "Fiscal × gerencial (mês)".
-- [ ] 3.11 `/controladoria/fiscal-gerencial` + item no `nav-items.ts` + export.
-- [ ] 3.12 `content/ajuda/passo-a-passo.md`.
+- [x] 3.1 `_shared/badge-classificacao.tsx` e `_shared/seletor-classificacao.tsx` (+ teste da função de URL).
+- [x] 3.2 Cadastros de cliente e fornecedor: `Select` de classificação padrão.
+- [x] 3.3 `titulo-dialog-form.tsx`: seção "Documento fiscal", pré-seleção pelo padrão da contraparte, motivo de reclassificação na edição.
+- [x] 3.4 `titulo-table.tsx`: badge + nº da nota + alerta de pendências.
+- [x] 3.5 `barra-de-filtros.tsx`: filtro Classificação (o parser `filtro-titulos-url.ts` + testes já foi feito em 2.12).
+- [x] 3.6 `importar-csv-dialog.tsx`: ajuda com as colunas novas.
+- [x] 3.7 Tesouraria (form, badge, filtro) e conciliação (form de criar lançamento).
+- [x] 3.8 Fluxo realizado e projetado: seletor + aviso + "Acumulado" na visão filtrada.
+- [x] 3.9 Orçamento, fluxo por dimensão, comparação de safras: seletor.
+- [x] 3.10 Dashboard executivo: bloco "Fiscal × gerencial (mês)".
+- [x] 3.11 `/controladoria/fiscal-gerencial` + item no `nav-items.ts` + export (comparativo mensal e pendências). *Acréscimos:* `_shared/campos-classificacao-lancamento.tsx` (tesouraria + conciliação), `AvisoVisaoFiltrada` nos fluxos; diálogos longos ganharam rolagem (`max-h-[90vh]`).
+- [x] 3.12 `content/ajuda/passo-a-passo.md`.
 
 ### 4. `[ ] Validação & Testes`
 
-- [ ] 4.1 `npm run lint`, `npm run test` (suíte inteira), `npm run build`.
-- [ ] 4.2 **Não regressão:** com filtro "Todos", os números anotados antes de começar batem exatamente (fluxo realizado, projetado, dashboard).
-- [ ] 4.3 Cenário ponta a ponta no app (`npm run dev`): fornecedor "Produtor X" com padrão Gerencial → novo título vem Gerencial; tipo "Recibo" → baixa aprovada → lançamento Gerencial → fluxo filtrado "Gerencial" mostra só ele → reclassificar para Fiscal com NF-e (chave válida) e motivo → lançamento acompanha → auditoria mostra `RECLASSIFICAR` com motivo.
-- [ ] 4.4 Pendências: título fiscal sem número aparece no relatório; ao informar o número/chave e anexar a nota, sai da lista.
-- [ ] 4.5 Duplicidade: cadastrar a mesma chave em outro título da filial → erro; em outra filial → permitido.
-- [ ] 4.6 Perfis: CONSULTA/AUDITOR veem gerenciais e não editam; filial somente leitura bloqueia reclassificação.
-- [ ] 4.7 API: integração antiga (corpo sem campos novos) segue funcionando; CSV antigo importa sem erro.
+- [x] 4.1 `npm run lint`, `npm run test` (suíte inteira), `npm run build`.
+- [x] 4.2 **Não regressão:** com filtro "Todos", os números anotados antes de começar batem exatamente (fluxo realizado, projetado, dashboard). *Coberto por `classificacaoRelatorios.test.ts` (sem `opcoes` = resultado de antes; Todos = Fiscal + Gerencial).*
+- [x] 4.3 Cenário ponta a ponta no app (`npm run dev`): fornecedor "Produtor X" com padrão Gerencial → novo título vem Gerencial; tipo "Recibo" → baixa aprovada → lançamento Gerencial → fluxo filtrado "Gerencial" mostra só ele → reclassificar para Fiscal com NF-e (chave válida) e motivo → lançamento acompanha → auditoria mostra `RECLASSIFICAR` com motivo. *Feito no navegador em 2026-11-03 (fornecedor → título Gerencial/Recibo → lista e filtro → reclassificação para NF-e com aviso de DV → auditoria `RECLASSIFICAR` → tela Fiscal × gerencial → fluxo filtrado). A propagação aos lançamentos de baixa foi verificada pelo teste de integração, não pela UI.*
+- [x] 4.4 Pendências: título fiscal sem número aparece no relatório; ao informar o número/chave e anexar a nota, sai da lista. *(testes de `relatorioFiscalGerencial` e `pendenciasFiscaisDoTitulo`; a lista com título sem nota foi vista na tela)*
+- [x] 4.5 Duplicidade: cadastrar a mesma chave em outro título da filial → erro; em outra filial → permitido. *(testes de integração)*
+- [ ] 4.6 Perfis: CONSULTA/AUDITOR veem gerenciais e não editam; filial somente leitura bloqueia reclassificação. *Pendente: conferência manual com usuários desses perfis (as permissões não mudaram; a edição continua exigindo `titulo:escrever` + filial com alteração).*
+- [x] 4.7 API: integração antiga (corpo sem campos novos) segue funcionando; CSV antigo importa sem erro. *(testes de rota e de importação)*
 - [ ] 4.8 Deploy em staging via workflow de migration → validação com dados reais → PR para `main`.
 
 ### 5. `[ ] Fase B — Conta Caixa (se FG4 = sim)`
