@@ -169,14 +169,10 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   criar um terceiro `gerarPdf` ao lado de `gerarCsv`/`gerarExcel`, sem
   tocar nas rotas já existentes além de adicionar o novo `formato=pdf`.
 
-- **Relatórios ainda sem export.** Em 2026-11-04 ganharam export o fluxo
-  projetado, o orçado × realizado (ano inteiro), o fluxo por dimensão, a
-  movimentação bancária (Tesouraria), a conciliação e a auditoria (até 10 mil
-  registros, `LIMITE_EXPORT_AUDITORIA`). "Obrigações e recebimentos futuros"
-  já sai pelo export de Contas a pagar/receber com filtro de vencimento.
-  Faltam a comparação entre safras e o fluxo estratégico (mesmo padrão
-  `responderExport`). "Necessidade de capital de giro" segue fora até existir
-  modelo de dados para o conceito.
+- **"Necessidade de capital de giro" sem export** — fica de fora até existir
+  modelo de dados para o conceito (mesma decisão já registrada para o
+  Dashboard executivo). Todos os demais relatórios da lista original da
+  Fase 6 já exportam CSV/Excel (concluído em 2026-11-04).
 
 - **`?formato=` desconhecido cai silenciosamente em CSV.** Hoje só existem
   `csv`/`xlsx`, então qualquer outro valor (incluindo erro de digitação)
