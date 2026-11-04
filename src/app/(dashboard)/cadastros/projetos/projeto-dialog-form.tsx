@@ -1,6 +1,5 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { STATUS_SAFRA_PROJETO } from "@/lib/schemas/enums";
 import { criarProjetoAction, atualizarProjetoAction, type FormState } from "./actions";
+import { useAcaoDoDialogo } from "../../_shared/use-acao-do-dialogo";
 
 type Projeto = {
   id: string;
@@ -25,13 +25,8 @@ type Projeto = {
 const ESTADO_INICIAL: FormState = {};
 
 export function ProjetoDialogForm({ projeto }: { projeto?: Projeto }) {
-  const [aberto, setAberto] = useState(false);
   const action = projeto ? atualizarProjetoAction : criarProjetoAction;
-  const [state, formAction, pendente] = useActionState(action, ESTADO_INICIAL);
-
-  useEffect(() => {
-    if (state.sucesso) setAberto(false);
-  }, [state.sucesso]);
+  const { aberto, setAberto, state, formAction, pendente } = useAcaoDoDialogo(action, ESTADO_INICIAL);
 
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>

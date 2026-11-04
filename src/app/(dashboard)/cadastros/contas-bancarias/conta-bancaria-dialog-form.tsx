@@ -1,6 +1,5 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +17,7 @@ import {
   atualizarContaBancariaAction,
   type FormState,
 } from "./actions";
+import { useAcaoDoDialogo } from "../../_shared/use-acao-do-dialogo";
 
 type Banco = {
   id: string;
@@ -44,13 +44,8 @@ export function ContaBancariaDialogForm({
   conta?: ContaBancaria;
   bancos: Banco[];
 }) {
-  const [aberto, setAberto] = useState(false);
   const action = conta ? atualizarContaBancariaAction : criarContaBancariaAction;
-  const [state, formAction, pendente] = useActionState(action, ESTADO_INICIAL);
-
-  useEffect(() => {
-    if (state.sucesso) setAberto(false);
-  }, [state.sucesso]);
+  const { aberto, setAberto, state, formAction, pendente } = useAcaoDoDialogo(action, ESTADO_INICIAL);
 
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>

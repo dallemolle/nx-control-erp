@@ -1,4 +1,4 @@
-import Papa from "papaparse";
+import * as Papa from "papaparse";
 import { prisma } from "@/server/db/client";
 import { tituloSchema } from "@/lib/schemas/titulo";
 import { criarTitulo } from "@/server/services/titulo";

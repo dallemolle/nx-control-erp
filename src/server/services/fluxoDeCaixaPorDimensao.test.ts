@@ -19,6 +19,7 @@ describe("fluxoDeCaixaPorDimensao", () => {
   let centroCustoFilhoId: string;
   let centroLucroAtivoId: string;
   let safraAtivaId: string;
+  let projetoAtivoId: string;
 
   beforeAll(async () => {
     fixture = await criarFixtureFinanceiro("FCD", "FINANCEIRO");
@@ -52,6 +53,11 @@ describe("fluxoDeCaixaPorDimensao", () => {
       },
     });
     safraAtivaId = safraAtiva.id;
+
+    const projetoAtivo = await prisma.projeto.create({
+      data: { filialId: fixture.filialId, nome: "Projeto Pivô", codigo: "PIV" },
+    });
+    projetoAtivoId = projetoAtivo.id;
   });
 
   afterAll(async () => {
@@ -219,6 +225,32 @@ describe("fluxoDeCaixaPorDimensao", () => {
 
       const porCentroLucro = await buscarRealizadoPorDimensao(fixture.filialId, "CENTRO_LUCRO", 2026, 11);
       expect(porCentroLucro.get(safraAtivaId)).toBeUndefined();
+    });
+
+    test("PROJETO usa projetoId — não aparece em SAFRA (pega mapeamento trocado)", async () => {
+      await prisma.lancamentoBancario.create({
+        data: {
+          filialId: fixture.filialId,
+          contaBancariaId: fixture.contaBancariaId,
+          data: new Date("2028-03-10T00:00:00Z"),
+          tipo: "SAIDA",
+          valor: 75,
+          descricao: "Projeto",
+          origem: "MANUAL",
+          usuarioId: fixture.usuarioId,
+          conciliado: true,
+          projetoId: projetoAtivoId,
+        },
+      });
+
+      const porProjeto = await buscarRealizadoPorDimensao(fixture.filialId, "PROJETO", 2028, 3);
+      expect(porProjeto.get(projetoAtivoId)?.saidas).toBe(75);
+
+      const porSafra = await buscarRealizadoPorDimensao(fixture.filialId, "SAFRA", 2028, 3);
+      expect(porSafra.get(projetoAtivoId)).toBeUndefined();
+
+      const linhas = await listarFluxoDeCaixaPorDimensao(fixture.sessao, "PROJETO", 2028, 3);
+      expect(linhas.find((l) => l.dimensaoId === projetoAtivoId)?.dimensaoNome).toBe("Projeto Pivô");
     });
 
     describe("buscarRealizadoPorDimensaoNoPeriodo", () => {

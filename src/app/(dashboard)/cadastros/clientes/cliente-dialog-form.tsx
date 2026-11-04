@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MEIO_PAGAMENTO, TIPO_CHAVE_PIX, TIPO_CONTA_TERCEIRO, SEM_VALOR } from "@/lib/schemas/enums";
 import { criarClienteAction, atualizarClienteAction, type FormState } from "./actions";
+import { useAcaoDoDialogo } from "../../_shared/use-acao-do-dialogo";
 
 type Banco = {
   id: string;
@@ -43,14 +44,9 @@ type Cliente = {
 const ESTADO_INICIAL: FormState = {};
 
 export function ClienteDialogForm({ cliente, bancos }: { cliente?: Cliente; bancos: Banco[] }) {
-  const [aberto, setAberto] = useState(false);
   const [meioPagamento, setMeioPagamento] = useState(cliente?.meioPagamento ?? SEM_VALOR);
   const action = cliente ? atualizarClienteAction : criarClienteAction;
-  const [state, formAction, pendente] = useActionState(action, ESTADO_INICIAL);
-
-  useEffect(() => {
-    if (state.sucesso) setAberto(false);
-  }, [state.sucesso]);
+  const { aberto, setAberto, state, formAction, pendente } = useAcaoDoDialogo(action, ESTADO_INICIAL);
 
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>

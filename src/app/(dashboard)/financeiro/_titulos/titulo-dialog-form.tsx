@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,7 @@ import type { ClassificacaoFiscal, TipoTitulo } from "@prisma/client";
 import { SEM_VALOR } from "@/lib/schemas/enums";
 import { criarTituloAction, atualizarTituloAction, type FormState } from "./actions";
 import { SecaoDocumentoFiscal, type DocumentoFiscalEditavel } from "./secao-documento-fiscal";
+import { useAcaoDoDialogo } from "../../_shared/use-acao-do-dialogo";
 
 type Opcao = { id: string; nome: string };
 
@@ -72,20 +73,15 @@ export function TituloDialogForm({
   projetos: Opcao[];
   contasBancarias: Opcao[];
 }) {
-  const [aberto, setAberto] = useState(false);
   const action = titulo
     ? atualizarTituloAction.bind(null, tipo)
     : criarTituloAction.bind(null, tipo);
-  const [state, formAction, pendente] = useActionState(action, ESTADO_INICIAL);
+  const { aberto, setAberto, state, formAction, pendente } = useAcaoDoDialogo(action, ESTADO_INICIAL);
   const [parcelas, setParcelas] = useState<ParcelaLinha[]>([
     { numero: 1, dataVencimento: "", valorOriginal: "" },
   ]);
 
   const [classificacao, setClassificacao] = useState<ClassificacaoFiscal>(titulo?.classificacaoFiscal ?? "FISCAL");
-
-  useEffect(() => {
-    if (state.sucesso) setAberto(false);
-  }, [state.sucesso]);
 
   function aoAbrirOuFechar(abrir: boolean) {
     // Cada abertura parte da classificação gravada (edição) ou de FISCAL (criação).

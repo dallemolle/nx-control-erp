@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { criarEmpresaAction, atualizarEmpresaAction, type FormState } from "./actions";
+import { useAcaoDoDialogo } from "../_shared/use-acao-do-dialogo";
 
 type Empresa = {
   id: string;
@@ -27,14 +28,9 @@ const ESTADO_INICIAL: FormState = {};
 const COR_PADRAO = "#0b2545";
 
 export function EmpresaDialogForm({ empresa }: { empresa?: Empresa }) {
-  const [aberto, setAberto] = useState(false);
   const [usarCor, setUsarCor] = useState(!!empresa?.corPrimaria);
   const action = empresa ? atualizarEmpresaAction : criarEmpresaAction;
-  const [state, formAction, pendente] = useActionState(action, ESTADO_INICIAL);
-
-  useEffect(() => {
-    if (state.sucesso) setAberto(false);
-  }, [state.sucesso]);
+  const { aberto, setAberto, state, formAction, pendente } = useAcaoDoDialogo(action, ESTADO_INICIAL);
 
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>

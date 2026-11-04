@@ -8,6 +8,7 @@ const OPCOES: { valor: TipoDimensao; rotulo: string }[] = [
   { valor: "CENTRO_CUSTO", rotulo: "Centro de custo" },
   { valor: "CENTRO_LUCRO", rotulo: "Centro de lucro" },
   { valor: "SAFRA", rotulo: "Safra" },
+  { valor: "PROJETO", rotulo: "Projeto" },
 ];
 
 export function SeletorDimensao({ dimensao, ano, mes }: { dimensao: TipoDimensao; ano: number; mes: number }) {

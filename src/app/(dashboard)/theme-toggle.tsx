@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { Check, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+const assinarNada = () => () => {};
+
 const PALETAS = [
   { id: "theme-a", label: "A — Sidebar navy" },
   { id: "theme-b", label: "B — Tons claros" },
@@ -22,9 +24,12 @@ const PALETAS = [
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [montado, setMontado] = useState(false);
-
-  useEffect(() => setMontado(true), []);
+  // false no SSR e na hidratação, true depois: o tema salvo só existe no navegador.
+  const montado = useSyncExternalStore(
+    assinarNada,
+    () => true,
+    () => false,
+  );
 
   const temaAtivo = montado ? theme : undefined;
   const escuro = temaAtivo?.endsWith("-dark") ?? false;

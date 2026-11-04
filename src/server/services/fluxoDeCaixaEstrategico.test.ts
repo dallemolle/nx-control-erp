@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { afterAll, beforeAll } from "vitest";
 import { prisma } from "@/server/db/client";
-import type { TipoCenarioEstrategico } from "@prisma/client";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
 import {
   garantirCenariosEstrategicos,

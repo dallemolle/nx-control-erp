@@ -65,7 +65,7 @@ export default async function FluxoDeCaixaProjetadoPage({
             <TableHead>{rotuloSaldo} inicial</TableHead>
             <TableHead>Entradas projetadas</TableHead>
             <TableHead>Saídas projetadas</TableHead>
-            <TableHead>Geração de caixa</TableHead>
+            <TableHead>Geração líquida</TableHead>
             <TableHead>{rotuloSaldo} final</TableHead>
           </TableRow>
         </TableHeader>

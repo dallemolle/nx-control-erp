@@ -139,7 +139,7 @@ Permite definir, mês a mês, o valor orçado para cada categoria financeira do 
 
 ### 4.2. Fluxo de caixa por dimensão
 
-O mesmo tipo de relatório do fluxo de caixa, mas agrupado por uma dimensão analítica em vez de por período — centro de custo, centro de lucro ou safra, à escolha. Útil para responder perguntas como "quanto entrou e saiu na Lavoura A este mês" em vez de "quanto entrou e saiu na empresa toda".
+O mesmo tipo de relatório do fluxo de caixa, mas agrupado por uma dimensão analítica em vez de por período — centro de custo, centro de lucro, safra ou projeto, à escolha. Útil para responder perguntas como "quanto entrou e saiu na Lavoura A este mês" em vez de "quanto entrou e saiu na empresa toda".
 
 ### 4.3. Comparação entre safras
 

@@ -8,7 +8,7 @@ import {
   type FiltroClassificacao,
 } from "./classificacaoFiscal";
 
-export type TipoDimensao = "CENTRO_CUSTO" | "CENTRO_LUCRO" | "SAFRA";
+export type TipoDimensao = "CENTRO_CUSTO" | "CENTRO_LUCRO" | "SAFRA" | "PROJETO";
 
 export type LinhaFluxoPorDimensao = {
   dimensaoId: string | null;
@@ -23,10 +23,11 @@ export type LinhaFluxoPorDimensao = {
 
 type TotaisPorDimensao = { entradas: number; saidas: number };
 
-const CAMPO_POR_DIMENSAO: Record<TipoDimensao, "centroCustoId" | "centroLucroId" | "safraId"> = {
+const CAMPO_POR_DIMENSAO: Record<TipoDimensao, "centroCustoId" | "centroLucroId" | "safraId" | "projetoId"> = {
   CENTRO_CUSTO: "centroCustoId",
   CENTRO_LUCRO: "centroLucroId",
   SAFRA: "safraId",
+  PROJETO: "projetoId",
 };
 
 function inicioDoMes(ano: number, mes: number): Date {
@@ -64,7 +65,7 @@ export async function buscarRealizadoPorDimensaoNoPeriodo(
       baixa: {
         include: {
           parcela: {
-            include: { titulo: { select: { centroCustoId: true, centroLucroId: true, safraId: true } } },
+            include: { titulo: { select: { centroCustoId: true, centroLucroId: true, safraId: true, projetoId: true } } },
           },
         },
       },
@@ -121,7 +122,7 @@ export async function buscarProjetadoPorDimensaoNoPeriodo(
       dataVencimento: { gte: inicio, lte: fim },
     },
     include: {
-      titulo: { select: { tipo: true, centroCustoId: true, centroLucroId: true, safraId: true } },
+      titulo: { select: { tipo: true, centroCustoId: true, centroLucroId: true, safraId: true, projetoId: true } },
       baixas: { where: { statusAprovacao: "APROVADO" } },
     },
   });
@@ -177,6 +178,13 @@ export async function listarValoresDimensao(
       orderBy: { nome: "asc" },
     });
   }
+  if (tipoDimensao === "PROJETO") {
+    return prisma.projeto.findMany({
+      where: { filialId, ativo: true },
+      select: { id: true, nome: true },
+      orderBy: { nome: "asc" },
+    });
+  }
   return prisma.safra.findMany({
     where: { filialId, ativo: true },
     select: { id: true, nome: true },
@@ -205,6 +213,12 @@ async function buscarNomesInativos(
   }
   if (tipoDimensao === "CENTRO_LUCRO") {
     return prisma.centroLucro.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, nome: true },
+    });
+  }
+  if (tipoDimensao === "PROJETO") {
+    return prisma.projeto.findMany({
       where: { id: { in: ids } },
       select: { id: true, nome: true },
     });

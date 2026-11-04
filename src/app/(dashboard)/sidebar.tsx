@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Perfil } from "@prisma/client";
@@ -31,11 +31,13 @@ export function Sidebar({ perfil, versaoInfo, estilo, logoUrl }: SidebarProps) {
 
   const [abertas, setAbertas] = useState<string[]>(secaoAtiva ? [secaoAtiva] : []);
 
-  useEffect(() => {
-    if (secaoAtiva) {
-      setAbertas((atual) => (atual.includes(secaoAtiva) ? atual : [...atual, secaoAtiva]));
-    }
-  }, [secaoAtiva]);
+  // Ao navegar para outra seção, abre-a (sem fechar as que o usuário abriu).
+  // Ajuste durante o render em vez de useEffect: https://react.dev/learn/you-might-not-need-an-effect
+  const [secaoAnterior, setSecaoAnterior] = useState(secaoAtiva);
+  if (secaoAtiva !== secaoAnterior) {
+    setSecaoAnterior(secaoAtiva);
+    if (secaoAtiva && !abertas.includes(secaoAtiva)) setAbertas([...abertas, secaoAtiva]);
+  }
 
   return (
     <nav
