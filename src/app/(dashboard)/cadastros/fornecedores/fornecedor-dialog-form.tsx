@@ -37,6 +37,7 @@ type Fornecedor = {
   conta: string | null;
   tipoContaTerceiro: (typeof TIPO_CONTA_TERCEIRO)[number] | null;
   titularConta: string | null;
+  classificacaoFiscalPadrao: "FISCAL" | "GERENCIAL" | null;
 };
 
 const ESTADO_INICIAL: FormState = {};
@@ -91,6 +92,23 @@ export function FornecedorDialogForm({
           <div className="space-y-2">
             <Label htmlFor="telefone">Telefone</Label>
             <Input id="telefone" name="telefone" defaultValue={fornecedor?.telefone ?? ""} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="classificacaoFiscalPadrao">Classificação padrão dos títulos</Label>
+            <Select name="classificacaoFiscalPadrao" defaultValue={fornecedor?.classificacaoFiscalPadrao ?? SEM_VALOR}>
+              <SelectTrigger id="classificacaoFiscalPadrao" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={SEM_VALOR}>Nenhuma</SelectItem>
+                <SelectItem value="FISCAL">Fiscal (com documento)</SelectItem>
+                <SelectItem value="GERENCIAL">Gerencial (sem nota)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Use Gerencial para parceiros que não emitem nota. Novos títulos deste parceiro já virão com essa
+              classificação.
+            </p>
           </div>
 
           <Separator />

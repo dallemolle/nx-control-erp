@@ -1,6 +1,7 @@
 import type { StatusParcela } from "@prisma/client";
 import type { FiltroTitulos } from "@/server/services/titulo";
 import { SEM_VALOR, STATUS_PARCELA } from "@/lib/schemas/enums";
+import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 
 /** Nomes dos params na URL, na ordem usada tanto pelas páginas quanto pelas rotas de export. */
 export const CAMPOS_FILTRO_TITULOS = [
@@ -13,6 +14,7 @@ export const CAMPOS_FILTRO_TITULOS = [
   "status",
   "vencimentoDe",
   "vencimentoAte",
+  "classificacao",
 ] as const;
 
 function valorOuUndefined(valor: string | undefined): string | undefined {
@@ -50,6 +52,7 @@ export function filtroTitulosDaUrl(get: (campo: string) => string | undefined): 
     status: statusOuUndefined(get("status")),
     vencimentoDe: dataInicioDoDiaOuUndefined(get("vencimentoDe")),
     vencimentoAte: dataFimDoDiaOuUndefined(get("vencimentoAte")),
+    classificacao: classificacaoDaUrl(get("classificacao")),
   };
 }
 

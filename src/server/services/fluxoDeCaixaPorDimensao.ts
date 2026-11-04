@@ -2,6 +2,11 @@ import { prisma } from "@/server/db/client";
 import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { saldoRemanescenteParcela } from "./fluxoDeCaixaProjetado";
+import {
+  whereLancamentoPorClassificacao,
+  whereTituloPorClassificacao,
+  type FiltroClassificacao,
+} from "./classificacaoFiscal";
 
 export type TipoDimensao = "CENTRO_CUSTO" | "CENTRO_LUCRO" | "SAFRA";
 
@@ -43,6 +48,7 @@ export async function buscarRealizadoPorDimensaoNoPeriodo(
   tipoDimensao: TipoDimensao,
   inicio: Date,
   fim: Date,
+  classificacao?: FiltroClassificacao,
 ): Promise<Map<string | null, TotaisPorDimensao>> {
   const campo = CAMPO_POR_DIMENSAO[tipoDimensao];
 
@@ -52,6 +58,7 @@ export async function buscarRealizadoPorDimensaoNoPeriodo(
       conciliado: true,
       contaBancaria: { ativo: true },
       data: { gte: inicio, lte: fim },
+      ...whereLancamentoPorClassificacao(classificacao),
     },
     include: {
       baixa: {
@@ -87,8 +94,15 @@ export async function buscarRealizadoPorDimensao(
   tipoDimensao: TipoDimensao,
   ano: number,
   mes: number,
+  classificacao?: FiltroClassificacao,
 ): Promise<Map<string | null, TotaisPorDimensao>> {
-  return buscarRealizadoPorDimensaoNoPeriodo(filialId, tipoDimensao, inicioDoMes(ano, mes), fimDoMes(ano, mes));
+  return buscarRealizadoPorDimensaoNoPeriodo(
+    filialId,
+    tipoDimensao,
+    inicioDoMes(ano, mes),
+    fimDoMes(ano, mes),
+    classificacao,
+  );
 }
 
 export async function buscarProjetadoPorDimensaoNoPeriodo(
@@ -96,12 +110,13 @@ export async function buscarProjetadoPorDimensaoNoPeriodo(
   tipoDimensao: TipoDimensao,
   inicio: Date,
   fim: Date,
+  classificacao?: FiltroClassificacao,
 ): Promise<Map<string | null, TotaisPorDimensao>> {
   const campo = CAMPO_POR_DIMENSAO[tipoDimensao];
 
   const parcelas = await prisma.parcela.findMany({
     where: {
-      titulo: { filialId },
+      titulo: { filialId, ...whereTituloPorClassificacao(classificacao) },
       status: { in: ["EM_ABERTO", "A_VENCER", "VENCIDO", "PARCIALMENTE_PAGO"] },
       dataVencimento: { gte: inicio, lte: fim },
     },
@@ -133,8 +148,15 @@ export async function buscarProjetadoPorDimensao(
   tipoDimensao: TipoDimensao,
   ano: number,
   mes: number,
+  classificacao?: FiltroClassificacao,
 ): Promise<Map<string | null, TotaisPorDimensao>> {
-  return buscarProjetadoPorDimensaoNoPeriodo(filialId, tipoDimensao, inicioDoMes(ano, mes), fimDoMes(ano, mes));
+  return buscarProjetadoPorDimensaoNoPeriodo(
+    filialId,
+    tipoDimensao,
+    inicioDoMes(ano, mes),
+    fimDoMes(ano, mes),
+    classificacao,
+  );
 }
 
 export async function listarValoresDimensao(
@@ -198,13 +220,14 @@ export async function listarFluxoDeCaixaPorDimensao(
   tipoDimensao: TipoDimensao,
   ano: number,
   mes: number,
+  opcoes: { classificacao?: FiltroClassificacao } = {},
 ): Promise<LinhaFluxoPorDimensao[]> {
   requirePermission(sessao.perfil, "titulo:ler");
 
   const [valores, realizado, projetado] = await Promise.all([
     listarValoresDimensao(sessao.filialId, tipoDimensao),
-    buscarRealizadoPorDimensao(sessao.filialId, tipoDimensao, ano, mes),
-    buscarProjetadoPorDimensao(sessao.filialId, tipoDimensao, ano, mes),
+    buscarRealizadoPorDimensao(sessao.filialId, tipoDimensao, ano, mes, opcoes.classificacao),
+    buscarProjetadoPorDimensao(sessao.filialId, tipoDimensao, ano, mes, opcoes.classificacao),
   ]);
 
   const linhas: LinhaFluxoPorDimensao[] = valores.map((valor) => {

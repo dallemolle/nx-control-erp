@@ -6,6 +6,9 @@ import { listarFluxoDeCaixaProjetado, type ModoJanelaProjetado } from "@/server/
 import { SeletorModoProjetado } from "./seletor-modo";
 import { formatarRotuloPeriodo } from "../_fluxo-de-caixa/formatar-rotulo-periodo";
 import { dataValida } from "../_fluxo-de-caixa/data-valida";
+import { AvisoVisaoFiltrada } from "../_fluxo-de-caixa/aviso-visao-filtrada";
+import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
+import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 
 const MODOS_VALIDOS: ModoJanelaProjetado[] = ["MOVEL", "ANO_CIVIL"];
 
@@ -16,7 +19,7 @@ function modoValido(valor: string | undefined): ModoJanelaProjetado {
 export default async function FluxoDeCaixaProjetadoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ modo?: string | string[]; data?: string | string[] }>;
+  searchParams: Promise<{ modo?: string | string[]; data?: string | string[]; classificacao?: string | string[] }>;
 }) {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "titulo:ler");
@@ -26,8 +29,12 @@ export default async function FluxoDeCaixaProjetadoPage({
   const dataParam = Array.isArray(params.data) ? params.data[0] : params.data;
   const modo = modoValido(modoParam);
   const dataReferencia = dataValida(dataParam);
+  const classificacao = classificacaoDaUrl(
+    Array.isArray(params.classificacao) ? params.classificacao[0] : params.classificacao,
+  );
+  const rotuloSaldo = classificacao ? "Acumulado" : "Saldo";
 
-  const periodos = await listarFluxoDeCaixaProjetado(sessao, modo, dataReferencia);
+  const periodos = await listarFluxoDeCaixaProjetado(sessao, modo, dataReferencia, { classificacao });
 
   return (
     <div className="space-y-6">
@@ -43,17 +50,22 @@ export default async function FluxoDeCaixaProjetadoPage({
         </p>
       </div>
 
-      <SeletorModoProjetado modo={modo} dataReferencia={dataReferencia.toISOString().slice(0, 10)} />
+      <div className="flex flex-wrap items-center gap-4">
+        <SeletorModoProjetado modo={modo} dataReferencia={dataReferencia.toISOString().slice(0, 10)} />
+        <SeletorClassificacao classificacao={classificacao} />
+      </div>
+
+      <AvisoVisaoFiltrada classificacao={classificacao} />
 
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Mês</TableHead>
-            <TableHead>Saldo inicial</TableHead>
+            <TableHead>{rotuloSaldo} inicial</TableHead>
             <TableHead>Entradas projetadas</TableHead>
             <TableHead>Saídas projetadas</TableHead>
             <TableHead>Geração de caixa</TableHead>
-            <TableHead>Saldo final</TableHead>
+            <TableHead>{rotuloSaldo} final</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

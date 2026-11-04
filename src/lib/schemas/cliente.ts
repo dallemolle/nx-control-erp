@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MEIO_PAGAMENTO, TIPO_CHAVE_PIX, TIPO_CONTA_TERCEIRO, SEM_VALOR } from "./enums";
+import { CLASSIFICACAO_FISCAL, MEIO_PAGAMENTO, TIPO_CHAVE_PIX, TIPO_CONTA_TERCEIRO, SEM_VALOR } from "./enums";
 import { cnpjCpfSchema } from "@/lib/cnpjCpf";
 
 export const clienteSchema = z
@@ -17,6 +17,7 @@ export const clienteSchema = z
     conta: z.string().trim().optional().or(z.literal("")),
     tipoContaTerceiro: z.enum(TIPO_CONTA_TERCEIRO).optional().or(z.literal(SEM_VALOR)),
     titularConta: z.string().trim().optional().or(z.literal("")),
+    classificacaoFiscalPadrao: z.enum(CLASSIFICACAO_FISCAL).optional().or(z.literal(SEM_VALOR)),
   })
   .superRefine((dados, ctx) => {
     if (dados.meioPagamento === "PIX") {

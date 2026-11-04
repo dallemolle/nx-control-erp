@@ -116,4 +116,52 @@ describe("importação de títulos via CSV", () => {
     const totalDepois = await prisma.titulo.count({ where: { filialId: fixture.filialId } });
     expect(totalDepois).toBe(totalAntes);
   });
+
+  describe("colunas fiscais (opcionais)", () => {
+    function cabecalhoFiscal() {
+      return `${cabecalho()},classificacaoFiscal,tipoComprovante,numeroDocumentoFiscal,serieDocumentoFiscal,chaveAcesso`;
+    }
+
+    function linha(documento: string, fiscais: string) {
+      return `${fornecedorCnpj},${documento},2026-08-01,2026-08-01,${categoriaNome},,,,,,,,1,2026-09-01,100.00,${fiscais}`;
+    }
+
+    test("aceita G/F em minúsculas e grava classificação e comprovante", async () => {
+      const csv = [cabecalhoFiscal(), linha("CSV-G", "g,recibo,,,"), linha("CSV-F", "f,nfse,55,A,")].join("\n");
+
+      const linhas = await validarCsv(fixture.sessao, "PAGAR", csv);
+      expect(linhas.map((l) => l.erros)).toEqual([[], []]);
+
+      const [gerencial, fiscal] = await confirmarImportacao(fixture.sessao, "PAGAR", linhas);
+      expect(gerencial.classificacaoFiscal).toBe("GERENCIAL");
+      expect(gerencial.tipoComprovante).toBe("RECIBO");
+      expect(fiscal.classificacaoFiscal).toBe("FISCAL");
+      expect(fiscal.numeroDocumentoFiscal).toBe("55");
+      expect(fiscal.serieDocumentoFiscal).toBe("A");
+    });
+
+    test("classificação e tipo de comprovante desconhecidos viram erro da linha", async () => {
+      const csv = [cabecalhoFiscal(), linha("CSV-X", "talvez,boleto,,,")].join("\n");
+      const [resultado] = await validarCsv(fixture.sessao, "PAGAR", csv);
+      expect(resultado.erros).toEqual([
+        expect.stringContaining('Classificação "talvez" inválida'),
+        expect.stringContaining('Tipo de comprovante "boleto" inválido'),
+      ]);
+    });
+
+    test("sem classificação, recibo de fornecedor sem padrão gerencial é recusado já na validação", async () => {
+      const csv = [cabecalhoFiscal(), linha("CSV-R", ",RECIBO,,,")].join("\n");
+      const [resultado] = await validarCsv(fixture.sessao, "PAGAR", csv);
+      expect(resultado.erros).toEqual([expect.stringContaining("gerencial não pode ser usado em lançamento fiscal")]);
+    });
+
+    test("nota repetida dentro do mesmo arquivo derruba a importação inteira", async () => {
+      const csv = [cabecalhoFiscal(), linha("CSV-D1", "F,NFSE,900,1,"), linha("CSV-D2", "F,NFSE,900,1,")].join("\n");
+      const linhas = await validarCsv(fixture.sessao, "PAGAR", csv);
+      const totalAntes = await prisma.titulo.count({ where: { filialId: fixture.filialId } });
+
+      await expect(confirmarImportacao(fixture.sessao, "PAGAR", linhas)).rejects.toThrow(/CSV-D1/);
+      expect(await prisma.titulo.count({ where: { filialId: fixture.filialId } })).toBe(totalAntes);
+    });
+  });
 });

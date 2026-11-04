@@ -12,6 +12,9 @@ import { listarProjetos } from "@/server/services/projeto";
 import { LancamentoDialogForm } from "./lancamento-dialog-form";
 import { TransferenciaDialogForm } from "./transferencia-dialog-form";
 import { SaldoBancarioDialogForm } from "./saldo-bancario-dialog-form";
+import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
+import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
+import { BadgeClassificacao } from "../../_shared/badge-classificacao";
 
 const ORIGEM_LABEL: Record<string, string> = {
   MANUAL: "Manual",
@@ -19,14 +22,22 @@ const ORIGEM_LABEL: Record<string, string> = {
   TRANSFERENCIA: "Transferência",
 };
 
-export default async function TesourariaPage() {
+export default async function TesourariaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ classificacao?: string | string[] }>;
+}) {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "lancamento:ler");
   const podeEscrever = podeEscreverLancamento(sessao.perfil, sessao.podeAlterarFilial);
+  const params = await searchParams;
+  const classificacao = classificacaoDaUrl(
+    Array.isArray(params.classificacao) ? params.classificacao[0] : params.classificacao,
+  );
 
   const [resumoContas, lancamentos, categorias, centrosCusto, centrosLucro, safras, projetos] = await Promise.all([
     listarResumoContas(sessao.filialId),
-    listarLancamentos(sessao.filialId),
+    listarLancamentos(sessao.filialId, { classificacao }),
     listarCategoriasFinanceiras(sessao.filialId),
     listarCentrosCusto(sessao.filialId),
     listarCentrosLucro(sessao.filialId),
@@ -97,6 +108,11 @@ export default async function TesourariaPage() {
         })}
       </div>
 
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-sm font-medium">Lançamentos</h2>
+        <SeletorClassificacao classificacao={classificacao} />
+      </div>
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -105,6 +121,7 @@ export default async function TesourariaPage() {
             <TableHead>Tipo</TableHead>
             <TableHead>Valor</TableHead>
             <TableHead>Origem</TableHead>
+            <TableHead>Classificação</TableHead>
             <TableHead>Descrição</TableHead>
           </TableRow>
         </TableHeader>
@@ -124,6 +141,12 @@ export default async function TesourariaPage() {
               <TableCell>{Number(lancamento.valor).toFixed(2)}</TableCell>
               <TableCell>
                 <Badge variant="outline">{ORIGEM_LABEL[lancamento.origem]}</Badge>
+              </TableCell>
+              <TableCell>
+                <BadgeClassificacao classificacao={lancamento.classificacaoFiscal} />
+                {lancamento.numeroComprovante ? (
+                  <span className="ml-2 text-xs text-muted-foreground">{lancamento.numeroComprovante}</span>
+                ) : null}
               </TableCell>
               <TableCell>{lancamento.descricao}</TableCell>
             </TableRow>

@@ -3,6 +3,11 @@ import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permiss
 import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { saldoRemanescenteParcela } from "./fluxoDeCaixaProjetado";
+import {
+  whereLancamentoPorClassificacao,
+  whereTituloPorClassificacao,
+  type FiltroClassificacao,
+} from "./classificacaoFiscal";
 import type { TipoCategoriaFinanceira } from "@prisma/client";
 
 export type LinhaComparativoOrcamento = {
@@ -159,6 +164,7 @@ export async function buscarRealizadoPorCategoria(
   filialId: string,
   ano: number,
   mes: number,
+  classificacao?: FiltroClassificacao,
 ): Promise<Map<string, number>> {
   const lancamentos = await prisma.lancamentoBancario.findMany({
     where: {
@@ -166,6 +172,7 @@ export async function buscarRealizadoPorCategoria(
       conciliado: true,
       contaBancaria: { ativo: true },
       data: { gte: inicioDoMes(ano, mes), lte: fimDoMes(ano, mes) },
+      ...whereLancamentoPorClassificacao(classificacao),
     },
     include: {
       baixa: { include: { parcela: { include: { titulo: { select: { categoriaFinanceiraId: true } } } } } },
@@ -185,10 +192,11 @@ export async function buscarProjetadoPorCategoria(
   filialId: string,
   ano: number,
   mes: number,
+  classificacao?: FiltroClassificacao,
 ): Promise<Map<string, number>> {
   const parcelas = await prisma.parcela.findMany({
     where: {
-      titulo: { filialId },
+      titulo: { filialId, ...whereTituloPorClassificacao(classificacao) },
       status: { in: ["EM_ABERTO", "A_VENCER", "VENCIDO", "PARCIALMENTE_PAGO"] },
       dataVencimento: { gte: inicioDoMes(ano, mes), lte: fimDoMes(ano, mes) },
     },
@@ -213,6 +221,8 @@ export async function buscarProjetadoPorCategoria(
 export async function listarComparativoOrcamento(
   sessao: SessaoAtiva,
   ano: number,
+  // Filtra só realizado e projetado; o orçado é um só (não é fiscal nem gerencial).
+  opcoes: { classificacao?: FiltroClassificacao } = {},
 ): Promise<LinhaComparativoOrcamento[]> {
   requirePermission(sessao.perfil, "orcamento:ler");
 
@@ -224,8 +234,8 @@ export async function listarComparativoOrcamento(
   const linhas: LinhaComparativoOrcamento[] = [];
   for (let mes = 1; mes <= 12; mes++) {
     const [realizadoPorCategoria, projetadoPorCategoria] = await Promise.all([
-      buscarRealizadoPorCategoria(sessao.filialId, ano, mes),
-      buscarProjetadoPorCategoria(sessao.filialId, ano, mes),
+      buscarRealizadoPorCategoria(sessao.filialId, ano, mes, opcoes.classificacao),
+      buscarProjetadoPorCategoria(sessao.filialId, ano, mes, opcoes.classificacao),
     ]);
 
     for (const categoria of categorias) {

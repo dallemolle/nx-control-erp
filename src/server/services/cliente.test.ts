@@ -3,7 +3,7 @@ import { prisma } from "@/server/db/client";
 import { criarCliente, atualizarCliente } from "./cliente";
 import { FilialSomenteLeituraError } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
-import type { ClienteFormValues } from "@/lib/schemas/cliente";
+import { clienteSchema, type ClienteFormValues } from "@/lib/schemas/cliente";
 
 describe("cliente - permissão de alteração por filial", () => {
   let empresaId: string;
@@ -121,7 +121,6 @@ describe("cliente - dados bancários", () => {
   });
 
   test("PIX sem chave falha na validação do schema", async () => {
-    const { clienteSchema } = await import("@/lib/schemas/cliente");
     const resultado = clienteSchema.safeParse({
       ...dadosBase,
       meioPagamento: "PIX",
@@ -249,5 +248,47 @@ describe("cliente - dados bancários", () => {
     const novo = auditoria!.valorNovo as Record<string, unknown>;
     expect(novo.meioPagamento).toBe("DEPOSITO_BANCARIO");
     expect(novo.tipoChavePix).toBeNull();
+  });
+
+  test("classificação padrão: grava FISCAL/GERENCIAL e normaliza 'Nenhuma' para null", async () => {
+    const semMeio = {
+      ...dadosBase,
+      meioPagamento: "__nenhum__",
+      tipoChavePix: "__nenhum__",
+      chavePix: "",
+      bancoId: "__nenhum__",
+      agencia: "",
+      conta: "",
+      tipoContaTerceiro: "__nenhum__",
+      titularConta: "",
+    } as const;
+
+    const criado = await criarCliente(sessao, {
+      ...semMeio,
+      cnpjCpf: "55.555.555/0001-55",
+      classificacaoFiscalPadrao: "GERENCIAL",
+    });
+    clientesCriados.push(criado.id);
+    expect(criado.classificacaoFiscalPadrao).toBe("GERENCIAL");
+
+    const atualizado = await atualizarCliente(sessao, criado.id, {
+      ...semMeio,
+      cnpjCpf: "55.555.555/0001-55",
+      classificacaoFiscalPadrao: "__nenhum__",
+    });
+    expect(atualizado.classificacaoFiscalPadrao).toBeNull();
+
+    const auditoria = await prisma.auditLog.findFirst({
+      where: { entidade: "Cliente", entidadeId: criado.id, acao: "ATUALIZAR" },
+      orderBy: { criadoEm: "desc" },
+    });
+    expect((auditoria!.valorAnterior as Record<string, unknown>).classificacaoFiscalPadrao).toBe("GERENCIAL");
+    expect((auditoria!.valorNovo as Record<string, unknown>).classificacaoFiscalPadrao).toBeNull();
+  });
+
+  test("cadastro existente sem classificação padrão (legado) continua null", async () => {
+    const criado = await criarCliente(sessao, { ...dadosBase, cnpjCpf: "66.666.666/0001-66" });
+    clientesCriados.push(criado.id);
+    expect(criado.classificacaoFiscalPadrao).toBeNull();
   });
 });

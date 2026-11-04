@@ -3,6 +3,7 @@ import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permiss
 import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { buscarRealizadoPorDimensaoNoPeriodo, buscarProjetadoPorDimensaoNoPeriodo } from "./fluxoDeCaixaPorDimensao";
+import type { FiltroClassificacao } from "./classificacaoFiscal";
 import type { StatusSafraProjeto } from "@prisma/client";
 
 export type LinhaComparativoSafra = {
@@ -79,7 +80,11 @@ export async function salvarValorOrcamentoSafra(
   });
 }
 
-export async function listarComparativoSafras(sessao: SessaoAtiva): Promise<LinhaComparativoSafra[]> {
+export async function listarComparativoSafras(
+  sessao: SessaoAtiva,
+  // Filtra só realizado e projetado; o orçado da safra é um só.
+  opcoes: { classificacao?: FiltroClassificacao } = {},
+): Promise<LinhaComparativoSafra[]> {
   requirePermission(sessao.perfil, "orcamento:ler");
 
   // Todos os status entram (PLANEJADO, EM_ANDAMENTO, ENCERRADO), sem
@@ -96,8 +101,8 @@ export async function listarComparativoSafras(sessao: SessaoAtiva): Promise<Linh
   const linhas: LinhaComparativoSafra[] = [];
   for (const safra of safras) {
     const [realizadoPorSafra, projetadoPorSafra] = await Promise.all([
-      buscarRealizadoPorDimensaoNoPeriodo(sessao.filialId, "SAFRA", safra.dataInicio, safra.dataFim),
-      buscarProjetadoPorDimensaoNoPeriodo(sessao.filialId, "SAFRA", safra.dataInicio, safra.dataFim),
+      buscarRealizadoPorDimensaoNoPeriodo(sessao.filialId, "SAFRA", safra.dataInicio, safra.dataFim, opcoes.classificacao),
+      buscarProjetadoPorDimensaoNoPeriodo(sessao.filialId, "SAFRA", safra.dataInicio, safra.dataFim, opcoes.classificacao),
     ]);
     const orcamento = orcamentos.find((o) => o.safraId === safra.id);
     const r = realizadoPorSafra.get(safra.id) ?? { entradas: 0, saidas: 0 };

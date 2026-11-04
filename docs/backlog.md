@@ -165,7 +165,36 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   "acumulado" zerado (como o fluxo realizado filtrado) ou do saldo total,
   já que o saldo bancário não se divide por classificação.
 
+## Exibição de datas
+
+- **Datas aparecem um dia antes nas telas que formatam sem fuso**
+  (visto em 2026-11-03 ao testar a tela Fiscal × gerencial). Datas de
+  título/parcela/lançamento são gravadas à meia-noite UTC (`2026-11-03T00:00Z`)
+  e várias telas fazem `new Date(d).toLocaleDateString("pt-BR")` sem
+  `timeZone`, o que no horário de Brasília (UTC-3) mostra 02/11. Ocorre em
+  `titulo-table.tsx` (`formatarData`) e mais ~4 lugares
+  (`grep -rn 'toLocaleDateString("pt-BR")' src/app`). A tela
+  `/controladoria/fiscal-gerencial` já usa `{ timeZone: "UTC" }`. Correção:
+  um `formatarDataBR` compartilhado em `src/lib/` com `timeZone: "UTC"`,
+  junto do formatador de moeda já citado neste backlog.
+
+- **Aviso "Only plain objects can be passed to Client Components" (Decimal)**
+  em Contas a pagar/receber: a página passa títulos com `parcelas[].valorAtualizado`
+  e `baixas[].valorPago` como `Decimal` do Prisma para o `TituloTable` (client).
+  Funciona (o tipo já prevê "Decimal ou string"), mas polui o console em dev.
+  Correção: converter para `number` na página antes de passar ao client.
+
 ## Qualidade de testes
+
+- **`src/lib/versao.test.ts` estoura o timeout de 5s de forma intermitente
+  na suíte completa** (visto em 2026-11-03; passa isolado e na maioria das
+  rodadas completas). Mesma causa dos testes de schema de cliente/fornecedor
+  corrigidos no commit `a2d8fc5` — `await import()` dentro do teste sob a
+  carga da suíte paralela —, mas aqui o import dinâmico é necessário
+  (`vi.doMock("node:fs")` + `vi.resetModules()`), então a troca por import
+  estático não se aplica. Caminhos: aumentar o timeout só deste arquivo
+  (`describe(..., { timeout: 15_000 })`) ou trocar o `doMock` por
+  `vi.mock` hoisted com `mockReturnValueOnce` por teste.
 
 - **Teste de rollback do orçamento não exercita falha real de transação**
   (Fase 5, sub-projeto 1 — Orçamento, `salvarValoresOrcamentoDoAno`). O

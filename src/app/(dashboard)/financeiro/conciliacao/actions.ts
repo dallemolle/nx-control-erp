@@ -135,6 +135,11 @@ export async function criarLancamentoDaLinhaAction(_prev: FormState, formData: F
         parsed.data.projetoId && parsed.data.projetoId !== SEM_VALOR
           ? parsed.data.projetoId
           : null,
+      classificacaoFiscal: parsed.data.classificacaoFiscal,
+      tipoComprovante:
+        parsed.data.tipoComprovante && parsed.data.tipoComprovante !== SEM_VALOR
+          ? parsed.data.tipoComprovante
+          : null,
     });
   } catch (erro) {
     return { erro: mensagemErro(erro) };

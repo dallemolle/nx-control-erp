@@ -3,6 +3,7 @@ import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { TipoTitulo } from "@prisma/client";
 import { buscarSaldoEmCaixaAte, calcularJanela, fimDoDiaUTC, type SubPeriodo } from "./fluxoDeCaixa";
+import { whereTituloPorClassificacao, type FiltroClassificacao } from "./classificacaoFiscal";
 
 export type ModoJanelaProjetado = "MOVEL" | "ANO_CIVIL";
 
@@ -79,10 +80,11 @@ export async function buscarParcelasEmAbertoNoPeriodo(
   filialId: string,
   inicio: Date,
   fim: Date,
+  classificacao?: FiltroClassificacao,
 ): Promise<ParcelaParaProjecao[]> {
   const parcelas = await prisma.parcela.findMany({
     where: {
-      titulo: { filialId },
+      titulo: { filialId, ...whereTituloPorClassificacao(classificacao) },
       status: { in: ["EM_ABERTO", "A_VENCER", "VENCIDO", "PARCIALMENTE_PAGO"] },
       dataVencimento: { gte: inicio, lte: fim },
     },
@@ -102,10 +104,16 @@ export async function buscarParcelasEmAbertoNoPeriodo(
   }));
 }
 
+/**
+ * Com `opcoes.classificacao`: só parcelas de títulos daquela classificação,
+ * partindo de 0 (acumulado — o saldo bancário não se divide) e sem alerta de
+ * saldo negativo, que não faz sentido sobre um acumulado parcial.
+ */
 export async function listarFluxoDeCaixaProjetado(
   sessao: SessaoAtiva,
   modo: ModoJanelaProjetado,
   dataReferencia: Date,
+  opcoes: { classificacao?: FiltroClassificacao } = {},
 ): Promise<PeriodoFluxoDeCaixaProjetado[]> {
   requirePermission(sessao.perfil, "titulo:ler");
 
@@ -115,9 +123,10 @@ export async function listarFluxoDeCaixaProjetado(
   const agora = new Date();
 
   const [saldoInicialAbsoluto, parcelas] = await Promise.all([
-    buscarSaldoEmCaixaAte(sessao.filialId, agora),
-    buscarParcelasEmAbertoNoPeriodo(sessao.filialId, inicioDaJanela, fimDaJanela),
+    opcoes.classificacao ? Promise.resolve(0) : buscarSaldoEmCaixaAte(sessao.filialId, agora),
+    buscarParcelasEmAbertoNoPeriodo(sessao.filialId, inicioDaJanela, fimDaJanela, opcoes.classificacao),
   ]);
 
-  return calcularPeriodosFluxoDeCaixaProjetado(periodos, parcelas, saldoInicialAbsoluto);
+  const resultado = calcularPeriodosFluxoDeCaixaProjetado(periodos, parcelas, saldoInicialAbsoluto);
+  return opcoes.classificacao ? resultado.map((periodo) => ({ ...periodo, alerta: false })) : resultado;
 }

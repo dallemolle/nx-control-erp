@@ -56,6 +56,30 @@ enum TipoContaTerceiro {
   POUPANCA
 }
 
+enum ClassificacaoFiscal {
+  FISCAL
+  GERENCIAL
+}
+
+enum TipoComprovante {
+  // FISCAL
+  NFE
+  NFCE
+  NFSE
+  CTE
+  NF_PRODUTOR
+  NF_ENTRADA
+  GUIA_TRIBUTO
+  FOLHA_PAGAMENTO
+  TARIFA_BANCARIA
+  CONTRATO
+  OUTRO_FISCAL
+  // GERENCIAL
+  RECIBO
+  PEDIDO_INTERNO
+  SEM_COMPROVANTE
+}
+
 model Empresa {
   id           String   @id @default(uuid())
   razaoSocial  String
@@ -353,6 +377,8 @@ model Cliente {
   tipoContaTerceiro TipoContaTerceiro?
   titularConta      String?
 
+  classificacaoFiscalPadrao ClassificacaoFiscal?
+
   empresa Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   banco   Banco?   @relation(fields: [bancoId], references: [id])
   titulos Titulo[]
@@ -382,6 +408,8 @@ model Fornecedor {
   conta             String?
   tipoContaTerceiro TipoContaTerceiro?
   titularConta      String?
+
+  classificacaoFiscalPadrao ClassificacaoFiscal?
 
   empresa Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   banco   Banco?   @relation(fields: [bancoId], references: [id])
@@ -494,6 +522,14 @@ model Titulo {
   criadoEm              DateTime   @default(now())
   atualizadoEm          DateTime   @updatedAt
 
+  classificacaoFiscal        ClassificacaoFiscal @default(FISCAL)
+  tipoComprovante            TipoComprovante?
+  numeroDocumentoFiscal      String?
+  serieDocumentoFiscal       String?
+  chaveAcesso                String?
+  dataEmissaoDocumentoFiscal DateTime?
+  motivoSemDocumento         String?
+
   filial              Filial              @relation(fields: [filialId], references: [id], onDelete: Cascade)
   fornecedor          Fornecedor?         @relation(fields: [fornecedorId], references: [id])
   cliente             Cliente?            @relation(fields: [clienteId], references: [id])
@@ -510,6 +546,8 @@ model Titulo {
   @@index([filialId])
   @@index([fornecedorId])
   @@index([clienteId])
+  @@index([filialId, classificacaoFiscal])
+  @@index([filialId, chaveAcesso])
   @@map("titulos")
 }
 
@@ -618,6 +656,12 @@ model LancamentoBancario {
   usuarioId             String
   criadoEm              DateTime         @default(now())
 
+  // null apenas para TRANSFERENCIA (garantido por CHECK na migration); o default
+  // mantém funcionando quem cria lançamento sem informar a classificação
+  classificacaoFiscal ClassificacaoFiscal? @default(FISCAL)
+  tipoComprovante     TipoComprovante?
+  numeroComprovante   String?
+
   filial              Filial               @relation(fields: [filialId], references: [id], onDelete: Cascade)
   contaBancaria       ContaBancaria        @relation(fields: [contaBancariaId], references: [id])
   baixa               Baixa?               @relation(fields: [baixaId], references: [id])
@@ -632,6 +676,7 @@ model LancamentoBancario {
   @@index([filialId])
   @@index([contaBancariaId])
   @@index([baixaId])
+  @@index([filialId, classificacaoFiscal, data])
   @@map("lancamentos_bancarios")
 }
 

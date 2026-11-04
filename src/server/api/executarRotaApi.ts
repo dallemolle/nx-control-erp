@@ -2,7 +2,9 @@ import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 import { PermissionError, FilialSomenteLeituraError } from "@/server/auth/permissions";
 import { ApiAuthError, requireSessaoApi } from "./sessaoApi";
+import { ErroClassificacaoFiscal } from "@/server/services/classificacaoFiscal";
 import type { SessaoAtiva } from "@/server/auth/sessao";
+import type { ClassificacaoFiscal } from "@prisma/client";
 
 export class ErroValidacaoApi extends Error {
   campos: string[];
@@ -12,6 +14,19 @@ export class ErroValidacaoApi extends Error {
     this.name = "ErroValidacaoApi";
     this.campos = campos;
   }
+}
+
+/**
+ * Lê `?classificacao=FISCAL|GERENCIAL`. Ausente = todos; valor desconhecido é
+ * 422 (na API o erro é explícito, ao contrário do filtro de URL das telas).
+ */
+export function classificacaoDaQuery(url: URL): ClassificacaoFiscal | undefined {
+  const valor = url.searchParams.get("classificacao");
+  if (valor === null || valor === "") return undefined;
+  if (valor !== "FISCAL" && valor !== "GERENCIAL") {
+    throw new ErroValidacaoApi('Use ?classificacao=FISCAL ou ?classificacao=GERENCIAL', ["classificacao"]);
+  }
+  return valor;
 }
 
 export async function executarRotaApi(
@@ -28,7 +43,7 @@ export async function executarRotaApi(
     if (erro instanceof PermissionError || erro instanceof FilialSomenteLeituraError) {
       return Response.json({ erro: erro.message }, { status: 403 });
     }
-    if (erro instanceof ErroValidacaoApi) {
+    if (erro instanceof ErroValidacaoApi || erro instanceof ErroClassificacaoFiscal) {
       return Response.json({ erro: erro.message, campos: erro.campos }, { status: 422 });
     }
     if (erro instanceof ZodError) {

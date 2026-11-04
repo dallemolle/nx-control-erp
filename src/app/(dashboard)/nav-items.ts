@@ -23,6 +23,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/controladoria/orcamento", label: "Orçamento" },
       { href: "/controladoria/fluxo-por-dimensao", label: "Fluxo de caixa por dimensão" },
       { href: "/controladoria/comparacao-safras", label: "Comparação entre safras" },
+      { href: "/controladoria/fiscal-gerencial", label: "Fiscal × gerencial" },
     ],
   },
   {

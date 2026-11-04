@@ -188,7 +188,7 @@ model Titulo {
 
 model LancamentoBancario {
   // ...campos existentes inalterados...
-  classificacaoFiscal ClassificacaoFiscal?   // null apenas para TRANSFERENCIA
+  classificacaoFiscal ClassificacaoFiscal? @default(FISCAL)   // null apenas para TRANSFERENCIA
   tipoComprovante     TipoComprovante?
   numeroComprovante   String?
 
@@ -217,6 +217,7 @@ Correspondência com os campos sugeridos no pedido:
 Decisões de modelagem:
 
 - **Colunas no próprio `Titulo`** (e não tabela 1:1): ~10 consultas de fluxo/orçamento/dashboard filtram por elas; uma tabela à parte obrigaria join em todas. Com default/nullable, nenhum `create`/`select` existente quebra.
+- **`LancamentoBancario.classificacaoFiscal` é nullable com `@default(FISCAL)`** (corrigido na implementação): sem o default, a CHECK `lancamentos_classificacao_chk` faria falhar todo código que cria lançamento sem informar a classificação, inclusive o código em produção no intervalo entre a migration e o deploy e as fixtures de teste (47 testes quebraram na 1ª tentativa). Com o default, só `criarTransferencia` precisa gravar `null` explicitamente.
 - **Cópia em `LancamentoBancario.classificacaoFiscal`**: as consultas de realizado fazem `groupBy` direto em `lancamentos_bancarios`; derivar via `baixa → parcela → titulo` impediria o `groupBy`. A consistência é garantida na aprovação da baixa e na reclassificação (1.4).
 - **Uma nota → um título** (com N parcelas). Unicidade da chave por filial é verificada no service (índice simples, não único: índice parcial não é representável no Prisma e acusaria *drift*).
 - Regime tributário / inscrição estadual da contraparte **não** entram agora (não são necessários para a classificação); ficam para o módulo de Vendas/NF-e, se houver emissão (seção 5).
@@ -228,7 +229,7 @@ Decisões de modelagem:
 ```sql
 -- (gerado) CREATE TYPE "ClassificacaoFiscal" ...; CREATE TYPE "TipoComprovante" ...;
 -- (gerado) ALTER TABLE "titulos" ADD COLUMN "classificacaoFiscal" "ClassificacaoFiscal" NOT NULL DEFAULT 'FISCAL', ADD COLUMN ...;
--- (gerado) ALTER TABLE "lancamentos_bancarios" ADD COLUMN "classificacaoFiscal" "ClassificacaoFiscal", ...;
+-- (gerado) ALTER TABLE "lancamentos_bancarios" ADD COLUMN "classificacaoFiscal" "ClassificacaoFiscal" DEFAULT 'FISCAL', ...;
 -- (gerado) ALTER TABLE "clientes" ADD COLUMN "classificacaoFiscalPadrao" "ClassificacaoFiscal";
 -- (gerado) ALTER TABLE "fornecedores" ADD COLUMN "classificacaoFiscalPadrao" "ClassificacaoFiscal";
 -- (gerado) CREATE INDEX ...
@@ -241,8 +242,8 @@ UPDATE "lancamentos_bancarios" l
   JOIN "titulos"  t ON t."id" = p."tituloId"
  WHERE l."baixaId" = b."id";
 
-UPDATE "lancamentos_bancarios" SET "classificacaoFiscal" = 'FISCAL'
- WHERE "classificacaoFiscal" IS NULL AND "origem" <> 'TRANSFERENCIA';
+UPDATE "lancamentos_bancarios" SET "classificacaoFiscal" = NULL
+ WHERE "origem" = 'TRANSFERENCIA';
 
 -- Integridade
 ALTER TABLE "lancamentos_bancarios" ADD CONSTRAINT "lancamentos_classificacao_chk"
@@ -488,57 +489,57 @@ O `DOCTO_IMPLEMENT_PROD-VEND.md` (Revisão 1.1) já foi ajustado para essas depe
 
 ### 1. `[ ] Banco de Dados & Migrations`
 
-- [ ] 1.1 Adicionar enums `ClassificacaoFiscal` e `TipoComprovante` ao `schema.prisma` (2.1).
-- [ ] 1.2 Adicionar campos e índices em `Titulo`, `LancamentoBancario`, `Cliente`, `Fornecedor` (2.2).
-- [ ] 1.3 `npx prisma migrate dev --name add_classificacao_fiscal --create-only`.
-- [ ] 1.4 Revisar o SQL: só `CREATE TYPE`, `ADD COLUMN`, `CREATE INDEX`; nada de `DROP`/`ALTER COLUMN`/`RENAME`/`SET NOT NULL` em coluna existente.
-- [ ] 1.5 Acrescentar ao final o backfill e as CHECKs (2.3).
-- [ ] 1.6 `npm run db:migrate && npm run db:generate`.
-- [ ] 1.7 `npm run build && npm run test`: **suíte existente 100% verde sem alterar nenhum teste**.
-- [ ] 1.8 Conferir no banco de dev: `SELECT "classificacaoFiscal", "origem", count(*) FROM lancamentos_bancarios GROUP BY 1,2` (transferências = NULL; demais preenchidos) e `SELECT count(*) FROM titulos WHERE "classificacaoFiscal" IS NULL` = 0.
-- [ ] 1.9 Commit `feat(db): classificação fiscal × gerencial (migration aditiva)`.
+- [x] 1.1 Adicionar enums `ClassificacaoFiscal` e `TipoComprovante` ao `schema.prisma` (2.1).
+- [x] 1.2 Adicionar campos e índices em `Titulo`, `LancamentoBancario`, `Cliente`, `Fornecedor` (2.2).
+- [x] 1.3 `npx prisma migrate dev --name add_classificacao_fiscal --create-only`.
+- [x] 1.4 Revisar o SQL: só `CREATE TYPE`, `ADD COLUMN`, `CREATE INDEX`; nada de `DROP`/`ALTER COLUMN`/`RENAME`/`SET NOT NULL` em coluna existente.
+- [x] 1.5 Acrescentar ao final o backfill e as CHECKs (2.3).
+- [x] 1.6 `npm run db:migrate && npm run db:generate`.
+- [x] 1.7 `tsc --noEmit && npm run test`: **suíte existente 100% verde sem alterar nenhum teste** (499/499).
+- [x] 1.8 Conferido no banco de dev: 17 títulos e 18 lançamentos (15 manuais, 3 de baixa) ficaram FISCAL; não havia transferências.
+- [x] 1.9 Commit `feat(db): classificação fiscal × gerencial (migration aditiva)`.
 
-### 2. `[ ] Backend (Tipos, DTOs, Services, Routes)`
+### 2. `[x] Backend (Tipos, DTOs, Services, Routes)`
 
-- [ ] 2.1 Consts e rótulos em `lib/schemas/enums.ts` (só acréscimos).
-- [ ] 2.2 `server/services/classificacaoFiscal.ts` + `classificacaoFiscal.test.ts` (DV da chave, coerência de grupo, pendências, `resolverClassificacao`, `classificacaoDaUrl`).
-- [ ] 2.3 Schemas Zod: `titulo.ts`, `lancamentoBancario.ts`, `conciliacao.ts`, `cliente.ts`, `fornecedor.ts` (3.2).
-- [ ] 2.4 `cliente.ts`/`fornecedor.ts` (services): gravar e auditar `classificacaoFiscalPadrao` + testes.
-- [ ] 2.5 `titulo.ts`: criação (padrão da contraparte, duplicidade de nota/chave), atualização (reclassificação + propagação + auditoria `RECLASSIFICAR`), filtro `classificacao`, `_count.anexos`. Testes de integração: padrão do fornecedor aplicado; classificação informada vence o padrão; chave duplicada → erro; mesma chave em **outra filial** não conflita; reclassificar propaga aos lançamentos de baixas aprovadas; reclassificar sem motivo → erro; filial somente leitura → erro.
-- [ ] 2.6 `baixa.ts`: cópia da classificação em `aprovarBaixa` + teste.
-- [ ] 2.7 `lancamentoBancario.ts` (manual, transferência `null`, filtro) e `conciliacao.ts` (`criarLancamentoDaLinha`) + testes.
-- [ ] 2.8 `opcoes.classificacao` em fluxo realizado, projetado, por dimensão, orçamento e comparação de safras. Para cada um, teste com dados mistos: **sem `opcoes` = resultado anterior** e **Todos = Fiscal + Gerencial** (+ transferências, no realizado).
-- [ ] 2.9 `relatorioFiscalGerencial.ts` + `buscarResumoFiscalGerencial` (dashboard) + testes.
-- [ ] 2.10 `importacaoTitulo.ts` (colunas opcionais) + teste com CSV antigo (sem as colunas) e novo (com erros de coerência por linha).
-- [ ] 2.11 API v1 (3.7) + `route.test.ts`: corpo antigo continua 201; classificação/chave inválida → 422; `?classificacao=` filtra; GET devolve os campos novos.
-- [ ] 2.12 Exports (3.8) + `docs/api-v1.md`.
+- [x] 2.1 Consts e rótulos em `lib/schemas/enums.ts` (só acréscimos).
+- [x] 2.2 Regras puras em **`src/lib/classificacaoFiscal.ts`** (+ `classificacaoFiscal.test.ts`), reexportadas por `server/services/classificacaoFiscal.ts`, que acrescenta `where*PorClassificacao`, `ErroClassificacaoFiscal` e `garantirComprovanteValido`. *Ajuste:* as regras ficaram em `lib/` porque schemas Zod e o formulário (navegador) também as usam; o import pelo caminho do servidor, citado no DOCTO, continua válido.
+- [x] 2.3 Schemas Zod: `titulo.ts` (objeto base + `superRefine` nos dois schemas — Zod 4 não permite `.extend` após refinamento), `lancamentoBancario.ts`, `conciliacao.ts`, `cliente.ts`, `fornecedor.ts`. *Ajuste:* a classificação do lançamento é `.optional()` (não `.default`), e o service aplica FISCAL — `.default` tornaria o campo obrigatório no tipo e quebraria quem já chama o service.
+- [x] 2.4 `cliente.ts`/`fornecedor.ts` (services): gravar e auditar `classificacaoFiscalPadrao` + testes.
+- [x] 2.5 `titulo.ts` + `tituloClassificacao.test.ts` (13 testes). *Acréscimo:* na edição, campo fiscal **ausente** mantém o valor gravado (vazio limpa) — quem não conhece os campos novos não apaga dados da nota.
+- [x] 2.6 `baixa.ts`: cópia da classificação em `aprovarBaixa` (coberto pelo teste de reclassificação).
+- [x] 2.7 `lancamentoBancario.ts` (manual, transferência `null`, filtro) e `conciliacao.ts` (`criarLancamentoDaLinha`) + testes.
+- [x] 2.8 `opcoes.classificacao` em fluxo realizado, projetado, por dimensão, orçamento e comparação de safras + `classificacaoRelatorios.test.ts`. *Ajuste:* o retorno do fluxo **não** ganhou `filtrado`; na visão filtrada o saldo inicial é 0 (acumulado) e a página, que passa o filtro, troca os rótulos. O projetado filtrado não emite alerta de saldo negativo.
+- [x] 2.9 `relatorioFiscalGerencial.ts` + `buscarResumoFiscalGerencial` (dashboard) + testes.
+- [x] 2.10 `importacaoTitulo.ts` (colunas opcionais) + testes (CSV antigo segue válido; erros por linha; sem classificação valida contra o padrão da contraparte; nota repetida no mesmo arquivo derruba a importação).
+- [x] 2.11 API v1 + `route.test.ts`. `?classificacao=` inválido → 422 (`classificacaoDaQuery`).
+- [x] 2.12 Exports de contas a pagar/receber (colunas fiscais ao final) e fluxo de caixa (filtro + "Acumulado") + `docs/api-v1.md`. O filtro `classificacao` em `filtro-titulos-url.ts` (previsto em 3.5) foi feito aqui, porque os exports dependem dele. O export de `/controladoria/fiscal-gerencial` fica com a página (3.11).
 - [x] 2.13 ~~(Só se FG3 = sim)~~ **Não se aplica** (FG3 = não). Ação `gerencial:escrever` + `podeEscreverGerencial` + testes em `permissions.test.ts`.
-- [ ] 2.14 Commits por bloco (`feat(financeiro): ...`, `feat(api): ...`).
+- [x] 2.14 Commits `96a01de`, `ce35bbb`, `86c5789`. Suíte: 572 testes passando.
 
-### 3. `[ ] Frontend (Formulários, Listagens, Filtros)`
+### 3. `[x] Frontend (Formulários, Listagens, Filtros)`
 
-- [ ] 3.1 `_shared/badge-classificacao.tsx` e `_shared/seletor-classificacao.tsx` (+ teste da função de URL).
-- [ ] 3.2 Cadastros de cliente e fornecedor: `Select` de classificação padrão.
-- [ ] 3.3 `titulo-dialog-form.tsx`: seção "Documento fiscal", pré-seleção pelo padrão da contraparte, motivo de reclassificação na edição.
-- [ ] 3.4 `titulo-table.tsx`: badge + nº da nota + alerta de pendências.
-- [ ] 3.5 `barra-de-filtros.tsx` + `filtro-titulos-url.ts`: filtro Classificação (+ testes).
-- [ ] 3.6 `importar-csv-dialog.tsx`: ajuda com as colunas novas.
-- [ ] 3.7 Tesouraria (form, badge, filtro) e conciliação (form de criar lançamento).
-- [ ] 3.8 Fluxo realizado e projetado: seletor + aviso + "Acumulado" na visão filtrada.
-- [ ] 3.9 Orçamento, fluxo por dimensão, comparação de safras: seletor.
-- [ ] 3.10 Dashboard executivo: bloco "Fiscal × gerencial (mês)".
-- [ ] 3.11 `/controladoria/fiscal-gerencial` + item no `nav-items.ts` + export.
-- [ ] 3.12 `content/ajuda/passo-a-passo.md`.
+- [x] 3.1 `_shared/badge-classificacao.tsx` e `_shared/seletor-classificacao.tsx` (+ teste da função de URL).
+- [x] 3.2 Cadastros de cliente e fornecedor: `Select` de classificação padrão.
+- [x] 3.3 `titulo-dialog-form.tsx`: seção "Documento fiscal", pré-seleção pelo padrão da contraparte, motivo de reclassificação na edição.
+- [x] 3.4 `titulo-table.tsx`: badge + nº da nota + alerta de pendências.
+- [x] 3.5 `barra-de-filtros.tsx`: filtro Classificação (o parser `filtro-titulos-url.ts` + testes já foi feito em 2.12).
+- [x] 3.6 `importar-csv-dialog.tsx`: ajuda com as colunas novas.
+- [x] 3.7 Tesouraria (form, badge, filtro) e conciliação (form de criar lançamento).
+- [x] 3.8 Fluxo realizado e projetado: seletor + aviso + "Acumulado" na visão filtrada.
+- [x] 3.9 Orçamento, fluxo por dimensão, comparação de safras: seletor.
+- [x] 3.10 Dashboard executivo: bloco "Fiscal × gerencial (mês)".
+- [x] 3.11 `/controladoria/fiscal-gerencial` + item no `nav-items.ts` + export (comparativo mensal e pendências). *Acréscimos:* `_shared/campos-classificacao-lancamento.tsx` (tesouraria + conciliação), `AvisoVisaoFiltrada` nos fluxos; diálogos longos ganharam rolagem (`max-h-[90vh]`).
+- [x] 3.12 `content/ajuda/passo-a-passo.md`.
 
 ### 4. `[ ] Validação & Testes`
 
-- [ ] 4.1 `npm run lint`, `npm run test` (suíte inteira), `npm run build`.
-- [ ] 4.2 **Não regressão:** com filtro "Todos", os números anotados antes de começar batem exatamente (fluxo realizado, projetado, dashboard).
-- [ ] 4.3 Cenário ponta a ponta no app (`npm run dev`): fornecedor "Produtor X" com padrão Gerencial → novo título vem Gerencial; tipo "Recibo" → baixa aprovada → lançamento Gerencial → fluxo filtrado "Gerencial" mostra só ele → reclassificar para Fiscal com NF-e (chave válida) e motivo → lançamento acompanha → auditoria mostra `RECLASSIFICAR` com motivo.
-- [ ] 4.4 Pendências: título fiscal sem número aparece no relatório; ao informar o número/chave e anexar a nota, sai da lista.
-- [ ] 4.5 Duplicidade: cadastrar a mesma chave em outro título da filial → erro; em outra filial → permitido.
-- [ ] 4.6 Perfis: CONSULTA/AUDITOR veem gerenciais e não editam; filial somente leitura bloqueia reclassificação.
-- [ ] 4.7 API: integração antiga (corpo sem campos novos) segue funcionando; CSV antigo importa sem erro.
+- [x] 4.1 `npm run lint`, `npm run test` (suíte inteira), `npm run build`.
+- [x] 4.2 **Não regressão:** com filtro "Todos", os números anotados antes de começar batem exatamente (fluxo realizado, projetado, dashboard). *Coberto por `classificacaoRelatorios.test.ts` (sem `opcoes` = resultado de antes; Todos = Fiscal + Gerencial).*
+- [x] 4.3 Cenário ponta a ponta no app (`npm run dev`): fornecedor "Produtor X" com padrão Gerencial → novo título vem Gerencial; tipo "Recibo" → baixa aprovada → lançamento Gerencial → fluxo filtrado "Gerencial" mostra só ele → reclassificar para Fiscal com NF-e (chave válida) e motivo → lançamento acompanha → auditoria mostra `RECLASSIFICAR` com motivo. *Feito no navegador em 2026-11-03 (fornecedor → título Gerencial/Recibo → lista e filtro → reclassificação para NF-e com aviso de DV → auditoria `RECLASSIFICAR` → tela Fiscal × gerencial → fluxo filtrado). A propagação aos lançamentos de baixa foi verificada pelo teste de integração, não pela UI.*
+- [x] 4.4 Pendências: título fiscal sem número aparece no relatório; ao informar o número/chave e anexar a nota, sai da lista. *(testes de `relatorioFiscalGerencial` e `pendenciasFiscaisDoTitulo`; a lista com título sem nota foi vista na tela)*
+- [x] 4.5 Duplicidade: cadastrar a mesma chave em outro título da filial → erro; em outra filial → permitido. *(testes de integração)*
+- [ ] 4.6 Perfis: CONSULTA/AUDITOR veem gerenciais e não editam; filial somente leitura bloqueia reclassificação. *Pendente: conferência manual com usuários desses perfis (as permissões não mudaram; a edição continua exigindo `titulo:escrever` + filial com alteração).*
+- [x] 4.7 API: integração antiga (corpo sem campos novos) segue funcionando; CSV antigo importa sem erro. *(testes de rota e de importação)*
 - [ ] 4.8 Deploy em staging via workflow de migration → validação com dados reais → PR para `main`.
 
 ### 5. `[ ] Fase B — Conta Caixa (se FG4 = sim)`

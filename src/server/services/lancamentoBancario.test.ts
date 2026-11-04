@@ -8,7 +8,9 @@ import {
   calcularSaldoContabil,
   informarSaldoBancario,
   buscarUltimoSaldoInformado,
+  listarLancamentos,
 } from "./lancamentoBancario";
+import { ErroClassificacaoFiscal } from "./classificacaoFiscal";
 
 describe("lancamentoBancario", () => {
   let fixture: FixtureFinanceiro; // perfil FINANCEIRO: só lancamento:ler
@@ -230,5 +232,80 @@ describe("dimensões analíticas em criarLancamentoManual", () => {
     } finally {
       await limparFixtureFinanceiro(outraFixture);
     }
+  });
+});
+
+describe("classificação fiscal × gerencial em lançamentos", () => {
+  let fixture: FixtureFinanceiro;
+  let contaDestinoId: string;
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("LBC", "TESOURARIA");
+    const contaDestino = await prisma.contaBancaria.create({
+      data: { filialId: fixture.filialId, bancoId: fixture.bancoId, agencia: "0003", conta: "destino-lbc", saldoInicial: 0 },
+    });
+    contaDestinoId = contaDestino.id;
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fixture);
+    await prisma.$disconnect();
+  });
+
+  const dadosBase = () => ({
+    contaBancariaId: fixture.contaBancariaId,
+    data: new Date(),
+    tipo: "SAIDA" as const,
+    valor: 30,
+    descricao: "Lançamento classificado",
+    categoriaFinanceiraId: "__nenhum__",
+  });
+
+  test("sem classificação informada, o lançamento manual nasce FISCAL", async () => {
+    const lancamento = await criarLancamentoManual(fixture.sessao, dadosBase());
+    expect(lancamento.classificacaoFiscal).toBe("FISCAL");
+    expect(lancamento.tipoComprovante).toBeNull();
+  });
+
+  test("grava GERENCIAL com recibo e número do comprovante", async () => {
+    const lancamento = await criarLancamentoManual(fixture.sessao, {
+      ...dadosBase(),
+      classificacaoFiscal: "GERENCIAL",
+      tipoComprovante: "RECIBO",
+      numeroComprovante: "R-15",
+    });
+    expect(lancamento.classificacaoFiscal).toBe("GERENCIAL");
+    expect(lancamento.tipoComprovante).toBe("RECIBO");
+    expect(lancamento.numeroComprovante).toBe("R-15");
+  });
+
+  test("recusa comprovante fiscal em lançamento gerencial", async () => {
+    await expect(
+      criarLancamentoManual(fixture.sessao, { ...dadosBase(), classificacaoFiscal: "GERENCIAL", tipoComprovante: "NFE" }),
+    ).rejects.toThrow(ErroClassificacaoFiscal);
+  });
+
+  test("transferência fica sem classificação nos dois lados", async () => {
+    const { saida, entrada } = await criarTransferencia(fixture.sessao, {
+      contaOrigemId: fixture.contaBancariaId,
+      contaDestinoId,
+      data: new Date(),
+      valor: 10,
+      descricao: "Transferência",
+    });
+    expect(saida.classificacaoFiscal).toBeNull();
+    expect(entrada.classificacaoFiscal).toBeNull();
+  });
+
+  test("listarLancamentos filtra por classificação; transferências só aparecem sem filtro", async () => {
+    const todos = await listarLancamentos(fixture.filialId);
+    const fiscais = await listarLancamentos(fixture.filialId, { classificacao: "FISCAL" });
+    const gerenciais = await listarLancamentos(fixture.filialId, { classificacao: "GERENCIAL" });
+    const transferencias = todos.filter((lancamento) => lancamento.origem === "TRANSFERENCIA");
+
+    expect(transferencias.length).toBe(2);
+    expect(fiscais.every((lancamento) => lancamento.classificacaoFiscal === "FISCAL")).toBe(true);
+    expect(gerenciais.every((lancamento) => lancamento.classificacaoFiscal === "GERENCIAL")).toBe(true);
+    expect(fiscais.length + gerenciais.length + transferencias.length).toBe(todos.length);
   });
 });
