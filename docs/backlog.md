@@ -121,21 +121,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   distante. Reconstruir a cadeia completa através de anos não exibidos
   ficou para uma iteração futura.
 
-## Classificação Fiscal × Gerencial
-
-- **Filtro de classificação no Fluxo de caixa estratégico** (decisão FG5
-  de `PLANO_IMPLEMENTACAO_FISCAL_GERENCIAL.md`, confirmada em 2026-11-03).
-  A primeira entrega aplica o filtro `?classificacao=FISCAL|GERENCIAL` ao
-  fluxo realizado/projetado, orçamento, fluxo por dimensão, comparação de
-  safras e dashboard, mas não ao estratégico: as premissas dos cenários
-  (`CenarioEstrategico`) e o ano-base consolidado
-  (`buscarAnoBaseConsolidado` em `fluxoDeCaixaEstrategico.ts`) usam a base
-  total. Para retomar: passar `opcoes.classificacao` a
-  `buscarAnoBaseConsolidado` (mesmo `whereLancamentoPorClassificacao` de
-  `classificacaoFiscal.ts`) e decidir se a projeção filtrada parte de um
-  "acumulado" zerado (como o fluxo realizado filtrado) ou do saldo total,
-  já que o saldo bancário não se divide por classificação.
-
 ## Qualidade de testes
 
 - **Teste de rollback do orçamento não exercita falha real de transação**
@@ -203,7 +188,8 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   dimensão) — este sub-projeto só aplicou o mecanismo a Contas a
   pagar/receber. Estender é wiring repetitivo sobre o mesmo padrão
   (`FiltroTitulos`-equivalente + `BarraDeFiltros`-equivalente por tela),
-  não redesenho.
+  não redesenho. Reavaliado em 2026-11-05: nenhuma tela por enquanto
+  (decisão do usuário) — só retomar com pedido de uma tela específica.
 
 ## API REST de automação (lançamentos via agente)
 
