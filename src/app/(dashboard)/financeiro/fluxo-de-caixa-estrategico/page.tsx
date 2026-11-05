@@ -3,6 +3,7 @@ import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeExecutar } from "@/server/auth/permissions";
 import { listarProjecaoEstrategica, TIPOS_CENARIO } from "@/server/services/fluxoDeCaixaEstrategico";
 import { PremissasForm } from "./premissas-form";
+import { ExportarLinks } from "../../_shared/exportar-links";
 import { formatarMoeda } from "@/lib/formatacao";
 
 const LABEL_CENARIO: Record<(typeof TIPOS_CENARIO)[number], string> = {
@@ -31,6 +32,8 @@ export default async function FluxoDeCaixaEstrategicoPage() {
           devedor acumulado, que nunca é amortizado).
         </p>
       </div>
+
+      <ExportarLinks baseHref="/financeiro/fluxo-de-caixa-estrategico/export" />
 
       {TIPOS_CENARIO.map((tipo) => (
         <section key={tipo} className="space-y-4 rounded-lg border p-4">
