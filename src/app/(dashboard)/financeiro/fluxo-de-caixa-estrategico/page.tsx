@@ -4,6 +4,9 @@ import { requirePermission, podeExecutar } from "@/server/auth/permissions";
 import { listarProjecaoEstrategica, TIPOS_CENARIO } from "@/server/services/fluxoDeCaixaEstrategico";
 import { PremissasForm } from "./premissas-form";
 import { ExportarLinks } from "../../_shared/exportar-links";
+import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
+import { AvisoVisaoFiltrada } from "../_fluxo-de-caixa/aviso-visao-filtrada";
+import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 import { formatarMoeda } from "@/lib/formatacao";
 
 const LABEL_CENARIO: Record<(typeof TIPOS_CENARIO)[number], string> = {
@@ -12,11 +15,20 @@ const LABEL_CENARIO: Record<(typeof TIPOS_CENARIO)[number], string> = {
   PESSIMISTA: "Pessimista",
 };
 
-export default async function FluxoDeCaixaEstrategicoPage() {
+export default async function FluxoDeCaixaEstrategicoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ classificacao?: string | string[] }>;
+}) {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "planejamentoEstrategico:ler");
 
-  const { cenarios, projecoes } = await listarProjecaoEstrategica(sessao);
+  const params = await searchParams;
+  const classificacao = classificacaoDaUrl(
+    Array.isArray(params.classificacao) ? params.classificacao[0] : params.classificacao,
+  );
+
+  const { cenarios, projecoes } = await listarProjecaoEstrategica(sessao, { classificacao });
 
   const somenteLeitura = !podeExecutar(sessao.perfil, "planejamentoEstrategico:escrever");
 
@@ -33,7 +45,15 @@ export default async function FluxoDeCaixaEstrategicoPage() {
         </p>
       </div>
 
-      <ExportarLinks baseHref="/financeiro/fluxo-de-caixa-estrategico/export" />
+      <div className="flex flex-wrap items-center gap-4">
+        <SeletorClassificacao classificacao={classificacao} />
+        <ExportarLinks
+          baseHref="/financeiro/fluxo-de-caixa-estrategico/export"
+          queryString={classificacao ? `classificacao=${classificacao}` : undefined}
+        />
+      </div>
+
+      <AvisoVisaoFiltrada classificacao={classificacao} />
 
       {TIPOS_CENARIO.map((tipo) => (
         <section key={tipo} className="space-y-4 rounded-lg border p-4">
@@ -82,7 +102,7 @@ export default async function FluxoDeCaixaEstrategicoPage() {
                 ))}
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">Saldo de caixa</TableCell>
+                <TableCell className="font-medium">{classificacao ? "Acumulado de caixa" : "Saldo de caixa"}</TableCell>
                 {projecoes[tipo].map((ano) => (
                   <TableCell key={ano.ano} className={ano.saldoCaixa < 0 ? "font-medium text-destructive" : undefined}>
                     {formatarMoeda(ano.saldoCaixa)}

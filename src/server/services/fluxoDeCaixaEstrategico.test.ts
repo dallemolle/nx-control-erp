@@ -207,3 +207,71 @@ describe("garantirCenariosEstrategicos / listarCenariosEstrategicos / listarProj
     }
   });
 });
+
+describe("buscarAnoBaseConsolidado / listarProjecaoEstrategica com classificação (FG5)", () => {
+  let fixture: FixtureFinanceiro;
+
+  async function lancar(
+    tipo: "ENTRADA" | "SAIDA",
+    valor: number,
+    classificacaoFiscal: "FISCAL" | "GERENCIAL" | null,
+    origem: "MANUAL" | "TRANSFERENCIA" = "MANUAL",
+  ) {
+    await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: new Date(),
+        tipo,
+        valor,
+        descricao: "FG5",
+        origem,
+        usuarioId: fixture.usuarioId,
+        conciliado: true,
+        classificacaoFiscal,
+      },
+    });
+  }
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("FCEG", "GESTOR");
+    await lancar("ENTRADA", 1000, "FISCAL");
+    await lancar("ENTRADA", 300, "GERENCIAL");
+    await lancar("SAIDA", 100, "GERENCIAL");
+    await lancar("ENTRADA", 50, null, "TRANSFERENCIA"); // sem classificação: só na visão "Todos"
+  });
+
+  afterAll(async () => {
+    await prisma.auditLog.deleteMany({ where: { empresaId: fixture.empresaId } });
+    await prisma.cenarioEstrategico.deleteMany({ where: { empresaId: fixture.empresaId } });
+    await limparFixtureFinanceiro(fixture);
+    await prisma.$disconnect();
+  });
+
+  test("sem filtro: todo o movimento e o saldo bancário real", async () => {
+    expect(await buscarAnoBaseConsolidado(fixture.empresaId)).toEqual({
+      receitaBase: 1350,
+      custoBase: 100,
+      saldoCaixaBase: 1250,
+    });
+  });
+
+  test("filtrado: só o movimento da classificação, partindo de saldo 0 (acumulado)", async () => {
+    expect(await buscarAnoBaseConsolidado(fixture.empresaId, { classificacao: "FISCAL" })).toEqual({
+      receitaBase: 1000,
+      custoBase: 0,
+      saldoCaixaBase: 0,
+    });
+    expect(await buscarAnoBaseConsolidado(fixture.empresaId, { classificacao: "GERENCIAL" })).toEqual({
+      receitaBase: 300,
+      custoBase: 100,
+      saldoCaixaBase: 0,
+    });
+  });
+
+  test("a projeção filtrada acumula a partir de zero", async () => {
+    // Premissas zeradas (cenários recém-criados): cada ano repete receita/custo do ano-base.
+    const { projecoes } = await listarProjecaoEstrategica(fixture.sessao, { classificacao: "GERENCIAL" });
+    expect(projecoes.BASE.map((ano) => ano.saldoCaixa)).toEqual([200, 400, 600, 800, 1000]);
+  });
+});
