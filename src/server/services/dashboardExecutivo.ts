@@ -2,7 +2,7 @@ import { prisma } from "@/server/db/client";
 import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { StatusParcela } from "@prisma/client";
-import { buscarSaldoEmCaixaAte, fimDoDiaUTC } from "./fluxoDeCaixa";
+import { buscarSaldoEmCaixaAteDasFiliais, fimDoDiaUTC } from "./fluxoDeCaixa";
 import { saldoRemanescenteParcela } from "./fluxoDeCaixaProjetado";
 import { buscarPendenciasFiscaisDaFilial, percentualGerencial } from "./relatorioFiscalGerencial";
 
@@ -24,78 +24,94 @@ function inicioDoMes(ano: number, mes: number): Date {
   return new Date(Date.UTC(ano, mes - 1, 1));
 }
 
+async function idsDasFiliais(empresaId: string): Promise<string[]> {
+  const filiais = await prisma.filial.findMany({ where: { empresaId }, select: { id: true } });
+  return filiais.map((filial) => filial.id);
+}
+
+/** Parcelas em aberto das filiais, só com os campos que o dashboard usa. */
+function buscarParcelasEmAbertoDasFiliais(filialIds: string[], venceAntesDe?: Date) {
+  return prisma.parcela.findMany({
+    where: {
+      titulo: { filialId: { in: filialIds } },
+      status: { in: STATUS_ABERTO },
+      ...(venceAntesDe && { dataVencimento: { lt: venceAntesDe } }),
+    },
+    select: {
+      valorAtualizado: true,
+      dataVencimento: true,
+      status: true,
+      titulo: { select: { tipo: true } },
+      baixas: { where: { statusAprovacao: "APROVADO" }, select: { valorPago: true } },
+    },
+  });
+}
+
+function somasConciliadasNoPeriodo(filialIds: string[], inicio: Date, fim: Date) {
+  return prisma.lancamentoBancario.groupBy({
+    by: ["tipo"],
+    where: {
+      filialId: { in: filialIds },
+      conciliado: true,
+      data: { gte: inicio, lte: fim },
+      contaBancaria: { ativo: true },
+    },
+    _sum: { valor: true },
+  });
+}
+
+function totalDoTipo(somas: { tipo: string; _sum: { valor: unknown } }[], tipo: "ENTRADA" | "SAIDA"): number {
+  return Number(somas.find((s) => s.tipo === tipo)?._sum.valor ?? 0);
+}
+
 /**
- * Consolida por empresa (soma todas as filiais) — mesmo padrão de
- * `buscarAnoBaseConsolidado` em `fluxoDeCaixaEstrategico.ts`: busca as
- * filiais da empresa e faz um loop reaproveitando funções já existentes,
- * sem duplicar query.
+ * Consolida por empresa (soma todas as filiais). Todas as somas são aditivas,
+ * então cada indicador é uma query só com `filialId: { in: [...] }` — não um
+ * loop por filial — e as queries independentes rodam em paralelo.
  */
 export async function buscarIndicadoresExecutivos(sessao: SessaoAtiva): Promise<IndicadoresExecutivos> {
   requirePermission(sessao.perfil, "dashboardExecutivo:ler");
 
-  const filiais = await prisma.filial.findMany({ where: { empresaId: sessao.empresaId }, select: { id: true } });
+  const filialIds = await idsDasFiliais(sessao.empresaId);
   const hoje = new Date();
   const inicioDeHoje = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()));
   const em7Dias = fimDoDiaUTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate() + 7);
   const em30Dias = fimDoDiaUTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate() + 30);
   const inicioMesAtual = inicioDoMes(hoje.getUTCFullYear(), hoje.getUTCMonth() + 1);
 
-  let caixaDisponivel = 0;
+  const [caixaDisponivel, parcelasEmAberto, somasMes] = await Promise.all([
+    buscarSaldoEmCaixaAteDasFiliais(filialIds, hoje),
+    buscarParcelasEmAbertoDasFiliais(filialIds),
+    somasConciliadasNoPeriodo(filialIds, inicioMesAtual, hoje),
+  ]);
+
   let contasAPagarEmAberto = 0;
   let contasAReceberEmAberto = 0;
   let inadimplencia = 0;
-  let geracaoDeCaixaMesAtual = 0;
   let obrigacoes7Dias = 0;
   let obrigacoes30Dias = 0;
   let recebimentosEsperados30Dias = 0;
 
-  for (const filial of filiais) {
-    caixaDisponivel += await buscarSaldoEmCaixaAte(filial.id, hoje);
+  for (const parcela of parcelasEmAberto) {
+    const saldo = saldoRemanescenteParcela(
+      Number(parcela.valorAtualizado),
+      parcela.baixas.map((baixa) => ({ valorPago: Number(baixa.valorPago) })),
+    );
+    const dentroDe7Dias = parcela.dataVencimento >= inicioDeHoje && parcela.dataVencimento <= em7Dias;
+    const dentroDe30Dias = parcela.dataVencimento >= inicioDeHoje && parcela.dataVencimento <= em30Dias;
 
-    const parcelasEmAberto = await prisma.parcela.findMany({
-      where: {
-        titulo: { filialId: filial.id },
-        status: { in: STATUS_ABERTO },
-      },
-      include: {
-        titulo: { select: { tipo: true } },
-        baixas: { where: { statusAprovacao: "APROVADO" } },
-      },
-    });
-
-    for (const parcela of parcelasEmAberto) {
-      const saldo = saldoRemanescenteParcela(
-        Number(parcela.valorAtualizado),
-        parcela.baixas.map((baixa) => ({ valorPago: Number(baixa.valorPago) })),
-      );
-      const dentroDe7Dias = parcela.dataVencimento >= inicioDeHoje && parcela.dataVencimento <= em7Dias;
-      const dentroDe30Dias = parcela.dataVencimento >= inicioDeHoje && parcela.dataVencimento <= em30Dias;
-
-      if (parcela.titulo.tipo === "PAGAR") {
-        contasAPagarEmAberto += saldo;
-        if (dentroDe7Dias) obrigacoes7Dias += saldo;
-        if (dentroDe30Dias) obrigacoes30Dias += saldo;
-      } else {
-        contasAReceberEmAberto += saldo;
-        if (parcela.status === "VENCIDO") inadimplencia += saldo;
-        if (dentroDe30Dias) recebimentosEsperados30Dias += saldo;
-      }
+    if (parcela.titulo.tipo === "PAGAR") {
+      contasAPagarEmAberto += saldo;
+      if (dentroDe7Dias) obrigacoes7Dias += saldo;
+      if (dentroDe30Dias) obrigacoes30Dias += saldo;
+    } else {
+      contasAReceberEmAberto += saldo;
+      if (parcela.status === "VENCIDO") inadimplencia += saldo;
+      if (dentroDe30Dias) recebimentosEsperados30Dias += saldo;
     }
-
-    const somasMes = await prisma.lancamentoBancario.groupBy({
-      by: ["tipo"],
-      where: {
-        filialId: filial.id,
-        conciliado: true,
-        data: { gte: inicioMesAtual, lte: hoje },
-        contaBancaria: { ativo: true },
-      },
-      _sum: { valor: true },
-    });
-    const entradasMes = Number(somasMes.find((s) => s.tipo === "ENTRADA")?._sum.valor ?? 0);
-    const saidasMes = Number(somasMes.find((s) => s.tipo === "SAIDA")?._sum.valor ?? 0);
-    geracaoDeCaixaMesAtual += entradasMes - saidasMes;
   }
+
+  const geracaoDeCaixaMesAtual = totalDoTipo(somasMes, "ENTRADA") - totalDoTipo(somasMes, "SAIDA");
 
   const saldoProjetado30Dias = caixaDisponivel + recebimentosEsperados30Dias - obrigacoes30Dias;
 
@@ -151,7 +167,7 @@ function faixaAging(inicioDeHoje: Date, dataVencimento: Date): FaixaAging {
   return "90+";
 }
 
-async function buscarAgingConsolidado(filiais: { id: string }[], inicioDeHoje: Date): Promise<PontoAging[]> {
+async function buscarAgingConsolidado(filialIds: string[], inicioDeHoje: Date): Promise<PontoAging[]> {
   const buckets: Record<FaixaAging, { contasAPagar: number; contasAReceber: number }> = {
     "0-30": { contasAPagar: 0, contasAReceber: 0 },
     "31-60": { contasAPagar: 0, contasAReceber: 0 },
@@ -159,30 +175,17 @@ async function buscarAgingConsolidado(filiais: { id: string }[], inicioDeHoje: D
     "90+": { contasAPagar: 0, contasAReceber: 0 },
   };
 
-  for (const filial of filiais) {
-    const parcelasVencidas = await prisma.parcela.findMany({
-      where: {
-        titulo: { filialId: filial.id },
-        status: { in: STATUS_ABERTO },
-        dataVencimento: { lt: inicioDeHoje },
-      },
-      include: {
-        titulo: { select: { tipo: true } },
-        baixas: { where: { statusAprovacao: "APROVADO" } },
-      },
-    });
+  const parcelasVencidas = await buscarParcelasEmAbertoDasFiliais(filialIds, inicioDeHoje);
+  for (const parcela of parcelasVencidas) {
+    const saldo = saldoRemanescenteParcela(
+      Number(parcela.valorAtualizado),
+      parcela.baixas.map((baixa) => ({ valorPago: Number(baixa.valorPago) })),
+    );
+    if (saldo <= 0) continue;
 
-    for (const parcela of parcelasVencidas) {
-      const saldo = saldoRemanescenteParcela(
-        Number(parcela.valorAtualizado),
-        parcela.baixas.map((baixa) => ({ valorPago: Number(baixa.valorPago) })),
-      );
-      if (saldo <= 0) continue;
-
-      const faixa = faixaAging(inicioDeHoje, parcela.dataVencimento);
-      if (parcela.titulo.tipo === "PAGAR") buckets[faixa].contasAPagar += saldo;
-      else buckets[faixa].contasAReceber += saldo;
-    }
+    const faixa = faixaAging(inicioDeHoje, parcela.dataVencimento);
+    if (parcela.titulo.tipo === "PAGAR") buckets[faixa].contasAPagar += saldo;
+    else buckets[faixa].contasAReceber += saldo;
   }
 
   return (["0-30", "31-60", "61-90", "90+"] as const).map((faixa) => ({ faixa, ...buckets[faixa] }));
@@ -190,52 +193,41 @@ async function buscarAgingConsolidado(filiais: { id: string }[], inicioDeHoje: D
 
 /**
  * Últimos 6 meses (o atual incluído, por último no array), consolidado por
- * empresa. `buscarSaldoEmCaixaAte` é reaproveitada tal como está — como
- * ela recalcula o saldo conciliado até uma data qualquer, não precisa de
- * encadeamento mês a mês (diferente do fluxo de caixa projetado, que
- * projeta o futuro a partir de um saldo âncora).
+ * empresa. O saldo de fim de mês é encadeado: um único saldo histórico até
+ * antes do 1º mês, somado mês a mês ao movimento líquido. É exato porque os
+ * meses são contíguos (fim de um mês + 1ms = início do seguinte, data
+ * TIMESTAMP(3)) e usam o mesmo filtro de `buscarSaldoEmCaixaAteDasFiliais`.
  */
 export async function buscarGraficosExecutivos(sessao: SessaoAtiva): Promise<GraficosExecutivos> {
   requirePermission(sessao.perfil, "dashboardExecutivo:ler");
 
-  const filiais = await prisma.filial.findMany({ where: { empresaId: sessao.empresaId }, select: { id: true } });
+  const filialIds = await idsDasFiliais(sessao.empresaId);
   const hoje = new Date();
   const inicioDeHoje = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()));
 
+  const meses = [5, 4, 3, 2, 1, 0].map((mesesAtras) => {
+    const ano = hoje.getUTCFullYear();
+    const mesAbsoluto = hoje.getUTCMonth() - mesesAtras;
+    const inicio = new Date(Date.UTC(ano, mesAbsoluto, 1));
+    return { inicio, fim: fimDoMes(ano, mesAbsoluto + 1), mes: rotuloMes(inicio) };
+  });
+
+  const [saldoAntesDaJanela, somasPorMes, aging] = await Promise.all([
+    buscarSaldoEmCaixaAteDasFiliais(filialIds, new Date(meses[0].inicio.getTime() - 1)),
+    Promise.all(meses.map(({ inicio, fim }) => somasConciliadasNoPeriodo(filialIds, inicio, fim))),
+    buscarAgingConsolidado(filialIds, inicioDeHoje),
+  ]);
+
   const entradasSaidas: PontoEntradasSaidas[] = [];
   const evolucaoSaldo: PontoEvolucaoSaldo[] = [];
-
-  for (let i = 5; i >= 0; i--) {
-    const ano = hoje.getUTCFullYear();
-    const mesAbsoluto = hoje.getUTCMonth() - i;
-    const inicio = new Date(Date.UTC(ano, mesAbsoluto, 1));
-    const fim = fimDoMes(ano, mesAbsoluto + 1);
-    const mes = rotuloMes(inicio);
-
-    let entradas = 0;
-    let saidas = 0;
-    let saldo = 0;
-    for (const filial of filiais) {
-      const somas = await prisma.lancamentoBancario.groupBy({
-        by: ["tipo"],
-        where: {
-          filialId: filial.id,
-          conciliado: true,
-          data: { gte: inicio, lte: fim },
-          contaBancaria: { ativo: true },
-        },
-        _sum: { valor: true },
-      });
-      entradas += Number(somas.find((s) => s.tipo === "ENTRADA")?._sum.valor ?? 0);
-      saidas += Number(somas.find((s) => s.tipo === "SAIDA")?._sum.valor ?? 0);
-      saldo += await buscarSaldoEmCaixaAte(filial.id, fim);
-    }
-
+  let saldo = saldoAntesDaJanela;
+  meses.forEach(({ mes }, indice) => {
+    const entradas = totalDoTipo(somasPorMes[indice], "ENTRADA");
+    const saidas = totalDoTipo(somasPorMes[indice], "SAIDA");
+    saldo += entradas - saidas;
     entradasSaidas.push({ mes, entradas, saidas });
     evolucaoSaldo.push({ mes, saldo });
-  }
-
-  const aging = await buscarAgingConsolidado(filiais, inicioDeHoje);
+  });
 
   return { entradasSaidas, evolucaoSaldo, aging };
 }
@@ -257,35 +249,40 @@ export type ResumoFiscalGerencial = {
 export async function buscarResumoFiscalGerencial(sessao: SessaoAtiva): Promise<ResumoFiscalGerencial> {
   requirePermission(sessao.perfil, "dashboardExecutivo:ler");
 
-  const filiais = await prisma.filial.findMany({ where: { empresaId: sessao.empresaId }, select: { id: true } });
+  const filialIds = await idsDasFiliais(sessao.empresaId);
   const hoje = new Date();
   const inicioMesAtual = inicioDoMes(hoje.getUTCFullYear(), hoje.getUTCMonth() + 1);
 
-  const resumo = { entradasFiscal: 0, entradasGerencial: 0, saidasFiscal: 0, saidasGerencial: 0, pendenciasFiscais: 0 };
-
-  for (const filial of filiais) {
-    const somas = await prisma.lancamentoBancario.groupBy({
+  const [somas, pendenciasPorFilial] = await Promise.all([
+    prisma.lancamentoBancario.groupBy({
       by: ["tipo", "classificacaoFiscal"],
       where: {
-        filialId: filial.id,
+        filialId: { in: filialIds },
         conciliado: true,
         classificacaoFiscal: { not: null },
         data: { gte: inicioMesAtual, lte: hoje },
         contaBancaria: { ativo: true },
       },
       _sum: { valor: true },
-    });
-    for (const soma of somas) {
-      const valor = Number(soma._sum.valor ?? 0);
-      const gerencial = soma.classificacaoFiscal === "GERENCIAL";
-      if (soma.tipo === "ENTRADA") {
-        if (gerencial) resumo.entradasGerencial += valor;
-        else resumo.entradasFiscal += valor;
-      } else if (gerencial) resumo.saidasGerencial += valor;
-      else resumo.saidasFiscal += valor;
-    }
+    }),
+    Promise.all(filialIds.map((filialId) => buscarPendenciasFiscaisDaFilial(filialId))),
+  ]);
 
-    resumo.pendenciasFiscais += (await buscarPendenciasFiscaisDaFilial(filial.id)).length;
+  const resumo = {
+    entradasFiscal: 0,
+    entradasGerencial: 0,
+    saidasFiscal: 0,
+    saidasGerencial: 0,
+    pendenciasFiscais: pendenciasPorFilial.reduce((total, pendencias) => total + pendencias.length, 0),
+  };
+  for (const soma of somas) {
+    const valor = Number(soma._sum.valor ?? 0);
+    const gerencial = soma.classificacaoFiscal === "GERENCIAL";
+    if (soma.tipo === "ENTRADA") {
+      if (gerencial) resumo.entradasGerencial += valor;
+      else resumo.entradasFiscal += valor;
+    } else if (gerencial) resumo.saidasGerencial += valor;
+    else resumo.saidasFiscal += valor;
   }
 
   return {
