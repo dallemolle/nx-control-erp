@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.1.8](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.7...nx-control-erp-v0.1.8) (2026-11-05)
+
+
+### Features
+
+* **controladoria:** Projeto como dimensão no fluxo de caixa por dimensão ([9eb424c](https://github.com/dallemolle/nx-control-erp/commit/9eb424ccc9bc36bc041aca860d9388c5340c91d7))
+* **estrategico:** filtro Fiscal × Gerencial no fluxo de caixa estratégico (FG5) ([5e01e36](https://github.com/dallemolle/nx-control-erp/commit/5e01e362c04e684d2484b9c0847dc5195c891a11))
+* **relatorios:** export CSV/Excel da comparação entre safras e do fl… ([bbb23e7](https://github.com/dallemolle/nx-control-erp/commit/bbb23e7f176127492bc5aac4ac5b5c52210b78e1))
+* **relatorios:** export CSV/Excel da comparação entre safras e do fluxo estratégico ([190d570](https://github.com/dallemolle/nx-control-erp/commit/190d5709a7460ca418434d24d9e84c18ec328c0e))
+* **relatorios:** export CSV/Excel de mais seis relatórios ([4085df6](https://github.com/dallemolle/nx-control-erp/commit/4085df6f8a74d39454039958921d9e1df1377d6c))
+
+
+### Bug Fixes
+
+* **ui:** coluna "Geração líquida" no fluxo de caixa, igual ao export ([c8ffbd6](https://github.com/dallemolle/nx-control-erp/commit/c8ffbd6b0fdfb9629de04a6cda5dc72646047337))
+* **ui:** diálogos fecham a cada salvamento; lint sem erros ([1b2c739](https://github.com/dallemolle/nx-control-erp/commit/1b2c73962da49199661f404a9f0ef35f7d318f93))
+
+
+### Performance Improvements
+
+* **dashboard:** consolidação por empresa sem loop de queries por filial ([aa7d896](https://github.com/dallemolle/nx-control-erp/commit/aa7d8967a9ac4febba946e21778b7ea67f5a3c07))
+* **dashboard:** consolidação por empresa sem loop de queries por filial ([3f5d5ea](https://github.com/dallemolle/nx-control-erp/commit/3f5d5ea85e198fe0c619524d60cac920b22c3f55))
+
 ## [0.1.7](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.6...nx-control-erp-v0.1.7) (2026-11-04)
 
 
