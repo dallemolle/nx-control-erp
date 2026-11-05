@@ -119,7 +119,7 @@ O botão "Reconciliar pendentes" reprocessa todas as linhas ainda não conciliad
 
 Mostra, por período (dia, semana, mês ou ano), o saldo inicial, entradas, saídas, geração de caixa (entradas menos saídas) e saldo final — tudo a partir dos lançamentos bancários já conciliados. É o retrato do que já aconteceu na conta bancária, período a período, com navegação para períodos anteriores/seguintes.
 
-O seletor **Todos / Fiscal / Gerencial** mostra só o movimento de uma classificação. Nessa visão as colunas de saldo viram **Acumulado** (começam em zero), porque o saldo do banco é um só e não se divide entre fiscal e gerencial; transferências entre contas também ficam de fora. O mesmo seletor existe no fluxo de caixa projetado, no orçamento, no fluxo por dimensão e na comparação entre safras (nesses dois últimos, o orçado não muda com o filtro).
+O seletor **Todos / Fiscal / Gerencial** mostra só o movimento de uma classificação. Nessa visão as colunas de saldo viram **Acumulado** (começam em zero), porque o saldo do banco é um só e não se divide entre fiscal e gerencial; transferências entre contas também ficam de fora. O mesmo seletor existe no fluxo de caixa projetado, no fluxo estratégico, no orçamento, no fluxo por dimensão e na comparação entre safras (nesses dois últimos, o orçado não muda com o filtro).
 
 ### 3.6. Fluxo de caixa projetado
 
@@ -128,6 +128,8 @@ Complementa o fluxo de caixa realizado com uma projeção de 12 meses (ou por an
 ### 3.7. Fluxo de caixa estratégico
 
 Projeta os próximos anos da empresa (consolidando todas as filiais) a partir de três cenários com premissas próprias: crescimento de receita, crescimento de custos, percentual de investimento (capex) sobre a receita, novo endividamento anual e taxa de juros. Os três cenários — base, otimista e pessimista — podem ser ajustados livremente, para enxergar o efeito de diferentes hipóteses de negócio nos próximos anos.
+
+Com o seletor **Fiscal** ou **Gerencial**, a receita e os custos do ano-base passam a ser só daquela classificação e a linha de saldo vira **Acumulado de caixa**, partindo de zero: mostra quanto aquela parte do negócio gera de caixa nos próximos anos. As premissas dos cenários são as mesmas nas três visões.
 
 > Esta é a única tela financeira que já mostra o dado consolidado de toda a empresa, não só da filial atual.
 
@@ -139,7 +141,7 @@ Permite definir, mês a mês, o valor orçado para cada categoria financeira do 
 
 ### 4.2. Fluxo de caixa por dimensão
 
-O mesmo tipo de relatório do fluxo de caixa, mas agrupado por uma dimensão analítica em vez de por período — centro de custo, centro de lucro ou safra, à escolha. Útil para responder perguntas como "quanto entrou e saiu na Lavoura A este mês" em vez de "quanto entrou e saiu na empresa toda".
+O mesmo tipo de relatório do fluxo de caixa, mas agrupado por uma dimensão analítica em vez de por período — centro de custo, centro de lucro, safra ou projeto, à escolha. Útil para responder perguntas como "quanto entrou e saiu na Lavoura A este mês" em vez de "quanto entrou e saiu na empresa toda".
 
 ### 4.3. Comparação entre safras
 

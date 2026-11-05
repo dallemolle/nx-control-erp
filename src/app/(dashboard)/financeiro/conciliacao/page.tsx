@@ -17,6 +17,7 @@ import { FiltroStatus } from "./filtro-status";
 import { ImportarExtratoDialogForm } from "./importar-extrato-dialog-form";
 import { ReconciliarPendentesButton } from "./reconciliar-pendentes-button";
 import { LinhaExtratoActions } from "./linha-extrato-actions";
+import { ExportarLinks } from "../../_shared/exportar-links";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
 
 function statusValido(valor: string | undefined): StatusLinhaExtrato | undefined {
@@ -69,7 +70,13 @@ export default async function ConciliacaoPage({
         )}
       </div>
 
-      <FiltroStatus />
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <FiltroStatus />
+        <ExportarLinks
+          baseHref="/financeiro/conciliacao/export"
+          queryString={statusFiltro ? `status=${statusFiltro}` : undefined}
+        />
+      </div>
 
       <Table>
         <TableHeader>

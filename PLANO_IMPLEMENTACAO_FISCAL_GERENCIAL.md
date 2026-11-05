@@ -120,7 +120,7 @@ Sugestão de UX (não é regra): ao cadastrar contraparte **pessoa física** (CP
 | FG2 | Título FISCAL exige nº da nota no cadastro? | ✅ **Não bloqueia**; vira pendência fiscal |
 | FG3 | Permissão separada para lançar GERENCIAL? | ✅ **Não**: valem as mesmas permissões de hoje (o item 2.13 do checklist não se aplica) |
 | FG4 | Conta "Caixa (dinheiro em espécie)" | ✅ **Fase B** (bloco 5 do checklist) |
-| FG5 | Filtro no fluxo estratégico | ✅ **Não nesta entrega**; registrado em `docs/backlog.md` ("Classificação Fiscal × Gerencial") |
+| FG5 | Filtro no fluxo estratégico | ✅ **Não na 1ª entrega**; implementado depois (2026-11-05) com saldo de partida zerado ("Acumulado de caixa") |
 
 ---
 

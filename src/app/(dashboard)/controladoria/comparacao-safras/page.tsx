@@ -4,6 +4,7 @@ import { requirePermission, podeEscreverOrcamento } from "@/server/auth/permissi
 import { listarComparativoSafras } from "@/server/services/orcamentoSafra";
 import { LinhaSafraForm } from "./linha-safra-form";
 import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
+import { ExportarLinks } from "../../_shared/exportar-links";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 import { formatarMoeda } from "@/lib/formatacao";
 
@@ -37,6 +38,10 @@ export default async function ComparacaoSafrasPage({
 
       <div className="flex flex-wrap items-center gap-4">
         <SeletorClassificacao classificacao={classificacao} />
+        <ExportarLinks
+          baseHref="/controladoria/comparacao-safras/export"
+          queryString={classificacao ? `classificacao=${classificacao}` : undefined}
+        />
         {classificacao ? (
           <p className="text-sm text-muted-foreground" role="note">
             Realizado e projetado só do movimento {classificacao === "FISCAL" ? "fiscal" : "gerencial"}; o orçado da

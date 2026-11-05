@@ -36,3 +36,13 @@ export function paginaDaUrl(get: (campo: string) => string | undefined): number 
   const numero = Number.parseInt(valor, 10);
   return Number.isInteger(numero) && numero >= 1 ? numero : 1;
 }
+
+const CAMPOS_FILTRO_AUDITORIA = ["entidade", "acao", "usuarioId", "filialId", "dataDe", "dataAte"] as const;
+
+/** Repassa os filtros da tela ao link de export (sem `pagina`: o export traz tudo). */
+export function queryStringDoFiltroAuditoria(get: (campo: string) => string | undefined): string {
+  return CAMPOS_FILTRO_AUDITORIA.map((campo) => [campo, get(campo)] as const)
+    .filter(([, valor]) => valor !== undefined && valor.length > 0 && valor !== SEM_VALOR)
+    .map(([campo, valor]) => `${campo}=${encodeURIComponent(valor as string)}`)
+    .join("&");
+}

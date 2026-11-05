@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { prisma } from "@/server/db/client";
 import { PermissionError } from "@/server/auth/permissions";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
-import { listarAuditoria, buscarOpcoesFiltroAuditoria } from "./auditoria";
+import { listarAuditoria, listarAuditoriaParaExport, buscarOpcoesFiltroAuditoria } from "./auditoria";
 
 describe("auditoria (empresa-scoped)", () => {
   let fixture: FixtureFinanceiro;
@@ -215,6 +215,17 @@ describe("auditoria (empresa-scoped)", () => {
     const idsPagina2 = new Set(pagina2.logs.map((log) => log.id));
     const intersecao = [...idsPagina1].filter((id) => idsPagina2.has(id));
     expect(intersecao).toHaveLength(0);
+  });
+
+  test("listarAuditoriaParaExport traz todos os registros do filtro, sem paginar", async () => {
+    // Reaproveita os 55 logs "PaginaTesteAUD" do teste anterior.
+    const logs = await listarAuditoriaParaExport(fixture.sessaoAdmin, { entidade: "PaginaTesteAUD" });
+    expect(logs).toHaveLength(55);
+    expect(logs.every((log) => log.entidade === "PaginaTesteAUD")).toBe(true);
+  });
+
+  test("listarAuditoriaParaExport bloqueia perfil sem auditoria:ler", async () => {
+    await expect(listarAuditoriaParaExport(fixture.sessao, {})).rejects.toThrow(PermissionError);
   });
 
   test("listarAuditoria não vaza entre empresas, mesmo com filtro que combinaria", async () => {

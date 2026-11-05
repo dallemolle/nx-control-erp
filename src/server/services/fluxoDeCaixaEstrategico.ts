@@ -3,7 +3,8 @@ import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { registrarAuditoria, type ClientePrisma } from "@/server/audit/registrar";
 import type { TipoCenarioEstrategico } from "@prisma/client";
-import { buscarSaldoEmCaixaAte } from "./fluxoDeCaixa";
+import { buscarSaldoEmCaixaAteDasFiliais } from "./fluxoDeCaixa";
+import { whereLancamentoPorClassificacao, type FiltroClassificacao } from "./classificacaoFiscal";
 
 export type PremissasCenario = {
   crescimentoReceita: number;
@@ -87,37 +88,44 @@ export async function garantirCenariosEstrategicos(empresaId: string, db: Client
   });
 }
 
+/**
+ * Ano-base da projeção: realizado conciliado dos últimos 12 meses, somando
+ * as filiais da empresa. Com `opcoes.classificacao`, receita e custo usam só
+ * o movimento daquela classificação e o saldo de partida é 0 — a projeção
+ * vira o *acumulado* que aquela classificação gera, porque o saldo bancário
+ * é único e não se divide entre fiscal e gerencial (decisão FG5, igual ao
+ * fluxo realizado filtrado).
+ */
 export async function buscarAnoBaseConsolidado(
   empresaId: string,
+  opcoes: { classificacao?: FiltroClassificacao } = {},
 ): Promise<{ receitaBase: number; custoBase: number; saldoCaixaBase: number }> {
   const filiais = await prisma.filial.findMany({ where: { empresaId }, select: { id: true } });
+  const filialIds = filiais.map((filial) => filial.id);
   const hoje = new Date();
   const inicioJanela = new Date(hoje);
   inicioJanela.setUTCFullYear(inicioJanela.getUTCFullYear() - 1);
 
-  let receitaBase = 0;
-  let custoBase = 0;
-  let saldoCaixaBase = 0;
-
-  for (const filial of filiais) {
-    saldoCaixaBase += await buscarSaldoEmCaixaAte(filial.id, hoje);
-
-    const somas = await prisma.lancamentoBancario.groupBy({
+  const [saldoCaixaBase, somas] = await Promise.all([
+    opcoes.classificacao ? Promise.resolve(0) : buscarSaldoEmCaixaAteDasFiliais(filialIds, hoje),
+    prisma.lancamentoBancario.groupBy({
       by: ["tipo"],
       where: {
-        filialId: filial.id,
+        filialId: { in: filialIds },
         conciliado: true,
         data: { gte: inicioJanela, lte: hoje },
         contaBancaria: { ativo: true },
+        ...whereLancamentoPorClassificacao(opcoes.classificacao),
       },
       _sum: { valor: true },
-    });
+    }),
+  ]);
 
-    receitaBase += Number(somas.find((s) => s.tipo === "ENTRADA")?._sum.valor ?? 0);
-    custoBase += Number(somas.find((s) => s.tipo === "SAIDA")?._sum.valor ?? 0);
-  }
-
-  return { receitaBase, custoBase, saldoCaixaBase };
+  return {
+    receitaBase: Number(somas.find((s) => s.tipo === "ENTRADA")?._sum.valor ?? 0),
+    custoBase: Number(somas.find((s) => s.tipo === "SAIDA")?._sum.valor ?? 0),
+    saldoCaixaBase,
+  };
 }
 
 export async function listarCenariosEstrategicos(
@@ -142,14 +150,17 @@ export async function listarCenariosEstrategicos(
   return resultado;
 }
 
-export async function listarProjecaoEstrategica(sessao: SessaoAtiva): Promise<{
+export async function listarProjecaoEstrategica(
+  sessao: SessaoAtiva,
+  opcoes: { classificacao?: FiltroClassificacao } = {},
+): Promise<{
   cenarios: Record<TipoCenarioEstrategico, PremissasCenario & { id: string }>;
   projecoes: Record<TipoCenarioEstrategico, AnoProjetadoEstrategico[]>;
 }> {
   requirePermission(sessao.perfil, "planejamentoEstrategico:ler");
 
   const [anoBase, cenarios] = await Promise.all([
-    buscarAnoBaseConsolidado(sessao.empresaId),
+    buscarAnoBaseConsolidado(sessao.empresaId, opcoes),
     listarCenariosEstrategicos(sessao),
   ]);
 

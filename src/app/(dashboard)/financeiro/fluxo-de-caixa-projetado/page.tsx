@@ -8,6 +8,7 @@ import { formatarRotuloPeriodo } from "../_fluxo-de-caixa/formatar-rotulo-period
 import { dataValida } from "../_fluxo-de-caixa/data-valida";
 import { AvisoVisaoFiltrada } from "../_fluxo-de-caixa/aviso-visao-filtrada";
 import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
+import { ExportarLinks } from "../../_shared/exportar-links";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 import { formatarMoeda } from "@/lib/formatacao";
 
@@ -58,6 +59,13 @@ export default async function FluxoDeCaixaProjetadoPage({
 
       <AvisoVisaoFiltrada classificacao={classificacao} />
 
+      <ExportarLinks
+        baseHref="/financeiro/fluxo-de-caixa-projetado/export"
+        queryString={`modo=${modo}&data=${dataReferencia.toISOString().slice(0, 10)}${
+          classificacao ? `&classificacao=${classificacao}` : ""
+        }`}
+      />
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -65,7 +73,7 @@ export default async function FluxoDeCaixaProjetadoPage({
             <TableHead>{rotuloSaldo} inicial</TableHead>
             <TableHead>Entradas projetadas</TableHead>
             <TableHead>Saídas projetadas</TableHead>
-            <TableHead>Geração de caixa</TableHead>
+            <TableHead>Geração líquida</TableHead>
             <TableHead>{rotuloSaldo} final</TableHead>
           </TableRow>
         </TableHeader>

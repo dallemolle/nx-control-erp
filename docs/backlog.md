@@ -91,19 +91,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   visão consolidada por empresa, que depende da mesma solução do item
   acima.
 
-- **Volume de queries por render (~23 × número de filiais, sequenciais).**
-  `dashboardExecutivo.ts` roda a consolidação inteira dentro de loops
-  `for...await` (não `Promise.all`), e `buscarSaldoEmCaixaAte` recalcula um
-  agregado de todo o histórico 7 vezes por filial (6 fins de mês + agora).
-  Não é um problema hoje (poucas filiais por empresa, mesmo padrão já
-  aceito em `fluxoDeCaixaEstrategico.ts`), mas é o ponto mais provável de
-  reclamação de performance conforme o número de filiais crescer. Ganhos
-  mais baratos, em ordem: paralelizar os loops por filial com
-  `Promise.all`; trocar `include` (todas as colunas de `Parcela`) por
-  `select` nos dois `findMany` de parcela; a longo prazo, derivar os 6
-  saldos de fim de mês de um único agregado em vez de 6 chamadas a
-  `buscarSaldoEmCaixaAte`.
-
 - **`filial.findMany` da consolidação não filtra `ativo: true`.** Uma
   filial desativada ainda entra nos indicadores/gráficos consolidados.
   Decisão consciente: mantém o mesmo comportamento de
@@ -115,15 +102,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   vez só, em vez de replicar a escolha a cada novo serviço consolidado).
 
 ## Cobertura de relatórios
-
-- **Projeto como dimensão de relatório** (Fase 5, sub-projeto 2a — Fluxo
-  de caixa por dimensão). O dado já é capturado (`LancamentoBancario.
-  projetoId`, `Titulo.projetoId`) e passa pela mesma validação de
-  filial/fallback via baixa que Centro de Custo/Lucro/Safra, mas a tela
-  `/controladoria/fluxo-por-dimensao` hoje só oferece `CENTRO_CUSTO`,
-  `CENTRO_LUCRO` e `SAFRA` no seletor. Adicionar `"PROJETO"` a
-  `TipoDimensao` e ao seletor é a extensão mais barata do backlog — a
-  infraestrutura de dados já suporta.
 
 - **Rollup hierárquico de Centro de Custo** (Fase 5, sub-projeto 2a). Se
   `CentroCusto` vier a ter hierarquia (centro-pai/centro-filho), o
@@ -143,41 +121,7 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   distante. Reconstruir a cadeia completa através de anos não exibidos
   ficou para uma iteração futura.
 
-## Classificação Fiscal × Gerencial
-
-- **Filtro de classificação no Fluxo de caixa estratégico** (decisão FG5
-  de `PLANO_IMPLEMENTACAO_FISCAL_GERENCIAL.md`, confirmada em 2026-11-03).
-  A primeira entrega aplica o filtro `?classificacao=FISCAL|GERENCIAL` ao
-  fluxo realizado/projetado, orçamento, fluxo por dimensão, comparação de
-  safras e dashboard, mas não ao estratégico: as premissas dos cenários
-  (`CenarioEstrategico`) e o ano-base consolidado
-  (`buscarAnoBaseConsolidado` em `fluxoDeCaixaEstrategico.ts`) usam a base
-  total. Para retomar: passar `opcoes.classificacao` a
-  `buscarAnoBaseConsolidado` (mesmo `whereLancamentoPorClassificacao` de
-  `classificacaoFiscal.ts`) e decidir se a projeção filtrada parte de um
-  "acumulado" zerado (como o fluxo realizado filtrado) ou do saldo total,
-  já que o saldo bancário não se divide por classificação.
-
-## Qualidade de código
-
-- **21 erros de lint pré-existentes (`react-hooks/set-state-in-effect`)**
-  nos formulários em diálogo (`*-dialog-form.tsx`), que resetam o estado com
-  `setState` dentro de `useEffect` ao abrir/fechar. Funciona, mas `npm run
-  lint` não passa limpo. Correção: resetar no handler `onOpenChange` (padrão
-  já usado em `titulo-dialog-form.tsx`, `aoAbrirOuFechar`) ou remontar o
-  formulário com `key`.
-
 ## Qualidade de testes
-
-- **`src/lib/versao.test.ts` estoura o timeout de 5s de forma intermitente
-  na suíte completa** (visto em 2026-11-03; passa isolado e na maioria das
-  rodadas completas). Mesma causa dos testes de schema de cliente/fornecedor
-  corrigidos no commit `a2d8fc5` — `await import()` dentro do teste sob a
-  carga da suíte paralela —, mas aqui o import dinâmico é necessário
-  (`vi.doMock("node:fs")` + `vi.resetModules()`), então a troca por import
-  estático não se aplica. Caminhos: aumentar o timeout só deste arquivo
-  (`describe(..., { timeout: 15_000 })`) ou trocar o `doMock` por
-  `vi.mock` hoisted com `mockReturnValueOnce` por teste.
 
 - **Teste de rollback do orçamento não exercita falha real de transação**
   (Fase 5, sub-projeto 1 — Orçamento, `salvarValoresOrcamentoDoAno`). O
@@ -197,16 +141,10 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   criar um terceiro `gerarPdf` ao lado de `gerarCsv`/`gerarExcel`, sem
   tocar nas rotas já existentes além de adicionar o novo `formato=pdf`.
 
-- **Wiring dos ~8 relatórios restantes.** O mecanismo genérico está
-  validado com 2 relatórios (contas a pagar/receber, fluxo de caixa
-  realizado). Os demais da lista original da Fase 6 — fluxo de caixa
-  projetado, conciliação bancária, orçado x realizado, caixa por centro
-  de custo/lucro/safra, obrigações e recebimentos futuros, movimentação
-  bancária, auditoria de alterações — ficam para wiring futuro repetitivo
-  sobre o mesmo `gerarCsv`/`gerarExcel`/`responderExport`/`ExportarLinks`.
-  "Necessidade de capital de giro" fica de fora até existir modelo de
-  dados para o conceito (mesma decisão já registrada para o Dashboard
-  executivo).
+- **"Necessidade de capital de giro" sem export** — fica de fora até existir
+  modelo de dados para o conceito (mesma decisão já registrada para o
+  Dashboard executivo). Todos os demais relatórios da lista original da
+  Fase 6 já exportam CSV/Excel (concluído em 2026-11-04).
 
 - **`?formato=` desconhecido cai silenciosamente em CSV.** Hoje só existem
   `csv`/`xlsx`, então qualquer outro valor (incluindo erro de digitação)
@@ -218,18 +156,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   toISOString().slice(0, 10)` — depois das 21h (horário de Brasília,
   UTC-3), o arquivo é nomeado com a data de amanhã. Cosmético, e
   consistente com a convenção UTC já usada em todo o projeto.
-
-- **Rótulo diferente entre tela e export do Fluxo de caixa.** A tabela usa
-  "Geração de caixa"; o export usa "Geração líquida" (nome que a spec
-  já definia). O export está de acordo com o desenho; a tela é que ficou
-  destoante — alinhar os dois nomes quando a tela for tocada de novo.
-
-- **`import * as Papa from "papaparse"` em `csv.ts` diverge do
-  `import Papa from "papaparse"` já usado em `importacaoTitulo.ts`.**
-  Ambos compilam (foi uma correção necessária de interop de módulo feita
-  pelo implementador da Task 1), mas os dois estilos convivendo no projeto
-  é uma pequena inconsistência — padronizar em um dos dois quando algum
-  desses arquivos for tocado de novo.
 
 - **`exceljs` é uma dependência pesada** (traz `archiver`, `unzipper`,
   `glob@7`, `fstream`, algumas já descontinuadas). Só é importado por
@@ -262,7 +188,8 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   dimensão) — este sub-projeto só aplicou o mecanismo a Contas a
   pagar/receber. Estender é wiring repetitivo sobre o mesmo padrão
   (`FiltroTitulos`-equivalente + `BarraDeFiltros`-equivalente por tela),
-  não redesenho.
+  não redesenho. Reavaliado em 2026-11-05: nenhuma tela por enquanto
+  (decisão do usuário) — só retomar com pedido de uma tela específica.
 
 ## API REST de automação (lançamentos via agente)
 

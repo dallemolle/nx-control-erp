@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,31 +30,27 @@ function formatarData(data: Date | null): string {
 export function ChavesApiDialog({ usuarioId }: { usuarioId: string }) {
   const [aberto, setAberto] = useState(false);
   const [chaves, setChaves] = useState<Chave[]>([]);
-  const [state, formAction, pendente] = useActionState(gerarChaveAction, ESTADO_INICIAL);
   // useActionState não expõe um jeito de resetar seu estado: o Dialog só esconde o
   // conteúdo (não desmonta), então state.chaveCompleta continuaria "vivo" de uma
   // geração anterior se fosse renderizado direto. Guardamos a chave recém-gerada
   // aqui, e limpamos explicitamente ao fechar o diálogo — reabrir nunca reexibe
   // uma chave antiga.
   const [chaveRecemGerada, setChaveRecemGerada] = useState<string | null>(null);
+  const [state, formAction, pendente] = useActionState(async (anterior: GerarChaveState, dados: FormData) => {
+    const resultado = await gerarChaveAction(anterior, dados);
+    if (resultado.chaveCompleta) setChaveRecemGerada(resultado.chaveCompleta);
+    if (resultado.sucesso) await recarregar();
+    return resultado;
+  }, ESTADO_INICIAL);
 
   async function recarregar() {
     setChaves(await listarChavesAction(usuarioId));
   }
 
-  useEffect(() => {
-    if (aberto) recarregar();
-  }, [aberto]);
-
-  useEffect(() => {
-    if (state.chaveCompleta) setChaveRecemGerada(state.chaveCompleta);
-    if (state.sucesso) recarregar();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.sucesso, state.chaveCompleta]);
-
   function aoAlternarAberto(novoAberto: boolean) {
     setAberto(novoAberto);
-    if (!novoAberto) setChaveRecemGerada(null);
+    if (novoAberto) recarregar();
+    else setChaveRecemGerada(null);
   }
 
   async function revogar(chaveId: string) {
