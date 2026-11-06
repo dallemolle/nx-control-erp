@@ -3,6 +3,12 @@ import * as Papa from "papaparse";
 export type ColunaExport<T> = {
   rotulo: string;
   valor: (linha: T) => string | number | Date;
+  /**
+   * Só muda a apresentação no PDF (CSV/Excel mantêm o número cru): número sem
+   * `tipo` sai como valor "1.234,56"; `inteiro` sai como está (ano, mês, nº de
+   * parcela); `percentual` sai "12,3%" (o valor já vem multiplicado por 100).
+   */
+  tipo?: "inteiro" | "percentual";
 };
 
 function formatarNumeroCsv(valor: number): string {

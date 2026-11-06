@@ -63,7 +63,9 @@ O botão "Importar CSV" permite cadastrar vários títulos de uma vez a partir d
 
 **Exportação**
 
-Os links "Exportar CSV" e "Exportar Excel", no topo da tela, geram um arquivo com uma linha por parcela (documento, contraparte, categoria, número da parcela, vencimento, valor atualizado e status). O arquivo exportado respeita os filtros que estiverem ativos na tela no momento — ou seja, se você filtrar por um fornecedor e exportar, o arquivo traz só as parcelas daquele fornecedor.
+Os links "Exportar CSV", "Exportar Excel" e "Exportar PDF", no topo da tela, geram um arquivo com uma linha por parcela (documento, contraparte, categoria, número da parcela, vencimento, valor atualizado e status). O arquivo exportado respeita os filtros que estiverem ativos na tela no momento — ou seja, se você filtrar por um fornecedor e exportar, o arquivo traz só as parcelas daquele fornecedor.
+
+O PDF é pensado para imprimir ou enviar: sai em A4 deitado, com o nome da empresa e da filial, os filtros aplicados, quem gerou e o número de cada página. CSV e Excel são melhores para fazer contas na planilha. Os mesmos três formatos aparecem em todos os relatórios que têm exportação (fluxo de caixa, orçamento, conciliação, auditoria etc.).
 
 **Ações sobre uma parcela**
 
@@ -149,7 +151,7 @@ Permite orçar um valor único por safra (sem grade mensal, já que cada safra t
 
 ### 4.4. Fiscal × gerencial
 
-Mostra, para a filial atual e o ano escolhido, quanto do movimento tem documento fiscal e quanto é negociado sem nota: entradas e saídas realizadas por mês (com o percentual gerencial), o que está em aberto hoje a pagar e a receber em cada classificação, os parceiros com maior valor em títulos gerenciais e a lista de **pendências fiscais** — títulos fiscais ainda sem tipo de documento, número, chave de acesso ou anexo. Clicar no documento leva à lista de títulos já filtrada pelo parceiro. Os dois relatórios (comparativo mensal e pendências) podem ser exportados em CSV ou Excel.
+Mostra, para a filial atual e o ano escolhido, quanto do movimento tem documento fiscal e quanto é negociado sem nota: entradas e saídas realizadas por mês (com o percentual gerencial), o que está em aberto hoje a pagar e a receber em cada classificação, os parceiros com maior valor em títulos gerenciais e a lista de **pendências fiscais** — títulos fiscais ainda sem tipo de documento, número, chave de acesso ou anexo. Clicar no documento leva à lista de títulos já filtrada pelo parceiro. Os dois relatórios (comparativo mensal e pendências) podem ser exportados em CSV, Excel ou PDF.
 
 ## 5. Cadastros
 

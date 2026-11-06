@@ -1,4 +1,12 @@
-function montarHref(baseHref: string, formato: "csv" | "xlsx", queryString?: string): string {
+import type { FormatoExport } from "@/lib/export/responder";
+
+const ROTULOS: Record<FormatoExport, string> = {
+  csv: "Exportar CSV",
+  xlsx: "Exportar Excel",
+  pdf: "Exportar PDF",
+};
+
+function montarHref(baseHref: string, formato: FormatoExport, queryString?: string): string {
   const separador = queryString ? "&" : "";
   return `${baseHref}?formato=${formato}${separador}${queryString ?? ""}`;
 }
@@ -6,12 +14,15 @@ function montarHref(baseHref: string, formato: "csv" | "xlsx", queryString?: str
 export function ExportarLinks({ baseHref, queryString }: { baseHref: string; queryString?: string }) {
   return (
     <div className="flex items-center gap-3 text-sm">
-      <a href={montarHref(baseHref, "csv", queryString)} className="text-primary underline-offset-4 hover:underline">
-        Exportar CSV
-      </a>
-      <a href={montarHref(baseHref, "xlsx", queryString)} className="text-primary underline-offset-4 hover:underline">
-        Exportar Excel
-      </a>
+      {(Object.keys(ROTULOS) as FormatoExport[]).map((formato) => (
+        <a
+          key={formato}
+          href={montarHref(baseHref, formato, queryString)}
+          className="text-primary underline-offset-4 hover:underline"
+        >
+          {ROTULOS[formato]}
+        </a>
+      ))}
     </div>
   );
 }

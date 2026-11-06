@@ -38,9 +38,11 @@ Contas a pagar/receber) e Auditoria — filtros e paginação (design em
   (`export/route.ts`) em cada tela, com link simples (`ExportarLinks`,
   sem JavaScript/prefetch).
 - Formatos: CSV (separador `;`, BOM UTF-8, decimal com vírgula — convenção
-  pt-BR) e Excel (células nativas de número/data). PDF ficou fora — mais
-  caro (paginação, cabeçalho/rodapé) e nenhum caso de uso real dos 2
-  relatórios de referência precisa dele.
+  pt-BR) e Excel (células nativas de número/data). PDF ficou fora da v1 e
+  entrou em 2026-11-05 (`gerarPdf` com `pdf-lib`: A4 paisagem, cabeçalho
+  com empresa/filial/filtros via `cabecalhoDoRelatorio`, paginação; o
+  `tipo` opcional da `ColunaExport` só afeta a apresentação no PDF).
+  `?formato=` desconhecido responde `400`.
 - 2 relatórios de referência: Contas a pagar/receber (uma linha por
   parcela) e Fluxo de caixa realizado (uma linha por sub-período). Os
   demais ~8 relatórios do escopo original (fluxo de caixa projetado,
