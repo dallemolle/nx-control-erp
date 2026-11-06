@@ -5,6 +5,8 @@ import { filtroTitulosDaUrl } from "../../_titulos/filtro-titulos-url";
 import { type ColunaExport } from "@/lib/export/csv";
 import { responderExport } from "@/lib/export/responder";
 import { camposFiscaisDoTitulo, COLUNAS_FISCAIS, type CamposFiscaisExport } from "../../_titulos/colunas-fiscais-export";
+import { descreverFiltroTitulos } from "../../_titulos/descrever-filtro-titulos";
+import { cabecalhoDoRelatorio } from "@/server/export/cabecalhoDoRelatorio";
 
 type LinhaExport = CamposFiscaisExport & {
   documento: string;
@@ -20,7 +22,7 @@ const COLUNAS: ColunaExport<LinhaExport>[] = [
   { rotulo: "Documento", valor: (l) => l.documento },
   { rotulo: "Fornecedor", valor: (l) => l.contraparte },
   { rotulo: "Categoria", valor: (l) => l.categoria },
-  { rotulo: "Nº parcela", valor: (l) => l.numeroParcela },
+  { rotulo: "Nº parcela", valor: (l) => l.numeroParcela, tipo: "inteiro" },
   { rotulo: "Vencimento", valor: (l) => l.vencimento },
   { rotulo: "Valor atualizado", valor: (l) => l.valorAtualizado },
   { rotulo: "Status", valor: (l) => l.status },
@@ -52,5 +54,11 @@ export async function GET(request: Request) {
   });
 
   const formato = url.searchParams.get("formato");
-  return responderExport(linhas, COLUNAS, { nomeArquivo: "contas-a-pagar", nomeAba: "Contas a pagar", formato });
+  return responderExport(linhas, COLUNAS, {
+    nomeArquivo: "contas-a-pagar",
+    nomeAba: "Contas a pagar",
+    formato,
+    cabecalhoPdf: () =>
+      cabecalhoDoRelatorio(sessao, { titulo: "Contas a pagar", filtros: descreverFiltroTitulos(filtros) }),
+  });
 }

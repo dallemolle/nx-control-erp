@@ -134,28 +134,17 @@ para ser retomado sem precisar reconstruir o raciocínio original.
 
 ## Relatórios exportáveis (Fase 6, sub-projeto 6b)
 
-- **Export em PDF.** Cortado da v1 — é o formato mais caro (layout de
-  página, cabeçalho/rodapé, paginação) e os 2 formatos escolhidos (CSV,
-  Excel) já cobrem os casos de uso reais levantados. O mecanismo genérico
-  (`ColunaExport<T>`) já existe em `src/lib/export/`; adicionar PDF é
-  criar um terceiro `gerarPdf` ao lado de `gerarCsv`/`gerarExcel`, sem
-  tocar nas rotas já existentes além de adicionar o novo `formato=pdf`.
-
 - **"Necessidade de capital de giro" sem export** — fica de fora até existir
   modelo de dados para o conceito (mesma decisão já registrada para o
   Dashboard executivo). Todos os demais relatórios da lista original da
-  Fase 6 já exportam CSV/Excel (concluído em 2026-11-04).
+  Fase 6 já exportam CSV/Excel/PDF (PDF concluído em 2026-11-05, junto com
+  o `400` para `?formato=` desconhecido e a data do arquivo em horário de
+  Brasília).
 
-- **`?formato=` desconhecido cai silenciosamente em CSV.** Hoje só existem
-  `csv`/`xlsx`, então qualquer outro valor (incluindo erro de digitação)
-  vira CSV sem aviso. Passa a importar quando `formato=pdf` existir —
-  nesse ponto, `responderExport` deveria recusar formatos que a rota ainda
-  não sabe gerar (ex.: `400`) em vez de mascarar como CSV.
-
-- **Data do nome do arquivo é calculada em UTC.** `new Date().
-  toISOString().slice(0, 10)` — depois das 21h (horário de Brasília,
-  UTC-3), o arquivo é nomeado com a data de amanhã. Cosmético, e
-  consistente com a convenção UTC já usada em todo o projeto.
+- **PDF da auditoria pode ficar longo.** O teto do export é 10.000 linhas
+  (`LIMITE_EXPORT_AUDITORIA`), o que no PDF dá centenas de páginas. Gera
+  sem erro, mas se virar uso comum vale um teto menor só para PDF ou um
+  aviso na tela para filtrar antes.
 
 - **`exceljs` é uma dependência pesada** (traz `archiver`, `unzipper`,
   `glob@7`, `fstream`, algumas já descontinuadas). Só é importado por

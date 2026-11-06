@@ -6,8 +6,16 @@ import { dataValida } from "../../_fluxo-de-caixa/data-valida";
 import { type ColunaExport } from "@/lib/export/csv";
 import { responderExport } from "@/lib/export/responder";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
+import { cabecalhoDoRelatorio, filtroDeClassificacao } from "@/server/export/cabecalhoDoRelatorio";
 
 const GRANULARIDADES_VALIDAS: Granularidade[] = ["DIA", "SEMANA", "MES", "ANO"];
+
+const ROTULOS_GRANULARIDADE: Record<Granularidade, string> = {
+  DIA: "Diária",
+  SEMANA: "Semanal",
+  MES: "Mensal",
+  ANO: "Anual",
+};
 
 function granularidadeValida(valor: string | null): Granularidade {
   return GRANULARIDADES_VALIDAS.includes(valor as Granularidade) ? (valor as Granularidade) : "MES";
@@ -61,5 +69,10 @@ export async function GET(request: Request) {
     nomeArquivo: classificacao ? `fluxo-de-caixa-${classificacao.toLowerCase()}` : "fluxo-de-caixa",
     nomeAba: "Fluxo de caixa",
     formato,
+    cabecalhoPdf: () =>
+      cabecalhoDoRelatorio(sessao, {
+        titulo: "Fluxo de caixa realizado",
+        filtros: [`Granularidade: ${ROTULOS_GRANULARIDADE[granularidade]}`, filtroDeClassificacao(classificacao)],
+      }),
   });
 }

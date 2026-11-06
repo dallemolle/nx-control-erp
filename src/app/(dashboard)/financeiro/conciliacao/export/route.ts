@@ -6,6 +6,7 @@ import type { StatusLinhaExtrato } from "@prisma/client";
 import { type ColunaExport } from "@/lib/export/csv";
 import { responderExport } from "@/lib/export/responder";
 import { STATUS_LABEL } from "../status-label";
+import { cabecalhoDoRelatorio } from "@/server/export/cabecalhoDoRelatorio";
 
 type LinhaExtrato = Awaited<ReturnType<typeof listarLinhasExtrato>>[number];
 
@@ -41,5 +42,10 @@ export async function GET(request: Request) {
     nomeArquivo: status ? `conciliacao-${status.toLowerCase().replace(/_/g, "-")}` : "conciliacao",
     nomeAba: "Conciliação",
     formato: url.searchParams.get("formato"),
+    cabecalhoPdf: () =>
+      cabecalhoDoRelatorio(sessao, {
+        titulo: "Conciliação bancária",
+        filtros: [status ? `Status: ${STATUS_LABEL[status] ?? status}` : null],
+      }),
   });
 }

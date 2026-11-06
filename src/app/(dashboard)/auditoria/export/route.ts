@@ -1,8 +1,11 @@
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { podeExecutar } from "@/server/auth/permissions";
-import { listarAuditoriaParaExport } from "@/server/services/auditoria";
+import { buscarOpcoesFiltroAuditoria, listarAuditoriaParaExport, type FiltroAuditoria } from "@/server/services/auditoria";
+import type { SessaoAtiva } from "@/server/auth/sessao";
 import { type ColunaExport } from "@/lib/export/csv";
 import { responderExport } from "@/lib/export/responder";
+import { cabecalhoDoRelatorio } from "@/server/export/cabecalhoDoRelatorio";
+import { formatarData } from "@/lib/formatacao";
 import { filtroAuditoriaDaUrl } from "../filtro-auditoria-url";
 
 type LogAuditoria = Awaited<ReturnType<typeof listarAuditoriaParaExport>>[number];
@@ -40,5 +43,27 @@ export async function GET(request: Request) {
     nomeArquivo: "auditoria",
     nomeAba: "Auditoria",
     formato: url.searchParams.get("formato"),
+    cabecalhoPdf: async () =>
+      cabecalhoDoRelatorio(sessao, {
+        titulo: "Auditoria",
+        consolidado: true,
+        filtros: await descreverFiltro(sessao, filtro),
+      }),
   });
+}
+
+/** Usuário e filial chegam como id na URL — o PDF mostra o nome. */
+async function descreverFiltro(sessao: SessaoAtiva, filtro: FiltroAuditoria): Promise<(string | null)[]> {
+  const opcoes = filtro.usuarioId || filtro.filialId ? await buscarOpcoesFiltroAuditoria(sessao) : null;
+  const nomeDe = (lista: { id: string; nome: string }[] | undefined, id: string) =>
+    lista?.find((item) => item.id === id)?.nome ?? id;
+
+  return [
+    filtro.entidade ? `Entidade: ${filtro.entidade}` : null,
+    filtro.acao ? `Ação: ${filtro.acao}` : null,
+    filtro.usuarioId ? `Usuário: ${nomeDe(opcoes?.usuarios, filtro.usuarioId)}` : null,
+    filtro.filialId ? `Filial: ${nomeDe(opcoes?.filiais, filtro.filialId)}` : null,
+    filtro.dataDe ? `De: ${formatarData(filtro.dataDe)}` : null,
+    filtro.dataAte ? `Até: ${formatarData(filtro.dataAte)}` : null,
+  ];
 }

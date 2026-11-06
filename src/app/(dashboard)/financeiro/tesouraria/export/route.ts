@@ -4,6 +4,7 @@ import { listarLancamentos } from "@/server/services/lancamentoBancario";
 import { type ColunaExport } from "@/lib/export/csv";
 import { responderExport } from "@/lib/export/responder";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
+import { cabecalhoDoRelatorio, filtroDeClassificacao } from "@/server/export/cabecalhoDoRelatorio";
 import { ROTULOS_CLASSIFICACAO_FISCAL, ROTULOS_TIPO_COMPROVANTE } from "@/lib/schemas/enums";
 
 type Lancamento = Awaited<ReturnType<typeof listarLancamentos>>[number];
@@ -47,5 +48,7 @@ export async function GET(request: Request) {
     nomeArquivo: classificacao ? `movimentacao-bancaria-${classificacao.toLowerCase()}` : "movimentacao-bancaria",
     nomeAba: "Movimentação bancária",
     formato: url.searchParams.get("formato"),
+    cabecalhoPdf: () =>
+      cabecalhoDoRelatorio(sessao, { titulo: "Movimentação bancária", filtros: [filtroDeClassificacao(classificacao)] }),
   });
 }

@@ -4,6 +4,7 @@ import { listarComparativoSafras, type LinhaComparativoSafra } from "@/server/se
 import { type ColunaExport } from "@/lib/export/csv";
 import { responderExport } from "@/lib/export/responder";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
+import { cabecalhoDoRelatorio, filtroDeClassificacao } from "@/server/export/cabecalhoDoRelatorio";
 
 const STATUS_LABEL: Record<LinhaComparativoSafra["status"], string> = {
   PLANEJADO: "Planejado",
@@ -21,6 +22,7 @@ const COLUNAS: ColunaExport<LinhaComparativoSafra>[] = [
   {
     rotulo: "Variação %",
     valor: (l) => (l.variacaoPercentualRealizado === null ? "" : l.variacaoPercentualRealizado * 100),
+    tipo: "percentual",
   },
 ];
 
@@ -38,5 +40,7 @@ export async function GET(request: Request) {
     nomeArquivo: classificacao ? `comparacao-safras-${classificacao.toLowerCase()}` : "comparacao-safras",
     nomeAba: "Comparação entre safras",
     formato: url.searchParams.get("formato"),
+    cabecalhoPdf: () =>
+      cabecalhoDoRelatorio(sessao, { titulo: "Comparação entre safras", filtros: [filtroDeClassificacao(classificacao)] }),
   });
 }
