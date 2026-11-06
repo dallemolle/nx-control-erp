@@ -4,6 +4,7 @@ import { listarPendenciasFiscais, obterComparativoMensal } from "@/server/servic
 import { ROTULOS_PENDENCIA_FISCAL, type PendenciaFiscal } from "@/lib/classificacaoFiscal";
 import { type ColunaExport } from "@/lib/export/csv";
 import { responderExport } from "@/lib/export/responder";
+import { cabecalhoDoRelatorio } from "@/server/export/cabecalhoDoRelatorio";
 
 type LinhaComparativo = {
   mes: number;
@@ -16,13 +17,13 @@ type LinhaComparativo = {
 };
 
 const COLUNAS_COMPARATIVO: ColunaExport<LinhaComparativo>[] = [
-  { rotulo: "Mês", valor: (l) => l.mes },
+  { rotulo: "Mês", valor: (l) => l.mes, tipo: "inteiro" },
   { rotulo: "Entradas fiscais", valor: (l) => l.entradasFiscal },
   { rotulo: "Entradas gerenciais", valor: (l) => l.entradasGerencial },
-  { rotulo: "% gerencial (entradas)", valor: (l) => l.percentualGerencialEntradas },
+  { rotulo: "% gerencial (entradas)", valor: (l) => l.percentualGerencialEntradas, tipo: "percentual" },
   { rotulo: "Saídas fiscais", valor: (l) => l.saidasFiscal },
   { rotulo: "Saídas gerenciais", valor: (l) => l.saidasGerencial },
-  { rotulo: "% gerencial (saídas)", valor: (l) => l.percentualGerencialSaidas },
+  { rotulo: "% gerencial (saídas)", valor: (l) => l.percentualGerencialSaidas, tipo: "percentual" },
 ];
 
 type LinhaPendencia = {
@@ -70,6 +71,11 @@ export async function GET(request: Request) {
       nomeArquivo: "pendencias-fiscais",
       nomeAba: "Pendências fiscais",
       formato,
+      cabecalhoPdf: () =>
+        cabecalhoDoRelatorio(sessao, {
+          titulo: "Pendências fiscais",
+          filtros: [pendencia ? `Pendência: ${ROTULOS_PENDENCIA_FISCAL[pendencia]}` : null],
+        }),
     });
   }
 
@@ -85,5 +91,6 @@ export async function GET(request: Request) {
     nomeArquivo: `fiscal-gerencial-${ano}`,
     nomeAba: "Fiscal x gerencial",
     formato,
+    cabecalhoPdf: () => cabecalhoDoRelatorio(sessao, { titulo: "Fiscal × gerencial", filtros: [`Ano: ${ano}`] }),
   });
 }

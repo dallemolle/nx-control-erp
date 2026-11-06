@@ -6,8 +6,11 @@ import { dataValida } from "../../_fluxo-de-caixa/data-valida";
 import { type ColunaExport } from "@/lib/export/csv";
 import { responderExport } from "@/lib/export/responder";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
+import { cabecalhoDoRelatorio, filtroDeClassificacao } from "@/server/export/cabecalhoDoRelatorio";
 
 const MODOS_VALIDOS: ModoJanelaProjetado[] = ["MOVEL", "ANO_CIVIL"];
+
+const ROTULOS_MODO: Record<ModoJanelaProjetado, string> = { MOVEL: "Móvel (12 meses)", ANO_CIVIL: "Ano civil" };
 
 function modoValido(valor: string | null): ModoJanelaProjetado {
   return MODOS_VALIDOS.includes(valor as ModoJanelaProjetado) ? (valor as ModoJanelaProjetado) : "MOVEL";
@@ -62,5 +65,10 @@ export async function GET(request: Request) {
     nomeArquivo: classificacao ? `fluxo-de-caixa-projetado-${classificacao.toLowerCase()}` : "fluxo-de-caixa-projetado",
     nomeAba: "Fluxo projetado",
     formato: url.searchParams.get("formato"),
+    cabecalhoPdf: () =>
+      cabecalhoDoRelatorio(sessao, {
+        titulo: "Fluxo de caixa projetado",
+        filtros: [`Janela: ${ROTULOS_MODO[modo]}`, filtroDeClassificacao(classificacao)],
+      }),
   });
 }

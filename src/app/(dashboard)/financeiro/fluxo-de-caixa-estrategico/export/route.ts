@@ -8,6 +8,7 @@ import {
 import { type ColunaExport } from "@/lib/export/csv";
 import { responderExport } from "@/lib/export/responder";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
+import { cabecalhoDoRelatorio, filtroDeClassificacao } from "@/server/export/cabecalhoDoRelatorio";
 
 const LABEL_CENARIO: Record<(typeof TIPOS_CENARIO)[number], string> = {
   BASE: "Base",
@@ -25,14 +26,14 @@ type LinhaExport = AnoProjetadoEstrategico & { cenario: string };
 function colunas(filtrado: boolean): ColunaExport<LinhaExport>[] {
   return [
     { rotulo: "Cenário", valor: (l) => l.cenario },
-    { rotulo: "Ano", valor: (l) => l.ano },
+    { rotulo: "Ano", valor: (l) => l.ano, tipo: "inteiro" },
     { rotulo: "Receita", valor: (l) => l.receita },
     { rotulo: "Custo operacional", valor: (l) => l.custoOperacional },
     { rotulo: "CAPEX", valor: (l) => l.capex },
     { rotulo: "Juros", valor: (l) => l.jurosSobreDivida },
     { rotulo: "Geração líquida", valor: (l) => l.geracaoLiquida },
     { rotulo: filtrado ? "Acumulado de caixa" : "Saldo de caixa", valor: (l) => l.saldoCaixa },
-    { rotulo: "Margem líquida %", valor: (l) => l.margemLiquida * 100 },
+    { rotulo: "Margem líquida %", valor: (l) => l.margemLiquida * 100, tipo: "percentual" },
   ];
 }
 
@@ -55,5 +56,11 @@ export async function GET(request: Request) {
       : "fluxo-de-caixa-estrategico",
     nomeAba: "Fluxo estratégico",
     formato: url.searchParams.get("formato"),
+    cabecalhoPdf: () =>
+      cabecalhoDoRelatorio(sessao, {
+        titulo: "Fluxo de caixa estratégico (5 anos)",
+        consolidado: true,
+        filtros: [filtroDeClassificacao(classificacao)],
+      }),
   });
 }

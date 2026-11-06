@@ -8,6 +8,7 @@ import {
 import { type ColunaExport } from "@/lib/export/csv";
 import { responderExport } from "@/lib/export/responder";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
+import { cabecalhoDoRelatorio, filtroDeClassificacao } from "@/server/export/cabecalhoDoRelatorio";
 
 const ROTULOS_DIMENSAO: Record<TipoDimensao, string> = {
   CENTRO_CUSTO: "Centro de custo",
@@ -65,5 +66,10 @@ export async function GET(request: Request) {
     }`,
     nomeAba: ROTULOS_DIMENSAO[dimensao],
     formato: url.searchParams.get("formato"),
+    cabecalhoPdf: () =>
+      cabecalhoDoRelatorio(sessao, {
+        titulo: `Fluxo de caixa por ${ROTULOS_DIMENSAO[dimensao].toLowerCase()}`,
+        filtros: [`Período: ${String(mes).padStart(2, "0")}/${ano}`, filtroDeClassificacao(classificacao)],
+      }),
   });
 }
