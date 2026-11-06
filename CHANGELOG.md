@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.9](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.8...nx-control-erp-v0.1.9) (2026-11-06)
+
+
+### Features
+
+* **export:** exportação em PDF em todos os relatórios ([6b5686c](https://github.com/dallemolle/nx-control-erp/commit/6b5686c073ebbbcd2b2fbf8589103e8659374283))
+* **export:** exportação em PDF em todos os relatórios ([93f03d3](https://github.com/dallemolle/nx-control-erp/commit/93f03d370c99d5b286b716a11d495fdf18c31128))
+
 ## [0.1.8](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.7...nx-control-erp-v0.1.8) (2026-11-05)
 
 
