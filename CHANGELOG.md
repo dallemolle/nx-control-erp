@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.10](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.9...nx-control-erp-v0.1.10) (2026-11-07)
+
+
+### Bug Fixes
+
+* **build:** deploy deixa de levar o projeto inteiro no pacote do serv… ([efbd5c4](https://github.com/dallemolle/nx-control-erp/commit/efbd5c4bd9dfb0591cdc523d6aa9bf11a34c4d49))
+* **build:** deploy deixa de levar o projeto inteiro no pacote do servidor ([4d77a8e](https://github.com/dallemolle/nx-control-erp/commit/4d77a8eba56b61e0e9d7a4ad6320c31818ce0492))
+
 ## [0.1.9](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.8...nx-control-erp-v0.1.9) (2026-11-06)
 
 
