@@ -243,4 +243,51 @@ describe("salvarValoresOrcamentoDoAno (integração)", () => {
       await limparFixtureFinanceiro(outraFixture);
     }
   });
+
+  // Falha real do Postgres no meio da transação: Decimal(18, 2) aceita até
+  // 10^16, então 10^17 estoura ("numeric field overflow") no mês indicado,
+  // depois que os meses anteriores já foram gravados dentro da transação.
+  const VALOR_QUE_ESTOURA_A_COLUNA = 1e17;
+
+  function valoresComFalhaNoMes(mesQueFalha: number, valorBase: number) {
+    return Array.from({ length: 12 }, (_, i) => ({
+      mes: i + 1,
+      valor: i + 1 === mesQueFalha ? VALOR_QUE_ESTOURA_A_COLUNA : valorBase,
+    }));
+  }
+
+  async function contarAuditoriaDeOrcamento() {
+    return prisma.auditLog.count({ where: { filialId: fixture.filialId, entidade: "Orcamento" } });
+  }
+
+  test("erro do banco no mês 7 desfaz os meses 1–6 já gravados e a auditoria deles (rollback real)", async () => {
+    const auditoriaAntes = await contarAuditoriaDeOrcamento();
+
+    await expect(
+      salvarValoresOrcamentoDoAno(fixture.sessao, fixture.categoriaFinanceiraId, 2029, valoresComFalhaNoMes(7, 500)),
+    ).rejects.toThrow(/overflow/i);
+
+    const salvos = await prisma.orcamento.findMany({
+      where: { filialId: fixture.filialId, categoriaFinanceiraId: fixture.categoriaFinanceiraId, ano: 2029 },
+    });
+    expect(salvos).toHaveLength(0);
+    expect(await contarAuditoriaDeOrcamento()).toBe(auditoriaAntes);
+  });
+
+  test("erro do banco no mês 12 mantém os valores anteriores de um ano já orçado (updates revertidos)", async () => {
+    const valoresOriginais = Array.from({ length: 12 }, (_, i) => ({ mes: i + 1, valor: 100 }));
+    await salvarValoresOrcamentoDoAno(fixture.sessao, fixture.categoriaFinanceiraId, 2030, valoresOriginais);
+    const auditoriaAntes = await contarAuditoriaDeOrcamento();
+
+    await expect(
+      salvarValoresOrcamentoDoAno(fixture.sessao, fixture.categoriaFinanceiraId, 2030, valoresComFalhaNoMes(12, 999)),
+    ).rejects.toThrow(/overflow/i);
+
+    const salvos = await prisma.orcamento.findMany({
+      where: { filialId: fixture.filialId, categoriaFinanceiraId: fixture.categoriaFinanceiraId, ano: 2030 },
+      orderBy: { mes: "asc" },
+    });
+    expect(salvos.map((o) => Number(o.valor))).toEqual(Array(12).fill(100));
+    expect(await contarAuditoriaDeOrcamento()).toBe(auditoriaAntes);
+  });
 });
