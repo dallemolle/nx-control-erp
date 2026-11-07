@@ -23,6 +23,12 @@ export type OpcoesFiltroAuditoria = {
 /** Teto do export: um filtro vazio numa empresa antiga não pode gerar um arquivo sem fim. */
 export const LIMITE_EXPORT_AUDITORIA = 10_000;
 
+/**
+ * Teto menor para o PDF: com o JSON de anterior/novo, 10.000 registros viram
+ * centenas de páginas que ninguém lê. Para o histórico longo, CSV/Excel.
+ */
+export const LIMITE_PDF_AUDITORIA = 2_000;
+
 function whereDaAuditoria(sessao: SessaoAtiva, filtro: FiltroAuditoria) {
   return {
     empresaId: sessao.empresaId,
@@ -66,16 +72,24 @@ export async function listarAuditoria(sessao: SessaoAtiva, filtro: FiltroAuditor
   return { logs, totalPaginas: Math.max(Math.ceil(total / TAMANHO_PAGINA), 1) };
 }
 
-/** Mesmo filtro da tela, sem paginação (até `LIMITE_EXPORT_AUDITORIA` registros, os mais recentes). */
-export async function listarAuditoriaParaExport(sessao: SessaoAtiva, filtro: FiltroAuditoria) {
+/**
+ * Mesmo filtro da tela, sem paginação: até `limite` registros, os mais
+ * recentes. `total` é quantos o filtro casa no banco — quando passa do
+ * limite, o arquivo saiu cortado e quem exporta pode avisar.
+ */
+export async function listarAuditoriaParaExport(
+  sessao: SessaoAtiva,
+  filtro: FiltroAuditoria,
+  limite: number = LIMITE_EXPORT_AUDITORIA,
+) {
   requirePermission(sessao.perfil, "auditoria:ler");
 
-  return prisma.auditLog.findMany({
-    where: whereDaAuditoria(sessao, filtro),
-    include: INCLUDE_AUDITORIA,
-    orderBy: ORDEM_AUDITORIA,
-    take: LIMITE_EXPORT_AUDITORIA,
-  });
+  const where = whereDaAuditoria(sessao, filtro);
+  const [logs, total] = await Promise.all([
+    prisma.auditLog.findMany({ where, include: INCLUDE_AUDITORIA, orderBy: ORDEM_AUDITORIA, take: limite }),
+    prisma.auditLog.count({ where }),
+  ]);
+  return { logs, total };
 }
 
 export async function buscarOpcoesFiltroAuditoria(sessao: SessaoAtiva): Promise<OpcoesFiltroAuditoria> {

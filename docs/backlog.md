@@ -130,11 +130,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   o `400` para `?formato=` desconhecido e a data do arquivo em horário de
   Brasília).
 
-- **PDF da auditoria pode ficar longo.** O teto do export é 10.000 linhas
-  (`LIMITE_EXPORT_AUDITORIA`), o que no PDF dá centenas de páginas. Gera
-  sem erro, mas se virar uso comum vale um teto menor só para PDF ou um
-  aviso na tela para filtrar antes.
-
 - **`exceljs` é uma dependência pesada** (traz `archiver`, `unzipper`,
   `glob@7`, `fstream`, algumas já descontinuadas). Só é importado por
   Route Handlers hoje (nunca por um componente client), o que é o correto
