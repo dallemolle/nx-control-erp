@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.11](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.10...nx-control-erp-v0.1.11) (2026-11-07)
+
+
+### Features
+
+* **auditoria:** PDF limitado aos 2.000 registros mais recentes, com … ([00d6b0b](https://github.com/dallemolle/nx-control-erp/commit/00d6b0b44489c9b75fac6209b3257d4ecab92236))
+* **auditoria:** PDF limitado aos 2.000 registros mais recentes, com aviso ([31b1d53](https://github.com/dallemolle/nx-control-erp/commit/31b1d538a7603592a750ae95048ed4b9e1d52a7e))
+
 ## [0.1.10](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.9...nx-control-erp-v0.1.10) (2026-11-07)
 
 
