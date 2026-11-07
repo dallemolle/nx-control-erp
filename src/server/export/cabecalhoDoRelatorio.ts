@@ -11,7 +11,13 @@ import type { FiltroClassificacao } from "@/lib/classificacaoFiscal";
  */
 export async function cabecalhoDoRelatorio(
   sessao: SessaoAtiva,
-  opcoes: { titulo: string; filtros?: (string | null | undefined | false)[]; consolidado?: boolean },
+  opcoes: {
+    titulo: string;
+    filtros?: (string | null | undefined | false)[];
+    consolidado?: boolean;
+    /** Linhas extras abaixo dos filtros (ex.: "arquivo cortado nos N mais recentes"). */
+    avisos?: string[];
+  },
 ): Promise<CabecalhoPdf> {
   const [empresa, filial] = await Promise.all([
     prisma.empresa.findUnique({ where: { id: sessao.empresaId }, select: { nomeFantasia: true } }),
@@ -26,7 +32,12 @@ export async function cabecalhoDoRelatorio(
 
   return {
     titulo: opcoes.titulo,
-    linhas: [escopo, ...(filtros.length > 0 ? [`Filtros: ${filtros.join(" · ")}`] : []), `Gerado por ${sessao.nome}`],
+    linhas: [
+      escopo,
+      ...(filtros.length > 0 ? [`Filtros: ${filtros.join(" · ")}`] : []),
+      ...(opcoes.avisos ?? []),
+      `Gerado por ${sessao.nome}`,
+    ],
   };
 }
 

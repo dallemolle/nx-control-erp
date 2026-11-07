@@ -219,9 +219,20 @@ describe("auditoria (empresa-scoped)", () => {
 
   test("listarAuditoriaParaExport traz todos os registros do filtro, sem paginar", async () => {
     // Reaproveita os 55 logs "PaginaTesteAUD" do teste anterior.
-    const logs = await listarAuditoriaParaExport(fixture.sessaoAdmin, { entidade: "PaginaTesteAUD" });
+    const { logs, total } = await listarAuditoriaParaExport(fixture.sessaoAdmin, { entidade: "PaginaTesteAUD" });
     expect(logs).toHaveLength(55);
+    expect(total).toBe(55);
     expect(logs.every((log) => log.entidade === "PaginaTesteAUD")).toBe(true);
+  });
+
+  test("listarAuditoriaParaExport com limite traz só os mais recentes e informa o total do filtro", async () => {
+    // Reaproveita os 55 logs "PaginaTesteAUD": o arquivo sai com 20, mas o total continua 55.
+    const { logs, total } = await listarAuditoriaParaExport(fixture.sessaoAdmin, { entidade: "PaginaTesteAUD" }, 20);
+    expect(logs).toHaveLength(20);
+    expect(total).toBe(55);
+
+    const todos = await listarAuditoria(fixture.sessaoAdmin, { entidade: "PaginaTesteAUD" }, 1);
+    expect(logs.map((log) => log.id)).toEqual(todos.logs.slice(0, 20).map((log) => log.id));
   });
 
   test("listarAuditoriaParaExport bloqueia perfil sem auditoria:ler", async () => {

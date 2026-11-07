@@ -1,14 +1,22 @@
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { podeExecutar } from "@/server/auth/permissions";
-import { buscarOpcoesFiltroAuditoria, listarAuditoriaParaExport, type FiltroAuditoria } from "@/server/services/auditoria";
+import {
+  buscarOpcoesFiltroAuditoria,
+  listarAuditoriaParaExport,
+  LIMITE_EXPORT_AUDITORIA,
+  LIMITE_PDF_AUDITORIA,
+  type FiltroAuditoria,
+} from "@/server/services/auditoria";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { type ColunaExport } from "@/lib/export/csv";
-import { responderExport } from "@/lib/export/responder";
+import { formatoExportDaUrl, responderExport } from "@/lib/export/responder";
 import { cabecalhoDoRelatorio } from "@/server/export/cabecalhoDoRelatorio";
 import { formatarData } from "@/lib/formatacao";
 import { filtroAuditoriaDaUrl } from "../filtro-auditoria-url";
 
-type LogAuditoria = Awaited<ReturnType<typeof listarAuditoriaParaExport>>[number];
+type LogAuditoria = Awaited<ReturnType<typeof listarAuditoriaParaExport>>["logs"][number];
+
+const NUMERO = new Intl.NumberFormat("pt-BR");
 
 /** Instante (não data de calendário): formatado no fuso de Brasília, como na tela. */
 const DATA_HORA = new Intl.DateTimeFormat("pt-BR", {
@@ -37,17 +45,26 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const filtro = filtroAuditoriaDaUrl((campo) => url.searchParams.get(campo) ?? undefined);
-  const logs = await listarAuditoriaParaExport(sessao, filtro);
+  const formato = url.searchParams.get("formato");
+  const limite = formatoExportDaUrl(formato) === "pdf" ? LIMITE_PDF_AUDITORIA : LIMITE_EXPORT_AUDITORIA;
+  const { logs, total } = await listarAuditoriaParaExport(sessao, filtro, limite);
 
   return responderExport(logs, COLUNAS, {
     nomeArquivo: "auditoria",
     nomeAba: "Auditoria",
-    formato: url.searchParams.get("formato"),
+    formato,
     cabecalhoPdf: async () =>
       cabecalhoDoRelatorio(sessao, {
         titulo: "Auditoria",
         consolidado: true,
         filtros: await descreverFiltro(sessao, filtro),
+        avisos:
+          total > logs.length
+            ? [
+                `Mostrando os ${NUMERO.format(logs.length)} registros mais recentes de ${NUMERO.format(total)}. ` +
+                  "Para o restante, filtre por período ou exporte em Excel/CSV.",
+              ]
+            : [],
       }),
   });
 }

@@ -1,15 +1,27 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission } from "@/server/auth/permissions";
-import { listarAuditoria, buscarOpcoesFiltroAuditoria } from "@/server/services/auditoria";
+import {
+  listarAuditoria,
+  buscarOpcoesFiltroAuditoria,
+  LIMITE_EXPORT_AUDITORIA,
+  LIMITE_PDF_AUDITORIA,
+} from "@/server/services/auditoria";
 import { filtroAuditoriaDaUrl, paginaDaUrl, queryStringDoFiltroAuditoria } from "./filtro-auditoria-url";
 import { ExportarLinks } from "../_shared/exportar-links";
 import { BarraDeFiltrosAuditoria } from "./barra-de-filtros";
 import { Paginacao } from "./paginacao";
 
+/** Instante, não data de calendário: fuso de Brasília explícito (o servidor roda em UTC), igual ao export. */
 function formatarData(data: Date) {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "medium" }).format(data);
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "medium",
+    timeZone: "America/Sao_Paulo",
+  }).format(data);
 }
+
+const NUMERO = new Intl.NumberFormat("pt-BR");
 
 function paramCru(valor: string | string[] | undefined): string | undefined {
   return Array.isArray(valor) ? valor[0] : valor;
@@ -49,7 +61,13 @@ export default async function AuditoriaPage({ searchParams }: { searchParams: Pr
 
       <BarraDeFiltrosAuditoria opcoes={opcoes} />
 
-      <ExportarLinks baseHref="/auditoria/export" queryString={queryStringDoFiltroAuditoria(get)} />
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <ExportarLinks baseHref="/auditoria/export" queryString={queryStringDoFiltroAuditoria(get)} />
+        <p className="text-xs text-muted-foreground">
+          PDF: até {NUMERO.format(LIMITE_PDF_AUDITORIA)} registros mais recentes · CSV e Excel: até{" "}
+          {NUMERO.format(LIMITE_EXPORT_AUDITORIA)}
+        </p>
+      </div>
 
       <Table>
         <TableHeader>
