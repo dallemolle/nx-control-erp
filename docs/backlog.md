@@ -121,17 +121,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   distante. Reconstruir a cadeia completa através de anos não exibidos
   ficou para uma iteração futura.
 
-## Qualidade de testes
-
-- **Teste de rollback do orçamento não exercita falha real de transação**
-  (Fase 5, sub-projeto 1 — Orçamento, `salvarValoresOrcamentoDoAno`). O
-  teste de rollback simula a falha mas não força um erro genuíno no meio
-  da transação Prisma — a correção da atomicidade foi verificada por
-  leitura direta do código (duas vezes, por revisores diferentes), não
-  por um teste que efetivamente prova o rollback sob falha real. Retomar
-  se o padrão de "atomic multi-row persist" for reusado em outro lugar e
-  quiser um teste mais forte de referência.
-
 ## Relatórios exportáveis (Fase 6, sub-projeto 6b)
 
 - **"Necessidade de capital de giro" sem export** — fica de fora até existir
