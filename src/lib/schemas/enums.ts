@@ -99,3 +99,36 @@ export const ROTULOS_TIPO_COMPROVANTE = {
  * são semanticamente diferentes, não devem ser unificados numa constante só.
  */
 export const SEM_VALOR = "__nenhum__";
+
+// Fase 7 — produção, estoque e vendas
+export const CATEGORIA_PRODUTO = ["FRUTO", "POLPA"] as const;
+export const CONSERVACAO = ["IN_NATURA", "RESFRIADO", "CONGELADO"] as const;
+export const TIPO_LOCAL_ARMAZENAMENTO = ["CAMARA_FRIA", "FREEZER", "REFRIGERADOR", "RECEPCAO", "OUTRO"] as const;
+export const CANAL_VENDA = [
+  "BATEDOR",
+  "ATACADO",
+  "VAREJO",
+  "RESTAURANTE",
+  "INDUSTRIA",
+  "CONSUMIDOR_FINAL",
+  "OUTRO",
+] as const;
+
+export const ROTULOS_CATEGORIA_PRODUTO = { FRUTO: "Fruto", POLPA: "Polpa" } as const;
+export const ROTULOS_CONSERVACAO = { IN_NATURA: "In natura", RESFRIADO: "Resfriado", CONGELADO: "Congelado" } as const;
+export const ROTULOS_TIPO_LOCAL = {
+  CAMARA_FRIA: "Câmara fria",
+  FREEZER: "Freezer",
+  REFRIGERADOR: "Refrigerador",
+  RECEPCAO: "Recepção",
+  OUTRO: "Outro",
+} as const;
+export const ROTULOS_CANAL_VENDA = {
+  BATEDOR: "Batedor / ponto de açaí",
+  ATACADO: "Atacado / distribuidor",
+  VAREJO: "Varejo / mercado",
+  RESTAURANTE: "Restaurante / lanchonete",
+  INDUSTRIA: "Indústria",
+  CONSUMIDOR_FINAL: "Consumidor final",
+  OUTRO: "Outro",
+} as const;
