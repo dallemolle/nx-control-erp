@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.12](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.11...nx-control-erp-v0.1.12) (2026-11-08)
+
+
+### Novidades
+
+* **ajuda:** tela de Novidades organizada por versão, sem duplicadas ([b400bf7](https://github.com/dallemolle/nx-control-erp/commit/b400bf7a3031ef53b2270e11e731883bb5a5e287))
+
 ## [0.1.11](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.10...nx-control-erp-v0.1.11) (2026-11-07)
 
 
