@@ -59,7 +59,7 @@ export function ConfiguracaoForm({
         <Card>
           <CardHeader>
             <CardTitle>Alertas de vencimento</CardTitle>
-            <CardDescription>Com quantos dias de antecedência o lote aparece como "vencendo".</CardDescription>
+            <CardDescription>Com quantos dias de antecedência o lote aparece como &ldquo;vencendo&rdquo;.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <Campo
