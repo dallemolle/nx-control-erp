@@ -31,14 +31,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   CVE não é alcançável pelo uso atual. Reavaliar quando `exceljs` lançar
   uma versão que atualize sua própria dependência de `uuid`.
 
-## Interface
-
-- **Menu lateral não recolhe no celular.** Em telas estreitas (~390px) a
-  sidebar ocupa quase toda a largura e o conteúdo fica espremido, com
-  rolagem horizontal — vale para todas as páginas. Precisa de um menu
-  recolhível (botão "☰") abaixo de um breakpoint. Visto em 2026-11-07 ao
-  revisar a tela "Novidades".
-
 ## Alertas
 
 - **Alerta de estouro na comparação entre safras** (Fase 5, sub-projeto

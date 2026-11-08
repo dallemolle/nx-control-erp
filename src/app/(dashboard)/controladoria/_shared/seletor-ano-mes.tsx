@@ -26,7 +26,7 @@ export function SeletorAnoMes({ ano, mes }: { ano: number; mes: number }) {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <Button type="button" variant="outline" size="sm" onClick={() => atualizar(deslocarAno(ano, -1), mes)}>
         Ano anterior
       </Button>
