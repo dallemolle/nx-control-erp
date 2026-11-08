@@ -13,7 +13,7 @@ function montarHref(baseHref: string, formato: FormatoExport, queryString?: stri
 
 export function ExportarLinks({ baseHref, queryString }: { baseHref: string; queryString?: string }) {
   return (
-    <div className="flex items-center gap-3 text-sm">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
       {(Object.keys(ROTULOS) as FormatoExport[]).map((formato) => (
         <a
           key={formato}

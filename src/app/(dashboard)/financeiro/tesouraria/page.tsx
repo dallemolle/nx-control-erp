@@ -54,7 +54,7 @@ export default async function TesourariaPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold">Tesouraria</h1>
           <p className="text-sm text-muted-foreground">
@@ -62,7 +62,7 @@ export default async function TesourariaPage({
           </p>
         </div>
         {podeEscrever && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <LancamentoDialogForm
               contasBancarias={opcoesContasBancarias}
               categorias={categorias}
@@ -110,7 +110,7 @@ export default async function TesourariaPage({
         })}
       </div>
 
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-sm font-medium">Lançamentos</h2>
         <div className="flex flex-wrap items-center gap-4">
           <ExportarLinks

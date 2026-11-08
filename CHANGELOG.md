@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.1.13](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.12...nx-control-erp-v0.1.13) (2026-11-08)
+
+
+### Correções
+
+* **interface:** sistema utilizável no celular, com menu em gaveta ([14ad0c4](https://github.com/dallemolle/nx-control-erp/commit/14ad0c4aae797d720bb105a56ab407eecce099c8))
+
+## [0.1.12](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.11...nx-control-erp-v0.1.12) (2026-11-08)
+
+
+### Novidades
+
+* **ajuda:** tela de Novidades organizada por versão, sem duplicadas ([b400bf7](https://github.com/dallemolle/nx-control-erp/commit/b400bf7a3031ef53b2270e11e731883bb5a5e287))
+
+## [0.1.11](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.10...nx-control-erp-v0.1.11) (2026-11-07)
+
+
+### Features
+
+* **auditoria:** PDF limitado aos 2.000 registros mais recentes, com … ([00d6b0b](https://github.com/dallemolle/nx-control-erp/commit/00d6b0b44489c9b75fac6209b3257d4ecab92236))
+* **auditoria:** PDF limitado aos 2.000 registros mais recentes, com aviso ([31b1d53](https://github.com/dallemolle/nx-control-erp/commit/31b1d538a7603592a750ae95048ed4b9e1d52a7e))
+
+## [0.1.10](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.9...nx-control-erp-v0.1.10) (2026-11-07)
+
+
+### Bug Fixes
+
+* **build:** deploy deixa de levar o projeto inteiro no pacote do serv… ([efbd5c4](https://github.com/dallemolle/nx-control-erp/commit/efbd5c4bd9dfb0591cdc523d6aa9bf11a34c4d49))
+* **build:** deploy deixa de levar o projeto inteiro no pacote do servidor ([4d77a8e](https://github.com/dallemolle/nx-control-erp/commit/4d77a8eba56b61e0e9d7a4ad6320c31818ce0492))
+
 ## [0.1.9](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.8...nx-control-erp-v0.1.9) (2026-11-06)
 
 

@@ -79,16 +79,21 @@ export default async function OrcamentoPage({
 
       <section className="space-y-2">
         <h2 className="text-base font-semibold">Valores orçados — {ano}</h2>
-        {categoriasUnicas.map((categoria) => (
-          <LinhaOrcamentoForm
-            key={categoria.id}
-            categoriaFinanceiraId={categoria.id}
-            categoriaNome={categoria.nome}
-            ano={ano}
-            valoresPorMes={categoria.valoresPorMes}
-            somenteLeitura={somenteLeitura}
-          />
-        ))}
+        {/* 12 campos por linha não cabem no celular: a grade rola sozinha, a página não. */}
+        <div className="overflow-x-auto">
+          <div className="w-max min-w-full">
+            {categoriasUnicas.map((categoria) => (
+              <LinhaOrcamentoForm
+                key={categoria.id}
+                categoriaFinanceiraId={categoria.id}
+                categoriaNome={categoria.nome}
+                ano={ano}
+                valoresPorMes={categoria.valoresPorMes}
+                somenteLeitura={somenteLeitura}
+              />
+            ))}
+          </div>
+        </div>
       </section>
 
       <section className="space-y-2">
