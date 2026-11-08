@@ -26,7 +26,7 @@ type Banco = {
 type Cliente = {
   id: string;
   nome: string;
-  cnpjCpf: string;
+  cnpjCpf: string | null;
   contato: string | null;
   email: string | null;
   telefone: string | null;
@@ -67,7 +67,7 @@ export function ClienteDialogForm({ cliente, bancos }: { cliente?: Cliente; banc
           </div>
           <div className="space-y-2">
             <Label htmlFor="cnpjCpf">CNPJ/CPF</Label>
-            <Input id="cnpjCpf" name="cnpjCpf" defaultValue={cliente?.cnpjCpf} required />
+            <Input id="cnpjCpf" name="cnpjCpf" defaultValue={cliente?.cnpjCpf ?? ""} required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="contato">Contato</Label>

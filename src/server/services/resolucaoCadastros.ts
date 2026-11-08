@@ -53,7 +53,10 @@ export async function carregarCadastrosParaResolucao(
 
   return {
     rotuloContraparte: tipo === "PAGAR" ? "Fornecedor" : "Cliente",
-    mapaContraparte: new Map(contrapartes.map((c) => [normalizarDocumento(c.cnpjCpf), c.id])),
+    // Cliente sem CPF/CNPJ (consumidor final) não é encontrável por documento.
+    mapaContraparte: new Map(
+      contrapartes.flatMap((c) => (c.cnpjCpf ? [[normalizarDocumento(c.cnpjCpf), c.id] as const] : [])),
+    ),
     mapaCategoria: new Map(categorias.map((c) => [normalizarChave(c.nome), c.id])),
     mapaCentroCusto: new Map(centrosCusto.map((c) => [normalizarChave(c.codigo), c.id])),
     mapaCentroLucro: new Map(centrosLucro.map((c) => [normalizarChave(c.codigo), c.id])),

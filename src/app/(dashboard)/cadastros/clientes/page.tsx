@@ -42,7 +42,7 @@ export default async function ClientesPage() {
           {clientes.map((cliente) => (
             <TableRow key={cliente.id}>
               <TableCell className="font-medium">{cliente.nome}</TableCell>
-              <TableCell>{cliente.cnpjCpf}</TableCell>
+              <TableCell>{cliente.cnpjCpf ?? "—"}</TableCell>
               <TableCell>{cliente.email || cliente.telefone || "—"}</TableCell>
               <TableCell>
                 <Badge variant={cliente.ativo ? "default" : "secondary"}>
