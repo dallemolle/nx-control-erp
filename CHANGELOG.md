@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.13](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.12...nx-control-erp-v0.1.13) (2026-11-08)
+
+
+### Correções
+
+* **interface:** sistema utilizável no celular, com menu em gaveta ([14ad0c4](https://github.com/dallemolle/nx-control-erp/commit/14ad0c4aae797d720bb105a56ab407eecce099c8))
+
 ## [0.1.12](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.11...nx-control-erp-v0.1.12) (2026-11-08)
 
 
