@@ -91,16 +91,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   visão consolidada por empresa, que depende da mesma solução do item
   acima.
 
-- **`filial.findMany` da consolidação não filtra `ativo: true`.** Uma
-  filial desativada ainda entra nos indicadores/gráficos consolidados.
-  Decisão consciente: mantém o mesmo comportamento de
-  `buscarAnoBaseConsolidado` (Fase 4), e é genuinamente discutível nos dois
-  sentidos — uma filial desativada pode ainda ter contas a pagar reais em
-  aberto que a visão consolidada deveria mostrar. Esta é a 3ª vez que essa
-  decisão aparece no código (mesma pergunta caberia num helper
-  compartilhado `buscarFiliaisDaEmpresa(empresaId)` que decidisse isso uma
-  vez só, em vez de replicar a escolha a cada novo serviço consolidado).
-
 ## Cobertura de relatórios
 
 - **Rollup hierárquico de Centro de Custo** (Fase 5, sub-projeto 2a). Se

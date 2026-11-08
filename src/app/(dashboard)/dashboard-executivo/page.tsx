@@ -11,15 +11,18 @@ import { EntradasSaidasChart } from "./entradas-saidas-chart";
 import { EvolucaoSaldoChart } from "./evolucao-saldo-chart";
 import { AgingChart } from "./aging-chart";
 import { formatarMoeda } from "@/lib/formatacao";
+import { filiaisDesativadasComPendencia } from "@/server/services/filiaisConsolidadas";
+import { AvisoFiliaisDesativadas } from "../_shared/aviso-filiais-desativadas";
 
 export default async function DashboardExecutivoPage() {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "dashboardExecutivo:ler");
 
-  const [indicadores, graficos, resumoFiscal] = await Promise.all([
+  const [indicadores, graficos, resumoFiscal, desativadas] = await Promise.all([
     buscarIndicadoresExecutivos(sessao),
     buscarGraficosExecutivos(sessao),
     buscarResumoFiscalGerencial(sessao),
+    filiaisDesativadasComPendencia(sessao.empresaId),
   ]);
 
   const cards = [
@@ -39,9 +42,11 @@ export default async function DashboardExecutivoPage() {
       <div>
         <h1 className="text-lg font-semibold">Dashboard executivo</h1>
         <p className="text-sm text-muted-foreground">
-          Consolidado de todas as filiais da empresa. Restrito a Administrador, Gestor e Auditor.
+          Consolidado das filiais ativas da empresa. Restrito a Administrador, Gestor e Auditor.
         </p>
       </div>
+
+      <AvisoFiliaisDesativadas filiais={desativadas} />
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
         {cards.map((card) => (

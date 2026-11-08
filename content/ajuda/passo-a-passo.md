@@ -4,7 +4,7 @@ Sistema de gestão financeira e controladoria para o agronegócio.
 
 ## 1. Introdução
 
-O nx-control-erp é um sistema de gestão financeira voltado para empresas do agronegócio, com controle de contas a pagar e a receber, conciliação bancária, fluxo de caixa, orçamento e relatórios gerenciais. O sistema organiza os dados em dois níveis: **Empresa** (a organização como um todo, dona do CNPJ raiz) e **Filial** (cada unidade operacional da empresa — uma fazenda, um escritório regional etc.). A maior parte do trabalho do dia a dia acontece dentro de uma filial específica; alguns relatórios (como o Dashboard executivo) consolidam os dados de todas as filiais da empresa automaticamente.
+O nx-control-erp é um sistema de gestão financeira voltado para empresas do agronegócio, com controle de contas a pagar e a receber, conciliação bancária, fluxo de caixa, orçamento e relatórios gerenciais. O sistema organiza os dados em dois níveis: **Empresa** (a organização como um todo, dona do CNPJ raiz) e **Filial** (cada unidade operacional da empresa — uma fazenda, um escritório regional etc.). A maior parte do trabalho do dia a dia acontece dentro de uma filial específica; alguns relatórios (como o Dashboard executivo) consolidam automaticamente os dados de todas as filiais ativas da empresa.
 
 O sistema também reconhece dimensões próprias do agronegócio, como **Safra** (um ciclo de produção, com data de início e fim próprias, podendo atravessar a virada do ano civil) e **Centro de custo/Centro de lucro**, permitindo analisar receitas e despesas por essas dimensões, além da categoria financeira tradicional.
 
@@ -205,7 +205,9 @@ Registra automaticamente toda alteração relevante feita no sistema — quem fe
 
 ### 7.1. Dashboard executivo
 
-Visão consolidada de todas as filiais da empresa, pensada para quem acompanha o negócio como um todo (Administrador, Gestor, Auditor). Reúne os principais indicadores financeiros (caixa disponível, contas a pagar/receber em aberto, inadimplência, geração de caixa do mês, obrigações dos próximos 7/30 dias, recebimentos esperados e saldo projetado), um bloco **Fiscal × gerencial** do mês (entradas fiscais e gerenciais, percentual gerencial e número de pendências fiscais) e três gráficos: entradas x saídas dos últimos 6 meses, evolução do saldo, e aging (distribuição por faixa de atraso/vencimento) das contas a pagar e a receber.
+Visão consolidada das filiais ativas da empresa, pensada para quem acompanha o negócio como um todo (Administrador, Gestor, Auditor). Reúne os principais indicadores financeiros (caixa disponível, contas a pagar/receber em aberto, inadimplência, geração de caixa do mês, obrigações dos próximos 7/30 dias, recebimentos esperados e saldo projetado), um bloco **Fiscal × gerencial** do mês (entradas fiscais e gerenciais, percentual gerencial e número de pendências fiscais) e três gráficos: entradas x saídas dos últimos 6 meses, evolução do saldo, e aging (distribuição por faixa de atraso/vencimento) das contas a pagar e a receber.
+
+Filiais desativadas não entram nesses números (nem no Fluxo de caixa estratégico). Se alguma delas ainda tiver parcelas em aberto ou saldo em caixa, um aviso no topo da tela mostra quais e quanto — para tratar essas pendências, um administrador pode reativar a filial em Administração → Filiais.
 
 ## 8. Glossário
 

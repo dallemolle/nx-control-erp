@@ -4,6 +4,7 @@ import type { SessaoAtiva } from "@/server/auth/sessao";
 import { registrarAuditoria, type ClientePrisma } from "@/server/audit/registrar";
 import type { TipoCenarioEstrategico } from "@prisma/client";
 import { buscarSaldoEmCaixaAteDasFiliais } from "./fluxoDeCaixa";
+import { idsDasFiliaisAtivas } from "./filiaisConsolidadas";
 import { whereLancamentoPorClassificacao, type FiltroClassificacao } from "./classificacaoFiscal";
 
 export type PremissasCenario = {
@@ -90,7 +91,7 @@ export async function garantirCenariosEstrategicos(empresaId: string, db: Client
 
 /**
  * Ano-base da projeção: realizado conciliado dos últimos 12 meses, somando
- * as filiais da empresa. Com `opcoes.classificacao`, receita e custo usam só
+ * as filiais ativas da empresa (ver `idsDasFiliaisAtivas`). Com `opcoes.classificacao`, receita e custo usam só
  * o movimento daquela classificação e o saldo de partida é 0 — a projeção
  * vira o *acumulado* que aquela classificação gera, porque o saldo bancário
  * é único e não se divide entre fiscal e gerencial (decisão FG5, igual ao
@@ -100,8 +101,7 @@ export async function buscarAnoBaseConsolidado(
   empresaId: string,
   opcoes: { classificacao?: FiltroClassificacao } = {},
 ): Promise<{ receitaBase: number; custoBase: number; saldoCaixaBase: number }> {
-  const filiais = await prisma.filial.findMany({ where: { empresaId }, select: { id: true } });
-  const filialIds = filiais.map((filial) => filial.id);
+  const filialIds = await idsDasFiliaisAtivas(empresaId);
   const hoje = new Date();
   const inicioJanela = new Date(hoje);
   inicioJanela.setUTCFullYear(inicioJanela.getUTCFullYear() - 1);
