@@ -1,0 +1,29 @@
+name: Título do PR
+
+# O título do PR vai para o corpo do merge commit. Se ele começar com
+# "feat:"/"fix:" etc., o release-please conta a mudança duas vezes no
+# CHANGELOG (o commit original já tem o prefixo). Branch com um único commit
+# faz o GitHub preencher o título com a mensagem do commit — daí esta checagem.
+
+on:
+  pull_request:
+    branches: [staging]
+    types: [opened, edited, reopened, synchronize]
+
+permissions: {}
+
+jobs:
+  titulo-sem-prefixo:
+    runs-on: ubuntu-latest
+    # PR de sincronização main → staging (traz o commit do release-please) fica de fora.
+    if: github.head_ref != 'main'
+    steps:
+      - name: Conferir título
+        env:
+          TITULO: ${{ github.event.pull_request.title }}
+        run: |
+          if printf '%s' "$TITULO" | grep -qiE '^(feat|fix|perf|refactor|docs|test|tests|chore|build|ci|style|revert)(\([^)]*\))?!?:'; then
+            echo "::error title=Título do PR com prefixo de commit::Tire o prefixo (ex.: 'feat(auditoria): ') do título do PR. Ele vai para o merge commit e o release-please duplica a linha no CHANGELOG. Use uma frase simples, ex.: 'PDF da auditoria limitado a 2.000 registros'."
+            exit 1
+          fi
+          echo "Título ok: $TITULO"
