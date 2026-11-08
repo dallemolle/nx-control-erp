@@ -4,6 +4,9 @@ import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { ClienteFormValues } from "@/lib/schemas/cliente";
 import { SEM_VALOR } from "@/lib/schemas/enums";
+import { comMensagemDeDuplicidade } from "./duplicidade";
+
+const MSG_DOCUMENTO_DUPLICADO = "Já existe um cliente com este CPF/CNPJ";
 
 function normalizarOpcional<T extends string>(valor: T | typeof SEM_VALOR | undefined): T | null {
   return valor && valor.length > 0 && valor !== SEM_VALOR ? valor : null;
@@ -36,17 +39,19 @@ export async function listarClientes(empresaId: string) {
 }
 
 export async function criarCliente(sessao: SessaoAtiva, dados: ClienteFormValues) {
-  requirePermission(sessao.perfil, "cadastro:escrever");
+  requirePermission(sessao.perfil, "cliente:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   const dadosNormalizados = {
     ...dados,
     ...camposBancariosNormalizados(dados),
     classificacaoFiscalPadrao: normalizarOpcional(dados.classificacaoFiscalPadrao),
+    canalVenda: normalizarOpcional(dados.canalVenda),
   };
-  const cliente = await prisma.cliente.create({
-    data: { ...dadosNormalizados, empresaId: sessao.empresaId },
-  });
+  const cliente = await comMensagemDeDuplicidade(
+    () => prisma.cliente.create({ data: { ...dadosNormalizados, empresaId: sessao.empresaId } }),
+    MSG_DOCUMENTO_DUPLICADO,
+  );
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
@@ -67,7 +72,7 @@ export async function atualizarCliente(
   id: string,
   dados: ClienteFormValues,
 ) {
-  requirePermission(sessao.perfil, "cadastro:escrever");
+  requirePermission(sessao.perfil, "cliente:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   const anterior = await prisma.cliente.findUniqueOrThrow({
@@ -77,8 +82,12 @@ export async function atualizarCliente(
     ...dados,
     ...camposBancariosNormalizados(dados),
     classificacaoFiscalPadrao: normalizarOpcional(dados.classificacaoFiscalPadrao),
+    canalVenda: normalizarOpcional(dados.canalVenda),
   };
-  const cliente = await prisma.cliente.update({ where: { id }, data: dadosNormalizados });
+  const cliente = await comMensagemDeDuplicidade(
+    () => prisma.cliente.update({ where: { id }, data: dadosNormalizados }),
+    MSG_DOCUMENTO_DUPLICADO,
+  );
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
@@ -102,6 +111,10 @@ export async function atualizarCliente(
       tipoContaTerceiro: anterior.tipoContaTerceiro,
       titularConta: anterior.titularConta,
       classificacaoFiscalPadrao: anterior.classificacaoFiscalPadrao,
+      canalVenda: anterior.canalVenda,
+      municipio: anterior.municipio,
+      enderecoEntrega: anterior.enderecoEntrega,
+      retiraNaPropriedade: anterior.retiraNaPropriedade,
     },
     novo: dadosNormalizados,
   });
@@ -110,7 +123,7 @@ export async function atualizarCliente(
 }
 
 export async function definirAtivoCliente(sessao: SessaoAtiva, id: string, ativo: boolean) {
-  requirePermission(sessao.perfil, "cadastro:escrever");
+  requirePermission(sessao.perfil, "cliente:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   await prisma.cliente.findUniqueOrThrow({ where: { id, empresaId: sessao.empresaId } });

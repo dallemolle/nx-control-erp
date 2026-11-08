@@ -30,6 +30,7 @@ type Fornecedor = {
   contato: string | null;
   email: string | null;
   telefone: string | null;
+  municipio: string | null;
   meioPagamento: (typeof MEIO_PAGAMENTO)[number] | null;
   tipoChavePix: (typeof TIPO_CHAVE_PIX)[number] | null;
   chavePix: string | null;
@@ -88,6 +89,10 @@ export function FornecedorDialogForm({
           <div className="space-y-2">
             <Label htmlFor="telefone">Telefone</Label>
             <Input id="telefone" name="telefone" defaultValue={fornecedor?.telefone ?? ""} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="municipio">Município</Label>
+            <Input id="municipio" name="municipio" defaultValue={fornecedor?.municipio ?? ""} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="classificacaoFiscalPadrao">Classificação padrão dos títulos</Label>

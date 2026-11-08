@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { cnpjCpfSchema, formatarCnpjCpf } from "./cnpjCpf";
+import { cnpjCpfOpcionalSchema, cnpjCpfSchema, formatarCnpjCpf } from "./cnpjCpf";
 
 describe("formatarCnpjCpf", () => {
   test("formata 11 dígitos como CPF (XXX.XXX.XXX-XX)", () => {
@@ -48,5 +48,17 @@ describe("cnpjCpfSchema", () => {
     if (!resultado.success) {
       expect(resultado.error.issues[0]?.message).toContain("11 (CPF) ou 14 (CNPJ)");
     }
+  });
+});
+
+describe("cnpjCpfOpcionalSchema", () => {
+  test("vazio ou só espaços vira null", () => {
+    expect(cnpjCpfOpcionalSchema.parse("")).toBeNull();
+    expect(cnpjCpfOpcionalSchema.parse("  ")).toBeNull();
+    expect(cnpjCpfOpcionalSchema.parse(undefined)).toBeNull();
+  });
+  test("preenchido é validado e formatado", () => {
+    expect(cnpjCpfOpcionalSchema.parse("12345678901")).toBe("123.456.789-01");
+    expect(cnpjCpfOpcionalSchema.safeParse("123").success).toBe(false);
   });
 });

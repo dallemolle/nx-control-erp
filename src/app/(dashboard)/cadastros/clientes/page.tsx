@@ -2,7 +2,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
-import { requirePermission, podeAlterarFilialAtiva } from "@/server/auth/permissions";
+import { requirePermission, podeEscreverCliente } from "@/server/auth/permissions";
+import { ROTULOS_CANAL_VENDA } from "@/lib/schemas/enums";
 import { listarClientes } from "@/server/services/cliente";
 import { listarBancos } from "@/server/services/banco";
 import { ClienteDialogForm } from "./cliente-dialog-form";
@@ -11,7 +12,7 @@ import { alternarAtivoClienteAction } from "./actions";
 export default async function ClientesPage() {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "cadastro:ler");
-  const podeEscrever = podeAlterarFilialAtiva(sessao.perfil, sessao.podeAlterarFilial);
+  const podeEscrever = podeEscreverCliente(sessao.perfil, sessao.podeAlterarFilial);
 
   const [clientes, bancos] = await Promise.all([
     listarClientes(sessao.empresaId),
@@ -33,6 +34,7 @@ export default async function ClientesPage() {
           <TableRow>
             <TableHead>Nome</TableHead>
             <TableHead>CNPJ/CPF</TableHead>
+            <TableHead>Canal</TableHead>
             <TableHead>Contato</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Ações</TableHead>
@@ -43,6 +45,7 @@ export default async function ClientesPage() {
             <TableRow key={cliente.id}>
               <TableCell className="font-medium">{cliente.nome}</TableCell>
               <TableCell>{cliente.cnpjCpf ?? "—"}</TableCell>
+              <TableCell>{cliente.canalVenda ? ROTULOS_CANAL_VENDA[cliente.canalVenda] : "—"}</TableCell>
               <TableCell>{cliente.email || cliente.telefone || "—"}</TableCell>
               <TableCell>
                 <Badge variant={cliente.ativo ? "default" : "secondary"}>

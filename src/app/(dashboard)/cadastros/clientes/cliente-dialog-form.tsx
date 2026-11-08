@@ -13,7 +13,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MEIO_PAGAMENTO, TIPO_CHAVE_PIX, TIPO_CONTA_TERCEIRO, SEM_VALOR } from "@/lib/schemas/enums";
+import {
+  CANAL_VENDA,
+  MEIO_PAGAMENTO,
+  ROTULOS_CANAL_VENDA,
+  TIPO_CHAVE_PIX,
+  TIPO_CONTA_TERCEIRO,
+  SEM_VALOR,
+} from "@/lib/schemas/enums";
 import { criarClienteAction, atualizarClienteAction, type FormState } from "./actions";
 import { useAcaoDoDialogo } from "../../_shared/use-acao-do-dialogo";
 
@@ -39,6 +46,10 @@ type Cliente = {
   tipoContaTerceiro: (typeof TIPO_CONTA_TERCEIRO)[number] | null;
   titularConta: string | null;
   classificacaoFiscalPadrao: "FISCAL" | "GERENCIAL" | null;
+  canalVenda: (typeof CANAL_VENDA)[number] | null;
+  municipio: string | null;
+  enderecoEntrega: string | null;
+  retiraNaPropriedade: boolean;
 };
 
 const ESTADO_INICIAL: FormState = {};
@@ -66,8 +77,11 @@ export function ClienteDialogForm({ cliente, bancos }: { cliente?: Cliente; banc
             <Input id="nome" name="nome" defaultValue={cliente?.nome} required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cnpjCpf">CNPJ/CPF</Label>
-            <Input id="cnpjCpf" name="cnpjCpf" defaultValue={cliente?.cnpjCpf ?? ""} required />
+            <Label htmlFor="cnpjCpf">CNPJ/CPF (opcional)</Label>
+            <Input id="cnpjCpf" name="cnpjCpf" defaultValue={cliente?.cnpjCpf ?? ""} />
+            <p className="text-xs text-muted-foreground">
+              Deixe em branco para consumidor final ou clientes diversos.
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="contato">Contato</Label>
@@ -98,6 +112,43 @@ export function ClienteDialogForm({ cliente, bancos }: { cliente?: Cliente; banc
               classificação.
             </p>
           </div>
+
+          <Separator />
+          <p className="text-sm font-medium">Vendas</p>
+
+          <div className="space-y-2">
+            <Label htmlFor="canalVenda">Canal de venda</Label>
+            <Select name="canalVenda" defaultValue={cliente?.canalVenda ?? SEM_VALOR}>
+              <SelectTrigger id="canalVenda" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={SEM_VALOR}>Nenhum</SelectItem>
+                {CANAL_VENDA.map((canal) => (
+                  <SelectItem key={canal} value={canal}>
+                    {ROTULOS_CANAL_VENDA[canal]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="municipio">Município</Label>
+            <Input id="municipio" name="municipio" defaultValue={cliente?.municipio ?? ""} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="enderecoEntrega">Endereço de entrega</Label>
+            <Input id="enderecoEntrega" name="enderecoEntrega" defaultValue={cliente?.enderecoEntrega ?? ""} />
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="retiraNaPropriedade"
+              defaultChecked={cliente?.retiraNaPropriedade ?? false}
+              className="size-4"
+            />
+            Retira na propriedade (o pedido não gera entrega)
+          </label>
 
           <Separator />
           <p className="text-sm font-medium">Dados bancários</p>

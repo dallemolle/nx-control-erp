@@ -25,3 +25,9 @@ export const cnpjCpfSchema = z
     message: "CNPJ/CPF deve ter 11 (CPF) ou 14 (CNPJ) dígitos",
   })
   .transform(formatarCnpjCpf);
+
+/** CNPJ/CPF opcional (cliente consumidor final): vazio vira `null`; preenchido segue `cnpjCpfSchema`. */
+export const cnpjCpfOpcionalSchema = z.preprocess(
+  (v) => (typeof v === "string" && v.trim() !== "" ? v : null),
+  cnpjCpfSchema.nullable(),
+);
