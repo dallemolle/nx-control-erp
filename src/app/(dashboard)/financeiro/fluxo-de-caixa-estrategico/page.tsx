@@ -8,6 +8,8 @@ import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
 import { AvisoVisaoFiltrada } from "../_fluxo-de-caixa/aviso-visao-filtrada";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 import { formatarMoeda } from "@/lib/formatacao";
+import { filiaisDesativadasComPendencia } from "@/server/services/filiaisConsolidadas";
+import { AvisoFiliaisDesativadas } from "../../_shared/aviso-filiais-desativadas";
 
 const LABEL_CENARIO: Record<(typeof TIPOS_CENARIO)[number], string> = {
   BASE: "Base",
@@ -28,7 +30,10 @@ export default async function FluxoDeCaixaEstrategicoPage({
     Array.isArray(params.classificacao) ? params.classificacao[0] : params.classificacao,
   );
 
-  const { cenarios, projecoes } = await listarProjecaoEstrategica(sessao, { classificacao });
+  const [{ cenarios, projecoes }, desativadas] = await Promise.all([
+    listarProjecaoEstrategica(sessao, { classificacao }),
+    filiaisDesativadasComPendencia(sessao.empresaId),
+  ]);
 
   const somenteLeitura = !podeExecutar(sessao.perfil, "planejamentoEstrategico:escrever");
 
@@ -37,7 +42,7 @@ export default async function FluxoDeCaixaEstrategicoPage({
       <div>
         <h1 className="text-lg font-semibold">Fluxo de caixa estratégico</h1>
         <p className="text-sm text-muted-foreground">
-          Projeção de 5 anos por cenário, consolidando todas as filiais
+          Projeção de 5 anos por cenário, consolidando as filiais ativas
           da empresa a partir do fluxo de caixa realizado dos últimos 12
           meses. Não considera prazo de recebimento/pagamento, capital
           de giro nem amortização de dívida (juros incidem sobre o saldo
@@ -54,6 +59,7 @@ export default async function FluxoDeCaixaEstrategicoPage({
       </div>
 
       <AvisoVisaoFiltrada classificacao={classificacao} />
+      <AvisoFiliaisDesativadas filiais={desativadas} />
 
       {TIPOS_CENARIO.map((tipo) => (
         <section key={tipo} className="space-y-4 rounded-lg border p-4">

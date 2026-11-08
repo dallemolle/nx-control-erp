@@ -5,6 +5,7 @@ import type { StatusParcela } from "@prisma/client";
 import { buscarSaldoEmCaixaAteDasFiliais, fimDoDiaUTC } from "./fluxoDeCaixa";
 import { saldoRemanescenteParcela } from "./fluxoDeCaixaProjetado";
 import { buscarPendenciasFiscaisDaFilial, percentualGerencial } from "./relatorioFiscalGerencial";
+import { idsDasFiliaisAtivas } from "./filiaisConsolidadas";
 
 export type IndicadoresExecutivos = {
   caixaDisponivel: number;
@@ -22,11 +23,6 @@ const STATUS_ABERTO: StatusParcela[] = ["EM_ABERTO", "A_VENCER", "VENCIDO", "PAR
 
 function inicioDoMes(ano: number, mes: number): Date {
   return new Date(Date.UTC(ano, mes - 1, 1));
-}
-
-async function idsDasFiliais(empresaId: string): Promise<string[]> {
-  const filiais = await prisma.filial.findMany({ where: { empresaId }, select: { id: true } });
-  return filiais.map((filial) => filial.id);
 }
 
 /** Parcelas em aberto das filiais, só com os campos que o dashboard usa. */
@@ -72,7 +68,7 @@ function totalDoTipo(somas: { tipo: string; _sum: { valor: unknown } }[], tipo: 
 export async function buscarIndicadoresExecutivos(sessao: SessaoAtiva): Promise<IndicadoresExecutivos> {
   requirePermission(sessao.perfil, "dashboardExecutivo:ler");
 
-  const filialIds = await idsDasFiliais(sessao.empresaId);
+  const filialIds = await idsDasFiliaisAtivas(sessao.empresaId);
   const hoje = new Date();
   const inicioDeHoje = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()));
   const em7Dias = fimDoDiaUTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate() + 7);
@@ -201,7 +197,7 @@ async function buscarAgingConsolidado(filialIds: string[], inicioDeHoje: Date): 
 export async function buscarGraficosExecutivos(sessao: SessaoAtiva): Promise<GraficosExecutivos> {
   requirePermission(sessao.perfil, "dashboardExecutivo:ler");
 
-  const filialIds = await idsDasFiliais(sessao.empresaId);
+  const filialIds = await idsDasFiliaisAtivas(sessao.empresaId);
   const hoje = new Date();
   const inicioDeHoje = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()));
 
@@ -249,7 +245,7 @@ export type ResumoFiscalGerencial = {
 export async function buscarResumoFiscalGerencial(sessao: SessaoAtiva): Promise<ResumoFiscalGerencial> {
   requirePermission(sessao.perfil, "dashboardExecutivo:ler");
 
-  const filialIds = await idsDasFiliais(sessao.empresaId);
+  const filialIds = await idsDasFiliaisAtivas(sessao.empresaId);
   const hoje = new Date();
   const inicioMesAtual = inicioDoMes(hoje.getUTCFullYear(), hoje.getUTCMonth() + 1);
 
