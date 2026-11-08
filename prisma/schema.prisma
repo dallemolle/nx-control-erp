@@ -13,6 +13,8 @@ enum Perfil {
   GESTOR
   AUDITOR
   CONSULTA
+  PRODUCAO
+  VENDAS
 }
 
 enum TipoCategoriaFinanceira {

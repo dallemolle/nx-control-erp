@@ -19,7 +19,18 @@ export type Acao =
   | "planejamentoEstrategico:escrever"
   | "orcamento:ler"
   | "orcamento:escrever"
-  | "dashboardExecutivo:ler";
+  | "dashboardExecutivo:ler"
+  // Fase 7 — produção, estoque e vendas
+  | "cadastroProducao:escrever"
+  | "cliente:escrever"
+  | "producao:configurar"
+  | "producao:ler"
+  | "producao:escrever"
+  | "estoque:ajustar"
+  | "venda:ler"
+  | "venda:escrever"
+  | "venda:cancelar"
+  | "venda:liberarVencido";
 
 export class PermissionError extends Error {
   constructor(perfil: Perfil, acao: Acao) {
@@ -47,6 +58,11 @@ const PERMISSOES: Record<Perfil, ReadonlySet<Acao> | "TODAS"> = {
     "conciliacao:ler",
     "orcamento:ler",
     "orcamento:escrever",
+    "cliente:escrever",
+    "producao:ler",
+    "venda:ler",
+    "venda:escrever",
+    "venda:cancelar",
   ]),
   TESOURARIA: new Set([
     "cadastro:escrever",
@@ -59,6 +75,9 @@ const PERMISSOES: Record<Perfil, ReadonlySet<Acao> | "TODAS"> = {
     "conciliacao:ler",
     "conciliacao:escrever",
     "orcamento:ler",
+    "cliente:escrever",
+    "producao:ler",
+    "venda:ler",
   ]),
   GESTOR: new Set([
     "cadastro:ler",
@@ -70,6 +89,9 @@ const PERMISSOES: Record<Perfil, ReadonlySet<Acao> | "TODAS"> = {
     "planejamentoEstrategico:escrever",
     "orcamento:ler",
     "dashboardExecutivo:ler",
+    "producao:ler",
+    "venda:ler",
+    "venda:liberarVencido",
   ]),
   AUDITOR: new Set([
     "cadastro:ler",
@@ -80,6 +102,8 @@ const PERMISSOES: Record<Perfil, ReadonlySet<Acao> | "TODAS"> = {
     "planejamentoEstrategico:ler",
     "orcamento:ler",
     "dashboardExecutivo:ler",
+    "producao:ler",
+    "venda:ler",
   ]),
   CONSULTA: new Set([
     "cadastro:ler",
@@ -87,7 +111,18 @@ const PERMISSOES: Record<Perfil, ReadonlySet<Acao> | "TODAS"> = {
     "lancamento:ler",
     "conciliacao:ler",
     "orcamento:ler",
+    "producao:ler",
+    "venda:ler",
   ]),
+  PRODUCAO: new Set([
+    "cadastro:ler",
+    "cadastroProducao:escrever",
+    "producao:ler",
+    "producao:escrever",
+    "estoque:ajustar",
+    "venda:ler",
+  ]),
+  VENDAS: new Set(["cadastro:ler", "cliente:escrever", "producao:ler", "venda:ler", "venda:escrever"]),
 };
 
 export function podeExecutar(perfil: Perfil, acao: Acao): boolean {
@@ -137,4 +172,16 @@ export function podeEscreverConciliacao(perfil: Perfil, podeAlterarFilial: boole
 
 export function podeEscreverOrcamento(perfil: Perfil, podeAlterarFilial: boolean): boolean {
   return podeExecutar(perfil, "orcamento:escrever") && podeAlterarFilial;
+}
+
+export function podeEscreverCadastroProducao(perfil: Perfil, podeAlterarFilial: boolean): boolean {
+  return podeExecutar(perfil, "cadastroProducao:escrever") && podeAlterarFilial;
+}
+
+export function podeEscreverCliente(perfil: Perfil, podeAlterarFilial: boolean): boolean {
+  return podeExecutar(perfil, "cliente:escrever") && podeAlterarFilial;
+}
+
+export function podeConfigurarProducao(perfil: Perfil, podeAlterarFilial: boolean): boolean {
+  return podeExecutar(perfil, "producao:configurar") && podeAlterarFilial;
 }

@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import type { Perfil } from "@prisma/client";
 import {
   requirePermission,
   PermissionError,
@@ -7,6 +8,11 @@ import {
   podeBaixarTitulo,
   podeAprovarBaixa,
   podeEscreverOrcamento,
+  podeExecutar,
+  podeEscreverCadastroProducao,
+  podeEscreverCliente,
+  podeConfigurarProducao,
+  type Acao,
 } from "./permissions";
 
 describe("requirePermission", () => {
@@ -154,5 +160,62 @@ describe("permissões de dashboard executivo", () => {
     for (const perfil of ["FINANCEIRO", "TESOURARIA", "CONSULTA"] as const) {
       expect(() => requirePermission(perfil, "dashboardExecutivo:ler")).toThrow(PermissionError);
     }
+  });
+});
+
+const ACOES_FASE_7: Acao[] = [
+  "cadastroProducao:escrever",
+  "cliente:escrever",
+  "producao:configurar",
+  "producao:ler",
+  "producao:escrever",
+  "estoque:ajustar",
+  "venda:ler",
+  "venda:escrever",
+  "venda:cancelar",
+  "venda:liberarVencido",
+];
+
+const ESPERADO_FASE_7: Record<Exclude<Perfil, "ADMINISTRADOR">, Acao[]> = {
+  FINANCEIRO: ["cliente:escrever", "producao:ler", "venda:ler", "venda:escrever", "venda:cancelar"],
+  TESOURARIA: ["cliente:escrever", "producao:ler", "venda:ler"],
+  GESTOR: ["producao:ler", "venda:ler", "venda:liberarVencido"],
+  AUDITOR: ["producao:ler", "venda:ler"],
+  CONSULTA: ["producao:ler", "venda:ler"],
+  PRODUCAO: ["cadastroProducao:escrever", "producao:ler", "producao:escrever", "estoque:ajustar", "venda:ler"],
+  VENDAS: ["cliente:escrever", "producao:ler", "venda:ler", "venda:escrever"],
+};
+
+describe("matriz da Fase 7 (produção, estoque e vendas)", () => {
+  for (const [perfil, permitidas] of Object.entries(ESPERADO_FASE_7) as [Perfil, Acao[]][]) {
+    test(`${perfil} tem exatamente as ações esperadas da Fase 7`, () => {
+      const obtidas = ACOES_FASE_7.filter((acao) => podeExecutar(perfil, acao));
+      expect(obtidas.sort()).toEqual([...permitidas].sort());
+    });
+  }
+
+  test("ADMINISTRADOR tem todas", () => {
+    expect(ACOES_FASE_7.every((acao) => podeExecutar("ADMINISTRADOR", acao))).toBe(true);
+  });
+
+  test("PRODUCAO e VENDAS leem cadastros e não tocam no financeiro", () => {
+    for (const perfil of ["PRODUCAO", "VENDAS"] as const) {
+      expect(podeExecutar(perfil, "cadastro:ler")).toBe(true);
+      expect(podeExecutar(perfil, "cadastro:escrever")).toBe(false);
+      for (const acao of ["titulo:ler", "lancamento:ler", "conciliacao:ler", "orcamento:ler"] as const) {
+        expect(podeExecutar(perfil, acao)).toBe(false);
+      }
+    }
+  });
+
+  test("helpers respeitam perfil e filial somente leitura", () => {
+    expect(podeEscreverCadastroProducao("PRODUCAO", true)).toBe(true);
+    expect(podeEscreverCadastroProducao("PRODUCAO", false)).toBe(false);
+    expect(podeEscreverCadastroProducao("FINANCEIRO", true)).toBe(false);
+    expect(podeEscreverCliente("VENDAS", true)).toBe(true);
+    expect(podeEscreverCliente("VENDAS", false)).toBe(false);
+    expect(podeEscreverCliente("CONSULTA", true)).toBe(false);
+    expect(podeConfigurarProducao("ADMINISTRADOR", true)).toBe(true);
+    expect(podeConfigurarProducao("PRODUCAO", true)).toBe(false);
   });
 });
