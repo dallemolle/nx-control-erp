@@ -359,7 +359,10 @@ Produção e um Vendas, conferindo menu e acesso negado ao financeiro.
 
 ## 8. Migração
 
-Uma migration: enums novos, `Perfil` + 2 valores, 6 tabelas novas,
-`clientes.cnpj_cpf` sem `NOT NULL`, colunas novas em `clientes` e
-`fornecedores`. Nenhum dado existente muda de valor. Rollback: as tabelas
+Duas migrations:
+
+- enums novos, 6 tabelas novas, `clientes.cnpjCpf` sem `NOT NULL` e
+  colunas novas em `clientes` e `fornecedores`;
+- `Perfil` + 2 valores, numa migration separada, porque um valor novo de
+  enum não pode ser usado na mesma transação em que é criado. Nenhum dado existente muda de valor. Rollback: as tabelas
 novas ficam vazias em produção até alguém cadastrar.
