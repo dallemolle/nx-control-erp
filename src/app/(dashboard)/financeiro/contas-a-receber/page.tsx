@@ -69,12 +69,12 @@ export default async function ContasAReceberPage({ searchParams }: { searchParam
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold">Contas a receber</h1>
           <p className="text-sm text-muted-foreground">Títulos e parcelas a receber da filial ativa.</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <ExportarLinks baseHref="/financeiro/contas-a-receber/export" queryString={queryString} />
           {podeEscrever && (
             <TituloDialogForm

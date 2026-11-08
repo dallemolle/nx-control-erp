@@ -6,6 +6,7 @@ import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { obterVersaoInfo } from "@/lib/versao";
 import { corDeTextoContrastante, tomDestaque } from "@/lib/corContraste";
 import { Sidebar } from "./sidebar";
+import { BotaoMenuLateral, MenuLateralProvider } from "./menu-lateral-context";
 import { ThemeToggle } from "./theme-toggle";
 import { sair } from "./actions";
 
@@ -27,57 +28,64 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     : undefined;
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar
-        perfil={sessao.perfil}
-        versaoInfo={versaoInfo}
-        estilo={estiloSidebar}
-        logoUrl={empresa.logoUrl}
-      />
-      <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-app-header-foreground/10 bg-app-header px-6 py-3 text-app-header-foreground">
-          <div className="text-sm">
-            <p className="font-medium">
-              {empresa.nomeFantasia} · {filial.nome}
-            </p>
-            <p className="text-xs text-app-header-foreground/70">
-              {sessao.nome} · {sessao.perfil}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button
-              render={<Link href="/selecionar-empresa" />}
-              nativeButton={false}
-              variant="ghost"
-              size="sm"
-              className="text-app-header-foreground hover:bg-app-header-foreground/10 hover:text-app-header-foreground"
-            >
-              Trocar empresa
-            </Button>
-            <Button
-              render={<Link href="/selecionar-filial" />}
-              nativeButton={false}
-              variant="ghost"
-              size="sm"
-              className="text-app-header-foreground hover:bg-app-header-foreground/10 hover:text-app-header-foreground"
-            >
-              Trocar filial
-            </Button>
-            <form action={sair}>
+    <MenuLateralProvider>
+      <div className="flex min-h-screen">
+        <Sidebar
+          perfil={sessao.perfil}
+          versaoInfo={versaoInfo}
+          estilo={estiloSidebar}
+          logoUrl={empresa.logoUrl}
+        />
+        {/* min-w-0: sem ele, uma tabela larga estica a coluna e a página inteira rola na horizontal. */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="flex items-center justify-between gap-3 border-b border-app-header-foreground/10 bg-app-header px-4 py-3 text-app-header-foreground md:px-6">
+            <div className="flex min-w-0 items-center gap-2">
+              <BotaoMenuLateral className="-ml-1 shrink-0 text-app-header-foreground hover:bg-app-header-foreground/10 hover:text-app-header-foreground md:hidden" />
+              <div className="min-w-0 text-sm">
+                <p className="truncate font-medium">
+                  {empresa.nomeFantasia} · {filial.nome}
+                </p>
+                <p className="truncate text-xs text-app-header-foreground/70">
+                  {sessao.nome} · {sessao.perfil}
+                </p>
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <ThemeToggle />
+              {/* No celular estes dois vão para o rodapé do menu lateral. */}
               <Button
-                type="submit"
-                variant="outline"
+                render={<Link href="/selecionar-empresa" />}
+                nativeButton={false}
+                variant="ghost"
                 size="sm"
-                className="border-app-header-foreground/30 text-app-header-foreground hover:bg-app-header-foreground/10 hover:text-app-header-foreground"
+                className="hidden text-app-header-foreground hover:bg-app-header-foreground/10 hover:text-app-header-foreground sm:inline-flex"
               >
-                Sair
+                Trocar empresa
               </Button>
-            </form>
-          </div>
-        </header>
-        <main className="flex-1 p-6">{children}</main>
+              <Button
+                render={<Link href="/selecionar-filial" />}
+                nativeButton={false}
+                variant="ghost"
+                size="sm"
+                className="hidden text-app-header-foreground hover:bg-app-header-foreground/10 hover:text-app-header-foreground sm:inline-flex"
+              >
+                Trocar filial
+              </Button>
+              <form action={sair}>
+                <Button
+                  type="submit"
+                  variant="outline"
+                  size="sm"
+                  className="border-app-header-foreground/30 text-app-header-foreground hover:bg-app-header-foreground/10 hover:text-app-header-foreground"
+                >
+                  Sair
+                </Button>
+              </form>
+            </div>
+          </header>
+          <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>
+        </div>
       </div>
-    </div>
+    </MenuLateralProvider>
   );
 }
