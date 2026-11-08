@@ -12,6 +12,7 @@ atualizada conforme o trabalho avança.
 | 4 | [Fluxo de caixa](./fase-4-fluxo-de-caixa.md) | 🟢 Concluída |
 | 5 | [Controladoria e orçamento](./fase-5-controladoria.md) | 🟢 Concluída |
 | 6 | [Gestão (dashboards, relatórios, auditoria, aprovações)](./fase-6-gestao.md) | 🟢 Concluída |
+| 7 | [Produção, estoque e vendas](./fase-7-producao-estoque-vendas.md) | 🟡 Em desenho |
 
 ## Como isso é organizado
 
