@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.14](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.13...nx-control-erp-v0.1.14) (2026-11-08)
+
+
+### Novidades
+
+* **dashboard:** consolidados somam só filiais ativas, com aviso de pendências ([9ba9c98](https://github.com/dallemolle/nx-control-erp/commit/9ba9c983066a9aa18eee54584bdaa1e970ddc28f))
+
 ## [0.1.13](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.12...nx-control-erp-v0.1.13) (2026-11-08)
 
 
