@@ -1,6 +1,7 @@
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeConfigurarProducao } from "@/server/auth/permissions";
 import { obterConfiguracaoProducao } from "@/server/services/configuracaoProducao";
+import { prisma } from "@/server/db/client";
 import { ConfiguracaoForm } from "./configuracao-form";
 
 export default async function ConfiguracaoProducaoPage() {
@@ -8,7 +9,14 @@ export default async function ConfiguracaoProducaoPage() {
   requirePermission(sessao.perfil, "producao:configurar");
   const somenteLeitura = !podeConfigurarProducao(sessao.perfil, sessao.podeAlterarFilial);
 
-  const valores = await obterConfiguracaoProducao(sessao.filialId);
+  const [valores, categoriasDespesa] = await Promise.all([
+    obterConfiguracaoProducao(sessao.filialId),
+    prisma.categoriaFinanceira.findMany({
+      where: { filialId: sessao.filialId, tipo: "DESPESA", ativo: true },
+      select: { id: true, nome: true },
+      orderBy: { nome: "asc" },
+    }),
+  ]);
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -21,7 +29,7 @@ export default async function ConfiguracaoProducaoPage() {
       {somenteLeitura ? (
         <p className="text-sm text-muted-foreground">Você não tem permissão de alteração nesta filial.</p>
       ) : null}
-      <ConfiguracaoForm valores={valores} somenteLeitura={somenteLeitura} />
+      <ConfiguracaoForm valores={valores} somenteLeitura={somenteLeitura} categoriasDespesa={categoriasDespesa} />
     </div>
   );
 }

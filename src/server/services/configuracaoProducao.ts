@@ -11,6 +11,10 @@ export type ConfiguracaoProducaoValores = {
   branqueamentoTempoMinS: number;
   /** Fração: 0,03 = 3%. */
   toleranciaBalancoMassa: number;
+  /** Categoria (DESPESA) dos títulos a pagar gerados pela compra de fruto. */
+  categoriaCompraFrutoId: string | null;
+  /** Vencimento padrão da compra de fruto, em dias após a recepção. */
+  prazoPagamentoProdutorDias: number;
 };
 
 export const CONFIGURACAO_PRODUCAO_PADRAO: ConfiguracaoProducaoValores = {
@@ -20,6 +24,8 @@ export const CONFIGURACAO_PRODUCAO_PADRAO: ConfiguracaoProducaoValores = {
   branqueamentoTemperaturaMinC: 80,
   branqueamentoTempoMinS: 10,
   toleranciaBalancoMassa: 0.03,
+  categoriaCompraFrutoId: null,
+  prazoPagamentoProdutorDias: 0,
 };
 
 /** Configuração gravada da filial, ou os padrões se ainda não foi salva (sem gravar). */
@@ -33,12 +39,22 @@ export async function obterConfiguracaoProducao(filialId: string): Promise<Confi
     branqueamentoTemperaturaMinC: Number(c.branqueamentoTemperaturaMinC),
     branqueamentoTempoMinS: c.branqueamentoTempoMinS,
     toleranciaBalancoMassa: Number(c.toleranciaBalancoMassa),
+    categoriaCompraFrutoId: c.categoriaCompraFrutoId,
+    prazoPagamentoProdutorDias: c.prazoPagamentoProdutorDias,
   };
 }
 
 export async function salvarConfiguracaoProducao(sessao: SessaoAtiva, dados: ConfiguracaoProducaoValores) {
   requirePermission(sessao.perfil, "producao:configurar");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
+
+  if (dados.categoriaCompraFrutoId) {
+    const categoria = await prisma.categoriaFinanceira.findFirst({
+      where: { id: dados.categoriaCompraFrutoId, filialId: sessao.filialId, tipo: "DESPESA" },
+      select: { id: true },
+    });
+    if (!categoria) throw new Error("Categoria de compra de fruto inválida");
+  }
 
   const anterior = await obterConfiguracaoProducao(sessao.filialId);
   await prisma.configuracaoProducao.upsert({

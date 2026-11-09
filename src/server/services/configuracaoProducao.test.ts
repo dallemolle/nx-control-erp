@@ -64,3 +64,70 @@ describe("configuração de produção", () => {
     expect(configuracaoProducaoSchema.safeParse({ ...base, alertaVencimentoResfriadoDias: "-1" }).success).toBe(false);
   });
 });
+
+describe("configuração de produção - compra de fruto (7b)", () => {
+  let fx: FixtureProducao;
+  beforeAll(async () => {
+    fx = await criarFixtureProducao("config7b");
+  });
+  afterAll(async () => {
+    await fx.limpar();
+  });
+
+  test("salvar grava categoria de compra e prazo", async () => {
+    const categoria = await prisma.categoriaFinanceira.create({
+      data: { filialId: fx.filialAId, nome: "Compra de fruto", tipo: "DESPESA" },
+    });
+    await salvarConfiguracaoProducao(fx.sessao("ADMINISTRADOR"), {
+      ...CONFIGURACAO_PRODUCAO_PADRAO,
+      categoriaCompraFrutoId: categoria.id,
+      prazoPagamentoProdutorDias: 7,
+    });
+    expect(await obterConfiguracaoProducao(fx.filialAId)).toMatchObject({
+      categoriaCompraFrutoId: categoria.id,
+      prazoPagamentoProdutorDias: 7,
+    });
+  });
+
+  test("recusa categoria de outra filial", async () => {
+    const deOutra = await prisma.categoriaFinanceira.create({
+      data: { filialId: fx.filialBId, nome: "Compra B", tipo: "DESPESA" },
+    });
+    await expect(
+      salvarConfiguracaoProducao(fx.sessao("ADMINISTRADOR"), {
+        ...CONFIGURACAO_PRODUCAO_PADRAO,
+        categoriaCompraFrutoId: deOutra.id,
+      }),
+    ).rejects.toThrow("Categoria de compra de fruto inválida");
+  });
+
+  test("recusa categoria de receita", async () => {
+    const receita = await prisma.categoriaFinanceira.create({
+      data: { filialId: fx.filialAId, nome: "Venda", tipo: "RECEITA" },
+    });
+    await expect(
+      salvarConfiguracaoProducao(fx.sessao("ADMINISTRADOR"), {
+        ...CONFIGURACAO_PRODUCAO_PADRAO,
+        categoriaCompraFrutoId: receita.id,
+      }),
+    ).rejects.toThrow("Categoria de compra de fruto inválida");
+  });
+
+  test("schema: prazo negativo falha e categoria 'nenhuma' vira null", () => {
+    const base = {
+      registroAdepara: "",
+      alertaVencimentoCongeladoDias: "30",
+      alertaVencimentoResfriadoDias: "1",
+      branqueamentoTemperaturaMinC: "80",
+      branqueamentoTempoMinS: "10",
+      toleranciaBalancoMassaPercentual: "3",
+      categoriaCompraFrutoId: "__nenhum__",
+      prazoPagamentoProdutorDias: "0",
+    };
+    expect(configuracaoProducaoSchema.parse(base)).toMatchObject({
+      categoriaCompraFrutoId: null,
+      prazoPagamentoProdutorDias: 0,
+    });
+    expect(configuracaoProducaoSchema.safeParse({ ...base, prazoPagamentoProdutorDias: "-1" }).success).toBe(false);
+  });
+});
