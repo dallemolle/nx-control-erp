@@ -114,7 +114,7 @@ export async function criarLancamentoManual(sessao: SessaoAtiva, dados: Lancamen
   requirePermission(sessao.perfil, "lancamento:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
-  await buscarContaDaFilial(sessao.filialId, dados.contaBancariaId);
+  const conta = await buscarContaDaFilial(sessao.filialId, dados.contaBancariaId);
 
   const centroCustoId = normalizarOpcional(dados.centroCustoId);
   const centroLucroId = normalizarOpcional(dados.centroLucroId);
@@ -142,6 +142,8 @@ export async function criarLancamentoManual(sessao: SessaoAtiva, dados: Lancamen
     classificacaoFiscal,
     tipoComprovante,
     numeroComprovante: normalizarOpcional(dados.numeroComprovante),
+    // Dinheiro em espécie não tem extrato: entra direto no realizado.
+    conciliado: conta.tipo === "CAIXA",
     usuarioId: sessao.usuarioId,
   };
 
@@ -165,8 +167,8 @@ export async function criarTransferencia(sessao: SessaoAtiva, dados: Transferenc
   requirePermission(sessao.perfil, "lancamento:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
-  await buscarContaDaFilial(sessao.filialId, dados.contaOrigemId);
-  await buscarContaDaFilial(sessao.filialId, dados.contaDestinoId);
+  const contaOrigem = await buscarContaDaFilial(sessao.filialId, dados.contaOrigemId);
+  const contaDestino = await buscarContaDaFilial(sessao.filialId, dados.contaDestinoId);
 
   const transferenciaId = randomUUID();
 
@@ -183,6 +185,8 @@ export async function criarTransferencia(sessao: SessaoAtiva, dados: Transferenc
         transferenciaId,
         // Transferência não é receita nem despesa: fica fora dos filtros Fiscal/Gerencial.
         classificacaoFiscal: null,
+        // Só o lado da conta Caixa nasce conciliado; o lado do banco espera o extrato.
+        conciliado: contaOrigem.tipo === "CAIXA",
         usuarioId: sessao.usuarioId,
       },
     }),
@@ -197,6 +201,7 @@ export async function criarTransferencia(sessao: SessaoAtiva, dados: Transferenc
         origem: "TRANSFERENCIA",
         transferenciaId,
         classificacaoFiscal: null,
+        conciliado: contaDestino.tipo === "CAIXA",
         usuarioId: sessao.usuarioId,
       },
     }),

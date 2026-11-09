@@ -97,6 +97,9 @@ export async function importarExtratoOfx(sessao: SessaoAtiva, contaBancariaId: s
   if (!conta) {
     throw new Error("Conta bancária não pertence à filial ativa");
   }
+  if (conta.tipo === "CAIXA") {
+    throw new Error("Conta Caixa não recebe extrato: os lançamentos dela já entram conciliados");
+  }
 
   const conteudo = await arquivo.text();
   const transacoes = parseOfx(conteudo);

@@ -17,6 +17,7 @@ import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
 import { BadgeClassificacao } from "../../_shared/badge-classificacao";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
+import { nomeDaContaBancaria } from "@/lib/contaBancaria";
 
 const ORIGEM_LABEL: Record<string, string> = {
   MANUAL: "Manual",
@@ -49,7 +50,7 @@ export default async function TesourariaPage({
 
   const opcoesContasBancarias = resumoContas.map(({ conta }) => ({
     id: conta.id,
-    nome: `${conta.banco.nome} - Ag ${conta.agencia}/CC ${conta.conta}`,
+    nome: nomeDaContaBancaria(conta),
   }));
 
   return (
@@ -84,7 +85,7 @@ export default async function TesourariaPage({
             <Card key={conta.id}>
               <CardHeader>
                 <CardTitle className="text-sm font-medium">
-                  {conta.banco.nome} - Ag {conta.agencia}/CC {conta.conta}
+                  {nomeDaContaBancaria(conta)}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-1 text-sm">
@@ -138,8 +139,7 @@ export default async function TesourariaPage({
             <TableRow key={lancamento.id}>
               <TableCell>{formatarData(lancamento.data)}</TableCell>
               <TableCell>
-                {lancamento.contaBancaria.banco.nome} - Ag {lancamento.contaBancaria.agencia}/CC{" "}
-                {lancamento.contaBancaria.conta}
+                {nomeDaContaBancaria(lancamento.contaBancaria)}
               </TableCell>
               <TableCell>
                 <Badge variant={lancamento.tipo === "ENTRADA" ? "default" : "secondary"}>

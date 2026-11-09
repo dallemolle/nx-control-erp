@@ -99,6 +99,11 @@ export async function aprovarBaixa(sessao: SessaoAtiva, baixaId: string) {
     });
     await recalcularEPersistirStatusParcela(anterior.parcelaId, tx);
 
+    const conta = await tx.contaBancaria.findUniqueOrThrow({
+      where: { id: anterior.contaBancariaId },
+      select: { tipo: true },
+    });
+
     const lancamento = await tx.lancamentoBancario.create({
       data: {
         filialId: sessao.filialId,
@@ -117,6 +122,8 @@ export async function aprovarBaixa(sessao: SessaoAtiva, baixaId: string) {
         numeroComprovante: parcela.titulo.numeroDocumentoFiscal,
         origem: "BAIXA",
         baixaId: baixaAtualizada.id,
+        // Pago/recebido em dinheiro (conta Caixa): entra direto no realizado, sem extrato.
+        conciliado: conta.tipo === "CAIXA",
         usuarioId: sessao.usuarioId,
       },
     });
