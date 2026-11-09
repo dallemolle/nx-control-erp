@@ -1,6 +1,6 @@
 # Fase 7a — Fundação de produção, estoque e vendas
 
-Data: 2026-11-08 · Status: aguardando revisão
+Data: 2026-11-08 · Status: implementada
 
 Primeiro sub-projeto da Fase 7 (ver
 [plano de entrega](../../modulos/producao-estoque-vendas/09-plano-de-entrega.md)).
