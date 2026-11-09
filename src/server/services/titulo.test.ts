@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { prisma } from "@/server/db/client";
-import { FilialSomenteLeituraError } from "@/server/auth/permissions";
+import { FilialSomenteLeituraError, PermissionError } from "@/server/auth/permissions";
 import { SEM_VALOR } from "@/lib/schemas/enums";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
-import { criarTitulo, atualizarTitulo, listarTitulos, alterarVencimentoParcela, cancelarParcela, parcelaBateFiltroDeParcela } from "./titulo";
+import { criarTitulo, criarTituloInterno, atualizarTitulo, listarTitulos, alterarVencimentoParcela, cancelarParcela, parcelaBateFiltroDeParcela } from "./titulo";
 import { renegociarParcela } from "./renegociacao";
 
 describe("parcelaBateFiltroDeParcela (pura)", () => {
@@ -719,5 +719,50 @@ describe("titulo (filial-scoped)", () => {
     expect(tituloFiltrado).toBeDefined();
     expect(tituloFiltrado?.parcelas).toHaveLength(2);
     expect(tituloFiltrado?.parcelas.map((p) => p.numero).sort()).toEqual([1, 2]);
+  });
+});
+
+describe("criarTituloInterno (núcleo usado por outros módulos)", () => {
+  let fixture: FixtureFinanceiro;
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("INTERNO", "CONSULTA");
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fixture);
+  });
+
+  test("cria título sem exigir titulo:escrever, com auditoria", async () => {
+    const titulo = await criarTituloInterno(
+      { empresaId: fixture.empresaId, filialId: fixture.filialId, usuarioId: fixture.usuarioId },
+      "PAGAR",
+      {
+        contraparteId: fixture.fornecedorId,
+        documento: "RF-FA-261109-01",
+        dataEmissao: new Date("2026-11-09"),
+        dataCompetencia: new Date("2026-11-09"),
+        categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+        parcelas: [{ numero: 1, dataVencimento: new Date("2026-11-16"), valorOriginal: 240 }],
+      },
+      prisma,
+    );
+    expect(titulo.parcelas).toHaveLength(1);
+    expect(Number(titulo.parcelas[0].valorOriginal)).toBe(240);
+    const auditoria = await prisma.auditLog.count({ where: { entidade: "Titulo", entidadeId: titulo.id, acao: "CRIAR" } });
+    expect(auditoria).toBe(1);
+  });
+
+  test("criarTitulo continua exigindo titulo:escrever", async () => {
+    await expect(
+      criarTitulo(fixture.sessao, "PAGAR", {
+        contraparteId: fixture.fornecedorId,
+        documento: "X",
+        dataEmissao: new Date(),
+        dataCompetencia: new Date(),
+        categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+        parcelas: [{ numero: 1, dataVencimento: new Date(), valorOriginal: 1 }],
+      }),
+    ).rejects.toThrow(PermissionError);
   });
 });
