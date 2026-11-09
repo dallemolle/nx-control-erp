@@ -62,6 +62,20 @@ describe("resolução de cadastros por identificador natural", () => {
     expect(campos.has("cnpjCpf")).toBe(true);
   });
 
+  test("cliente sem CPF/CNPJ não quebra o mapa e o cliente com documento continua resolvido", async () => {
+    await prisma.cliente.create({
+      data: { empresaId: fixture.empresaId, nome: "Consumidor final", cnpjCpf: null },
+    });
+    const cadastros = await carregarCadastrosParaResolucao(fixture.sessao, "RECEBER");
+    const clienteComDoc = await prisma.cliente.findFirstOrThrow({
+      where: { empresaId: fixture.empresaId, cnpjCpf: { not: null } },
+    });
+    const erros: string[] = [];
+    expect(resolverContraparte(cadastros, clienteComDoc.cnpjCpf!, erros, new Set())).toBe(clienteComDoc.id);
+    expect(erros).toEqual([]);
+    expect(cadastros.mapaContraparte.size).toBe(1);
+  });
+
   test("resolverContraparte com entrada vazia não gera erro", async () => {
     const cadastros = await carregarCadastrosParaResolucao(fixture.sessao, "PAGAR");
     const erros: string[] = [];

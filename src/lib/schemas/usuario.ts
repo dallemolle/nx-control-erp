@@ -7,7 +7,20 @@ export const PERFIS = [
   "GESTOR",
   "AUDITOR",
   "CONSULTA",
+  "PRODUCAO",
+  "VENDAS",
 ] as const;
+
+export const ROTULOS_PERFIL: Record<(typeof PERFIS)[number], string> = {
+  ADMINISTRADOR: "Administrador",
+  FINANCEIRO: "Financeiro",
+  TESOURARIA: "Tesouraria",
+  GESTOR: "Gestor",
+  AUDITOR: "Auditor",
+  CONSULTA: "Consulta",
+  PRODUCAO: "Produção",
+  VENDAS: "Vendas",
+};
 
 export const verificarEmailSchema = z.object({
   email: z.string().trim().email("Email inválido"),

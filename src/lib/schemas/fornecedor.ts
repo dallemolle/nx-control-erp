@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CLASSIFICACAO_FISCAL, MEIO_PAGAMENTO, TIPO_CHAVE_PIX, TIPO_CONTA_TERCEIRO, SEM_VALOR } from "./enums";
+import { textoOpcional } from "./campos";
 import { cnpjCpfSchema } from "@/lib/cnpjCpf";
 
 export const fornecedorSchema = z
@@ -9,6 +10,7 @@ export const fornecedorSchema = z
     contato: z.string().trim().optional().or(z.literal("")),
     email: z.string().trim().email("Email inválido").optional().or(z.literal("")),
     telefone: z.string().trim().optional().or(z.literal("")),
+    municipio: textoOpcional,
     meioPagamento: z.enum(MEIO_PAGAMENTO).optional().or(z.literal(SEM_VALOR)),
     tipoChavePix: z.enum(TIPO_CHAVE_PIX).optional().or(z.literal(SEM_VALOR)),
     chavePix: z.string().trim().optional().or(z.literal("")),

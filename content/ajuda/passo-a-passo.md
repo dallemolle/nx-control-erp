@@ -30,7 +30,7 @@ Depois de escolher a empresa e a filial, você chega à primeira tela liberada p
 
 ### 2.4. Perfis de usuário e permissões
 
-Cada vínculo de usuário com uma empresa tem um perfil, que determina o que a pessoa pode ver e fazer. Os seis perfis existentes:
+Cada vínculo de usuário com uma empresa tem um perfil, que determina o que a pessoa pode ver e fazer. Os oito perfis existentes:
 
 | Perfil | O que pode fazer |
 |---|---|
@@ -40,6 +40,8 @@ Cada vínculo de usuário com uma empresa tem um perfil, que determina o que a p
 | Gestor | Acesso de leitura aos relatórios gerenciais — Dashboard executivo, auditoria — para acompanhar o negócio sem operar o dia a dia financeiro. |
 | Auditor | Acesso de leitura à auditoria e ao dashboard executivo, para revisão e conformidade. |
 | Consulta | Acesso de leitura às telas operacionais, sem poder cadastrar, editar ou aprovar nada. |
+| Produção | Pessoal do galpão: cadastra frutas, produtos, insumos, talhões e locais de armazenamento. Nas próximas versões, também lança recepção de fruto, processamento e ajustes de estoque. Não acessa o financeiro. |
+| Vendas | Cadastra e edita clientes. Nas próximas versões, também lança pedidos e entregas. Não acessa o financeiro. |
 
 > Além do perfil, cada acesso a uma filial específica pode ser "somente leitura", independentemente do perfil — ou seja, mesmo um Financeiro pode ficar restrito a só consultar uma determinada filial, se assim for configurado.
 
@@ -155,11 +157,13 @@ Mostra, para a filial atual e o ano escolhido, quanto do movimento tem documento
 
 ## 5. Cadastros
 
-Os cadastros auxiliares alimentam os formulários de título e lançamento em todo o sistema. Clientes e Fornecedores pertencem à empresa (são compartilhados entre todas as filiais); os demais cadastros desta seção pertencem à filial atual.
+Os cadastros auxiliares alimentam os formulários de título e lançamento em todo o sistema. Clientes, Fornecedores, Frutas, Produtos e Insumos pertencem à empresa (são compartilhados entre todas as filiais); os demais cadastros desta seção pertencem à filial atual.
 
 ### 5.1. Clientes e Fornecedores
 
 Cadastro de nome, CNPJ/CPF, contato e, opcionalmente, dados bancários para pagamento (PIX ou depósito bancário). São usados como contraparte dos títulos a receber (clientes) e a pagar (fornecedores). A **Classificação padrão dos títulos** (Nenhuma, Fiscal ou Gerencial) pré-preenche a classificação dos títulos novos daquele parceiro — use Gerencial para quem não emite nota.
+
+No cliente, o **CNPJ/CPF é opcional**: deixe em branco para consumidor final ou "Clientes diversos" (quando preenchido, não pode repetir). A seção **Vendas** do cliente guarda o canal de venda, o município, o endereço de entrega e se o cliente **retira na propriedade** (nesse caso o pedido não gera entrega). Além do Administrador, Financeiro e Tesouraria, o perfil Vendas também pode cadastrar e editar clientes.
 
 ### 5.2. Categorias financeiras
 
@@ -176,6 +180,16 @@ Safra representa um ciclo de produção, com data de início e fim próprias (po
 ### 5.5. Bancos e Contas bancárias
 
 Bancos é uma lista de referência (código e nome do banco). Contas bancárias pertencem à filial e trazem agência, conta, tipo (corrente, aplicação, investimento, empréstimo/financiamento), moeda e saldo inicial — é a partir daqui que as baixas, lançamentos e conciliação bancária operam.
+
+### 5.6. Cadastros de produção
+
+Base para a recepção de fruto, o processamento e as vendas por lote, que chegam nas próximas versões. Podem ser editados pelo Administrador e pelo perfil Produção. Cadastre nesta ordem:
+
+1. **Frutas** (da empresa): nome, **custo-padrão do fruto próprio** (R$/kg, usado no custo e na margem do fruto colhido nos talhões; deixe 0 se ainda não souber) e se a fruta **exige branqueamento** no processamento (o açaí exige).
+2. **Produtos** (da empresa): código, descrição, fruta, categoria (fruto ou polpa), conservação (in natura, resfriado ou congelado), validade em dias, preço de referência e texto de armazenamento da etiqueta. O **código** (ex.: FA, AGC) vira o início do número de lote (FA-260927-01). A **unidade comercial** é opcional: para o açaí, "rasa = 14 kg" permite lançar quantidade e preço por rasa.
+3. **Talhões** (da filial): áreas de cultivo próprias, com cultura, área (ha) e ano de plantio. São a origem do fruto colhido.
+4. **Locais de armazenamento** (da filial): câmaras, freezers e áreas de recepção, com temperatura e capacidade (opcional, usada para mostrar a ocupação no estoque).
+5. **Insumos** (da empresa): embalagens, energia e mão de obra, com unidade e custo unitário de referência.
 
 ## 6. Administração
 
@@ -201,6 +215,10 @@ Registra automaticamente toda alteração relevante feita no sistema — quem fe
 
 > Só os perfis Administrador, Gestor e Auditor têm acesso a esta tela.
 
+### 6.5. Configuração de produção
+
+Parâmetros da filial atual usados pela produção: registro na ADEPARA (vai para a etiqueta do lote), com quantos dias de antecedência um lote congelado ou resfriado aparece como "vencendo", temperatura e tempo mínimos do branqueamento, e a tolerância do balanço de massa (em %). Enquanto nada for salvo, valem os padrões: 30 dias (congelado), 1 dia (in natura e resfriado), 80 °C, 10 segundos e 3%. Só o Administrador altera esta tela.
+
 ## 7. Gestão
 
 ### 7.1. Dashboard executivo
@@ -219,6 +237,7 @@ Filiais desativadas não entram nesses números (nem no Fluxo de caixa estratég
 | Parcela | Uma cobrança individual dentro de um título, com vencimento e valor próprios. |
 | Baixa | O registro de um pagamento ou recebimento de uma parcela — precisa ser aprovada para gerar o lançamento bancário. |
 | Lançamento bancário | Um movimento de entrada ou saída em uma conta bancária — pode vir de uma baixa aprovada, ser lançado manualmente, ou vir de uma transferência. |
+| Rasa | Unidade comercial do açaí: 1 rasa = 14 kg. O sistema converte para kg sozinho. |
 | Conciliação | O processo de casar as linhas do extrato bancário real com os lançamentos já registrados no sistema. |
 | Safra | Um ciclo de produção agrícola, com período próprio de início e fim. |
 | Centro de custo / Centro de lucro | Dimensões analíticas para agrupar receitas e despesas além da categoria financeira. |

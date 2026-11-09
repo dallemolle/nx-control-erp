@@ -1,8 +1,9 @@
 # Fase 7 — Produção, estoque e vendas
 
-Status: 🟡 **Em desenho.** Levantamento da planilha concluído em
-2026-11-08; aguardando a revisão do usuário e as decisões bloqueantes antes
-do primeiro sub-projeto.
+Status: 🟡 **Em desenvolvimento.** 7a (fundação) concluída em 2026-11-08:
+perfis Produção e Vendas, permissões, menu por permissão, cadastros de
+fruta, produto, insumo, talhão e local, configuração de produção e cliente
+sem CPF/CNPJ. Próximo: 7b (recepção e estoque).
 
 ## Escopo
 

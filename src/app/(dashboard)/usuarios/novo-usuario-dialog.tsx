@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PERFIS } from "@/lib/schemas/usuario";
+import { PERFIS, ROTULOS_PERFIL } from "@/lib/schemas/usuario";
 import { criarUsuarioAction, verificarEmailAction, type FormState } from "./actions";
 import { useAcaoDoDialogo } from "../_shared/use-acao-do-dialogo";
 
@@ -105,7 +105,7 @@ export function NovoUsuarioDialog() {
               <SelectContent>
                 {PERFIS.map((perfil) => (
                   <SelectItem key={perfil} value={perfil}>
-                    {perfil}
+                    {ROTULOS_PERFIL[perfil]}
                   </SelectItem>
                 ))}
               </SelectContent>

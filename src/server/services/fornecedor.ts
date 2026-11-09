@@ -93,6 +93,7 @@ export async function atualizarFornecedor(
       contato: anterior.contato,
       email: anterior.email,
       telefone: anterior.telefone,
+      municipio: anterior.municipio,
       meioPagamento: anterior.meioPagamento,
       tipoChavePix: anterior.tipoChavePix,
       chavePix: anterior.chavePix,

@@ -1,7 +1,9 @@
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { prisma } from "@/server/db/client";
 import { criarCliente, atualizarCliente } from "./cliente";
-import { FilialSomenteLeituraError } from "@/server/auth/permissions";
+import { FilialSomenteLeituraError, PermissionError } from "@/server/auth/permissions";
+import { SEM_VALOR } from "@/lib/schemas/enums";
+import { criarFixtureProducao, type FixtureProducao } from "./producaoTestFixtures";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { clienteSchema, type ClienteFormValues } from "@/lib/schemas/cliente";
 
@@ -290,5 +292,63 @@ describe("cliente - dados bancários", () => {
     const criado = await criarCliente(sessao, { ...dadosBase, cnpjCpf: "66.666.666/0001-66" });
     clientesCriados.push(criado.id);
     expect(criado.classificacaoFiscalPadrao).toBeNull();
+  });
+});
+
+describe("cliente - Fase 7 (documento opcional e permissão própria)", () => {
+  let fx: FixtureProducao;
+  beforeAll(async () => {
+    fx = await criarFixtureProducao("cliente7");
+  });
+  afterAll(async () => {
+    await prisma.cliente.deleteMany({ where: { empresaId: fx.empresaId } });
+    await fx.limpar();
+  });
+
+  const base = (sobrescrever: Partial<ClienteFormValues> = {}): ClienteFormValues =>
+    clienteSchema.parse({ nome: "Consumidor final", cnpjCpf: "", canalVenda: "CONSUMIDOR_FINAL", ...sobrescrever });
+
+  test("dois clientes sem documento coexistem", async () => {
+    await criarCliente(fx.sessao("VENDAS"), base({ nome: "Clientes diversos" }));
+    await criarCliente(fx.sessao("VENDAS"), base());
+    const semDoc = await prisma.cliente.count({ where: { empresaId: fx.empresaId, cnpjCpf: null } });
+    expect(semDoc).toBe(2);
+  });
+
+  test("documento repetido é recusado com mensagem", async () => {
+    await criarCliente(fx.sessao("FINANCEIRO"), base({ nome: "Cliente A", cnpjCpf: "123.456.789-01" }));
+    await expect(
+      criarCliente(fx.sessao("FINANCEIRO"), base({ nome: "Cliente B", cnpjCpf: "123.456.789-01" })),
+    ).rejects.toThrow("Já existe um cliente com este CPF/CNPJ");
+  });
+
+  test("VENDAS cria cliente; CONSULTA e PRODUCAO não", async () => {
+    await expect(criarCliente(fx.sessao("VENDAS"), base({ nome: "Batedor X" }))).resolves.toBeDefined();
+    await expect(criarCliente(fx.sessao("CONSULTA"), base({ nome: "Cliente Y" }))).rejects.toThrow(PermissionError);
+    await expect(criarCliente(fx.sessao("PRODUCAO"), base({ nome: "Cliente Z" }))).rejects.toThrow(PermissionError);
+  });
+
+  test("grava os campos de venda", async () => {
+    const c = await criarCliente(
+      fx.sessao("VENDAS"),
+      base({
+        nome: "Restaurante W",
+        canalVenda: "RESTAURANTE",
+        municipio: "Município Exemplo",
+        enderecoEntrega: "Rua Exemplo, 1",
+        retiraNaPropriedade: true,
+      }),
+    );
+    expect(c).toMatchObject({
+      canalVenda: "RESTAURANTE",
+      municipio: "Município Exemplo",
+      enderecoEntrega: "Rua Exemplo, 1",
+      retiraNaPropriedade: true,
+    });
+  });
+
+  test("canal 'nenhum' e checkbox desmarcado gravam nulo e falso", async () => {
+    const c = await criarCliente(fx.sessao("VENDAS"), base({ nome: "Sem canal", canalVenda: SEM_VALOR }));
+    expect(c).toMatchObject({ canalVenda: null, retiraNaPropriedade: false, municipio: null });
   });
 });

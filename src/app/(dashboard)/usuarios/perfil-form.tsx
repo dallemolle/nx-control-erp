@@ -2,7 +2,7 @@
 
 import { useActionState, useRef } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PERFIS } from "@/lib/schemas/usuario";
+import { PERFIS, ROTULOS_PERFIL } from "@/lib/schemas/usuario";
 import type { Perfil } from "@prisma/client";
 import { atualizarPerfilAction, type FormState } from "./actions";
 
@@ -26,7 +26,7 @@ export function PerfilForm({ usuarioId, perfil }: { usuarioId: string; perfil: P
         <SelectContent>
           {PERFIS.map((opcao) => (
             <SelectItem key={opcao} value={opcao}>
-              {opcao}
+              {ROTULOS_PERFIL[opcao]}
             </SelectItem>
           ))}
         </SelectContent>
