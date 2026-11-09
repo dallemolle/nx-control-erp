@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import type { VersaoInfo } from "@/lib/versao";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionItem, AccordionPanel, AccordionTrigger } from "@/components/ui/accordion";
-import { NAV_SECTIONS } from "./nav-items";
+import { secoesVisiveis as secoesVisiveisDoPerfil } from "./nav-items";
 import { VersaoBadge } from "./versao-badge";
 import { useMenuLateral } from "./menu-lateral-context";
 
@@ -96,10 +96,7 @@ function ConteudoMenu({
 }) {
   const pathname = usePathname();
 
-  const secoesVisiveis = NAV_SECTIONS.map((secao) => ({
-    ...secao,
-    itens: secao.itens.filter((item) => !item.permitido || item.permitido.includes(perfil)),
-  })).filter((secao) => secao.itens.length > 0);
+  const secoesVisiveis = secoesVisiveisDoPerfil(perfil);
 
   const secaoAtiva = secoesVisiveis.find((secao) =>
     secao.itens.some((item) => pathname.startsWith(item.href)),

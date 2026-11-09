@@ -13,6 +13,8 @@ enum Perfil {
   GESTOR
   AUDITOR
   CONSULTA
+  PRODUCAO
+  VENDAS
 }
 
 enum TipoCategoriaFinanceira {
@@ -98,6 +100,9 @@ model Empresa {
   fornecedores         Fornecedor[]
   auditLogs            AuditLog[]
   cenariosEstrategicos CenarioEstrategico[]
+  frutas               Fruta[]
+  produtos             Produto[]
+  insumos              Insumo[]
 
   @@map("empresas")
 }
@@ -146,6 +151,13 @@ model Filial {
   orcamentos              Orcamento[]
   orcamentosSafra         OrcamentoSafra[]
   requisicoesIdempotentes RequisicaoIdempotente[]
+  talhoes                 Talhao[]
+  locaisArmazenamento     LocalArmazenamento[]
+  configuracaoProducao    ConfiguracaoProducao?
+  lotes                   Lote[]
+  movimentosEstoque       MovimentoEstoque[]
+  ajustesEstoque          AjusteEstoque[]
+  recepcoesFruto          RecepcaoFruto[]
 
   @@index([empresaId])
   @@map("filiais")
@@ -170,6 +182,9 @@ model Usuario {
   extratosImportados        ExtratoImportado[]
   apiKeys                   ApiKey[]
   requisicoesIdempotentes   RequisicaoIdempotente[]
+  movimentosEstoque         MovimentoEstoque[]
+  ajustesEstoque            AjusteEstoque[]
+  recepcoesFruto            RecepcaoFruto[]
 
   @@map("usuarios")
 }
@@ -301,6 +316,7 @@ model Safra {
   titulos              Titulo[]
   lancamentosBancarios LancamentoBancario[]
   orcamentosSafra      OrcamentoSafra[]
+  recepcoesFruto       RecepcaoFruto[]
 
   @@unique([filialId, nome])
   @@index([filialId])
@@ -336,12 +352,13 @@ model CategoriaFinanceira {
   criadoEm     DateTime                @default(now())
   atualizadoEm DateTime                @updatedAt
 
-  filial               Filial                @relation(fields: [filialId], references: [id], onDelete: Cascade)
-  parent               CategoriaFinanceira?  @relation("CategoriaFinanceiraHierarquia", fields: [parentId], references: [id])
-  filhos               CategoriaFinanceira[] @relation("CategoriaFinanceiraHierarquia")
-  titulos              Titulo[]
-  lancamentosBancarios LancamentoBancario[]
-  orcamentos           Orcamento[]
+  filial                   Filial                 @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  parent                   CategoriaFinanceira?   @relation("CategoriaFinanceiraHierarquia", fields: [parentId], references: [id])
+  filhos                   CategoriaFinanceira[]  @relation("CategoriaFinanceiraHierarquia")
+  titulos                  Titulo[]
+  lancamentosBancarios     LancamentoBancario[]
+  orcamentos               Orcamento[]
+  configuracoesCompraFruto ConfiguracaoProducao[]
 
   @@index([filialId])
   @@map("categorias_financeiras")
@@ -385,7 +402,7 @@ model Cliente {
   id           String   @id @default(uuid())
   empresaId    String
   nome         String
-  cnpjCpf      String
+  cnpjCpf      String?
   contato      String?
   email        String?
   telefone     String?
@@ -403,6 +420,11 @@ model Cliente {
   titularConta      String?
 
   classificacaoFiscalPadrao ClassificacaoFiscal?
+
+  canalVenda          CanalVenda?
+  municipio           String?
+  enderecoEntrega     String?
+  retiraNaPropriedade Boolean     @default(false)
 
   empresa Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   banco   Banco?   @relation(fields: [bancoId], references: [id])
@@ -436,9 +458,12 @@ model Fornecedor {
 
   classificacaoFiscalPadrao ClassificacaoFiscal?
 
-  empresa Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  banco   Banco?   @relation(fields: [bancoId], references: [id])
-  titulos Titulo[]
+  municipio String?
+
+  empresa        Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  banco          Banco?          @relation(fields: [bancoId], references: [id])
+  titulos        Titulo[]
+  recepcoesFruto RecepcaoFruto[]
 
   @@unique([empresaId, cnpjCpf])
   @@index([empresaId])
@@ -565,8 +590,9 @@ model Titulo {
   projeto             Projeto?            @relation(fields: [projetoId], references: [id])
   contaBancaria       ContaBancaria?      @relation(fields: [contaBancariaId], references: [id])
 
-  parcelas Parcela[]
-  anexos   Anexo[]
+  parcelas      Parcela[]
+  anexos        Anexo[]
+  recepcaoFruto RecepcaoFruto?
 
   @@index([filialId])
   @@index([fornecedorId])
@@ -763,4 +789,305 @@ model SaldoBancarioInformado {
 
   @@index([contaBancariaId])
   @@map("saldos_bancarios_informados")
+}
+
+// ---------------------------------------------------------------------------
+// Fase 7 — Produção, estoque e vendas (7a: cadastros e configuração)
+// ---------------------------------------------------------------------------
+
+enum CategoriaProduto {
+  FRUTO
+  POLPA
+}
+
+enum Conservacao {
+  IN_NATURA
+  RESFRIADO
+  CONGELADO
+}
+
+enum TipoLocalArmazenamento {
+  CAMARA_FRIA
+  FREEZER
+  REFRIGERADOR
+  RECEPCAO
+  OUTRO
+}
+
+enum CanalVenda {
+  BATEDOR
+  ATACADO
+  VAREJO
+  RESTAURANTE
+  INDUSTRIA
+  CONSUMIDOR_FINAL
+  OUTRO
+}
+
+model Fruta {
+  id                 String   @id @default(uuid())
+  empresaId          String
+  nome               String
+  custoPadraoKg      Decimal  @default(0) @db.Decimal(18, 4)
+  exigeBranqueamento Boolean  @default(false)
+  ativo              Boolean  @default(true)
+  criadoEm           DateTime @default(now())
+  atualizadoEm       DateTime @updatedAt
+
+  empresa  Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  produtos Produto[]
+  talhoes  Talhao[]
+
+  @@unique([empresaId, nome])
+  @@index([empresaId])
+  @@map("frutas")
+}
+
+model Produto {
+  id                String           @id @default(uuid())
+  empresaId         String
+  codigo            String
+  descricao         String
+  categoria         CategoriaProduto
+  frutaId           String
+  conservacao       Conservacao
+  validadeDias      Int
+  precoReferenciaKg Decimal?         @db.Decimal(18, 4)
+  armazenamento     String?
+  unidadeComercial  String?
+  fatorUnidadeKg    Decimal?         @db.Decimal(18, 3)
+  ativo             Boolean          @default(true)
+  criadoEm          DateTime         @default(now())
+  atualizadoEm      DateTime         @updatedAt
+
+  empresa   Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  fruta     Fruta           @relation(fields: [frutaId], references: [id], onDelete: Restrict)
+  lotes     Lote[]
+  recepcoes RecepcaoFruto[]
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId])
+  @@map("produtos")
+}
+
+model Insumo {
+  id            String   @id @default(uuid())
+  empresaId     String
+  nome          String
+  unidade       String
+  custoUnitario Decimal  @db.Decimal(18, 4)
+  ativo         Boolean  @default(true)
+  criadoEm      DateTime @default(now())
+  atualizadoEm  DateTime @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@unique([empresaId, nome])
+  @@index([empresaId])
+  @@map("insumos")
+}
+
+model Talhao {
+  id           String   @id @default(uuid())
+  filialId     String
+  nome         String
+  frutaId      String
+  areaHa       Decimal  @db.Decimal(10, 2)
+  anoPlantio   Int?
+  espacamento  String?
+  observacao   String?
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  filial    Filial          @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  fruta     Fruta           @relation(fields: [frutaId], references: [id], onDelete: Restrict)
+  recepcoes RecepcaoFruto[]
+
+  @@unique([filialId, nome])
+  @@index([filialId])
+  @@map("talhoes")
+}
+
+model LocalArmazenamento {
+  id           String                 @id @default(uuid())
+  filialId     String
+  nome         String
+  tipo         TipoLocalArmazenamento
+  temperatura  String?
+  capacidadeKg Decimal?               @db.Decimal(18, 3)
+  ativo        Boolean                @default(true)
+  criadoEm     DateTime               @default(now())
+  atualizadoEm DateTime               @updatedAt
+
+  filial Filial @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  lotes  Lote[]
+
+  @@unique([filialId, nome])
+  @@index([filialId])
+  @@map("locais_armazenamento")
+}
+
+model ConfiguracaoProducao {
+  filialId                      String   @id
+  registroAdepara               String?
+  alertaVencimentoCongeladoDias Int      @default(30)
+  alertaVencimentoResfriadoDias Int      @default(1)
+  branqueamentoTemperaturaMinC  Decimal  @default(80) @db.Decimal(5, 1)
+  branqueamentoTempoMinS        Int      @default(10)
+  toleranciaBalancoMassa        Decimal  @default(0.03) @db.Decimal(5, 4)
+  categoriaCompraFrutoId        String?
+  prazoPagamentoProdutorDias    Int      @default(0)
+  criadoEm                      DateTime @default(now())
+  atualizadoEm                  DateTime @updatedAt
+
+  filial               Filial               @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  categoriaCompraFruto CategoriaFinanceira? @relation(fields: [categoriaCompraFrutoId], references: [id], onDelete: SetNull)
+
+  @@map("configuracoes_producao")
+}
+
+// Fase 7b — recepção de fruto e estoque
+
+enum OrigemRecepcao {
+  PROPRIA
+  TERCEIRO
+}
+
+enum QualidadeFruto {
+  A
+  B
+  C
+}
+
+enum StatusRecepcao {
+  ATIVA
+  CANCELADA
+}
+
+enum OrigemLote {
+  RECEPCAO
+  PRODUCAO
+}
+
+enum TipoMovimentoEstoque {
+  ENTRADA
+  ESTORNO_RECEPCAO
+  AJUSTE
+}
+
+enum MotivoAjusteEstoque {
+  VENCIDO
+  AVARIA
+  AMOSTRA
+  INVENTARIO
+  CONSUMO_INTERNO
+  OUTRO
+}
+
+model Lote {
+  id                  String     @id @default(uuid())
+  filialId            String
+  codigo              String
+  codigoManual        Boolean    @default(false)
+  produtoId           String
+  origem              OrigemLote
+  data                DateTime
+  validade            DateTime
+  localId             String
+  quantidadeInicialKg Decimal    @db.Decimal(18, 3)
+  saldoKg             Decimal    @db.Decimal(18, 3)
+  custoKg             Decimal    @db.Decimal(18, 4)
+  criadoEm            DateTime   @default(now())
+  atualizadoEm        DateTime   @updatedAt
+
+  filial     Filial             @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  produto    Produto            @relation(fields: [produtoId], references: [id], onDelete: Restrict)
+  local      LocalArmazenamento @relation(fields: [localId], references: [id], onDelete: Restrict)
+  movimentos MovimentoEstoque[]
+  ajustes    AjusteEstoque[]
+  recepcao   RecepcaoFruto?
+
+  @@unique([filialId, codigo])
+  @@index([filialId, produtoId])
+  @@index([filialId, validade])
+  @@map("lotes")
+}
+
+model MovimentoEstoque {
+  id           String               @id @default(uuid())
+  filialId     String
+  loteId       String
+  data         DateTime
+  tipo         TipoMovimentoEstoque
+  quantidadeKg Decimal              @db.Decimal(18, 3)
+  ajusteId     String?              @unique
+  usuarioId    String
+  criadoEm     DateTime             @default(now())
+
+  filial  Filial         @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  lote    Lote           @relation(fields: [loteId], references: [id], onDelete: Cascade)
+  ajuste  AjusteEstoque? @relation(fields: [ajusteId], references: [id])
+  usuario Usuario        @relation(fields: [usuarioId], references: [id])
+
+  @@index([loteId])
+  @@index([filialId, data])
+  @@map("movimentos_estoque")
+}
+
+model AjusteEstoque {
+  id           String              @id @default(uuid())
+  filialId     String
+  data         DateTime
+  loteId       String
+  quantidadeKg Decimal             @db.Decimal(18, 3)
+  motivo       MotivoAjusteEstoque
+  observacao   String?
+  usuarioId    String
+  criadoEm     DateTime            @default(now())
+
+  filial    Filial            @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  lote      Lote              @relation(fields: [loteId], references: [id], onDelete: Cascade)
+  usuario   Usuario           @relation(fields: [usuarioId], references: [id])
+  movimento MovimentoEstoque?
+
+  @@index([filialId, data])
+  @@map("ajustes_estoque")
+}
+
+model RecepcaoFruto {
+  id                 String          @id @default(uuid())
+  filialId           String
+  loteId             String          @unique
+  data               DateTime
+  produtoId          String
+  origem             OrigemRecepcao
+  talhaoId           String?
+  fornecedorId       String?
+  pesoBrutoKg        Decimal         @db.Decimal(18, 3)
+  descarteKg         Decimal         @default(0) @db.Decimal(18, 3)
+  precoKg            Decimal         @db.Decimal(18, 4)
+  valorTotal         Decimal         @db.Decimal(18, 2)
+  qualidade          QualidadeFruto?
+  documento          String?
+  observacao         String?
+  safraId            String?
+  tituloId           String?         @unique
+  status             StatusRecepcao  @default(ATIVA)
+  motivoCancelamento String?
+  usuarioId          String
+  criadoEm           DateTime        @default(now())
+  atualizadoEm       DateTime        @updatedAt
+
+  filial     Filial      @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  lote       Lote        @relation(fields: [loteId], references: [id], onDelete: Cascade)
+  produto    Produto     @relation(fields: [produtoId], references: [id], onDelete: Restrict)
+  talhao     Talhao?     @relation(fields: [talhaoId], references: [id], onDelete: Restrict)
+  fornecedor Fornecedor? @relation(fields: [fornecedorId], references: [id], onDelete: Restrict)
+  safra      Safra?      @relation(fields: [safraId], references: [id], onDelete: SetNull)
+  titulo     Titulo?     @relation(fields: [tituloId], references: [id], onDelete: SetNull)
+  usuario    Usuario     @relation(fields: [usuarioId], references: [id])
+
+  @@index([filialId, data])
+  @@map("recepcoes_fruto")
 }

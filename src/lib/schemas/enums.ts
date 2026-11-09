@@ -99,3 +99,50 @@ export const ROTULOS_TIPO_COMPROVANTE = {
  * são semanticamente diferentes, não devem ser unificados numa constante só.
  */
 export const SEM_VALOR = "__nenhum__";
+
+// Fase 7 — produção, estoque e vendas
+export const CATEGORIA_PRODUTO = ["FRUTO", "POLPA"] as const;
+export const CONSERVACAO = ["IN_NATURA", "RESFRIADO", "CONGELADO"] as const;
+export const TIPO_LOCAL_ARMAZENAMENTO = ["CAMARA_FRIA", "FREEZER", "REFRIGERADOR", "RECEPCAO", "OUTRO"] as const;
+export const CANAL_VENDA = [
+  "BATEDOR",
+  "ATACADO",
+  "VAREJO",
+  "RESTAURANTE",
+  "INDUSTRIA",
+  "CONSUMIDOR_FINAL",
+  "OUTRO",
+] as const;
+
+export const ROTULOS_CATEGORIA_PRODUTO = { FRUTO: "Fruto", POLPA: "Polpa" } as const;
+export const ROTULOS_CONSERVACAO = { IN_NATURA: "In natura", RESFRIADO: "Resfriado", CONGELADO: "Congelado" } as const;
+export const ROTULOS_TIPO_LOCAL = {
+  CAMARA_FRIA: "Câmara fria",
+  FREEZER: "Freezer",
+  REFRIGERADOR: "Refrigerador",
+  RECEPCAO: "Recepção",
+  OUTRO: "Outro",
+} as const;
+export const ROTULOS_CANAL_VENDA = {
+  BATEDOR: "Batedor / ponto de açaí",
+  ATACADO: "Atacado / distribuidor",
+  VAREJO: "Varejo / mercado",
+  RESTAURANTE: "Restaurante / lanchonete",
+  INDUSTRIA: "Indústria",
+  CONSUMIDOR_FINAL: "Consumidor final",
+  OUTRO: "Outro",
+} as const;
+
+// Fase 7b — recepção e estoque
+export const ORIGEM_RECEPCAO = ["PROPRIA", "TERCEIRO"] as const;
+export const ROTULOS_ORIGEM_RECEPCAO = { PROPRIA: "Própria", TERCEIRO: "Terceiro" } as const;
+export const QUALIDADE_FRUTO = ["A", "B", "C"] as const;
+export const MOTIVO_AJUSTE_ESTOQUE = ["VENCIDO", "AVARIA", "AMOSTRA", "INVENTARIO", "CONSUMO_INTERNO", "OUTRO"] as const;
+export const ROTULOS_MOTIVO_AJUSTE = {
+  VENCIDO: "Vencido",
+  AVARIA: "Avaria/quebra",
+  AMOSTRA: "Amostra (ADEPARA/laboratório)",
+  INVENTARIO: "Inventário",
+  CONSUMO_INTERNO: "Consumo interno",
+  OUTRO: "Outro",
+} as const;

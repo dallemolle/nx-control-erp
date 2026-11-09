@@ -50,7 +50,8 @@ export function formatarValorPdf<T>(coluna: ColunaExport<T>, valor: string | num
  * vez de derrubar a geração do arquivo. Quebras de linha viram espaço — a
  * quebra dentro da célula é feita pelo layout.
  */
-function criarSanitizador(fonte: PDFFont): (texto: string) => string {
+/** Troca caracteres que a fonte padrão (WinAnsi) não desenha por "?". */
+export function criarSanitizador(fonte: PDFFont): (texto: string) => string {
   const suportados = new Set(fonte.getCharacterSet());
   return (texto) =>
     Array.from(texto.replace(/\s+/g, " "))

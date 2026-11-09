@@ -1,11 +1,12 @@
 import { z } from "zod";
-import { CLASSIFICACAO_FISCAL, MEIO_PAGAMENTO, TIPO_CHAVE_PIX, TIPO_CONTA_TERCEIRO, SEM_VALOR } from "./enums";
-import { cnpjCpfSchema } from "@/lib/cnpjCpf";
+import { CANAL_VENDA, CLASSIFICACAO_FISCAL, MEIO_PAGAMENTO, TIPO_CHAVE_PIX, TIPO_CONTA_TERCEIRO, SEM_VALOR } from "./enums";
+import { checkboxSchema, textoOpcional } from "./campos";
+import { cnpjCpfOpcionalSchema } from "@/lib/cnpjCpf";
 
 export const clienteSchema = z
   .object({
     nome: z.string().trim().min(2, "Informe o nome"),
-    cnpjCpf: cnpjCpfSchema,
+    cnpjCpf: cnpjCpfOpcionalSchema,
     contato: z.string().trim().optional().or(z.literal("")),
     email: z.string().trim().email("Email inválido").optional().or(z.literal("")),
     telefone: z.string().trim().optional().or(z.literal("")),
@@ -18,6 +19,10 @@ export const clienteSchema = z
     tipoContaTerceiro: z.enum(TIPO_CONTA_TERCEIRO).optional().or(z.literal(SEM_VALOR)),
     titularConta: z.string().trim().optional().or(z.literal("")),
     classificacaoFiscalPadrao: z.enum(CLASSIFICACAO_FISCAL).optional().or(z.literal(SEM_VALOR)),
+    canalVenda: z.enum(CANAL_VENDA).optional().or(z.literal(SEM_VALOR)),
+    municipio: textoOpcional,
+    enderecoEntrega: textoOpcional,
+    retiraNaPropriedade: checkboxSchema,
   })
   .superRefine((dados, ctx) => {
     if (dados.meioPagamento === "PIX") {
