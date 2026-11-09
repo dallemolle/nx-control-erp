@@ -158,6 +158,10 @@ function CamposRecepcao({ opcoes }: { opcoes: OpcoesRecepcao }) {
   const [descarte, setDescarte] = useState("");
   const [preco, setPreco] = useState("");
   const [fornecedorId, setFornecedorId] = useState("");
+  const [talhaoId, setTalhaoId] = useState("");
+  // Selects que mudam junto com outros campos ficam controlados: o Select sem
+  // estado perdia a escolha quando o formulário era redesenhado.
+  const [localId, setLocalId] = useState(localPadrao?.id ?? "");
   const [classificacao, setClassificacao] = useState<"FISCAL" | "GERENCIAL">(
     "GERENCIAL",
   );
@@ -227,7 +231,11 @@ function CamposRecepcao({ opcoes }: { opcoes: OpcoesRecepcao }) {
           <Select
             name="produtoId"
             value={produtoId || null}
-            onValueChange={(v) => setProdutoId(v ?? "")}
+            onValueChange={(v) => {
+              setProdutoId(v ?? "");
+              // Talhão é da fruta do produto: trocar o produto invalida a escolha.
+              setTalhaoId("");
+            }}
           >
             <SelectTrigger id="produtoId" className="w-full">
               <SelectValue placeholder="Selecione o fruto" />
@@ -262,7 +270,7 @@ function CamposRecepcao({ opcoes }: { opcoes: OpcoesRecepcao }) {
       <div className="grid gap-4 sm:grid-cols-2">
         {origem === "PROPRIA" ? (
           <Campo id="talhaoId" rotulo="Talhão">
-            <Select name="talhaoId">
+            <Select name="talhaoId" value={talhaoId || null} onValueChange={(v) => setTalhaoId(v ?? "")}>
               <SelectTrigger id="talhaoId" className="w-full">
                 <SelectValue
                   placeholder={
@@ -300,7 +308,7 @@ function CamposRecepcao({ opcoes }: { opcoes: OpcoesRecepcao }) {
           </Campo>
         )}
         <Campo id="localId" rotulo="Local">
-          <Select name="localId" defaultValue={localPadrao?.id}>
+          <Select name="localId" value={localId || null} onValueChange={(v) => setLocalId(v ?? "")}>
             <SelectTrigger id="localId" className="w-full">
               <SelectValue placeholder="Selecione o local" />
             </SelectTrigger>
