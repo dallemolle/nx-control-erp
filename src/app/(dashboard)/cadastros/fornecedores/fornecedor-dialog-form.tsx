@@ -64,7 +64,7 @@ export function FornecedorDialogForm({
       >
         {fornecedor ? "Editar" : "Novo fornecedor"}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{fornecedor ? "Editar fornecedor" : "Novo fornecedor"}</DialogTitle>
         </DialogHeader>

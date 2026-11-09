@@ -66,7 +66,7 @@ export function ClienteDialogForm({ cliente, bancos }: { cliente?: Cliente; banc
       >
         {cliente ? "Editar" : "Novo cliente"}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{cliente ? "Editar cliente" : "Novo cliente"}</DialogTitle>
         </DialogHeader>
