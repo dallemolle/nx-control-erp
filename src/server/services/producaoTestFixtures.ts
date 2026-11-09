@@ -1,6 +1,7 @@
 import type { Perfil } from "@prisma/client";
 import { prisma } from "@/server/db/client";
 import type { SessaoAtiva } from "@/server/auth/sessao";
+import { registrarMovimento } from "./estoque";
 
 export type FixtureProducao = {
   empresaId: string;
@@ -133,4 +134,39 @@ export async function criarCatalogoDeTeste(fx: FixtureProducao): Promise<Catalog
     fornecedorId: fornecedor.id,
     categoriaCompraId: categoria.id,
   };
+}
+
+/** Lote com entrada registrada pelo caminho real do estoque (kg 0 cria lote zerado, sem movimento). */
+export async function criarLoteDeTeste(
+  fx: FixtureProducao,
+  opcoes: { produtoId: string; localId: string; kg: number; custoKg?: number; data?: Date; validade?: Date; codigo?: string },
+) {
+  const data = opcoes.data ?? new Date("2026-11-09");
+  return prisma.$transaction(async (tx) => {
+    const lote = await tx.lote.create({
+      data: {
+        filialId: fx.filialAId,
+        codigo: opcoes.codigo ?? `T-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`,
+        produtoId: opcoes.produtoId,
+        origem: "RECEPCAO",
+        data,
+        validade: opcoes.validade ?? new Date(data.getTime() + 86_400_000),
+        localId: opcoes.localId,
+        quantidadeInicialKg: opcoes.kg,
+        saldoKg: 0,
+        custoKg: opcoes.custoKg ?? 0,
+      },
+    });
+    if (opcoes.kg > 0) {
+      await registrarMovimento(tx, {
+        filialId: fx.filialAId,
+        loteId: lote.id,
+        data,
+        tipo: "ENTRADA",
+        quantidadeKg: opcoes.kg,
+        usuarioId: fx.usuarioId,
+      });
+    }
+    return tx.lote.findUniqueOrThrow({ where: { id: lote.id } });
+  });
 }
