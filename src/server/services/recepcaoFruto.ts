@@ -14,6 +14,8 @@ export const MSG_SEM_CATEGORIA_COMPRA =
   "Configure a categoria de compra de fruto em Administração → Configuração de produção";
 
 const UM_DIA_MS = 86_400_000;
+
+export type SituacaoCancelamento = { podeCancelar: boolean; motivo?: string };
 const TENTATIVAS_NUMERACAO = 3;
 
 function autorizar(sessao: SessaoAtiva) {
@@ -258,6 +260,39 @@ async function verificarCancelamento(
 export async function situacaoParaCancelar(recepcaoId: string) {
   const recepcao = await prisma.recepcaoFruto.findUniqueOrThrow({ where: { id: recepcaoId } });
   return verificarCancelamento(prisma, recepcao);
+}
+
+/** Mesma regra de `situacaoParaCancelar`, para a lista inteira com duas consultas agregadas. */
+export async function situacoesParaCancelar(
+  recepcoes: { id: string; status: string; loteId: string; tituloId: string | null }[],
+): Promise<Map<string, SituacaoCancelamento>> {
+  const loteIds = recepcoes.map((r) => r.loteId);
+  const tituloIds = recepcoes.flatMap((r) => (r.tituloId ? [r.tituloId] : []));
+  const [movimentos, baixas] = await Promise.all([
+    prisma.movimentoEstoque.groupBy({ by: ["loteId"], where: { loteId: { in: loteIds } }, _count: { _all: true } }),
+    prisma.baixa.findMany({
+      where: { parcela: { tituloId: { in: tituloIds } }, statusAprovacao: { not: "REJEITADO" } },
+      select: { parcela: { select: { tituloId: true } } },
+    }),
+  ]);
+  const movimentosPorLote = new Map(movimentos.map((m) => [m.loteId, m._count._all]));
+  const titulosPagos = new Set(baixas.map((b) => b.parcela.tituloId));
+
+  return new Map<string, SituacaoCancelamento>(
+    recepcoes.map((r): [string, SituacaoCancelamento] => {
+      if (r.status === "CANCELADA") return [r.id, { podeCancelar: false, motivo: "A recepção já está cancelada" }];
+      if ((movimentosPorLote.get(r.loteId) ?? 0) > 1) {
+        return [r.id, { podeCancelar: false, motivo: "O lote já teve movimentação; não é possível excluir a recepção" }];
+      }
+      if (r.tituloId && titulosPagos.has(r.tituloId)) {
+        return [
+          r.id,
+          { podeCancelar: false, motivo: "A conta a pagar já tem pagamento registrado; não é possível excluir a recepção" },
+        ];
+      }
+      return [r.id, { podeCancelar: true }];
+    }),
+  );
 }
 
 /**

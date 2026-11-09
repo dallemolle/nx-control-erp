@@ -14,6 +14,7 @@ import {
   criarRecepcao,
   listarRecepcoes,
   situacaoParaCancelar,
+  situacoesParaCancelar,
 } from "./recepcaoFruto";
 import { registrarMovimento } from "./estoque";
 
@@ -311,5 +312,45 @@ describe("recepção de fruto", () => {
     expect(
       await listarRecepcoes(fx.filialBId, { inicio: new Date("2026-11-01"), fim: new Date("2026-11-30") }),
     ).toEqual([]);
+  });
+});
+
+describe("situacoesParaCancelar (lista)", () => {
+  let fx: FixtureProducao;
+  let cat: CatalogoDeTeste;
+  beforeAll(async () => {
+    fx = await criarFixtureProducao("recepcaosituacao");
+    cat = await criarCatalogoDeTeste(fx);
+  });
+  afterAll(async () => {
+    await fx.limpar();
+  });
+
+  test("marca a que teve saída e libera a que não teve, igual à checagem unitária", async () => {
+    const dados = recepcaoSchema.parse({
+      data: "2026-11-09",
+      produtoId: cat.produtoFrutoId,
+      origem: "PROPRIA",
+      talhaoId: cat.talhaoId,
+      localId: cat.localRecepcaoId,
+      pesoBruto: "20",
+    });
+    const livre = await criarRecepcao(fx.sessao("PRODUCAO"), dados);
+    const usada = await criarRecepcao(fx.sessao("PRODUCAO"), dados);
+    await prisma.$transaction((tx) =>
+      registrarMovimento(tx, {
+        filialId: fx.filialAId,
+        loteId: usada.loteId,
+        data: new Date("2026-11-09"),
+        tipo: "AJUSTE",
+        quantidadeKg: -1,
+        usuarioId: fx.usuarioId,
+      }),
+    );
+    const recepcoes = await prisma.recepcaoFruto.findMany({ where: { id: { in: [livre.recepcaoId, usada.recepcaoId] } } });
+    const situacoes = await situacoesParaCancelar(recepcoes);
+    expect(situacoes.get(livre.recepcaoId)).toEqual(await situacaoParaCancelar(livre.recepcaoId));
+    expect(situacoes.get(usada.recepcaoId)).toEqual(await situacaoParaCancelar(usada.recepcaoId));
+    expect(situacoes.get(usada.recepcaoId)?.podeCancelar).toBe(false);
   });
 });
