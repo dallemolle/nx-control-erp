@@ -3,7 +3,10 @@
 Status: 🟡 **Em desenvolvimento.** 7a (fundação) concluída em 2026-11-08:
 perfis Produção e Vendas, permissões, menu por permissão, cadastros de
 fruta, produto, insumo, talhão e local, configuração de produção e cliente
-sem CPF/CNPJ. Próximo: 7b (recepção e estoque).
+sem CPF/CNPJ. 7b (recepção e estoque) concluída em 2026-11-09: recepção de
+fruto com lote numerado e conta a pagar, estoque por lote com saldo por
+movimentos, ajustes e etiqueta. Próximo: conta Caixa (Fase B fiscal) e 7c
+(vendas e entregas).
 
 ## Escopo
 

@@ -1,6 +1,6 @@
 # Fase 7b — Recepção de fruto e estoque
 
-Data: 2026-11-09 · Status: aguardando revisão
+Data: 2026-11-09 · Status: implementada
 
 Segundo sub-projeto da Fase 7 (ver
 [plano de entrega](../../modulos/producao-estoque-vendas/09-plano-de-entrega.md)).
