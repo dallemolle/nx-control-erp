@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SEM_VALOR } from "@/lib/schemas/enums";
 import type { ConfiguracaoProducaoValores } from "@/server/services/configuracaoProducao";
 import { salvarConfiguracaoProducaoAction, type FormState } from "./actions";
 
@@ -33,9 +35,11 @@ function Campo({
 export function ConfiguracaoForm({
   valores,
   somenteLeitura,
+  categoriasDespesa,
 }: {
   valores: ConfiguracaoProducaoValores;
   somenteLeitura: boolean;
+  categoriasDespesa: { id: string; nome: string }[];
 }) {
   const [state, formAction, pendente] = useActionState(salvarConfiguracaoProducaoAction, ESTADO_INICIAL);
 
@@ -128,6 +132,45 @@ export function ConfiguracaoForm({
               max="100"
               step="0.01"
               defaultValue={paraPercentual(valores.toleranciaBalancoMassa)}
+              required
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Compra de fruto</CardTitle>
+            <CardDescription>
+              Usado na conta a pagar gerada pela recepção de fruto de terceiros.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="categoriaCompraFrutoId">Categoria financeira</Label>
+              <Select name="categoriaCompraFrutoId" defaultValue={valores.categoriaCompraFrutoId ?? SEM_VALOR}>
+                <SelectTrigger id="categoriaCompraFrutoId" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SEM_VALOR}>Nenhuma</SelectItem>
+                  {categoriasDespesa.map((categoria) => (
+                    <SelectItem key={categoria.id} value={categoria.id}>
+                      {categoria.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Sem categoria, a recepção de terceiro com valor é recusada.
+              </p>
+            </div>
+            <Campo
+              id="prazoPagamentoProdutorDias"
+              rotulo="Prazo de pagamento ao produtor (dias)"
+              type="number"
+              min="0"
+              step="1"
+              defaultValue={valores.prazoPagamentoProdutorDias}
+              ajuda="Vencimento padrão da conta a pagar da compra de fruto. Pode ser mudado em cada recepção."
               required
             />
           </CardContent>

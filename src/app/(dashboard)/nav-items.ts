@@ -33,6 +33,14 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    titulo: "Produção",
+    itens: [
+      { href: "/producao/recepcao", label: "Recepção de fruto", acao: "producao:ler" },
+      { href: "/producao/estoque", label: "Estoque", acao: "producao:ler" },
+      { href: "/producao/ajustes", label: "Ajustes de estoque", acao: "producao:ler" },
+    ],
+  },
+  {
     titulo: "Cadastros",
     itens: [
       { href: "/cadastros/clientes", label: "Clientes", acao: "cadastro:ler" },

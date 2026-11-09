@@ -133,8 +133,11 @@ async function garantirNotaNaoDuplicada(
  * A FK do banco só prova que a linha existe em *alguma* filial — sem esta checagem
  * um id colado à mão (especialmente via importação CSV) vazaria dados entre tenants.
  */
+/** Quem cria o título: a sessão do usuário ou o contexto de outro módulo (recepção, venda). */
+export type ContextoTitulo = Pick<SessaoAtiva, "empresaId" | "filialId" | "usuarioId">;
+
 export async function validarReferenciasDoTitulo(
-  sessao: SessaoAtiva,
+  sessao: ContextoTitulo,
   tipo: TipoTitulo,
   dados: TituloHeaderFormValues,
   db: ClientePrisma = prisma,
@@ -259,7 +262,22 @@ export async function criarTitulo(
 ) {
   requirePermission(sessao.perfil, "titulo:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
+  return criarTituloInterno(sessao, tipo, dados, db);
+}
 
+/**
+ * Núcleo da criação de título, sem checagem de perfil: usado por `criarTitulo`
+ * e por módulos que geram títulos como parte da própria operação (a recepção de
+ * fruto cria a conta a pagar com a permissão `producao:escrever`). Quem chama
+ * é responsável pela permissão; validação, classificação fiscal e auditoria
+ * ficam aqui.
+ */
+export async function criarTituloInterno(
+  sessao: ContextoTitulo,
+  tipo: TipoTitulo,
+  dados: TituloFormValues,
+  db: ClientePrisma,
+) {
   const { classificacaoFiscalPadrao } = await validarReferenciasDoTitulo(sessao, tipo, dados, db);
 
   const classificacaoFiscal = resolverClassificacao(dados.classificacaoFiscal || undefined, classificacaoFiscalPadrao);

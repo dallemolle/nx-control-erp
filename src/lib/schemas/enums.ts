@@ -132,3 +132,17 @@ export const ROTULOS_CANAL_VENDA = {
   CONSUMIDOR_FINAL: "Consumidor final",
   OUTRO: "Outro",
 } as const;
+
+// Fase 7b — recepção e estoque
+export const ORIGEM_RECEPCAO = ["PROPRIA", "TERCEIRO"] as const;
+export const ROTULOS_ORIGEM_RECEPCAO = { PROPRIA: "Própria", TERCEIRO: "Terceiro" } as const;
+export const QUALIDADE_FRUTO = ["A", "B", "C"] as const;
+export const MOTIVO_AJUSTE_ESTOQUE = ["VENCIDO", "AVARIA", "AMOSTRA", "INVENTARIO", "CONSUMO_INTERNO", "OUTRO"] as const;
+export const ROTULOS_MOTIVO_AJUSTE = {
+  VENCIDO: "Vencido",
+  AVARIA: "Avaria/quebra",
+  AMOSTRA: "Amostra (ADEPARA/laboratório)",
+  INVENTARIO: "Inventário",
+  CONSUMO_INTERNO: "Consumo interno",
+  OUTRO: "Outro",
+} as const;
