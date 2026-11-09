@@ -5,7 +5,16 @@ export const TIPO_CONTA_BANCARIA = [
   "APLICACAO",
   "INVESTIMENTO",
   "EMPRESTIMO_FINANCIAMENTO",
+  "CAIXA",
 ] as const;
+
+export const ROTULOS_TIPO_CONTA_BANCARIA: Record<(typeof TIPO_CONTA_BANCARIA)[number], string> = {
+  CORRENTE: "Conta corrente",
+  APLICACAO: "Aplicação",
+  INVESTIMENTO: "Investimento",
+  EMPRESTIMO_FINANCIAMENTO: "Empréstimo/financiamento",
+  CAIXA: "Caixa (dinheiro em espécie)",
+};
 
 export const TIPO_CATEGORIA_FINANCEIRA = ["RECEITA", "DESPESA"] as const;
 

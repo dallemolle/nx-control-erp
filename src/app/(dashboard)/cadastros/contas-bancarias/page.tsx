@@ -5,6 +5,7 @@ import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeAlterarFilialAtiva } from "@/server/auth/permissions";
 import { listarBancos } from "@/server/services/banco";
 import { listarContasBancarias } from "@/server/services/contaBancaria";
+import { ROTULOS_TIPO_CONTA_BANCARIA } from "@/lib/schemas/enums";
 import { ContaBancariaDialogForm } from "./conta-bancaria-dialog-form";
 import { alternarAtivoContaBancariaAction } from "./actions";
 
@@ -23,7 +24,7 @@ export default async function ContasBancariasPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold">Contas bancárias</h1>
-          <p className="text-sm text-muted-foreground">Cadastro de contas bancárias da filial.</p>
+          <p className="text-sm text-muted-foreground">Contas bancárias e caixas (dinheiro em espécie) da filial.</p>
         </div>
         {podeEscrever && <ContaBancariaDialogForm bancos={bancos} />}
       </div>
@@ -45,11 +46,11 @@ export default async function ContasBancariasPage() {
           {contas.map((conta) => (
             <TableRow key={conta.id}>
               <TableCell className="font-medium">
-                {conta.banco.codigo} · {conta.banco.nome}
+                {conta.tipo === "CAIXA" ? conta.banco.nome : `${conta.banco.codigo} · ${conta.banco.nome}`}
               </TableCell>
-              <TableCell>{conta.agencia}</TableCell>
+              <TableCell>{conta.tipo === "CAIXA" ? "—" : conta.agencia}</TableCell>
               <TableCell>{conta.conta}</TableCell>
-              <TableCell>{conta.tipo}</TableCell>
+              <TableCell>{ROTULOS_TIPO_CONTA_BANCARIA[conta.tipo]}</TableCell>
               <TableCell>{conta.moeda}</TableCell>
               <TableCell className="text-right">{conta.saldoInicial.toString()}</TableCell>
               <TableCell>

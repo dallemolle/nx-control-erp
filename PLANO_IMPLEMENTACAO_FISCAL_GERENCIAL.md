@@ -542,12 +542,12 @@ O `DOCTO_IMPLEMENT_PROD-VEND.md` (Revisão 1.1) já foi ajustado para essas depe
 - [x] 4.7 API: integração antiga (corpo sem campos novos) segue funcionando; CSV antigo importa sem erro. *(testes de rota e de importação)*
 - [ ] 4.8 Deploy em staging via workflow de migration → validação com dados reais → PR para `main`.
 
-### 5. `[ ] Fase B — Conta Caixa (se FG4 = sim)`
+### 5. `[x] Fase B — Conta Caixa (FG4 = sim)` (2026-11-09)
 
-- [ ] 5.1 Migration `add_tipo_conta_caixa` (`ALTER TYPE "TipoContaBancaria" ADD VALUE 'CAIXA'`) + criação idempotente do `Banco` sentinela `CX`; espelhar em `TIPO_CONTA_BANCARIA`.
-- [ ] 5.2 `conciliado: conta.tipo === "CAIXA"` em `criarLancamentoManual`, `criarTransferencia`, `aprovarBaixa` + testes (dinheiro entra no realizado sem extrato).
-- [ ] 5.3 Conciliação esconde contas CAIXA; form de conta bancária oferece o tipo "Caixa (dinheiro em espécie)" com o banco sentinela pré-selecionado.
-- [ ] 5.4 Ajuda: conferência do caixa via "Informar saldo".
+- [x] 5.1 Migration `add_tipo_conta_caixa` (`ALTER TYPE "TipoContaBancaria" ADD VALUE 'CAIXA'`) + criação idempotente do `Banco` sentinela `CX` (também no seed e, por garantia, num `upsert` do serviço); espelhar em `TIPO_CONTA_BANCARIA` com rótulos por extenso.
+- [x] 5.2 `conciliado: conta.tipo === "CAIXA"` em `criarLancamentoManual`, `criarTransferencia` (cada lado pela sua conta), `aprovarBaixa` + testes (`contaCaixa.test.ts`).
+- [x] 5.3 Conciliação esconde contas CAIXA e o serviço recusa extrato nelas; no form de conta bancária, o tipo Caixa esconde banco e agência (o serviço grava o banco CX e a agência "-"). O banco CX sai da lista de bancos e não pode ser criado nem editado; nenhuma outra conta pode usá-lo. Mudar de/para Caixa só sem lançamentos.
+- [x] 5.4 Ajuda: conta Caixa e conferência do caixa via "Informar saldo".
 
 ---
 

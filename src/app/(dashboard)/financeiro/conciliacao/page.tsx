@@ -19,6 +19,7 @@ import { ReconciliarPendentesButton } from "./reconciliar-pendentes-button";
 import { LinhaExtratoActions } from "./linha-extrato-actions";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
+import { nomeDaContaBancaria } from "@/lib/contaBancaria";
 
 function statusValido(valor: string | undefined): StatusLinhaExtrato | undefined {
   return STATUS_LINHA_EXTRATO.includes(valor as (typeof STATUS_LINHA_EXTRATO)[number])
@@ -48,9 +49,10 @@ export default async function ConciliacaoPage({
     listarProjetos(sessao.filialId),
   ]);
 
-  const opcoesContasBancarias = contasBancarias.map((conta) => ({
+  // Conta Caixa (dinheiro em espécie) não tem extrato para importar.
+  const opcoesContasBancarias = contasBancarias.filter((conta) => conta.tipo !== "CAIXA").map((conta) => ({
     id: conta.id,
-    nome: `${conta.banco.nome} - Ag ${conta.agencia}/CC ${conta.conta}`,
+    nome: nomeDaContaBancaria(conta),
   }));
 
   return (
@@ -94,7 +96,7 @@ export default async function ConciliacaoPage({
             <TableRow key={linha.id}>
               <TableCell>{formatarData(linha.data)}</TableCell>
               <TableCell>
-                {linha.contaBancaria.banco.nome} - Ag {linha.contaBancaria.agencia}/CC {linha.contaBancaria.conta}
+                {nomeDaContaBancaria(linha.contaBancaria)}
               </TableCell>
               <TableCell>{linha.historico}</TableCell>
               <TableCell>{formatarMoeda(linha.valor)}</TableCell>
