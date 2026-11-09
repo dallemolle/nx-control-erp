@@ -62,6 +62,7 @@ export async function listarLotes(filialId: string, filtros: FiltroLotes, refere
     include: {
       produto: { select: { codigo: true, descricao: true, conservacao: true } },
       local: { select: { nome: true } },
+      recepcao: { select: { status: true } },
     },
     orderBy: [{ validade: "asc" }, { codigo: "asc" }],
   });

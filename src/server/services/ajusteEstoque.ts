@@ -16,9 +16,13 @@ export async function criarAjuste(sessao: SessaoAtiva, dados: AjusteFormValues) 
   return prisma.$transaction(async (tx) => {
     const lote = await tx.lote.findFirst({
       where: { id: dados.loteId, filialId: sessao.filialId },
-      select: { id: true, codigo: true },
+      select: { id: true, codigo: true, recepcao: { select: { status: true } } },
     });
     if (!lote) throw new Error("Lote não encontrado");
+    // Recepção excluída: o lote ficou zerado de propósito e não volta a ter saldo.
+    if (lote.recepcao?.status === "CANCELADA") {
+      throw new Error("O lote é de uma recepção excluída e não recebe ajustes");
+    }
 
     const ajuste = await tx.ajusteEstoque.create({
       data: {

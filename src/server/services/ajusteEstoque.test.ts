@@ -71,6 +71,29 @@ describe("ajuste de estoque", () => {
     );
   });
 
+  test("lote de recepção excluída não recebe ajuste", async () => {
+    const lote = await criarLoteDeTeste(fx, { produtoId: cat.produtoFrutoId, localId: cat.localRecepcaoId, kg: 0 });
+    await prisma.recepcaoFruto.create({
+      data: {
+        filialId: fx.filialAId,
+        loteId: lote.id,
+        data: new Date("2026-11-09"),
+        produtoId: cat.produtoFrutoId,
+        origem: "PROPRIA",
+        talhaoId: cat.talhaoId,
+        pesoBrutoKg: 5,
+        precoKg: 0,
+        valorTotal: 0,
+        status: "CANCELADA",
+        motivoCancelamento: "Lançada errada",
+        usuarioId: fx.usuarioId,
+      },
+    });
+    await expect(
+      criarAjuste(fx.sessao("PRODUCAO"), ajuste(lote.id, { sentido: "ENTRADA", motivo: "INVENTARIO" })),
+    ).rejects.toThrow("O lote é de uma recepção excluída e não recebe ajustes");
+  });
+
   test("schema exige quantidade maior que zero", () => {
     expect(ajusteSchema.safeParse({ loteId: "x", data: "2026-11-09", sentido: "SAIDA", quantidadeKg: "0", motivo: "OUTRO" }).success).toBe(false);
   });
