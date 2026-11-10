@@ -14,6 +14,7 @@ import { BarraDeFiltros } from "../_titulos/barra-de-filtros";
 import { filtroTitulosDaUrl, algumFiltroAtivo, queryStringDosFiltros } from "../_titulos/filtro-titulos-url";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { titulosParaCliente } from "../_titulos/titulos-para-cliente";
+import { nomeDaContaBancaria } from "@/lib/contaBancaria";
 
 function paramCru(valor: string | string[] | undefined): string | undefined {
   return Array.isArray(valor) ? valor[0] : valor;
@@ -63,7 +64,7 @@ export default async function ContasAPagarPage({ searchParams }: { searchParams:
     projetos,
     contasBancarias: contasBancarias.map((conta) => ({
       id: conta.id,
-      nome: `${conta.banco.nome} - Ag ${conta.agencia}/CC ${conta.conta}`,
+      nome: nomeDaContaBancaria(conta),
     })),
   };
 

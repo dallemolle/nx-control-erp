@@ -14,6 +14,7 @@ import { alterarVencimentoParcelaAction, cancelarParcelaAction } from "./actions
 import { AnexosPanel } from "./anexos-panel";
 import { TituloDialogForm, paraInputDate, type TituloEditavel } from "./titulo-dialog-form";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
+import { nomeDaContaBancaria } from "@/lib/contaBancaria";
 
 type ParcelaLinha = {
   id: string;
@@ -43,7 +44,7 @@ type TituloLinha = {
   projetoId: string | null;
   projeto: { nome: string } | null;
   contaBancariaId: string | null;
-  contaBancaria: { agencia: string; conta: string; banco: { nome: string } } | null;
+  contaBancaria: { tipo: string; agencia: string; conta: string; banco: { nome: string } } | null;
   formaPagamento: string | null;
   classificacaoFiscal: ClassificacaoFiscal;
   tipoComprovante: TipoComprovante | null;
@@ -213,7 +214,7 @@ export function TituloTable({
                         <dt className="text-muted-foreground">Conta bancária:</dt>
                         <dd>
                           {titulo.contaBancaria
-                            ? `${titulo.contaBancaria.banco.nome} - Ag ${titulo.contaBancaria.agencia}/CC ${titulo.contaBancaria.conta}`
+                            ? nomeDaContaBancaria(titulo.contaBancaria)
                             : "—"}
                         </dd>
                       </div>

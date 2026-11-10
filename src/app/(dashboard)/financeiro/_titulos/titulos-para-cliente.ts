@@ -1,7 +1,7 @@
 type ValorDecimal = number | string | { toString(): string };
 
 type TituloDoServico = {
-  contaBancaria: { agencia: string; conta: string; banco: { nome: string } } | null;
+  contaBancaria: { tipo: string; agencia: string; conta: string; banco: { nome: string } } | null;
   parcelas: { id: string; numero: number; dataVencimento: Date; valorAtualizado: ValorDecimal; status: string }[];
 };
 
@@ -15,7 +15,9 @@ export function titulosParaCliente<T extends TituloDoServico>(titulos: T[]) {
   return titulos.map(({ contaBancaria, parcelas, ...titulo }) => ({
     ...titulo,
     contaBancaria: contaBancaria
-      ? { agencia: contaBancaria.agencia, conta: contaBancaria.conta, banco: { nome: contaBancaria.banco.nome } }
+      ? {
+          tipo: contaBancaria.tipo,
+          agencia: contaBancaria.agencia, conta: contaBancaria.conta, banco: { nome: contaBancaria.banco.nome } }
       : null,
     parcelas: parcelas.map((parcela) => ({
       id: parcela.id,

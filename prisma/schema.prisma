@@ -27,6 +27,7 @@ enum TipoContaBancaria {
   APLICACAO
   INVESTIMENTO
   EMPRESTIMO_FINANCIAMENTO
+  CAIXA
 }
 
 enum StatusSafraProjeto {

@@ -14,6 +14,8 @@ const BANCOS = [
   { codigo: "341", nome: "Itaú Unibanco" },
   { codigo: "260", nome: "Nubank" },
   { codigo: "077", nome: "Inter" },
+  // Sentinela das contas Caixa (dinheiro em espécie); a migration add_tipo_conta_caixa também o cria.
+  { codigo: "CX", nome: "Caixa interno (dinheiro em espécie)" },
 ];
 
 async function main() {

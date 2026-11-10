@@ -105,6 +105,8 @@ A tela de Tesouraria mostra o saldo contábil de cada conta bancária da filial 
 
 O lançamento manual também é classificado como Fiscal (padrão) ou Gerencial, com o tipo e o número do comprovante. Transferências entre contas não têm classificação — não são receita nem despesa. A lista de lançamentos tem o filtro Todos / Fiscal / Gerencial.
 
+**Dinheiro em espécie (conta Caixa).** Pagamentos e recebimentos em dinheiro vão para uma conta do tipo Caixa (cadastrada em Contas bancárias). Lançamentos manuais, transferências e baixas aprovadas numa conta Caixa já entram conciliados, porque dinheiro não tem extrato: aparecem na hora no fluxo de caixa, no dashboard e no orçamento. Um saque do banco para o caixa é uma transferência: o lado do caixa já entra conciliado, e o lado do banco espera o extrato, como sempre. Para conferir o caixa físico, conte o dinheiro e use "Informar saldo" na conta Caixa: a Tesouraria mostra a diferença entre o saldo contado e o saldo do sistema.
+
 ### 3.4. Conciliação bancária
 
 A conciliação bancária cruza o extrato real do banco com os lançamentos já registrados no sistema, para confirmar que tudo que aconteceu na conta bancária tem um lançamento correspondente. O fluxo é: importar o extrato (arquivo OFX exportado do banco), o sistema tenta casar automaticamente cada linha do extrato com um lançamento existente (por valor e data), e o que não casar automaticamente fica disponível para revisão manual.
@@ -220,7 +222,9 @@ Safra representa um ciclo de produção, com data de início e fim próprias (po
 
 ### 6.5. Bancos e Contas bancárias
 
-Bancos é uma lista de referência (código e nome do banco). Contas bancárias pertencem à filial e trazem agência, conta, tipo (corrente, aplicação, investimento, empréstimo/financiamento), moeda e saldo inicial — é a partir daqui que as baixas, lançamentos e conciliação bancária operam.
+Bancos é uma lista de referência (código e nome do banco). Contas bancárias pertencem à filial e trazem agência, conta, tipo (corrente, aplicação, investimento, empréstimo/financiamento ou caixa), moeda e saldo inicial — é a partir daqui que as baixas, lançamentos e conciliação bancária operam.
+
+O tipo **Caixa (dinheiro em espécie)** é para o dinheiro guardado na empresa. Ele não pede banco nem agência: basta uma identificação (por exemplo, "Escritório" ou "Fazenda"), e dá para ter mais de um caixa. Uma conta Caixa não aparece na importação de extrato. Uma conta só pode mudar de ou para o tipo Caixa enquanto não tiver lançamentos.
 
 ### 6.6. Cadastros de produção
 

@@ -8,6 +8,7 @@ const tituloDoServico = {
   id: "t1",
   documento: "NF 1",
   contaBancaria: {
+    tipo: "CORRENTE",
     agencia: "0001",
     conta: "123-4",
     saldoInicial: new Prisma.Decimal("1000.00"),
@@ -33,7 +34,7 @@ describe("titulosParaCliente", () => {
     expect(titulo.parcelas).toEqual([
       { id: "p1", numero: 1, dataVencimento: vencimento, valorAtualizado: 150.25, status: "ABERTA" },
     ]);
-    expect(titulo.contaBancaria).toEqual({ agencia: "0001", conta: "123-4", banco: { nome: "Banco X" } });
+    expect(titulo.contaBancaria).toEqual({ tipo: "CORRENTE", agencia: "0001", conta: "123-4", banco: { nome: "Banco X" } });
     expect(titulo.documento).toBe("NF 1");
   });
 
