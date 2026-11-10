@@ -159,6 +159,7 @@ model Filial {
   movimentosEstoque       MovimentoEstoque[]
   ajustesEstoque          AjusteEstoque[]
   recepcoesFruto          RecepcaoFruto[]
+  pedidosVenda            PedidoVenda[]
 
   @@index([empresaId])
   @@map("filiais")
@@ -186,6 +187,7 @@ model Usuario {
   movimentosEstoque         MovimentoEstoque[]
   ajustesEstoque            AjusteEstoque[]
   recepcoesFruto            RecepcaoFruto[]
+  pedidosVenda              PedidoVenda[]
 
   @@map("usuarios")
 }
@@ -359,7 +361,8 @@ model CategoriaFinanceira {
   titulos                  Titulo[]
   lancamentosBancarios     LancamentoBancario[]
   orcamentos               Orcamento[]
-  configuracoesCompraFruto ConfiguracaoProducao[]
+  configuracoesCompraFruto ConfiguracaoProducao[] @relation("CategoriaCompraFruto")
+  configuracoesVenda       ConfiguracaoProducao[] @relation("CategoriaVenda")
 
   @@index([filialId])
   @@map("categorias_financeiras")
@@ -427,9 +430,10 @@ model Cliente {
   enderecoEntrega     String?
   retiraNaPropriedade Boolean     @default(false)
 
-  empresa Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  banco   Banco?   @relation(fields: [bancoId], references: [id])
-  titulos Titulo[]
+  empresa      Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  banco        Banco?        @relation(fields: [bancoId], references: [id])
+  titulos      Titulo[]
+  pedidosVenda PedidoVenda[]
 
   @@unique([empresaId, cnpjCpf])
   @@index([empresaId])
@@ -496,14 +500,17 @@ model ContaBancaria {
   criadoEm     DateTime          @default(now())
   atualizadoEm DateTime          @updatedAt
 
-  filial             Filial                   @relation(fields: [filialId], references: [id], onDelete: Cascade)
-  banco              Banco                    @relation(fields: [bancoId], references: [id])
-  titulos            Titulo[]
-  baixas             Baixa[]
-  lancamentos        LancamentoBancario[]
-  saldosInformados   SaldoBancarioInformado[]
-  extratosImportados ExtratoImportado[]
-  linhasExtrato      LinhaExtrato[]
+  filial                         Filial                   @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  banco                          Banco                    @relation(fields: [bancoId], references: [id])
+  titulos                        Titulo[]
+  baixas                         Baixa[]
+  lancamentos                    LancamentoBancario[]
+  saldosInformados               SaldoBancarioInformado[]
+  extratosImportados             ExtratoImportado[]
+  linhasExtrato                  LinhaExtrato[]
+  pedidosVenda                   PedidoVenda[]
+  configuracoesRecebimentoPadrao ConfiguracaoProducao[]   @relation("ContaRecebimentoPadrao")
+  configuracoesCaixaPadrao       ConfiguracaoProducao[]   @relation("ContaCaixaPadrao")
 
   @@unique([filialId, bancoId, agencia, conta])
   @@index([filialId])
@@ -594,6 +601,7 @@ model Titulo {
   parcelas      Parcela[]
   anexos        Anexo[]
   recepcaoFruto RecepcaoFruto?
+  pedidoVenda   PedidoVenda?
 
   @@index([filialId])
   @@index([fornecedorId])
@@ -647,6 +655,7 @@ model Baixa {
   usuario       Usuario              @relation("BaixaRegistradaPor", fields: [usuarioId], references: [id])
   avaliadoPor   Usuario?             @relation("BaixaAvaliadaPor", fields: [avaliadoPorId], references: [id])
   lancamentos   LancamentoBancario[]
+  pedidoVenda   PedidoVenda?
 
   @@index([parcelaId])
   @@map("baixas")
@@ -939,11 +948,17 @@ model ConfiguracaoProducao {
   toleranciaBalancoMassa        Decimal  @default(0.03) @db.Decimal(5, 4)
   categoriaCompraFrutoId        String?
   prazoPagamentoProdutorDias    Int      @default(0)
+  categoriaVendaId              String?
+  contaRecebimentoPadraoId      String?
+  contaCaixaPadraoId            String?
   criadoEm                      DateTime @default(now())
   atualizadoEm                  DateTime @updatedAt
 
-  filial               Filial               @relation(fields: [filialId], references: [id], onDelete: Cascade)
-  categoriaCompraFruto CategoriaFinanceira? @relation(fields: [categoriaCompraFrutoId], references: [id], onDelete: SetNull)
+  filial                 Filial               @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  categoriaCompraFruto   CategoriaFinanceira? @relation("CategoriaCompraFruto", fields: [categoriaCompraFrutoId], references: [id], onDelete: SetNull)
+  categoriaVenda         CategoriaFinanceira? @relation("CategoriaVenda", fields: [categoriaVendaId], references: [id], onDelete: SetNull)
+  contaRecebimentoPadrao ContaBancaria?       @relation("ContaRecebimentoPadrao", fields: [contaRecebimentoPadraoId], references: [id], onDelete: SetNull)
+  contaCaixaPadrao       ContaBancaria?       @relation("ContaCaixaPadrao", fields: [contaCaixaPadraoId], references: [id], onDelete: SetNull)
 
   @@map("configuracoes_producao")
 }
@@ -975,6 +990,8 @@ enum TipoMovimentoEstoque {
   ENTRADA
   ESTORNO_RECEPCAO
   AJUSTE
+  VENDA
+  ESTORNO_VENDA
 }
 
 enum MotivoAjusteEstoque {
@@ -1002,12 +1019,13 @@ model Lote {
   criadoEm            DateTime   @default(now())
   atualizadoEm        DateTime   @updatedAt
 
-  filial     Filial             @relation(fields: [filialId], references: [id], onDelete: Cascade)
-  produto    Produto            @relation(fields: [produtoId], references: [id], onDelete: Restrict)
-  local      LocalArmazenamento @relation(fields: [localId], references: [id], onDelete: Restrict)
-  movimentos MovimentoEstoque[]
-  ajustes    AjusteEstoque[]
-  recepcao   RecepcaoFruto?
+  filial           Filial             @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  produto          Produto            @relation(fields: [produtoId], references: [id], onDelete: Restrict)
+  local            LocalArmazenamento @relation(fields: [localId], references: [id], onDelete: Restrict)
+  movimentos       MovimentoEstoque[]
+  ajustes          AjusteEstoque[]
+  recepcao         RecepcaoFruto?
+  itensPedidoVenda ItemPedidoVenda[]
 
   @@unique([filialId, codigo])
   @@index([filialId, produtoId])
@@ -1023,15 +1041,18 @@ model MovimentoEstoque {
   tipo         TipoMovimentoEstoque
   quantidadeKg Decimal              @db.Decimal(18, 3)
   ajusteId     String?              @unique
+  itemPedidoId String?
   usuarioId    String
   criadoEm     DateTime             @default(now())
 
-  filial  Filial         @relation(fields: [filialId], references: [id], onDelete: Cascade)
-  lote    Lote           @relation(fields: [loteId], references: [id], onDelete: Cascade)
-  ajuste  AjusteEstoque? @relation(fields: [ajusteId], references: [id])
-  usuario Usuario        @relation(fields: [usuarioId], references: [id])
+  filial     Filial           @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  lote       Lote             @relation(fields: [loteId], references: [id], onDelete: Cascade)
+  ajuste     AjusteEstoque?   @relation(fields: [ajusteId], references: [id])
+  itemPedido ItemPedidoVenda? @relation(fields: [itemPedidoId], references: [id])
+  usuario    Usuario          @relation(fields: [usuarioId], references: [id])
 
   @@index([loteId])
+  @@index([itemPedidoId])
   @@index([filialId, data])
   @@map("movimentos_estoque")
 }
@@ -1091,4 +1112,105 @@ model RecepcaoFruto {
 
   @@index([filialId, data])
   @@map("recepcoes_fruto")
+}
+
+// Fase 7c — vendas e entregas
+
+enum FormaPagamentoVenda {
+  DINHEIRO
+  PIX
+  TRANSFERENCIA
+  CARTAO
+  A_PRAZO
+}
+
+enum StatusPedidoVenda {
+  CONFIRMADO
+  CANCELADO
+}
+
+enum StatusEntrega {
+  PENDENTE
+  EM_ROTA
+  ENTREGUE
+  CANCELADA
+}
+
+model PedidoVenda {
+  id                    String              @id @default(uuid())
+  filialId              String
+  /// Sequencial por filial (RN-02); nunca muda nem é reaproveitado.
+  numero                Int
+  data                  DateTime
+  clienteId             String
+  canal                 CanalVenda?
+  formaPagamento        FormaPagamentoVenda
+  /// Só A_PRAZO.
+  vencimento            DateTime?
+  /// Conta da baixa automática (à vista).
+  contaBancariaId       String?
+  retiraNaPropriedade   Boolean             @default(false)
+  numeroDocumentoFiscal String?
+  observacao            String?
+  status                StatusPedidoVenda   @default(CONFIRMADO)
+  motivoCancelamento    String?
+  canceladoEm           DateTime?
+  /// Título a RECEBER.
+  tituloId              String?             @unique
+  /// Baixa criada pela venda à vista; o cancelamento a apaga.
+  baixaAutomaticaId     String?             @unique
+  usuarioId             String
+  criadoEm              DateTime            @default(now())
+  atualizadoEm          DateTime            @updatedAt
+
+  filial          Filial            @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  cliente         Cliente           @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  contaBancaria   ContaBancaria?    @relation(fields: [contaBancariaId], references: [id], onDelete: Restrict)
+  titulo          Titulo?           @relation(fields: [tituloId], references: [id], onDelete: SetNull)
+  baixaAutomatica Baixa?            @relation(fields: [baixaAutomaticaId], references: [id], onDelete: SetNull)
+  usuario         Usuario           @relation(fields: [usuarioId], references: [id])
+  itens           ItemPedidoVenda[]
+  entrega         Entrega?
+
+  @@unique([filialId, numero])
+  @@index([filialId, data])
+  @@map("pedidos_venda")
+}
+
+model ItemPedidoVenda {
+  id                     String  @id @default(uuid())
+  pedidoId               String
+  loteId                 String
+  quantidadeKg           Decimal @db.Decimal(18, 3)
+  precoKg                Decimal @db.Decimal(18, 4)
+  /// Custo do lote no momento da venda (RN-22).
+  custoKg                Decimal @db.Decimal(18, 4)
+  /// D-03: só quando o lote estava vencido na data do pedido.
+  motivoLiberacaoVencido String?
+
+  pedido     PedidoVenda        @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  lote       Lote               @relation(fields: [loteId], references: [id], onDelete: Restrict)
+  movimentos MovimentoEstoque[]
+
+  @@index([pedidoId])
+  @@index([loteId])
+  @@map("itens_pedido_venda")
+}
+
+/// Só existe para pedido com `retiraNaPropriedade = false` (D-16).
+model Entrega {
+  pedidoId      String        @id
+  dataPrevista  DateTime
+  dataRealizada DateTime?
+  endereco      String?
+  responsavel   String?
+  recebidoPor   String?
+  observacao    String?
+  status        StatusEntrega @default(PENDENTE)
+  atualizadoEm  DateTime      @updatedAt
+
+  pedido PedidoVenda @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  @@index([status, dataPrevista])
+  @@map("entregas")
 }

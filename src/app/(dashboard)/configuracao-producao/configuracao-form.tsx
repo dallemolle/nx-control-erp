@@ -32,14 +32,52 @@ function Campo({
   );
 }
 
+function SelectConfiguracao({
+  id,
+  rotulo,
+  valor,
+  opcoes,
+  ajuda,
+}: {
+  id: string;
+  rotulo: string;
+  valor: string | null;
+  opcoes: { id: string; rotulo: string }[];
+  ajuda?: string;
+}) {
+  const itens = [{ value: SEM_VALOR, label: "Nenhuma" }, ...opcoes.map((o) => ({ value: o.id, label: o.rotulo }))];
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{rotulo}</Label>
+      <Select name={id} defaultValue={valor ?? SEM_VALOR}>
+        <SelectTrigger id={id} className="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {itens.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {ajuda ? <p className="text-xs text-muted-foreground">{ajuda}</p> : null}
+    </div>
+  );
+}
+
 export function ConfiguracaoForm({
   valores,
   somenteLeitura,
   categoriasDespesa,
+  categoriasReceita,
+  contas,
 }: {
   valores: ConfiguracaoProducaoValores;
   somenteLeitura: boolean;
   categoriasDespesa: { id: string; nome: string }[];
+  categoriasReceita: { id: string; nome: string }[];
+  contas: { id: string; tipo: string; rotulo: string }[];
 }) {
   const [state, formAction, pendente] = useActionState(salvarConfiguracaoProducaoAction, ESTADO_INICIAL);
 
@@ -172,6 +210,36 @@ export function ConfiguracaoForm({
               defaultValue={valores.prazoPagamentoProdutorDias}
               ajuda="Vencimento padrão da conta a pagar da compra de fruto. Pode ser mudado em cada recepção."
               required
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Vendas</CardTitle>
+            <CardDescription>
+              Usados pelo pedido de venda para criar a conta a receber e o recebimento à vista.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <SelectConfiguracao
+              id="categoriaVendaId"
+              rotulo="Categoria de venda"
+              valor={valores.categoriaVendaId}
+              opcoes={categoriasReceita.map((c) => ({ id: c.id, rotulo: c.nome }))}
+              ajuda="Sem categoria, o pedido de venda é recusado."
+            />
+            <SelectConfiguracao
+              id="contaRecebimentoPadraoId"
+              rotulo="Conta de recebimento (Pix, transferência, cartão)"
+              valor={valores.contaRecebimentoPadraoId}
+              opcoes={contas.filter((c) => c.tipo !== "CAIXA")}
+            />
+            <SelectConfiguracao
+              id="contaCaixaPadraoId"
+              rotulo="Conta Caixa (dinheiro)"
+              valor={valores.contaCaixaPadraoId}
+              opcoes={contas.filter((c) => c.tipo === "CAIXA")}
+              ajuda="Cadastre uma conta do tipo Caixa em Cadastros → Contas bancárias."
             />
           </CardContent>
         </Card>
