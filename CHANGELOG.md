@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.16](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.15...nx-control-erp-v0.1.16) (2026-11-10)
+
+
+### Novidades
+
+* **financeiro:** conta Caixa para dinheiro em espécie (Fase B fiscal) ([6289316](https://github.com/dallemolle/nx-control-erp/commit/628931635558242265d54d4599724062e14d529e))
+
 ## [0.1.15](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.14...nx-control-erp-v0.1.15) (2026-11-09)
 
 
