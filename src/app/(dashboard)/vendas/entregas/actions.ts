@@ -11,8 +11,8 @@ export type FormState = { erro?: string; sucesso?: boolean };
 export async function atualizarEntregaAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const sessao = await requireSessaoAtiva();
   const pedidoId = String(formData.get("pedidoId") ?? "");
-  const { pedidoId: _ignorado, ...campos } = Object.fromEntries(formData);
-  const parsed = entregaSchema.safeParse(campos);
+  // O schema ignora chaves desconhecidas (pedidoId e as internas do React).
+  const parsed = entregaSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     return { erro: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
