@@ -62,4 +62,13 @@ describe("secoesVisiveis", () => {
       ]);
     }
   });
+
+  test("seção Vendas com pedidos e entregas para quem tem venda:ler", () => {
+    for (const perfil of ["VENDAS", "PRODUCAO", "CONSULTA"] as const) {
+      const titulos = secoesVisiveis(perfil).map((s) => s.titulo);
+      expect(titulos.indexOf("Vendas")).toBe(titulos.indexOf("Produção") + 1);
+      const vendas = secoesVisiveis(perfil).find((s) => s.titulo === "Vendas");
+      expect(vendas?.itens.map((i) => i.href)).toEqual(["/vendas/pedidos", "/vendas/entregas"]);
+    }
+  });
 });
