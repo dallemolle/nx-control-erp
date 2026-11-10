@@ -3,8 +3,9 @@ import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permiss
 import { registrarAuditoria } from "@/server/audit/registrar";
 import { recalcularEPersistirStatusParcela } from "@/server/services/parcela";
 import type { SessaoAtiva } from "@/server/auth/sessao";
-import type { StatusAprovacaoBaixa } from "@prisma/client";
+import type { Prisma, StatusAprovacaoBaixa } from "@prisma/client";
 import type { BaixaFormValues } from "@/lib/schemas/baixa";
+import type { ContextoTitulo } from "./titulo";
 
 async function buscarParcelaDaFilial(filialId: string, parcelaId: string) {
   return prisma.parcela.findFirstOrThrow({ where: { id: parcelaId, titulo: { filialId } } });
@@ -87,65 +88,76 @@ export async function aprovarBaixa(sessao: SessaoAtiva, baixaId: string) {
   const anterior = await buscarBaixaDaFilial(sessao.filialId, baixaId);
   garantirBaixaPendente(anterior.statusAprovacao);
 
-  const baixa = await prisma.$transaction(async (tx) => {
-    const parcela = await tx.parcela.findUniqueOrThrow({
-      where: { id: anterior.parcelaId },
-      include: { titulo: true },
-    });
+  const { baixa } = await prisma.$transaction((tx) => efetivarBaixa(tx, sessao, baixaId));
+  return baixa;
+}
 
-    const baixaAtualizada = await tx.baixa.update({
-      where: { id: baixaId },
-      data: { statusAprovacao: "APROVADO", avaliadoPorId: sessao.usuarioId, avaliadoEm: new Date() },
-    });
-    await recalcularEPersistirStatusParcela(anterior.parcelaId, tx);
+/**
+ * Núcleo da aprovação, sem checagem de perfil: aprova, recalcula a parcela e
+ * gera o lançamento bancário. Usado por `aprovarBaixa` e pela venda à vista,
+ * que cria a baixa já aprovada com a permissão `venda:escrever`. Quem chama é
+ * responsável pela permissão e pelo escopo da filial.
+ */
+export async function efetivarBaixa(tx: Prisma.TransactionClient, contexto: ContextoTitulo, baixaId: string) {
+  // Relida dentro da transação: duas aprovações simultâneas não geram dois lançamentos.
+  const anterior = await tx.baixa.findUniqueOrThrow({ where: { id: baixaId } });
+  garantirBaixaPendente(anterior.statusAprovacao);
 
-    const conta = await tx.contaBancaria.findUniqueOrThrow({
-      where: { id: anterior.contaBancariaId },
-      select: { tipo: true },
-    });
-
-    const lancamento = await tx.lancamentoBancario.create({
-      data: {
-        filialId: sessao.filialId,
-        contaBancariaId: anterior.contaBancariaId,
-        data: anterior.data,
-        tipo: parcela.titulo.tipo === "RECEBER" ? "ENTRADA" : "SAIDA",
-        valor: anterior.valorPago,
-        descricao: `Baixa aprovada — parcela nº ${parcela.numero}`,
-        categoriaFinanceiraId: parcela.titulo.categoriaFinanceiraId,
-        centroCustoId: parcela.titulo.centroCustoId,
-        centroLucroId: parcela.titulo.centroLucroId,
-        safraId: parcela.titulo.safraId,
-        projetoId: parcela.titulo.projetoId,
-        classificacaoFiscal: parcela.titulo.classificacaoFiscal,
-        tipoComprovante: parcela.titulo.tipoComprovante,
-        numeroComprovante: parcela.titulo.numeroDocumentoFiscal,
-        origem: "BAIXA",
-        baixaId: baixaAtualizada.id,
-        // Pago/recebido em dinheiro (conta Caixa): entra direto no realizado, sem extrato.
-        conciliado: conta.tipo === "CAIXA",
-        usuarioId: sessao.usuarioId,
-      },
-    });
-
-    await registrarAuditoria(
-      {
-        empresaId: sessao.empresaId,
-        filialId: sessao.filialId,
-        usuarioId: sessao.usuarioId,
-        entidade: "Baixa",
-        entidadeId: baixaId,
-        acao: "APROVAR",
-        anterior: { statusAprovacao: anterior.statusAprovacao },
-        novo: { statusAprovacao: "APROVADO", lancamentoBancarioId: lancamento.id },
-      },
-      tx,
-    );
-
-    return baixaAtualizada;
+  const parcela = await tx.parcela.findUniqueOrThrow({
+    where: { id: anterior.parcelaId },
+    include: { titulo: true },
   });
 
-  return baixa;
+  const baixa = await tx.baixa.update({
+    where: { id: baixaId },
+    data: { statusAprovacao: "APROVADO", avaliadoPorId: contexto.usuarioId, avaliadoEm: new Date() },
+  });
+  await recalcularEPersistirStatusParcela(anterior.parcelaId, tx);
+
+  const conta = await tx.contaBancaria.findUniqueOrThrow({
+    where: { id: anterior.contaBancariaId },
+    select: { tipo: true },
+  });
+
+  const lancamento = await tx.lancamentoBancario.create({
+    data: {
+      filialId: contexto.filialId,
+      contaBancariaId: anterior.contaBancariaId,
+      data: anterior.data,
+      tipo: parcela.titulo.tipo === "RECEBER" ? "ENTRADA" : "SAIDA",
+      valor: anterior.valorPago,
+      descricao: `Baixa aprovada — parcela nº ${parcela.numero}`,
+      categoriaFinanceiraId: parcela.titulo.categoriaFinanceiraId,
+      centroCustoId: parcela.titulo.centroCustoId,
+      centroLucroId: parcela.titulo.centroLucroId,
+      safraId: parcela.titulo.safraId,
+      projetoId: parcela.titulo.projetoId,
+      classificacaoFiscal: parcela.titulo.classificacaoFiscal,
+      tipoComprovante: parcela.titulo.tipoComprovante,
+      numeroComprovante: parcela.titulo.numeroDocumentoFiscal,
+      origem: "BAIXA",
+      baixaId: baixa.id,
+      // Pago/recebido em dinheiro (conta Caixa): entra direto no realizado, sem extrato.
+      conciliado: conta.tipo === "CAIXA",
+      usuarioId: contexto.usuarioId,
+    },
+  });
+
+  await registrarAuditoria(
+    {
+      empresaId: contexto.empresaId,
+      filialId: contexto.filialId,
+      usuarioId: contexto.usuarioId,
+      entidade: "Baixa",
+      entidadeId: baixaId,
+      acao: "APROVAR",
+      anterior: { statusAprovacao: anterior.statusAprovacao },
+      novo: { statusAprovacao: "APROVADO", lancamentoBancarioId: lancamento.id },
+    },
+    tx,
+  );
+
+  return { baixa, lancamentoId: lancamento.id };
 }
 
 export async function rejeitarBaixa(sessao: SessaoAtiva, baixaId: string, motivo: string) {
