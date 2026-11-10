@@ -21,7 +21,8 @@ const COLUNAS: ColunaExport<RecepcaoListada>[] = [
   {
     rotulo: "Descarte (%)",
     tipo: "percentual",
-    valor: (r) => (Number(r.pesoBrutoKg) > 0 ? Number(r.descarteKg) / Number(r.pesoBrutoKg) : 0),
+    // Coluna percentual espera o valor já em % (5,4), não a fração (0,054).
+    valor: (r) => (Number(r.pesoBrutoKg) > 0 ? (Number(r.descarteKg) / Number(r.pesoBrutoKg)) * 100 : 0),
   },
   { rotulo: "Líquido (kg)", valor: (r) => Number(r.pesoBrutoKg) - Number(r.descarteKg) },
   { rotulo: "R$/kg", valor: (r) => Number(r.precoKg) },
