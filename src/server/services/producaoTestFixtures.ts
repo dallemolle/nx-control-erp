@@ -2,6 +2,7 @@ import type { Perfil } from "@prisma/client";
 import { prisma } from "@/server/db/client";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { registrarMovimento } from "./estoque";
+import { obterBancoCaixa } from "./banco";
 
 export type FixtureProducao = {
   empresaId: string;
@@ -9,6 +10,8 @@ export type FixtureProducao = {
   filialAId: string;
   filialBId: string;
   usuarioId: string;
+  /** Prefixo do código dos bancos criados pelo teste; `limpar()` apaga os que começam com ele. */
+  prefixoBanco: string;
   /** Sessão na filial A (ou B) com o perfil pedido; as permissões vêm só do perfil. */
   sessao: (perfil: Perfil, opcoes?: { filial?: "A" | "B"; somenteLeitura?: boolean }) => SessaoAtiva;
   limpar: () => Promise<void>;
@@ -33,12 +36,14 @@ export async function criarFixtureProducao(sufixo: string): Promise<FixtureProdu
   });
 
   const empresas = [empresa.id, outra.id];
+  const prefixoBanco = `T${d}`;
   return {
     empresaId: empresa.id,
     outraEmpresaId: outra.id,
     filialAId: filialA.id,
     filialBId: filialB.id,
     usuarioId: usuario.id,
+    prefixoBanco,
     sessao: (perfil, opcoes = {}) => ({
       usuarioId: usuario.id,
       nome: usuario.nome,
@@ -50,8 +55,13 @@ export async function criarFixtureProducao(sufixo: string): Promise<FixtureProdu
     limpar: async () => {
       const filiais = { filial: { empresaId: { in: empresas } } };
       await prisma.auditLog.deleteMany({ where: { empresaId: { in: empresas } } });
+      // Extratos e lançamentos antes das contas; pedidos antes de título, cliente e lote.
+      await prisma.linhaExtrato.deleteMany({ where: { contaBancaria: filiais } });
+      await prisma.extratoImportado.deleteMany({ where: filiais });
+      await prisma.lancamentoBancario.deleteMany({ where: filiais });
       // Estoque e recepções antes de lote/produto/local (relações Restrict).
       await prisma.movimentoEstoque.deleteMany({ where: filiais });
+      await prisma.pedidoVenda.deleteMany({ where: filiais });
       await prisma.ajusteEstoque.deleteMany({ where: filiais });
       await prisma.recepcaoFruto.deleteMany({ where: filiais });
       await prisma.titulo.deleteMany({ where: filiais });
@@ -61,6 +71,7 @@ export async function criarFixtureProducao(sufixo: string): Promise<FixtureProdu
       await prisma.produto.deleteMany({ where: { empresaId: { in: empresas } } });
       await prisma.talhao.deleteMany({ where: { filial: { empresaId: { in: empresas } } } });
       await prisma.empresa.deleteMany({ where: { id: { in: empresas } } });
+      await prisma.banco.deleteMany({ where: { codigo: { startsWith: prefixoBanco } } });
       await prisma.usuario.delete({ where: { id: usuario.id } });
     },
   };
@@ -134,6 +145,65 @@ export async function criarCatalogoDeTeste(fx: FixtureProducao): Promise<Catalog
     fornecedorId: fornecedor.id,
     categoriaCompraId: categoria.id,
   };
+}
+
+export type CadastrosDeVenda = {
+  /** Sem classificação padrão; canal ATACADO, endereço "Rua A, 10", não retira. */
+  clienteId: string;
+  /** Classificação padrão FISCAL. */
+  clienteFiscalId: string;
+  /** Categoria RECEITA da filial A. */
+  categoriaVendaId: string;
+  contaCaixaId: string;
+  contaCorrenteId: string;
+};
+
+/** Cliente, categoria de receita e contas (Caixa e corrente) da filial A, para a venda. */
+export async function criarCadastrosDeVenda(fx: FixtureProducao): Promise<CadastrosDeVenda> {
+  const cliente = await prisma.cliente.create({
+    data: {
+      empresaId: fx.empresaId,
+      nome: "Cliente exemplo",
+      canalVenda: "ATACADO",
+      enderecoEntrega: "Rua A, 10",
+      retiraNaPropriedade: false,
+    },
+  });
+  const clienteFiscal = await prisma.cliente.create({
+    data: { empresaId: fx.empresaId, nome: "Cliente fiscal", classificacaoFiscalPadrao: "FISCAL" },
+  });
+  const categoria = await prisma.categoriaFinanceira.create({
+    data: { filialId: fx.filialAId, nome: "Venda de produtos", tipo: "RECEITA" },
+  });
+  const bancoCaixa = await obterBancoCaixa();
+  const caixa = await prisma.contaBancaria.create({
+    data: { filialId: fx.filialAId, bancoId: bancoCaixa.id, agencia: "-", conta: "Caixa teste", tipo: "CAIXA" },
+  });
+  const banco = await prisma.banco.create({ data: { codigo: `${fx.prefixoBanco}1`, nome: "Banco teste" } });
+  const corrente = await prisma.contaBancaria.create({
+    data: { filialId: fx.filialAId, bancoId: banco.id, agencia: "1", conta: "123-4" },
+  });
+  return {
+    clienteId: cliente.id,
+    clienteFiscalId: clienteFiscal.id,
+    categoriaVendaId: categoria.id,
+    contaCaixaId: caixa.id,
+    contaCorrenteId: corrente.id,
+  };
+}
+
+/** Configuração de vendas da filial A apontando para os cadastros de teste. */
+export async function configurarVendas(fx: FixtureProducao, cad: CadastrosDeVenda) {
+  const dados = {
+    categoriaVendaId: cad.categoriaVendaId,
+    contaRecebimentoPadraoId: cad.contaCorrenteId,
+    contaCaixaPadraoId: cad.contaCaixaId,
+  };
+  await prisma.configuracaoProducao.upsert({
+    where: { filialId: fx.filialAId },
+    create: { filialId: fx.filialAId, ...dados },
+    update: dados,
+  });
 }
 
 /** Lote com entrada registrada pelo caminho real do estoque (kg 0 cria lote zerado, sem movimento). */

@@ -41,6 +41,13 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    titulo: "Vendas",
+    itens: [
+      { href: "/vendas/pedidos", label: "Pedidos", acao: "venda:ler" },
+      { href: "/vendas/entregas", label: "Entregas", acao: "venda:ler" },
+    ],
+  },
+  {
     titulo: "Cadastros",
     itens: [
       { href: "/cadastros/clientes", label: "Clientes", acao: "cadastro:ler" },

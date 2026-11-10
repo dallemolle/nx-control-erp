@@ -4,7 +4,7 @@ import { PermissionError } from "@/server/auth/permissions";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
 import { criarTitulo } from "./titulo";
 import type { TipoTitulo } from "@prisma/client";
-import { registrarBaixa, aprovarBaixa, rejeitarBaixa, listarBaixasPendentes } from "./baixa";
+import { registrarBaixa, aprovarBaixa, rejeitarBaixa, listarBaixasPendentes, efetivarBaixa } from "./baixa";
 
 describe("baixa (fluxo de aprovação)", () => {
   let fixture: FixtureFinanceiro; // perfil FINANCEIRO: pode registrar baixa, não aprovar
@@ -285,5 +285,30 @@ describe("baixa (fluxo de aprovação)", () => {
     expect(lancamento.centroLucroId).toBe(centroLucro.id);
     expect(lancamento.safraId).toBe(safra.id);
     expect(lancamento.projetoId).toBe(projeto.id);
+  });
+
+  test("efetivarBaixa aprova sem exigir titulo:aprovar (usada pela venda à vista)", async () => {
+    // Perfil FINANCEIRO não tem titulo:aprovar; o núcleo não checa perfil.
+    const parcela = await criarParcelaDeTeste(fixture, 120, "RECEBER");
+    const baixa = await registrarBaixa(fixture.sessao, parcela.id, {
+      data: new Date(),
+      valorPago: 120,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fixture.contaBancariaId,
+    });
+    const contexto = { empresaId: fixture.empresaId, filialId: fixture.filialId, usuarioId: fixture.usuarioId };
+
+    const { lancamentoId } = await prisma.$transaction((tx) => efetivarBaixa(tx, contexto, baixa.id));
+
+    expect((await prisma.baixa.findUniqueOrThrow({ where: { id: baixa.id } })).statusAprovacao).toBe("APROVADO");
+    expect((await prisma.parcela.findUniqueOrThrow({ where: { id: parcela.id } })).status).toBe("PAGO");
+    const lancamento = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lancamentoId } });
+    expect(lancamento).toMatchObject({ tipo: "ENTRADA", baixaId: baixa.id });
+
+    await expect(prisma.$transaction((tx) => efetivarBaixa(tx, contexto, baixa.id))).rejects.toThrow(
+      "Esta baixa já foi avaliada",
+    );
   });
 });

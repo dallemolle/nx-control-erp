@@ -32,6 +32,7 @@ export type NovoMovimento = {
   quantidadeKg: number;
   usuarioId: string;
   ajusteId?: string;
+  itemPedidoId?: string;
 };
 
 /** Grava o movimento e atualiza o saldo do lote, na transação de quem chama. */
