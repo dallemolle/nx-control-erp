@@ -1,7 +1,12 @@
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { prisma } from "@/server/db/client";
 import { FilialSomenteLeituraError, PermissionError } from "@/server/auth/permissions";
-import { criarFixtureProducao, type FixtureProducao } from "./producaoTestFixtures";
+import {
+  criarCadastrosDeVenda,
+  criarFixtureProducao,
+  type CadastrosDeVenda,
+  type FixtureProducao,
+} from "./producaoTestFixtures";
 import {
   CONFIGURACAO_PRODUCAO_PADRAO,
   obterConfiguracaoProducao,
@@ -129,5 +134,72 @@ describe("configuração de produção - compra de fruto (7b)", () => {
       prazoPagamentoProdutorDias: 0,
     });
     expect(configuracaoProducaoSchema.safeParse({ ...base, prazoPagamentoProdutorDias: "-1" }).success).toBe(false);
+  });
+});
+
+describe("configuração de produção - vendas (7c)", () => {
+  let fx: FixtureProducao;
+  let cad: CadastrosDeVenda;
+  beforeAll(async () => {
+    fx = await criarFixtureProducao("config7c");
+    cad = await criarCadastrosDeVenda(fx);
+  });
+  afterAll(async () => {
+    await fx.limpar();
+  });
+
+  const salvar = (extra: Partial<typeof CONFIGURACAO_PRODUCAO_PADRAO>) =>
+    salvarConfiguracaoProducao(fx.sessao("ADMINISTRADOR"), { ...CONFIGURACAO_PRODUCAO_PADRAO, ...extra });
+
+  test("salva categoria de venda e contas padrão", async () => {
+    await salvar({
+      categoriaVendaId: cad.categoriaVendaId,
+      contaRecebimentoPadraoId: cad.contaCorrenteId,
+      contaCaixaPadraoId: cad.contaCaixaId,
+    });
+    expect(await obterConfiguracaoProducao(fx.filialAId)).toMatchObject({
+      categoriaVendaId: cad.categoriaVendaId,
+      contaRecebimentoPadraoId: cad.contaCorrenteId,
+      contaCaixaPadraoId: cad.contaCaixaId,
+    });
+  });
+
+  test("recusa categoria de despesa como categoria de venda", async () => {
+    const despesa = await prisma.categoriaFinanceira.create({
+      data: { filialId: fx.filialAId, nome: "Despesa qualquer", tipo: "DESPESA" },
+    });
+    await expect(salvar({ categoriaVendaId: despesa.id })).rejects.toThrow("Categoria de venda inválida");
+  });
+
+  test("recusa conta Caixa como conta de recebimento e conta corrente como conta Caixa", async () => {
+    await expect(salvar({ contaRecebimentoPadraoId: cad.contaCaixaId })).rejects.toThrow(
+      "Conta de recebimento padrão inválida",
+    );
+    await expect(salvar({ contaCaixaPadraoId: cad.contaCorrenteId })).rejects.toThrow("Conta Caixa padrão inválida");
+  });
+
+  test("recusa conta de outra filial", async () => {
+    const corrente = await prisma.contaBancaria.findUniqueOrThrow({ where: { id: cad.contaCorrenteId } });
+    const deOutra = await prisma.contaBancaria.create({
+      data: { filialId: fx.filialBId, bancoId: corrente.bancoId, agencia: "1", conta: "outra-filial" },
+    });
+    await expect(salvar({ contaRecebimentoPadraoId: deOutra.id })).rejects.toThrow(
+      "Conta de recebimento padrão inválida",
+    );
+  });
+
+  test("schema: 'nenhuma' vira null nos três campos", () => {
+    const parsed = configuracaoProducaoSchema.parse({
+      registroAdepara: "",
+      alertaVencimentoCongeladoDias: "30",
+      alertaVencimentoResfriadoDias: "1",
+      branqueamentoTemperaturaMinC: "80",
+      branqueamentoTempoMinS: "10",
+      toleranciaBalancoMassaPercentual: "3",
+      categoriaVendaId: "__nenhum__",
+      contaRecebimentoPadraoId: "__nenhum__",
+      contaCaixaPadraoId: "",
+    });
+    expect(parsed).toMatchObject({ categoriaVendaId: null, contaRecebimentoPadraoId: null, contaCaixaPadraoId: null });
   });
 });

@@ -10,13 +10,13 @@ O sistema também reconhece dimensões próprias do agronegócio, como **Safra**
 
 ### Como este manual está organizado
 
-Os capítulos seguem a mesma organização do menu lateral do sistema: Financeiro, Controladoria, Cadastros, Administração e Gestão. Cada seção explica o que a tela faz, os principais campos e ações disponíveis, e qualquer regra de negócio relevante para o dia a dia.
+Os capítulos seguem a mesma organização do menu lateral do sistema: Financeiro, Controladoria, Produção, Vendas, Cadastros, Administração e Gestão. Cada seção explica o que a tela faz, os principais campos e ações disponíveis, e qualquer regra de negócio relevante para o dia a dia.
 
 ## 2. Primeiros acessos
 
 ### 2.1. Login
 
-O acesso ao sistema é feito por e-mail e senha, na tela inicial. Não há cadastro de usuário autoatendido: novos usuários são criados por um Administrador na tela Usuários (capítulo 6.3).
+O acesso ao sistema é feito por e-mail e senha, na tela inicial. Não há cadastro de usuário autoatendido: novos usuários são criados por um Administrador na tela Usuários (seção 8.3).
 
 ### 2.2. Seleção de empresa e filial
 
@@ -26,7 +26,7 @@ Um mesmo usuário pode ter acesso a mais de uma empresa (por exemplo, um contado
 
 ### 2.3. Navegação
 
-Depois de escolher a empresa e a filial, você chega à primeira tela liberada para o seu perfil. O menu à esquerda lista todas as telas que seu perfil pode acessar, agrupadas por módulo (Financeiro, Controladoria, Produção, Cadastros, Administração, Gestão). No topo da tela ficam sempre visíveis: a empresa e filial atuais, seu nome e perfil, os botões "Trocar empresa"/"Trocar filial" (para mudar de contexto sem precisar sair e entrar de novo) e "Sair".
+Depois de escolher a empresa e a filial, você chega à primeira tela liberada para o seu perfil. O menu à esquerda lista todas as telas que seu perfil pode acessar, agrupadas por módulo (Financeiro, Controladoria, Produção, Vendas, Cadastros, Administração, Gestão). No topo da tela ficam sempre visíveis: a empresa e filial atuais, seu nome e perfil, os botões "Trocar empresa"/"Trocar filial" (para mudar de contexto sem precisar sair e entrar de novo) e "Sair".
 
 ### 2.4. Perfis de usuário e permissões
 
@@ -41,7 +41,7 @@ Cada vínculo de usuário com uma empresa tem um perfil, que determina o que a p
 | Auditor | Acesso de leitura à auditoria e ao dashboard executivo, para revisão e conformidade. |
 | Consulta | Acesso de leitura às telas operacionais, sem poder cadastrar, editar ou aprovar nada. |
 | Produção | Pessoal do galpão: cadastra frutas, produtos, insumos, talhões e locais de armazenamento, lança a recepção de fruto e os ajustes de estoque e imprime etiquetas. Nas próximas versões, também o processamento. Não acessa o financeiro (a conta a pagar da compra de fruto é criada pela própria recepção). |
-| Vendas | Cadastra e edita clientes. Nas próximas versões, também lança pedidos e entregas. Não acessa o financeiro. |
+| Vendas | Cadastra e edita clientes, lança pedidos de venda e cuida das entregas. Não cancela pedidos nem libera lote vencido, e não acessa o financeiro (a conta a receber e o recebimento à vista são criados pelo próprio pedido). |
 
 > Além do perfil, cada acesso a uma filial específica pode ser "somente leitura", independentemente do perfil — ou seja, mesmo um Financeiro pode ficar restrito a só consultar uma determinada filial, se assim for configurado.
 
@@ -159,7 +159,7 @@ Mostra, para a filial atual e o ano escolhido, quanto do movimento tem documento
 
 ## 5. Produção
 
-O módulo de produção substitui a planilha de controle da agroindústria. Antes de começar, faça os cadastros de produção (seção 6.6) e, em Administração → Configuração de produção, escolha a **categoria de compra de fruto** e o **prazo de pagamento ao produtor**.
+O módulo de produção substitui a planilha de controle da agroindústria. Antes de começar, faça os cadastros de produção (seção 7.6) e, em Administração → Configuração de produção, escolha a **categoria de compra de fruto** e o **prazo de pagamento ao produtor**.
 
 ### 5.1. Recepção de fruto
 
@@ -198,37 +198,84 @@ Use para tudo que sai ou entra no estoque sem ser recepção ou venda: lote venc
 
 Em PDF de 100 × 70 mm, pronta para imprimir: empresa, produto, lote, data de recepção ou fabricação, validade, peso líquido, conservação e o registro ADEPARA da filial. Abre pelo botão **Etiqueta** na recepção e no estoque.
 
-## 6. Cadastros
+## 6. Vendas
+
+Antes do primeiro pedido, em Administração → Configuração de produção (seção 8.5), escolha a **categoria de venda**, a **conta de recebimento** (Pix, transferência e cartão) e a **conta Caixa** (dinheiro). A conta Caixa é cadastrada em Cadastros → Contas bancárias, com o tipo Caixa.
+
+### 6.1. Novo pedido
+
+Em Vendas → Pedidos → **Novo pedido**, informe:
+
+- data e **cliente** — ao escolher o cliente, o canal de venda, a classificação (Fiscal ou Gerencial), o "retira na propriedade" e o endereço de entrega vêm do cadastro dele e podem ser mudados no pedido;
+- **forma de pagamento**: dinheiro, Pix, transferência, cartão ou a prazo. À vista, escolha a conta onde o dinheiro entrou (a padrão já vem marcada); a prazo, informe o vencimento;
+- nº da nota fiscal, se a venda for Fiscal e tiver nota;
+- os **itens**: para cada um, o lote (a lista vem em ordem de validade, com o saldo de cada lote), a quantidade em kg ou na unidade comercial do produto (rasa, por exemplo) e o preço por kg (sugerido pelo preço de referência do produto).
+
+Cada item mostra o valor, o custo (o custo do lote) e a margem; o rodapé mostra os totais e a margem %. Um mesmo lote não pode aparecer duas vezes no pedido, e a quantidade não pode passar do saldo do lote.
+
+Ao salvar, o pedido recebe um **número** sequencial da filial e o sistema:
+
+- tira a quantidade de cada lote do estoque;
+- cria a **conta a receber** do cliente (documento = nº da nota, ou PV-número do pedido sem nota), com uma parcela;
+- se a venda for **à vista**, já registra o recebimento aprovado na conta escolhida: a parcela fica paga e o valor entra no fluxo de caixa. Em dinheiro, entra na conta Caixa e não precisa de conciliação;
+- se o cliente **não retira na propriedade**, cria uma entrega pendente (seção 6.3).
+
+O perfil Vendas faz tudo isso sem acessar o financeiro.
+
+**Lote vencido:** um lote com a validade anterior à data do pedido é bloqueado ("O lote … venceu em …"). Só o Administrador e o Gestor podem liberar, item a item, informando o motivo — que fica gravado no item e na auditoria.
+
+### 6.2. Consultar e cancelar pedidos
+
+A lista de pedidos mostra número, data, cliente, canal, forma, valor, margem, a situação do pagamento (Pago, Em aberto, Vencido, Cancelado — lida da conta a receber) e a entrega. Filtre por período (padrão: mês atual), cliente, status e pagamento, e exporte em CSV, Excel ou PDF. O rodapé soma os pedidos confirmados.
+
+Clique no número para abrir o pedido: itens com margem, pagamento (com link para Contas a receber), entrega, observação (pode ser editada sempre) e o **Recibo (PDF)**.
+
+**Corrigir um pedido:** os itens não são editados. Use **Cancelar pedido**, informe o motivo e lance de novo. O cancelamento devolve o estoque aos lotes, cancela a conta a receber e a entrega e, na venda à vista, desfaz o recebimento que o próprio pedido criou. Só o Administrador e o Financeiro cancelam. O cancelamento é recusado quando:
+
+- o financeiro já registrou um recebimento nesse pedido (uma baixa pendente ou aprovada que não foi criada pela venda) — trate primeiro no financeiro;
+- o recebimento à vista já foi conciliado com uma linha do extrato — desfaça a conciliação em Financeiro → Conciliação e cancele depois.
+
+Quando não dá para cancelar, o botão fica desabilitado e o motivo aparece ao lado.
+
+### 6.3. Entregas
+
+Vendas → Entregas lista as entregas pendentes e em rota (mude o filtro de status para ver as entregues, as canceladas ou todas), com data prevista, cliente, endereço, responsável e o **atraso** em dias, destacado quando passa da data prevista. Em cada linha: **Em rota**, **Entregue** (informe a data e quem recebeu) e **Editar** (data prevista, endereço, responsável e observação). As mesmas ações aparecem no pedido. A entrega de um pedido cancelado fica cancelada e não muda mais. Exporte em CSV, Excel ou PDF.
+
+### 6.4. Recibo
+
+PDF A4 com a empresa, o número e a data do pedido, o cliente, os itens (produto, lote, kg, preço por kg e valor), o total, a forma e a situação do pagamento. O recibo de um pedido cancelado sai com "CANCELADO" em destaque.
+
+## 7. Cadastros
 
 Os cadastros auxiliares alimentam os formulários de título e lançamento em todo o sistema. Clientes, Fornecedores, Frutas, Produtos e Insumos pertencem à empresa (são compartilhados entre todas as filiais); os demais cadastros desta seção pertencem à filial atual.
 
-### 6.1. Clientes e Fornecedores
+### 7.1. Clientes e Fornecedores
 
 Cadastro de nome, CNPJ/CPF, contato e, opcionalmente, dados bancários para pagamento (PIX ou depósito bancário). São usados como contraparte dos títulos a receber (clientes) e a pagar (fornecedores). A **Classificação padrão dos títulos** (Nenhuma, Fiscal ou Gerencial) pré-preenche a classificação dos títulos novos daquele parceiro — use Gerencial para quem não emite nota.
 
 No cliente, o **CNPJ/CPF é opcional**: deixe em branco para consumidor final ou "Clientes diversos" (quando preenchido, não pode repetir). A seção **Vendas** do cliente guarda o canal de venda, o município, o endereço de entrega e se o cliente **retira na propriedade** (nesse caso o pedido não gera entrega). Além do Administrador, Financeiro e Tesouraria, o perfil Vendas também pode cadastrar e editar clientes.
 
-### 6.2. Categorias financeiras
+### 7.2. Categorias financeiras
 
 Classificam cada título/lançamento como Receita ou Despesa, com hierarquia opcional (uma categoria pode ter uma categoria "pai", para agrupar categorias relacionadas em relatórios).
 
-### 6.3. Centros de custo e Centros de lucro
+### 7.3. Centros de custo e Centros de lucro
 
 Dimensões analíticas opcionais para títulos e lançamentos, usadas nos relatórios de fluxo de caixa por dimensão e no dashboard executivo. Centro de custo tem hierarquia própria (pode agrupar sub-centros); centro de lucro não.
 
-### 6.4. Safras e Projetos
+### 7.4. Safras e Projetos
 
 Safra representa um ciclo de produção, com data de início e fim próprias (podendo atravessar a virada do ano civil) e status (Planejado, Em andamento, Encerrado). Projeto é uma dimensão livre para acompanhar iniciativas específicas (por exemplo, uma obra de irrigação), com código e status próprios.
 
-### 6.5. Bancos e Contas bancárias
+### 7.5. Bancos e Contas bancárias
 
 Bancos é uma lista de referência (código e nome do banco). Contas bancárias pertencem à filial e trazem agência, conta, tipo (corrente, aplicação, investimento, empréstimo/financiamento ou caixa), moeda e saldo inicial — é a partir daqui que as baixas, lançamentos e conciliação bancária operam.
 
 O tipo **Caixa (dinheiro em espécie)** é para o dinheiro guardado na empresa. Ele não pede banco nem agência: basta uma identificação (por exemplo, "Escritório" ou "Fazenda"), e dá para ter mais de um caixa. Uma conta Caixa não aparece na importação de extrato. Uma conta só pode mudar de ou para o tipo Caixa enquanto não tiver lançamentos.
 
-### 6.6. Cadastros de produção
+### 7.6. Cadastros de produção
 
-Base para a recepção de fruto, o processamento e as vendas por lote, que chegam nas próximas versões. Podem ser editados pelo Administrador e pelo perfil Produção. Cadastre nesta ordem:
+Base para a recepção de fruto, as vendas por lote e o processamento (este nas próximas versões). Podem ser editados pelo Administrador e pelo perfil Produção. Cadastre nesta ordem:
 
 1. **Frutas** (da empresa): nome, **custo-padrão do fruto próprio** (R$/kg, usado no custo e na margem do fruto colhido nos talhões; deixe 0 se ainda não souber) e se a fruta **exige branqueamento** no processamento (o açaí exige).
 2. **Produtos** (da empresa): código, descrição, fruta, categoria (fruto ou polpa), conservação (in natura, resfriado ou congelado), validade em dias, preço de referência e texto de armazenamento da etiqueta. O **código** (ex.: FA, AGC) vira o início do número de lote (FA-260927-01). A **unidade comercial** é opcional: para o açaí, "rasa = 14 kg" permite lançar quantidade e preço por rasa.
@@ -236,17 +283,17 @@ Base para a recepção de fruto, o processamento e as vendas por lote, que chega
 4. **Locais de armazenamento** (da filial): câmaras, freezers e áreas de recepção, com temperatura e capacidade (opcional, usada para mostrar a ocupação no estoque).
 5. **Insumos** (da empresa): embalagens, energia e mão de obra, com unidade e custo unitário de referência.
 
-## 7. Administração
+## 8. Administração
 
-### 7.1. Empresas
+### 8.1. Empresas
 
 Cadastro das empresas atendidas pelo sistema. Ao criar uma empresa, o sistema já cria automaticamente uma filial "Matriz" e vincula quem criou como Administrador dela.
 
-### 7.2. Filiais
+### 8.2. Filiais
 
 Cadastro das filiais (unidades operacionais) de cada empresa. Cada filial tem seu próprio conjunto de cadastros (categorias, centros de custo/lucro, safras, projetos, contas bancárias) e seus próprios títulos e lançamentos.
 
-### 7.3. Usuários
+### 8.3. Usuários
 
 Um Administrador cadastra aqui os usuários da empresa, define o perfil de cada um (seção 2.4) e concede ou remove o acesso a cada filial individualmente, incluindo se o acesso é de alteração ou somente leitura.
 
@@ -254,25 +301,27 @@ Um Administrador cadastra aqui os usuários da empresa, define o perfil de cada 
 
 Cada usuário também pode ter uma ou mais chaves de API, usadas para autenticar chamadas na API REST do sistema — útil para automações e integrações externas. Ao gerar uma chave, o Administrador escolhe um nome para identificá-la; a chave completa só é mostrada uma única vez, no momento da criação, e depois disso só o prefixo fica visível, junto com a data de criação e a do último uso. Uma chave pode ser revogada a qualquer momento, e chaves de usuários inativos param de funcionar automaticamente.
 
-### 7.4. Auditoria
+### 8.4. Auditoria
 
 Registra automaticamente toda alteração relevante feita no sistema — quem fez, quando, em qual filial, o que mudou (valor anterior e valor novo). A tela permite filtrar por entidade (o tipo de registro alterado — Título, Baixa, Conciliação etc.), ação (Criar, Atualizar, Aprovar, Rejeitar etc.), usuário, filial e período, com paginação para navegar entre muitos registros.
 
 > Só os perfis Administrador, Gestor e Auditor têm acesso a esta tela.
 
-### 7.5. Configuração de produção
+### 8.5. Configuração de produção
 
 Parâmetros da filial atual usados pela produção: registro na ADEPARA (vai para a etiqueta do lote), com quantos dias de antecedência um lote congelado ou resfriado aparece como "vencendo", temperatura e tempo mínimos do branqueamento, e a tolerância do balanço de massa (em %). Enquanto nada for salvo, valem os padrões: 30 dias (congelado), 1 dia (in natura e resfriado), 80 °C, 10 segundos e 3%. Só o Administrador altera esta tela.
 
-## 8. Gestão
+O card **Vendas** define a **categoria de venda** (uma categoria de receita, usada na conta a receber de cada pedido), a **conta de recebimento** (usada nas vendas em Pix, transferência e cartão; não pode ser uma conta Caixa) e a **conta Caixa** (usada nas vendas em dinheiro). Sem a categoria de venda, nenhum pedido é aceito.
 
-### 8.1. Dashboard executivo
+## 9. Gestão
+
+### 9.1. Dashboard executivo
 
 Visão consolidada das filiais ativas da empresa, pensada para quem acompanha o negócio como um todo (Administrador, Gestor, Auditor). Reúne os principais indicadores financeiros (caixa disponível, contas a pagar/receber em aberto, inadimplência, geração de caixa do mês, obrigações dos próximos 7/30 dias, recebimentos esperados e saldo projetado), um bloco **Fiscal × gerencial** do mês (entradas fiscais e gerenciais, percentual gerencial e número de pendências fiscais) e três gráficos: entradas x saídas dos últimos 6 meses, evolução do saldo, e aging (distribuição por faixa de atraso/vencimento) das contas a pagar e a receber.
 
 Filiais desativadas não entram nesses números (nem no Fluxo de caixa estratégico). Se alguma delas ainda tiver parcelas em aberto ou saldo em caixa, um aviso no topo da tela mostra quais e quanto — para tratar essas pendências, um administrador pode reativar a filial em Administração → Filiais.
 
-## 9. Glossário
+## 10. Glossário
 
 | Termo | Significado |
 |---|---|
@@ -285,6 +334,8 @@ Filiais desativadas não entram nesses números (nem no Fluxo de caixa estratég
 | Rasa | Unidade comercial do açaí: 1 rasa = 14 kg. O sistema converte para kg sozinho. |
 | Lote | Uma quantidade de fruto ou polpa com número próprio, validade e saldo. Cada recepção cria um lote. |
 | FEFO | "Primeiro que vence, primeiro que sai": as listas de lotes vêm em ordem de validade. |
+| Margem | Valor da venda menos o custo dos lotes vendidos (custo do lote × kg). A margem % é a margem dividida pelo valor. |
+| Retira na propriedade | O cliente busca a mercadoria; o pedido não gera entrega. |
 | Conciliação | O processo de casar as linhas do extrato bancário real com os lançamentos já registrados no sistema. |
 | Safra | Um ciclo de produção agrícola, com período próprio de início e fim. |
 | Centro de custo / Centro de lucro | Dimensões analíticas para agrupar receitas e despesas além da categoria financeira. |

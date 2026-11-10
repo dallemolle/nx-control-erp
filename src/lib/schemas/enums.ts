@@ -155,3 +155,22 @@ export const ROTULOS_MOTIVO_AJUSTE = {
   CONSUMO_INTERNO: "Consumo interno",
   OUTRO: "Outro",
 } as const;
+
+// Fase 7c — vendas e entregas
+export const FORMA_PAGAMENTO_VENDA = ["DINHEIRO", "PIX", "TRANSFERENCIA", "CARTAO", "A_PRAZO"] as const;
+export const ROTULOS_FORMA_PAGAMENTO_VENDA = {
+  DINHEIRO: "Dinheiro",
+  PIX: "Pix",
+  TRANSFERENCIA: "Transferência",
+  CARTAO: "Cartão",
+  A_PRAZO: "A prazo",
+} as const;
+export const STATUS_PEDIDO_VENDA = ["CONFIRMADO", "CANCELADO"] as const;
+export const ROTULOS_STATUS_PEDIDO_VENDA = { CONFIRMADO: "Confirmado", CANCELADO: "Cancelado" } as const;
+export const STATUS_ENTREGA = ["PENDENTE", "EM_ROTA", "ENTREGUE", "CANCELADA"] as const;
+export const ROTULOS_STATUS_ENTREGA = {
+  PENDENTE: "Pendente",
+  EM_ROTA: "Em rota",
+  ENTREGUE: "Entregue",
+  CANCELADA: "Cancelada",
+} as const;

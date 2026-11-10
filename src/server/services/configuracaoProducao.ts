@@ -15,6 +15,12 @@ export type ConfiguracaoProducaoValores = {
   categoriaCompraFrutoId: string | null;
   /** Vencimento padrão da compra de fruto, em dias após a recepção. */
   prazoPagamentoProdutorDias: number;
+  /** Categoria (RECEITA) dos títulos a receber gerados pela venda. */
+  categoriaVendaId: string | null;
+  /** Conta (não Caixa) do recebimento à vista em Pix, transferência e cartão. */
+  contaRecebimentoPadraoId: string | null;
+  /** Conta Caixa do recebimento à vista em dinheiro. */
+  contaCaixaPadraoId: string | null;
 };
 
 export const CONFIGURACAO_PRODUCAO_PADRAO: ConfiguracaoProducaoValores = {
@@ -26,6 +32,9 @@ export const CONFIGURACAO_PRODUCAO_PADRAO: ConfiguracaoProducaoValores = {
   toleranciaBalancoMassa: 0.03,
   categoriaCompraFrutoId: null,
   prazoPagamentoProdutorDias: 0,
+  categoriaVendaId: null,
+  contaRecebimentoPadraoId: null,
+  contaCaixaPadraoId: null,
 };
 
 /** Configuração gravada da filial, ou os padrões se ainda não foi salva (sem gravar). */
@@ -41,6 +50,9 @@ export async function obterConfiguracaoProducao(filialId: string): Promise<Confi
     toleranciaBalancoMassa: Number(c.toleranciaBalancoMassa),
     categoriaCompraFrutoId: c.categoriaCompraFrutoId,
     prazoPagamentoProdutorDias: c.prazoPagamentoProdutorDias,
+    categoriaVendaId: c.categoriaVendaId,
+    contaRecebimentoPadraoId: c.contaRecebimentoPadraoId,
+    contaCaixaPadraoId: c.contaCaixaPadraoId,
   };
 }
 
@@ -54,6 +66,27 @@ export async function salvarConfiguracaoProducao(sessao: SessaoAtiva, dados: Con
       select: { id: true },
     });
     if (!categoria) throw new Error("Categoria de compra de fruto inválida");
+  }
+  if (dados.categoriaVendaId) {
+    const categoria = await prisma.categoriaFinanceira.findFirst({
+      where: { id: dados.categoriaVendaId, filialId: sessao.filialId, tipo: "RECEITA" },
+      select: { id: true },
+    });
+    if (!categoria) throw new Error("Categoria de venda inválida");
+  }
+  if (dados.contaRecebimentoPadraoId) {
+    const conta = await prisma.contaBancaria.findFirst({
+      where: { id: dados.contaRecebimentoPadraoId, filialId: sessao.filialId, ativo: true, tipo: { not: "CAIXA" } },
+      select: { id: true },
+    });
+    if (!conta) throw new Error("Conta de recebimento padrão inválida");
+  }
+  if (dados.contaCaixaPadraoId) {
+    const conta = await prisma.contaBancaria.findFirst({
+      where: { id: dados.contaCaixaPadraoId, filialId: sessao.filialId, ativo: true, tipo: "CAIXA" },
+      select: { id: true },
+    });
+    if (!conta) throw new Error("Conta Caixa padrão inválida");
   }
 
   const anterior = await obterConfiguracaoProducao(sessao.filialId);
