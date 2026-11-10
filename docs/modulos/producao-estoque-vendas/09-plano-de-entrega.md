@@ -5,15 +5,20 @@ spec curta em `docs/superpowers/specs/` → aprovação → implementação numa
 branch própria → PR para `staging`.
 
 **Ordem guiada pelo uso real:** a planilha hoje só registra recepção e
-venda in natura. Entregar isso primeiro, migrar os dados e **desligar
-essa parte da planilha** antes de construir o processamento, que ainda não
-começou a ser usado.
+venda in natura. Entregar isso primeiro e depois construir o
+processamento, que ainda não começou a ser usado.
+
+**7d adiada (2026-11-10):** sem importação de dados antigos por ora
+(D-21), a filial da Hortitex será cadastrada na implantação (D-17) e a
+numeração recomeça (D-18). A importação e o corte da planilha ficam para
+depois do desenvolvimento, se forem necessários; a seção
+[Importação da planilha](#importação-da-planilha-7d) fica como referência.
 
 ```
-7a Fundação ─► 7b Recepção e estoque ─► 7c Vendas e entregas ─► 7d Importação + corte
-                                                                     │
-          (Fase B fiscal: conta Caixa — antes ou junto de 7c)        ▼
-                                              7e Processamento (OP) ─► 7f Rastreabilidade ─► 7g Painel e relatórios
+7a Fundação ─► 7b Recepção e estoque ─► 7c Vendas e entregas ─► 7e Processamento (OP) ─► 7f Rastreabilidade ─► 7g Painel e relatórios
+
+          (Fase B fiscal: conta Caixa — antes ou junto de 7c)
+          (7d Importação + corte: adiada para depois do desenvolvimento)
 ```
 
 | Sub-projeto | Entrega | Depende de | Decisões necessárias | Tamanho |
@@ -21,7 +26,7 @@ começou a ser usado.
 | **7a Fundação** | Perfis PRODUCAO e VENDAS; ações de RBAC; cadastros de fruta, produto (com rasa), talhão, local, insumo; configuração de produção por filial; ajustes em Cliente/Fornecedor; menu Produção e Vendas. | — | D-09, D-02 | M |
 | **7b Recepção e estoque** | Recepção de fruto (própria/terceiro, rasa); lote com nº imutável; ledger e saldo; validade e status; tela de estoque (por lote e produto × local, ocupação); ajustes; título a pagar de terceiro; etiqueta em PDF. | 7a | D-04, D-13 | L |
 | **7c Vendas e entregas** | Pedido com itens por lote (FEFO, bloqueios RN-18/19); custo e margem gravados; título a receber na mesma transação; baixa automática à vista; cancelamento com estorno; entregas e atraso; recibo em PDF. | 7b; **Fase B (conta Caixa)** para dinheiro | D-03, D-11, D-16 | L |
-| **7d Importação + corte** | Script de importação da planilha (cadastros, 16 recepções, 29 vendas) com simulação prévia (dry-run); conferência de saldos contra `ESTOQUE_LOTES`; recepção e venda in natura passam a ser lançadas só no sistema. | 7c | D-17, D-18, D-21 | M |
+| **7d Importação + corte** *(adiada)* | Script de importação da planilha (cadastros, 16 recepções, 29 vendas) com simulação prévia (dry-run); conferência de saldos contra `ESTOQUE_LOTES`; recepção e venda in natura passam a ser lançadas só no sistema. | 7c | D-17, D-18, D-21 | M |
 | **7e Processamento** | OP com consumo, produção (lotes de polpa), insumos e processo; rendimento, balanço e branqueamento ao vivo; encerramento com custo gravado; cancelamento. | 7b | D-06, D-07, D-08 | L |
 | **7f Rastreabilidade** | Consulta por lote para trás e para frente, até os clientes da polpa derivada (RN-28); PDF para fiscalização. | 7c, 7e | D-10 | M |
 | **7g Painel e relatórios** | Painel de produção com alertas; relatório mensal, de vendas, de origem, de processamento e de estoque; exports. | 7c, 7e | — | L |
@@ -50,6 +55,9 @@ Tamanho: **M** ≈ o porte de "comparação entre safras"; **L** ≈ o porte de
 - `content/ajuda/passo-a-passo.md` atualizado com o fluxo do sub-projeto.
 
 ## Importação da planilha (7d)
+
+> Adiada (2026-11-10). Mantida como referência caso a importação volte a
+> ser necessária depois do desenvolvimento.
 
 1. Script `scripts/importar-planilha-producao.ts`, que lê o `.xlsx` com o
    `exceljs` já instalado, sem Python nem macros.
