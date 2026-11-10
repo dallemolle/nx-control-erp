@@ -1,9 +1,9 @@
 import { Prisma, type ClassificacaoFiscal, type StatusPedidoVenda } from "@prisma/client";
 import { prisma } from "@/server/db/client";
 import { podeExecutar, requireAlteracaoFilial, requirePermission } from "@/server/auth/permissions";
-import { registrarAuditoria } from "@/server/audit/registrar";
+import { registrarAuditoria, type ClientePrisma } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
-import type { PedidoVendaFormValues } from "@/lib/schemas/pedidoVenda";
+import type { DadosEditaveisPedido, PedidoVendaFormValues } from "@/lib/schemas/pedidoVenda";
 import { ROTULOS_FORMA_PAGAMENTO_VENDA } from "@/lib/schemas/enums";
 import { formatarData } from "@/lib/formatacao";
 import {
@@ -240,6 +240,124 @@ export async function criarPedido(sessao: SessaoAtiva, dados: PedidoVendaFormVal
       if (!conflito || tentativa >= TENTATIVAS_NUMERACAO) throw erro;
     }
   }
+}
+
+export type SituacaoCancelamentoPedido = { pode: true } | { pode: false; motivo: string };
+
+/**
+ * O pedido só é cancelado se o recebimento for todo da própria venda: nenhuma
+ * baixa do financeiro (pendente ou aprovada) e a baixa automática fora de
+ * qualquer extrato. O lançamento da conta Caixa nasce `conciliado`, mas sem
+ * linha de extrato — por isso a checagem é pela linha, não pela flag.
+ */
+export async function situacaoParaCancelar(
+  pedido: { status: StatusPedidoVenda; tituloId: string | null; baixaAutomaticaId: string | null },
+  db: ClientePrisma = prisma,
+): Promise<SituacaoCancelamentoPedido> {
+  if (pedido.status === "CANCELADO") return { pode: false, motivo: "O pedido já está cancelado" };
+  if (pedido.tituloId) {
+    const outras = await db.baixa.count({
+      where: {
+        parcela: { tituloId: pedido.tituloId },
+        statusAprovacao: { in: ["PENDENTE", "APROVADO"] },
+        ...(pedido.baixaAutomaticaId ? { id: { not: pedido.baixaAutomaticaId } } : {}),
+      },
+    });
+    if (outras > 0) return { pode: false, motivo: "O financeiro registrou um recebimento neste pedido" };
+  }
+  if (pedido.baixaAutomaticaId) {
+    const conciliadas = await db.linhaExtrato.count({
+      where: { lancamentoBancario: { baixaId: pedido.baixaAutomaticaId } },
+    });
+    if (conciliadas > 0) {
+      return {
+        pode: false,
+        motivo: "O recebimento já foi conciliado com o extrato. Desconcilie na Conciliação antes de cancelar",
+      };
+    }
+  }
+  return { pode: true };
+}
+
+/**
+ * Pedido errado é cancelado e refeito (itens não são editados): devolve o
+ * estoque, desfaz o recebimento que a própria venda criou e cancela o título.
+ */
+export async function cancelarPedido(sessao: SessaoAtiva, id: string, motivo: string): Promise<void> {
+  requirePermission(sessao.perfil, "venda:cancelar");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
+  const motivoLimpo = motivo.trim();
+  if (motivoLimpo.length < 3) throw new Error("Informe o motivo do cancelamento");
+
+  await prisma.$transaction(async (tx) => {
+    const pedido = await tx.pedidoVenda.findFirstOrThrow({
+      where: { id, filialId: sessao.filialId },
+      include: { itens: true },
+    });
+    // Conferido dentro da transação: uma baixa lançada no meio não escapa.
+    const situacao = await situacaoParaCancelar(pedido, tx);
+    if (!situacao.pode) throw new Error(situacao.motivo);
+
+    let lancamentosApagados = 0;
+    if (pedido.baixaAutomaticaId) {
+      ({ count: lancamentosApagados } = await tx.lancamentoBancario.deleteMany({
+        where: { baixaId: pedido.baixaAutomaticaId },
+      }));
+      await tx.baixa.delete({ where: { id: pedido.baixaAutomaticaId } });
+    }
+    if (pedido.tituloId) {
+      await tx.parcela.updateMany({ where: { tituloId: pedido.tituloId }, data: { status: "CANCELADO" } });
+    }
+    for (const item of pedido.itens) {
+      await registrarMovimento(tx, {
+        filialId: sessao.filialId,
+        loteId: item.loteId,
+        data: pedido.data,
+        tipo: "ESTORNO_VENDA",
+        quantidadeKg: Number(item.quantidadeKg),
+        usuarioId: sessao.usuarioId,
+        itemPedidoId: item.id,
+      });
+    }
+    await tx.entrega.updateMany({ where: { pedidoId: id }, data: { status: "CANCELADA" } });
+    await tx.pedidoVenda.update({
+      where: { id },
+      data: { status: "CANCELADO", motivoCancelamento: motivoLimpo, canceladoEm: new Date(), baixaAutomaticaId: null },
+    });
+
+    await registrarAuditoria(
+      {
+        empresaId: sessao.empresaId,
+        filialId: sessao.filialId,
+        usuarioId: sessao.usuarioId,
+        entidade: "PedidoVenda",
+        entidadeId: id,
+        acao: "CANCELAR",
+        anterior: { status: pedido.status, baixaAutomaticaId: pedido.baixaAutomaticaId },
+        novo: { status: "CANCELADO", motivo: motivoLimpo, tituloId: pedido.tituloId, lancamentosApagados },
+      },
+      tx,
+    );
+  });
+}
+
+/** Observação não afeta estoque nem valor: editável sempre, inclusive em pedido cancelado. */
+export async function atualizarDadosPedido(sessao: SessaoAtiva, id: string, dados: DadosEditaveisPedido) {
+  requirePermission(sessao.perfil, "venda:escrever");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
+  const anterior = await prisma.pedidoVenda.findFirstOrThrow({ where: { id, filialId: sessao.filialId } });
+  const novo = { observacao: dados.observacao ?? null };
+  await prisma.pedidoVenda.update({ where: { id }, data: novo });
+  await registrarAuditoria({
+    empresaId: sessao.empresaId,
+    filialId: sessao.filialId,
+    usuarioId: sessao.usuarioId,
+    entidade: "PedidoVenda",
+    entidadeId: id,
+    acao: "ATUALIZAR",
+    anterior: { observacao: anterior.observacao },
+    novo,
+  });
 }
 
 /** Lotes com saldo para vender, em ordem FEFO (RN-27), com a marca de vencido na data. */

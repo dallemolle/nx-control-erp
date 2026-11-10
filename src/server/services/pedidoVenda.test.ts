@@ -14,8 +14,11 @@ import {
   type FixtureProducao,
 } from "./producaoTestFixtures";
 import {
+  atualizarDadosPedido,
+  cancelarPedido,
   criarPedido,
   listarPedidos,
+  situacaoParaCancelar,
   lotesParaVenda,
   MSG_SEM_CATEGORIA_VENDA,
   MSG_SEM_CONTA_CAIXA,
@@ -24,6 +27,7 @@ import {
 } from "./pedidoVenda";
 import { cancelarRecepcao, criarRecepcao } from "./recepcaoFruto";
 import { registrarMovimento } from "./estoque";
+import { registrarBaixa, rejeitarBaixa } from "./baixa";
 
 const d = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
 
@@ -420,5 +424,145 @@ describe("pedido de venda", () => {
     expect(detalhe).toMatchObject({ numero: r.numero, totais: { valor: 50 }, situacao: "EM_ABERTO" });
     expect(detalhe?.itens[0]).toMatchObject({ valor: 50, custo: 20, margem: 30, lote: { codigo: lote.codigo } });
     expect(await obterPedido(fx.filialBId, r.numero, d("2026-11-10"))).toBeNull();
+  });
+
+  describe("cancelamento", () => {
+    const umItem = (loteId: string) => [{ loteId, quantidadeKg: 10, precoKg: 5 }];
+    const pedidoGravado = (id: string) => prisma.pedidoVenda.findUniqueOrThrow({ where: { id } });
+    const baixaManual = async (tituloId: string) => {
+      const parcela = await prisma.parcela.findFirstOrThrow({ where: { tituloId } });
+      return registrarBaixa(fx.sessao("FINANCEIRO"), parcela.id, {
+        data: d("2026-11-11"),
+        valorPago: 50,
+        valorJuros: 0,
+        valorMulta: 0,
+        valorDesconto: 0,
+        contaBancariaId: cad.contaCorrenteId,
+      });
+    };
+
+    test("a prazo sem baixa: estoque volta, parcelas e entrega canceladas", async () => {
+      const lote = await novoLote();
+      const r = await criarPedido(fx.sessao("VENDAS"), pedido(umItem(lote.id), { retiraNaPropriedade: "false" }));
+      await cancelarPedido(fx.sessao("FINANCEIRO"), r.pedidoId, "Cliente desistiu");
+
+      expect(await saldo(lote.id)).toBe(100);
+      const item = await prisma.itemPedidoVenda.findFirstOrThrow({ where: { pedidoId: r.pedidoId } });
+      const movimentos = await prisma.movimentoEstoque.findMany({
+        where: { itemPedidoId: item.id },
+        orderBy: { criadoEm: "asc" },
+      });
+      expect(movimentos.map((m) => [m.tipo, Number(m.quantidadeKg)])).toEqual([
+        ["VENDA", -10],
+        ["ESTORNO_VENDA", 10],
+      ]);
+      expect((await tituloDo(r.pedidoId)).parcelas.map((p) => p.status)).toEqual(["CANCELADO"]);
+      expect((await prisma.entrega.findUniqueOrThrow({ where: { pedidoId: r.pedidoId } })).status).toBe("CANCELADA");
+      const gravado = await pedidoGravado(r.pedidoId);
+      expect(gravado).toMatchObject({ status: "CANCELADO", motivoCancelamento: "Cliente desistiu" });
+      expect(gravado.canceladoEm).not.toBeNull();
+      expect(await situacaoParaCancelar(gravado)).toEqual({ pode: false, motivo: "O pedido já está cancelado" });
+      await expect(cancelarPedido(fx.sessao("FINANCEIRO"), r.pedidoId, "De novo")).rejects.toThrow(
+        "O pedido já está cancelado",
+      );
+    });
+
+    test("à vista em Pix: baixa e lançamento apagados", async () => {
+      const lote = await novoLote();
+      const r = await criarPedido(fx.sessao("VENDAS"), pedido(umItem(lote.id), { formaPagamento: "PIX" }));
+      const baixaId = (await pedidoGravado(r.pedidoId)).baixaAutomaticaId!;
+      await cancelarPedido(fx.sessao("FINANCEIRO"), r.pedidoId, "Pedido errado");
+      expect(await prisma.baixa.count({ where: { id: baixaId } })).toBe(0);
+      expect(await prisma.lancamentoBancario.count({ where: { baixaId } })).toBe(0);
+      expect((await tituloDo(r.pedidoId)).parcelas[0].status).toBe("CANCELADO");
+      expect((await pedidoGravado(r.pedidoId)).baixaAutomaticaId).toBeNull();
+    });
+
+    test("dinheiro: lançamento conciliado na conta Caixa, mas sem extrato, não impede", async () => {
+      const lote = await novoLote();
+      const r = await criarPedido(fx.sessao("VENDAS"), pedido(umItem(lote.id), { formaPagamento: "DINHEIRO" }));
+      const baixaId = (await pedidoGravado(r.pedidoId)).baixaAutomaticaId!;
+      expect((await prisma.lancamentoBancario.findFirstOrThrow({ where: { baixaId } })).conciliado).toBe(true);
+      await cancelarPedido(fx.sessao("ADMINISTRADOR"), r.pedidoId, "Pedido errado");
+      expect(await prisma.lancamentoBancario.count({ where: { baixaId } })).toBe(0);
+      expect(await saldo(lote.id)).toBe(100);
+    });
+
+    test("recusado quando o financeiro registrou baixa manual; nada muda", async () => {
+      const lote = await novoLote();
+      const r = await criarPedido(fx.sessao("VENDAS"), pedido(umItem(lote.id)));
+      await baixaManual(r.tituloId);
+      await expect(cancelarPedido(fx.sessao("FINANCEIRO"), r.pedidoId, "Teste")).rejects.toThrow(
+        "O financeiro registrou um recebimento neste pedido",
+      );
+      expect(await saldo(lote.id)).toBe(90);
+      expect((await pedidoGravado(r.pedidoId)).status).toBe("CONFIRMADO");
+    });
+
+    test("baixa manual rejeitada não impede", async () => {
+      const lote = await novoLote();
+      const r = await criarPedido(fx.sessao("VENDAS"), pedido(umItem(lote.id)));
+      const baixa = await baixaManual(r.tituloId);
+      await rejeitarBaixa(fx.sessao("ADMINISTRADOR"), baixa.id, "Valor errado");
+      await cancelarPedido(fx.sessao("FINANCEIRO"), r.pedidoId, "Cliente desistiu");
+      expect((await pedidoGravado(r.pedidoId)).status).toBe("CANCELADO");
+    });
+
+    test("recusado quando o recebimento já foi conciliado com o extrato", async () => {
+      const lote = await novoLote();
+      const r = await criarPedido(fx.sessao("VENDAS"), pedido(umItem(lote.id), { formaPagamento: "PIX" }));
+      const baixaId = (await pedidoGravado(r.pedidoId)).baixaAutomaticaId!;
+      const lancamento = await prisma.lancamentoBancario.findFirstOrThrow({ where: { baixaId } });
+      const extrato = await prisma.extratoImportado.create({
+        data: {
+          filialId: fx.filialAId,
+          contaBancariaId: cad.contaCorrenteId,
+          nomeArquivo: "extrato.ofx",
+          totalLinhas: 1,
+          linhasNovas: 1,
+          linhasIgnoradas: 0,
+          usuarioId: fx.usuarioId,
+        },
+      });
+      await prisma.linhaExtrato.create({
+        data: {
+          extratoImportadoId: extrato.id,
+          contaBancariaId: cad.contaCorrenteId,
+          data: d("2026-11-10"),
+          valor: 50,
+          tipo: "ENTRADA",
+          historico: "PIX RECEBIDO",
+          identificadorBancario: `ID-${Date.now()}`,
+          status: "CONCILIADO",
+          lancamentoBancarioId: lancamento.id,
+        },
+      });
+      await expect(cancelarPedido(fx.sessao("FINANCEIRO"), r.pedidoId, "Teste")).rejects.toThrow(
+        "O recebimento já foi conciliado com o extrato. Desconcilie na Conciliação antes de cancelar",
+      );
+    });
+
+    test("exige venda:cancelar e motivo", async () => {
+      const lote = await novoLote();
+      const r = await criarPedido(fx.sessao("VENDAS"), pedido(umItem(lote.id)));
+      await expect(cancelarPedido(fx.sessao("VENDAS"), r.pedidoId, "Motivo")).rejects.toThrow(PermissionError);
+      await expect(cancelarPedido(fx.sessao("FINANCEIRO"), r.pedidoId, "  ")).rejects.toThrow(
+        "Informe o motivo do cancelamento",
+      );
+    });
+
+    test("atualizarDadosPedido muda só a observação, com auditoria, inclusive cancelado", async () => {
+      const lote = await novoLote();
+      const r = await criarPedido(fx.sessao("VENDAS"), pedido(umItem(lote.id)));
+      await cancelarPedido(fx.sessao("FINANCEIRO"), r.pedidoId, "Cliente desistiu");
+      await atualizarDadosPedido(fx.sessao("VENDAS"), r.pedidoId, { observacao: "Refeito no pedido seguinte" });
+      expect((await pedidoGravado(r.pedidoId)).observacao).toBe("Refeito no pedido seguinte");
+      expect(
+        await prisma.auditLog.count({ where: { entidade: "PedidoVenda", entidadeId: r.pedidoId, acao: "ATUALIZAR" } }),
+      ).toBe(1);
+      await expect(atualizarDadosPedido(fx.sessao("CONSULTA"), r.pedidoId, { observacao: "x" })).rejects.toThrow(
+        PermissionError,
+      );
+    });
   });
 });
