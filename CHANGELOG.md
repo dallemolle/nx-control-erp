@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.1.17](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.16...nx-control-erp-v0.1.17) (2026-11-10)
+
+
+### Novidades
+
+* **vendas:** cálculos de margem, atraso de entrega e situação de pagamento ([f881594](https://github.com/dallemolle/nx-control-erp/commit/f881594572832458f48ec3c3c8f620af67ac04eb))
+* **vendas:** cancelamento do pedido com estorno de estoque e recebimento ([d1c44c4](https://github.com/dallemolle/nx-control-erp/commit/d1c44c4588be2be14cc041d8c2947e9f3ba92066))
+* **vendas:** detalhe do pedido, cancelamento e recibo em PDF ([fd3809f](https://github.com/dallemolle/nx-control-erp/commit/fd3809fb52cccfd5954ddb524586f04321bf77b8))
+* **vendas:** entregas com status e atraso ([219e530](https://github.com/dallemolle/nx-control-erp/commit/219e5308b93b30549babd906cd29ba1f8b495d05))
+* **vendas:** menu de vendas e lista de pedidos ([858d874](https://github.com/dallemolle/nx-control-erp/commit/858d87482b75aabc05a99bccdff74a58f54b7331))
+* **vendas:** modelo de pedido, itens e entrega; configuração de vendas ([f1d5c15](https://github.com/dallemolle/nx-control-erp/commit/f1d5c15d6b91cc4c0d257c661353e9a19417b9d4))
+* **vendas:** pedido de venda com baixa de estoque e conta a receber ([7387407](https://github.com/dallemolle/nx-control-erp/commit/7387407af7ae128c9f706a221c3d4c7dea76e477))
+* **vendas:** tela de entregas ([aabc840](https://github.com/dallemolle/nx-control-erp/commit/aabc8401421a355bc88cb984917d3ef1941797d7))
+* **vendas:** tela de novo pedido ([9c79689](https://github.com/dallemolle/nx-control-erp/commit/9c796898af8e6949eea59c983b84255caaae7560))
+
+
+### Correções
+
+* **producao:** descarte (%) da exportação de recepções saía como fração ([3ded754](https://github.com/dallemolle/nx-control-erp/commit/3ded754097d3a6057c93fce139bcd61f25935444))
+* **vendas:** chave da primeira linha de item igual no servidor e no navegador ([11c7dea](https://github.com/dallemolle/nx-control-erp/commit/11c7deaa1cd54a706b2dc13ee6ff92255c7b2692))
+
 ## [0.1.16](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.15...nx-control-erp-v0.1.16) (2026-11-10)
 
 
