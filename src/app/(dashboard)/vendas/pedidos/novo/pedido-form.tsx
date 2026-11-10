@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,9 +66,8 @@ function Campo({ id, rotulo, children }: { id: string; rotulo: string; children:
   );
 }
 
-let proximaChave = 1;
-const itemVazio = (): ItemForm => ({
-  chave: proximaChave++,
+const itemVazio = (chave: number): ItemForm => ({
+  chave,
   loteId: "",
   unidade: "KG",
   quantidade: "",
@@ -88,7 +87,9 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
   const [classificacao, setClassificacao] = useState<Classificacao>("GERENCIAL");
   const [retira, setRetira] = useState(true);
   const [endereco, setEndereco] = useState("");
-  const [itens, setItens] = useState<ItemForm[]>(() => [itemVazio()]);
+  // A chave da primeira linha é fixa: servidor e navegador precisam gerar o mesmo HTML.
+  const [itens, setItens] = useState<ItemForm[]>(() => [itemVazio(1)]);
+  const proximaChave = useRef(2);
 
   const aVista = forma !== "A_PRAZO";
   const contasDaForma = opcoes.contas.filter((c) => (forma === "DINHEIRO" ? c.tipo === "CAIXA" : c.tipo !== "CAIXA"));
@@ -401,7 +402,7 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
             </div>
           );
         })}
-        <Button type="button" variant="outline" onClick={() => setItens((atuais) => [...atuais, itemVazio()])}>
+        <Button type="button" variant="outline" onClick={() => setItens((atuais) => [...atuais, itemVazio(proximaChave.current++)])}>
           Adicionar item
         </Button>
       </section>
