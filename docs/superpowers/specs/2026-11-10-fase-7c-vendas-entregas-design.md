@@ -1,6 +1,6 @@
 # Fase 7c — Vendas e entregas
 
-Data: 2026-11-10 · Status: aprovada para plano
+Data: 2026-11-10 · Status: implementada (2026-11-10)
 
 Terceiro sub-projeto da Fase 7 (ver
 [plano de entrega](../../modulos/producao-estoque-vendas/09-plano-de-entrega.md)).
