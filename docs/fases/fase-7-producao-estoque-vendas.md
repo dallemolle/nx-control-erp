@@ -9,8 +9,10 @@ movimentos, ajustes e etiqueta. Conta Caixa (Fase B fiscal) concluída. 7c
 (vendas e entregas) concluída em 2026-11-10: pedido de venda com itens por
 lote, conta a receber criada junto (já paga quando à vista, com dinheiro na
 conta Caixa), liberação de lote vencido com motivo, cancelamento com estorno
-de estoque e do recebimento, entregas com atraso e recibo em PDF. Próximo:
-7d (importação da planilha), que depende das decisões D-17 e D-21.
+de estoque e do recebimento, entregas com atraso e recibo em PDF. 7d
+(importação da planilha) adiada em 2026-11-10: sem importação de dados
+antigos por ora, filial da Hortitex cadastrada na implantação e numeração
+recomeçando. Próximo: 7e (processamento/OP).
 
 ## Escopo
 
