@@ -184,3 +184,16 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   vincular nenhum `LancamentoBancario`), o mesmo princípio já aplicado a
   `recalcularEPersistirStatusParcela`, que também não audita por ser
   derivado, não uma ação de usuário.
+
+## Produção — processamento (Fase 7e)
+
+- **Rateio do custo da OP por qualidade (D-06).** Hoje todas as polpas da
+  OP (grosso, médio, fino) recebem o mesmo custo/kg, igual à planilha. O
+  grosso usa mais fruto por kg e vale mais; quando a margem por qualidade
+  importar, ratear por um fator de equivalência (ex.: proporcional ao
+  preço de referência de cada produto).
+- **Liberar fruto vencido na OP.** A permissão `producao:liberarVencido`
+  é do Gestor, que não lança OP; o perfil Produção lança mas não libera.
+  Na prática só o Administrador usa fruto vencido numa OP (a venda da 7c
+  tem a mesma situação). Se o galpão precisar resolver sozinho, dar a
+  permissão ao perfil Produção.

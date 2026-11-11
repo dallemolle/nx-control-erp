@@ -8,6 +8,7 @@ const dias = z.coerce.number().int("Use dias inteiros").min(0, "Não pode ser ne
 export const configuracaoProducaoSchema = z
   .object({
     registroAdepara: textoOpcional,
+    enderecoEtiqueta: textoOpcional,
     alertaVencimentoCongeladoDias: dias,
     alertaVencimentoResfriadoDias: dias,
     branqueamentoTemperaturaMinC: z.coerce.number().min(0, "Mínimo 0 °C").max(150, "Máximo 150 °C"),
@@ -23,6 +24,7 @@ export const configuracaoProducaoSchema = z
     ({
       toleranciaBalancoMassaPercentual,
       registroAdepara,
+      enderecoEtiqueta,
       categoriaCompraFrutoId,
       categoriaVendaId,
       contaRecebimentoPadraoId,
@@ -31,6 +33,7 @@ export const configuracaoProducaoSchema = z
     }) => ({
       ...resto,
       registroAdepara: registroAdepara ?? null,
+      enderecoEtiqueta: enderecoEtiqueta ?? null,
       categoriaCompraFrutoId: idOuNull(categoriaCompraFrutoId),
       categoriaVendaId: idOuNull(categoriaVendaId),
       contaRecebimentoPadraoId: idOuNull(contaRecebimentoPadraoId),

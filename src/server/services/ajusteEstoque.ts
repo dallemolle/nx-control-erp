@@ -4,7 +4,7 @@ import { requireAlteracaoFilial, requirePermission } from "@/server/auth/permiss
 import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { AjusteFormValues } from "@/lib/schemas/ajusteEstoque";
-import { registrarMovimento } from "./estoque";
+import { bloqueioDaProducao, registrarMovimento, SELECT_BLOQUEIO_PRODUCAO } from "./estoque";
 
 /** Ajuste de estoque (RN-25): entrada ou saída com motivo; saída nunca passa do saldo. */
 export async function criarAjuste(sessao: SessaoAtiva, dados: AjusteFormValues) {
@@ -16,13 +16,16 @@ export async function criarAjuste(sessao: SessaoAtiva, dados: AjusteFormValues) 
   return prisma.$transaction(async (tx) => {
     const lote = await tx.lote.findFirst({
       where: { id: dados.loteId, filialId: sessao.filialId },
-      select: { id: true, codigo: true, recepcao: { select: { status: true } } },
+      select: { id: true, codigo: true, recepcao: { select: { status: true } }, ...SELECT_BLOQUEIO_PRODUCAO },
     });
     if (!lote) throw new Error("Lote não encontrado");
     // Recepção excluída: o lote ficou zerado de propósito e não volta a ter saldo.
     if (lote.recepcao?.status === "CANCELADA") {
       throw new Error("O lote é de uma recepção excluída e não recebe ajustes");
     }
+    // Polpa de OP aberta, cancelada ou removida da OP (D-07).
+    const bloqueio = bloqueioDaProducao(lote);
+    if (bloqueio) throw new Error(bloqueio);
 
     const ajuste = await tx.ajusteEstoque.create({
       data: {

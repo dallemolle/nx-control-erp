@@ -3,7 +3,7 @@ import { prisma } from "@/server/db/client";
 import { PermissionError } from "@/server/auth/permissions";
 import { criarFixtureProducao, type FixtureProducao } from "./producaoTestFixtures";
 import { atualizarProduto, criarProduto, definirAtivoProduto, listarProdutos } from "./produto";
-import type { ProdutoFormValues } from "@/lib/schemas/produto";
+import { produtoSchema, type ProdutoFormValues } from "@/lib/schemas/produto";
 
 describe("produto (por empresa)", () => {
   let fx: FixtureProducao;
@@ -36,6 +36,24 @@ describe("produto (por empresa)", () => {
     expect(p.precoReferenciaKg).toBeNull();
     const lista = await listarProdutos(fx.empresaId);
     expect(lista.find((x) => x.id === p.id)?.fruta.nome).toBe("Açaí");
+  });
+
+  test("texto da etiqueta: grava aparado e vazio vira nulo", async () => {
+    const base = {
+      codigo: "AGX",
+      descricao: "Polpa de teste",
+      categoria: "POLPA",
+      frutaId,
+      conservacao: "CONGELADO",
+      validadeDias: "365",
+    };
+    const p = await criarProduto(
+      fx.sessao("PRODUCAO"),
+      produtoSchema.parse({ ...base, textoEtiqueta: "  Manter congelado a −18 °C  " }),
+    );
+    expect(p.textoEtiqueta).toBe("Manter congelado a −18 °C");
+    const atualizado = await atualizarProduto(fx.sessao("PRODUCAO"), p.id, produtoSchema.parse({ ...base, textoEtiqueta: "" }));
+    expect(atualizado.textoEtiqueta).toBeNull();
   });
 
   test("código repetido na empresa é recusado com mensagem", async () => {

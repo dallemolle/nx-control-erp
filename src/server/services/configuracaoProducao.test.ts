@@ -43,6 +43,14 @@ describe("configuração de produção", () => {
     ).toBe(2);
   });
 
+  test("salva o endereço da etiqueta", async () => {
+    await salvarConfiguracaoProducao(fx.sessao("ADMINISTRADOR"), {
+      ...(await obterConfiguracaoProducao(fx.filialAId)),
+      enderecoEtiqueta: "Estrada da Fazenda, km 10",
+    });
+    expect((await obterConfiguracaoProducao(fx.filialAId)).enderecoEtiqueta).toBe("Estrada da Fazenda, km 10");
+  });
+
   test("só producao:configurar salva, e respeita filial somente leitura", async () => {
     await expect(salvarConfiguracaoProducao(fx.sessao("PRODUCAO"), CONFIGURACAO_PRODUCAO_PADRAO)).rejects.toThrow(
       PermissionError,

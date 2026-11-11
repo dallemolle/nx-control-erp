@@ -191,21 +191,26 @@ async function VisaoLotes({
                   {lote.dias}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={VARIANTE_STATUS[lote.status]}>{ROTULOS_STATUS_LOTE[lote.status]}</Badge>
+                  <div className="flex flex-wrap gap-1">
+                    <Badge variant={VARIANTE_STATUS[lote.status]}>{ROTULOS_STATUS_LOTE[lote.status]}</Badge>
+                    {lote.emProducao ? <Badge variant="outline">Em produção</Badge> : null}
+                  </div>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{KG.format(Number(lote.saldoKg))}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatarMoeda(lote.custoKg)}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatarMoeda(lote.valor)}</TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      nativeButton={false}
-                      render={<Link href={`/producao/lotes/${lote.id}/etiqueta`} target="_blank" />}
-                    >
-                      Etiqueta
-                    </Button>
+                    {lote.bloqueio ? null : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        nativeButton={false}
+                        render={<Link href={`/producao/lotes/${lote.id}/etiqueta`} target="_blank" />}
+                      >
+                        Etiqueta
+                      </Button>
+                    )}
                     {podeMover && Number(lote.saldoKg) > 0 ? (
                       <MoverLoteDialog lote={{ id: lote.id, codigo: lote.codigo, localId: lote.localId }} locais={locais} />
                     ) : null}

@@ -18,6 +18,7 @@ export const produtoSchema = z
     armazenamento: textoOpcional,
     unidadeComercial: textoOpcional,
     fatorUnidadeKg: numeroOpcional(z.number().positive("O fator deve ser maior que zero")),
+    textoEtiqueta: textoOpcional,
   })
   .superRefine((dados, ctx) => {
     const temUnidade = dados.unidadeComercial != null;

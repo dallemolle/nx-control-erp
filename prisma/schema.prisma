@@ -160,6 +160,7 @@ model Filial {
   ajustesEstoque          AjusteEstoque[]
   recepcoesFruto          RecepcaoFruto[]
   pedidosVenda            PedidoVenda[]
+  ordensProducao          OrdemProducao[]
 
   @@index([empresaId])
   @@map("filiais")
@@ -188,6 +189,7 @@ model Usuario {
   ajustesEstoque            AjusteEstoque[]
   recepcoesFruto            RecepcaoFruto[]
   pedidosVenda              PedidoVenda[]
+  ordensProducao            OrdemProducao[]
 
   @@map("usuarios")
 }
@@ -844,9 +846,10 @@ model Fruta {
   criadoEm           DateTime @default(now())
   atualizadoEm       DateTime @updatedAt
 
-  empresa  Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  produtos Produto[]
-  talhoes  Talhao[]
+  empresa        Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  produtos       Produto[]
+  talhoes        Talhao[]
+  ordensProducao OrdemProducao[]
 
   @@unique([empresaId, nome])
   @@index([empresaId])
@@ -866,14 +869,17 @@ model Produto {
   armazenamento     String?
   unidadeComercial  String?
   fatorUnidadeKg    Decimal?         @db.Decimal(18, 3)
+  /// Dizeres livres da etiqueta (ingredientes, conservação) — D-10.
+  textoEtiqueta     String?
   ativo             Boolean          @default(true)
   criadoEm          DateTime         @default(now())
   atualizadoEm      DateTime         @updatedAt
 
-  empresa   Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  fruta     Fruta           @relation(fields: [frutaId], references: [id], onDelete: Restrict)
-  lotes     Lote[]
-  recepcoes RecepcaoFruto[]
+  empresa     Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  fruta       Fruta           @relation(fields: [frutaId], references: [id], onDelete: Restrict)
+  lotes       Lote[]
+  recepcoes   RecepcaoFruto[]
+  producoesOP ProducaoOP[]
 
   @@unique([empresaId, codigo])
   @@index([empresaId])
@@ -890,7 +896,8 @@ model Insumo {
   criadoEm      DateTime @default(now())
   atualizadoEm  DateTime @updatedAt
 
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresa   Empresa    @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  insumosOP InsumoOP[]
 
   @@unique([empresaId, nome])
   @@index([empresaId])
@@ -930,8 +937,9 @@ model LocalArmazenamento {
   criadoEm     DateTime               @default(now())
   atualizadoEm DateTime               @updatedAt
 
-  filial Filial @relation(fields: [filialId], references: [id], onDelete: Cascade)
-  lotes  Lote[]
+  filial      Filial       @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  lotes       Lote[]
+  producoesOP ProducaoOP[]
 
   @@unique([filialId, nome])
   @@index([filialId])
@@ -941,6 +949,8 @@ model LocalArmazenamento {
 model ConfiguracaoProducao {
   filialId                      String   @id
   registroAdepara               String?
+  /// Endereço impresso na etiqueta (D-10).
+  enderecoEtiqueta              String?
   alertaVencimentoCongeladoDias Int      @default(30)
   alertaVencimentoResfriadoDias Int      @default(1)
   branqueamentoTemperaturaMinC  Decimal  @default(80) @db.Decimal(5, 1)
@@ -992,6 +1002,10 @@ enum TipoMovimentoEstoque {
   AJUSTE
   VENDA
   ESTORNO_VENDA
+  CONSUMO_OP
+  ESTORNO_CONSUMO_OP
+  PRODUCAO_OP
+  ESTORNO_PRODUCAO_OP
 }
 
 enum MotivoAjusteEstoque {
@@ -1026,6 +1040,8 @@ model Lote {
   ajustes          AjusteEstoque[]
   recepcao         RecepcaoFruto?
   itensPedidoVenda ItemPedidoVenda[]
+  consumosOP       ConsumoOP[]
+  producaoOP       ProducaoOP?
 
   @@unique([filialId, codigo])
   @@index([filialId, produtoId])
@@ -1042,6 +1058,8 @@ model MovimentoEstoque {
   quantidadeKg Decimal              @db.Decimal(18, 3)
   ajusteId     String?              @unique
   itemPedidoId String?
+  consumoOpId  String?
+  producaoOpId String?
   usuarioId    String
   criadoEm     DateTime             @default(now())
 
@@ -1049,10 +1067,14 @@ model MovimentoEstoque {
   lote       Lote             @relation(fields: [loteId], references: [id], onDelete: Cascade)
   ajuste     AjusteEstoque?   @relation(fields: [ajusteId], references: [id])
   itemPedido ItemPedidoVenda? @relation(fields: [itemPedidoId], references: [id])
+  consumoOp  ConsumoOP?       @relation(fields: [consumoOpId], references: [id])
+  producaoOp ProducaoOP?      @relation(fields: [producaoOpId], references: [id])
   usuario    Usuario          @relation(fields: [usuarioId], references: [id])
 
   @@index([loteId])
   @@index([itemPedidoId])
+  @@index([consumoOpId])
+  @@index([producaoOpId])
   @@index([filialId, data])
   @@map("movimentos_estoque")
 }
@@ -1213,4 +1235,113 @@ model Entrega {
 
   @@index([status, dataPrevista])
   @@map("entregas")
+}
+
+// Fase 7e — processamento (ordem de produção)
+
+enum StatusOrdemProducao {
+  ABERTA
+  ENCERRADA
+  CANCELADA
+}
+
+model OrdemProducao {
+  id                        String              @id @default(uuid())
+  filialId                  String
+  /// OP-AAMMDD-NN por filial (RN-02); nunca muda nem é reaproveitado.
+  numero                    String
+  data                      DateTime
+  frutaId                   String
+  /// Texto livre: pode não ser usuário do sistema.
+  responsavel               String?
+  branqueamentoTemperaturaC Decimal?            @db.Decimal(5, 1)
+  branqueamentoTempoS       Int?
+  aguaLitros                Decimal             @default(0) @db.Decimal(18, 3)
+  carocoResiduoKg           Decimal             @default(0) @db.Decimal(18, 3)
+  perdaKg                   Decimal             @default(0) @db.Decimal(18, 3)
+  observacao                String?
+  status                    StatusOrdemProducao @default(ABERTA)
+  /// Gravados ao encerrar (RN-13); limpos ao reabrir.
+  custoFrutoTotal           Decimal?            @db.Decimal(18, 2)
+  custoInsumosTotal         Decimal?            @db.Decimal(18, 2)
+  custoKgPolpa              Decimal?            @db.Decimal(18, 4)
+  encerradaEm               DateTime?
+  /// A última reabertura.
+  motivoReabertura          String?
+  motivoCancelamento        String?
+  canceladaEm               DateTime?
+  usuarioId                 String
+  criadoEm                  DateTime            @default(now())
+  atualizadoEm              DateTime            @updatedAt
+
+  filial    Filial       @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  fruta     Fruta        @relation(fields: [frutaId], references: [id], onDelete: Restrict)
+  usuario   Usuario      @relation(fields: [usuarioId], references: [id])
+  consumos  ConsumoOP[]
+  producoes ProducaoOP[]
+  insumos   InsumoOP[]
+
+  @@unique([filialId, numero])
+  @@index([filialId, data])
+  @@map("ordens_producao")
+}
+
+/// Lote de fruto consumido pela OP. Linha removida fica com `removidoEm` e o estorno no ledger.
+model ConsumoOP {
+  id                     String    @id @default(uuid())
+  ordemProducaoId        String
+  loteId                 String
+  quantidadeKg           Decimal   @db.Decimal(18, 3)
+  /// Custo do lote no lançamento.
+  custoKg                Decimal   @db.Decimal(18, 4)
+  motivoLiberacaoVencido String?
+  removidoEm             DateTime?
+  criadoEm               DateTime  @default(now())
+
+  ordemProducao OrdemProducao      @relation(fields: [ordemProducaoId], references: [id], onDelete: Cascade)
+  lote          Lote               @relation(fields: [loteId], references: [id], onDelete: Restrict)
+  movimentos    MovimentoEstoque[]
+
+  @@index([ordemProducaoId])
+  @@index([loteId])
+  @@map("consumos_op")
+}
+
+/// Polpa produzida: cada linha cria um lote de polpa.
+model ProducaoOP {
+  id              String    @id @default(uuid())
+  ordemProducaoId String
+  loteId          String    @unique
+  produtoId       String
+  quantidadeKg    Decimal   @db.Decimal(18, 3)
+  embalagens      Int?
+  localId         String
+  removidoEm      DateTime?
+  criadoEm        DateTime  @default(now())
+
+  ordemProducao OrdemProducao      @relation(fields: [ordemProducaoId], references: [id], onDelete: Cascade)
+  lote          Lote               @relation(fields: [loteId], references: [id], onDelete: Restrict)
+  produto       Produto            @relation(fields: [produtoId], references: [id], onDelete: Restrict)
+  local         LocalArmazenamento @relation(fields: [localId], references: [id], onDelete: Restrict)
+  movimentos    MovimentoEstoque[]
+
+  @@index([ordemProducaoId])
+  @@map("producoes_op")
+}
+
+model InsumoOP {
+  id              String    @id @default(uuid())
+  ordemProducaoId String
+  insumoId        String
+  quantidade      Decimal   @db.Decimal(18, 3)
+  /// Congelado no lançamento (D-05).
+  custoUnitario   Decimal   @db.Decimal(18, 4)
+  removidoEm      DateTime?
+  criadoEm        DateTime  @default(now())
+
+  ordemProducao OrdemProducao @relation(fields: [ordemProducaoId], references: [id], onDelete: Cascade)
+  insumo        Insumo        @relation(fields: [insumoId], references: [id], onDelete: Restrict)
+
+  @@index([ordemProducaoId])
+  @@map("insumos_op")
 }

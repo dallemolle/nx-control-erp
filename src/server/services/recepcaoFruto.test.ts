@@ -17,6 +17,8 @@ import {
   situacoesParaCancelar,
 } from "./recepcaoFruto";
 import { registrarMovimento } from "./estoque";
+import { adicionarConsumo, criarOP } from "./ordemProducao";
+import { cabecalhoOPSchema, consumoSchema } from "@/lib/schemas/ordemProducao";
 
 const MSG_SEM_CATEGORIA =
   "Configure a categoria de compra de fruto em Administração → Configuração de produção";
@@ -252,6 +254,18 @@ describe("recepção de fruto", () => {
         usuarioId: fx.usuarioId,
       }),
     );
+    await expect(cancelarRecepcao(fx.sessao("PRODUCAO"), r.recepcaoId, "Erro")).rejects.toThrow(
+      "O lote já teve movimentação; não é possível excluir a recepção",
+    );
+  });
+
+  test("cancelar é recusado depois de o lote ser consumido numa OP", async () => {
+    const r = await criarRecepcao(fx.sessao("PRODUCAO"), propria());
+    const op = await criarOP(
+      fx.sessao("PRODUCAO"),
+      cabecalhoOPSchema.parse({ data: "2026-11-09", frutaId: cat.frutaId }),
+    );
+    await adicionarConsumo(fx.sessao("PRODUCAO"), op.id, consumoSchema.parse({ loteId: r.loteId, quantidadeKg: "10" }));
     await expect(cancelarRecepcao(fx.sessao("PRODUCAO"), r.recepcaoId, "Erro")).rejects.toThrow(
       "O lote já teve movimentação; não é possível excluir a recepção",
     );

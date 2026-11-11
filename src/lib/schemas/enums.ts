@@ -174,3 +174,10 @@ export const ROTULOS_STATUS_ENTREGA = {
   ENTREGUE: "Entregue",
   CANCELADA: "Cancelada",
 } as const;
+
+export const STATUS_ORDEM_PRODUCAO = ["ABERTA", "ENCERRADA", "CANCELADA"] as const;
+export const ROTULOS_STATUS_ORDEM_PRODUCAO = {
+  ABERTA: "Aberta",
+  ENCERRADA: "Encerrada",
+  CANCELADA: "Cancelada",
+} as const;

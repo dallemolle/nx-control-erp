@@ -121,6 +121,7 @@ Ações novas em `src/server/auth/permissions.ts`:
 | `venda:escrever` | Criar pedidos e atualizar entregas. |
 | `venda:cancelar` | Cancelar pedido (estorna estoque e título). |
 | `venda:liberarVencido` | Vender lote vencido como exceção (RN-18). |
+| `producao:liberarVencido` | Consumir fruto vencido numa OP como exceção, com motivo (7e). ADMIN e GESTOR. |
 | `producao:configurar` | Configuração de produção da filial (ADEPARA, alertas, branqueamento). |
 
 Cadastros novos (produto, fruta, talhão, local, insumo) usam o
