@@ -6,24 +6,19 @@ import { prisma } from "@/server/db/client";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { podeExecutar, requirePermission } from "@/server/auth/permissions";
 import { listarLotes, resumoProdutoLocal } from "@/server/services/estoque";
-import { ROTULOS_STATUS_LOTE, STATUS_LOTE, type StatusLote } from "@/lib/producao/statusLote";
+import { ROTULOS_STATUS_LOTE, STATUS_LOTE } from "@/lib/producao/statusLote";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
 import { paraDataIso } from "@/lib/producao/periodo";
 import { cn } from "@/lib/utils";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { BarraDeFiltros } from "../_shared/barra-de-filtros";
+import { LinkRastreio } from "../_shared/link-rastreio";
+import { StatusLoteBadge } from "../_shared/status-lote-badge";
 import { MoverLoteDialog } from "./mover-lote-dialog";
 import { filtrosDoEstoque, type ParametrosEstoque } from "./filtros";
 
 const KG = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 const PERCENTUAL = new Intl.NumberFormat("pt-BR", { style: "percent", maximumFractionDigits: 1 });
-
-const VARIANTE_STATUS: Record<StatusLote, "default" | "secondary" | "destructive" | "outline"> = {
-  OK: "default",
-  VENCENDO: "secondary",
-  VENCIDO: "destructive",
-  ZERADO: "outline",
-};
 
 export default async function EstoquePage({ searchParams }: { searchParams: Promise<ParametrosEstoque> }) {
   const sessao = await requireSessaoAtiva();
@@ -182,7 +177,9 @@ async function VisaoLotes({
             ) : null}
             {lotes.map((lote) => (
               <TableRow key={lote.id}>
-                <TableCell className="font-medium whitespace-nowrap">{lote.codigo}</TableCell>
+                <TableCell className="font-medium whitespace-nowrap">
+                  <LinkRastreio codigo={lote.codigo} />
+                </TableCell>
                 <TableCell>{lote.produto.descricao}</TableCell>
                 <TableCell>{lote.local.nome}</TableCell>
                 <TableCell>{formatarData(lote.data)}</TableCell>
@@ -192,7 +189,7 @@ async function VisaoLotes({
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
-                    <Badge variant={VARIANTE_STATUS[lote.status]}>{ROTULOS_STATUS_LOTE[lote.status]}</Badge>
+                    <StatusLoteBadge status={lote.status} />
                     {lote.emProducao ? <Badge variant="outline">Em produção</Badge> : null}
                   </div>
                 </TableCell>

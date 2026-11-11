@@ -496,7 +496,7 @@ export async function situacaoParaDesfazer(
   return saida ? { pode: false, motivo: `O lote ${saida.lote.codigo} já teve venda ou ajuste` } : { pode: true };
 }
 
-function dadosDoResumo(
+export function dadosDoResumo(
   op: {
     fruta: { exigeBranqueamento: boolean };
     branqueamentoTemperaturaC: Prisma.Decimal | null;
@@ -696,7 +696,7 @@ function resumoComCustoGravado(
   };
 }
 
-function linhasEmNumeros(op: {
+export function linhasEmNumeros(op: {
   consumos: { quantidadeKg: Prisma.Decimal; custoKg: Prisma.Decimal }[];
   producoes: { quantidadeKg: Prisma.Decimal }[];
   insumos: { quantidade: Prisma.Decimal; custoUnitario: Prisma.Decimal }[];

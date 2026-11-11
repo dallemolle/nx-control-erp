@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { PDFDocument } from "pdf-lib";
-import { calcularLargurasColunas, formatarValorPdf, gerarPdf } from "./pdf";
+import { calcularLargurasColunas, formatarValorPdf, gerarPdf, gerarPdfSecoes, secaoPdf } from "./pdf";
 import type { ColunaExport } from "./csv";
 
 type Linha = { nome: string; valor: number; data: Date; ano: number; margem: number };
@@ -92,5 +92,38 @@ describe("gerarPdf", () => {
     const bytes = await gerarPdf([linha], COLUNAS, { titulo: "Longo", linhas: [] }, AGORA);
     const documento = await PDFDocument.load(bytes);
     expect(documento.getPageCount()).toBe(1);
+  });
+});
+
+describe("gerarPdfSecoes", () => {
+  type Item = { rotulo: string; kg: number };
+  const COLUNAS_ITEM: ColunaExport<Item>[] = [
+    { rotulo: "Item", valor: (i) => i.rotulo },
+    { rotulo: "kg", valor: (i) => i.kg },
+  ];
+
+  test("várias seções, uma vazia, num PDF válido", async () => {
+    const bytes = await gerarPdfSecoes(
+      [
+        secaoPdf({ titulo: "Lote", linhas: [LINHA], colunas: COLUNAS }),
+        secaoPdf({ titulo: "Destino", linhas: [] as Item[], colunas: COLUNAS_ITEM }),
+        secaoPdf({ titulo: "Itens", linhas: [{ rotulo: "Entrada", kg: 10 }], colunas: COLUNAS_ITEM }),
+      ],
+      { titulo: "Rastreabilidade", linhas: ["Empresa — Matriz"] },
+      AGORA,
+    );
+    const documento = await PDFDocument.load(bytes);
+    expect(documento.getTitle()).toBe("Rastreabilidade");
+    expect(documento.getPageCount()).toBe(1);
+  });
+
+  test("seção longa quebra página", async () => {
+    const muitas = Array.from({ length: 120 }, (_, n) => ({ rotulo: `Linha ${n}`, kg: n }));
+    const bytes = await gerarPdfSecoes(
+      [secaoPdf({ titulo: "Primeira", linhas: muitas, colunas: COLUNAS_ITEM }), secaoPdf({ titulo: "Segunda", linhas: muitas, colunas: COLUNAS_ITEM })],
+      { titulo: "Longo", linhas: [] },
+      AGORA,
+    );
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBeGreaterThan(2);
   });
 });

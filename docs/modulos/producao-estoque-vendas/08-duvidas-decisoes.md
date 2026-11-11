@@ -40,6 +40,8 @@ Afetam a planilha **hoje**, enquanto o sistema não substitui.
 | D-19 | Qualidade A/B/C | A qualidade da recepção influencia preço ou destino (in natura × polpa)? Hoje é só informativa. | Manter informativa na v1. | — | |
 | D-20 | Água em litros | O balanço trata 1 L de água = 1 kg. | Manter. | — | |
 | D-21 | Vendas antigas no financeiro | As 29 vendas da planilha (set–out/2026) já foram lançadas no financeiro do sistema (contas a receber, lançamentos bancários)? | Se **não**: importar com título já baixado. Se **sim**: importar só como histórico de venda e estoque, **sem gerar título**, para não duplicar receita. | 🔴 7d Importação | **Sem importação de dados antigos** por ora; se for preciso, resolver depois do desenvolvimento. A 7d fica adiada (2026-11-10). |
+| D-22 | Recall do fruto | Na rastreabilidade de um fruto, ratear os kg da polpa entre os frutos da OP para dizer "quanto" cada cliente recebeu? | Não: listar todos os clientes de qualquer polpa da OP. A pergunta do recall é "quem pode ter recebido". | 7f | **Lista conservadora, sem rateio** (2026-11-10). |
+| D-23 | Cancelados na rastreabilidade | Pedidos e OPs cancelados e linhas removidas aparecem? | Ocultos por padrão, com a opção "Mostrar cancelados" (marcados), também na exportação. | 7f | **Ocultos, com opção de mostrar** (2026-11-10). |
 
 ## Decisões técnicas já tomadas neste desenho
 
