@@ -6,7 +6,11 @@ import { type ColunaExport } from "@/lib/export/csv";
 import { responderExport } from "@/lib/export/responder";
 import { cabecalhoDoRelatorio } from "@/server/export/cabecalhoDoRelatorio";
 import { ROTULOS_STATUS_ORDEM_PRODUCAO } from "@/lib/schemas/enums";
-import { ROTULOS_STATUS_BRANQUEAMENTO, ROTULOS_STATUS_VERIFICACAO } from "@/lib/producao/op";
+import {
+  ROTULOS_STATUS_BRANQUEAMENTO,
+  ROTULOS_STATUS_VERIFICACAO,
+  ROTULOS_VERIFICAR_OP,
+} from "@/lib/producao/op";
 import { formatarData } from "@/lib/formatacao";
 import { filtrosDasOPs } from "../filtros";
 
@@ -62,6 +66,7 @@ export async function GET(request: Request) {
           `Período: ${formatarData(filtros.inicio)} a ${formatarData(filtros.fim)}`,
           fruta ? `Fruta: ${fruta.nome}` : null,
           filtros.status ? `Status: ${ROTULOS_STATUS_ORDEM_PRODUCAO[filtros.status]}` : null,
+          filtros.verificar ? `A verificar: ${ROTULOS_VERIFICAR_OP[filtros.verificar]}` : null,
         ],
       });
     },

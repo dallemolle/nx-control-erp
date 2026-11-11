@@ -7,6 +7,7 @@ import { listarOPs } from "@/server/services/ordemProducao";
 import { ROTULOS_STATUS_ORDEM_PRODUCAO, STATUS_ORDEM_PRODUCAO } from "@/lib/schemas/enums";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
 import { hojeDeCalendario, paraDataIso } from "@/lib/producao/periodo";
+import { ROTULOS_VERIFICAR_OP, VERIFICAR_OP } from "@/lib/producao/op";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { BarraDeFiltros } from "../_shared/barra-de-filtros";
 import { filtrosDasOPs, type ParametrosOPs } from "./filtros";
@@ -34,6 +35,7 @@ export default async function ProcessamentoPage({ searchParams }: { searchParams
     fim: paraDataIso(filtros.fim),
     fruta: filtros.frutaId ?? "",
     status: filtros.status ?? "",
+    verificar: filtros.verificar ?? "",
   };
   const query = new URLSearchParams(Object.entries(valoresFiltro).filter(([, v]) => v)).toString();
 
@@ -72,6 +74,13 @@ export default async function ProcessamentoPage({ searchParams }: { searchParams
             rotulo: "Status",
             rotuloTodos: "Todos",
             opcoes: STATUS_ORDEM_PRODUCAO.map((s) => ({ valor: s, rotulo: ROTULOS_STATUS_ORDEM_PRODUCAO[s] })),
+          },
+          {
+            tipo: "select",
+            campo: "verificar",
+            rotulo: "A verificar",
+            rotuloTodos: "Todas",
+            opcoes: VERIFICAR_OP.map((v) => ({ valor: v, rotulo: ROTULOS_VERIFICAR_OP[v] })),
           },
         ]}
       />

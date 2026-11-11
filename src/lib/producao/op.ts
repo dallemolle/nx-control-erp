@@ -4,6 +4,11 @@ export type StatusVerificacao = "OK" | "VERIFICAR";
 export type StatusBranqueamento = "OK" | "VERIFICAR" | "NAO_SE_APLICA";
 
 export const ROTULOS_STATUS_VERIFICACAO: Record<StatusVerificacao, string> = { OK: "OK", VERIFICAR: "Verificar" };
+
+/** Filtro "A verificar" da lista de OPs: balanço (RN-11) ou branqueamento (RN-12). */
+export type VerificarOP = "balanco" | "branqueamento";
+export const VERIFICAR_OP: VerificarOP[] = ["balanco", "branqueamento"];
+export const ROTULOS_VERIFICAR_OP: Record<VerificarOP, string> = { balanco: "Balanço", branqueamento: "Branqueamento" };
 export const ROTULOS_STATUS_BRANQUEAMENTO: Record<StatusBranqueamento, string> = {
   OK: "OK",
   VERIFICAR: "Verificar",
