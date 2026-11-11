@@ -1,6 +1,11 @@
 # Fase 7e — Processamento (OP)
 
-Data: 2026-11-10 · Status: aprovada
+Data: 2026-11-10 · Status: implementada (2026-11-10)
+
+Ajuste na implementação: `atualizarOP` virou duas operações,
+`atualizarCabecalhoOP` (data, fruta, responsável) e `atualizarProcessoOP`
+(branqueamento, água, caroço, perda, observação), para um formulário não
+apagar os campos que o outro não envia.
 
 Quinto sub-projeto da Fase 7 (ver
 [plano de entrega](../../modulos/producao-estoque-vendas/09-plano-de-entrega.md)).

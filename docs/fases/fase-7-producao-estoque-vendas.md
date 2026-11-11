@@ -12,7 +12,12 @@ conta Caixa), liberação de lote vencido com motivo, cancelamento com estorno
 de estoque e do recebimento, entregas com atraso e recibo em PDF. 7d
 (importação da planilha) adiada em 2026-11-10: sem importação de dados
 antigos por ora, filial da Hortitex cadastrada na implantação e numeração
-recomeçando. Próximo: 7e (processamento/OP).
+recomeçando. 7e (processamento/OP) concluída em 2026-11-10: ordem de
+produção com consumo de fruto, lotes de polpa, insumos e processo;
+rendimento, balanço de massa, branqueamento e custo ao vivo; polpa
+bloqueada para venda e ajuste até encerrar; encerramento com custo
+gravado, reabertura e cancelamento; etiqueta configurável, uma por
+embalagem. Próximo: 7f (rastreabilidade).
 
 ## Escopo
 
