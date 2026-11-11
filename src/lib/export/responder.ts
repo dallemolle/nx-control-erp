@@ -36,6 +36,11 @@ function respostaDeArquivo(corpo: BodyInit, contentType: string, nomeArquivo: st
   });
 }
 
+/** PDF montado fora do `responderExport` (ex.: relatório em seções), com o mesmo nome e cabeçalhos. */
+export function responderArquivoPdf(bytes: Uint8Array, nomeArquivo: string): Response {
+  return respostaDeArquivo(new Uint8Array(bytes), "application/pdf", `${nomeArquivo}-${dataDoArquivo()}.pdf`);
+}
+
 export async function responderExport<T>(
   linhas: T[],
   colunas: ColunaExport<T>[],
