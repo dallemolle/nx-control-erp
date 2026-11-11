@@ -13,7 +13,17 @@ import type {
 import { formatarData } from "@/lib/formatacao";
 import { calcularValidade, prefixoDoLote, proximoCodigoDeLote } from "@/lib/producao/lote";
 import { loteVencidoNaData } from "@/lib/producao/venda";
-import { custoOP, prefixoDaOP, type LinhasOP } from "@/lib/producao/op";
+import { arredondar } from "@/lib/producao/arredondar";
+import {
+  custoOP,
+  prefixoDaOP,
+  resumirOP,
+  type ConfiguracaoResumo,
+  type DadosResumoOP,
+  type LinhasOP,
+  type ResumoOP,
+} from "@/lib/producao/op";
+import { obterConfiguracaoProducao } from "./configuracaoProducao";
 import { registrarMovimento } from "./estoque";
 
 const TENTATIVAS_NUMERACAO = 3;
@@ -467,6 +477,303 @@ export async function removerInsumo(sessao: SessaoAtiva, insumoOpId: string): Pr
     });
   });
 }
+
+export type SituacaoDesfazer = { pode: true } | { pode: false; motivo: string };
+
+/** Reabrir e cancelar só enquanto nenhum lote de polpa da OP teve venda ou ajuste (mesmo desfeitos depois). */
+export async function situacaoParaDesfazer(
+  op: { id: string; status: StatusOrdemProducao },
+  db: ClientePrisma = prisma,
+): Promise<SituacaoDesfazer> {
+  if (op.status === "CANCELADA") return { pode: false, motivo: "A OP já está cancelada" };
+  const saida = await db.movimentoEstoque.findFirst({
+    where: {
+      lote: { producaoOP: { is: { ordemProducaoId: op.id } } },
+      tipo: { notIn: ["PRODUCAO_OP", "ESTORNO_PRODUCAO_OP"] },
+    },
+    select: { lote: { select: { codigo: true } } },
+  });
+  return saida ? { pode: false, motivo: `O lote ${saida.lote.codigo} já teve venda ou ajuste` } : { pode: true };
+}
+
+function dadosDoResumo(
+  op: {
+    fruta: { exigeBranqueamento: boolean };
+    branqueamentoTemperaturaC: Prisma.Decimal | null;
+    branqueamentoTempoS: number | null;
+    aguaLitros: Prisma.Decimal;
+    carocoResiduoKg: Prisma.Decimal;
+    perdaKg: Prisma.Decimal;
+  },
+  linhas: LinhasOP,
+): DadosResumoOP {
+  return {
+    exigeBranqueamento: op.fruta.exigeBranqueamento,
+    branqueamentoTemperaturaC: op.branqueamentoTemperaturaC === null ? null : Number(op.branqueamentoTemperaturaC),
+    branqueamentoTempoS: op.branqueamentoTempoS,
+    aguaLitros: Number(op.aguaLitros),
+    carocoResiduoKg: Number(op.carocoResiduoKg),
+    perdaKg: Number(op.perdaKg),
+    ...linhas,
+  };
+}
+
+/**
+ * Encerra a OP: grava o custo (RN-13) e o custo/kg final nos lotes de polpa,
+ * que ficam liberados para venda e ajuste (D-07). Balanço ou branqueamento
+ * "Verificar" exigem confirmação explícita, registrada na auditoria.
+ */
+export async function encerrarOP(
+  sessao: SessaoAtiva,
+  id: string,
+  opcoes: { confirmarVerificar: boolean },
+): Promise<void> {
+  autorizar(sessao);
+  const configuracao = await obterConfiguracaoProducao(sessao.filialId);
+
+  await prisma.$transaction(async (tx) => {
+    const op = await travarOP(tx, sessao.filialId, id);
+    const linhas = await linhasAtivas(tx, id);
+    if (linhas.consumos.length === 0) throw new Error("Lance ao menos um consumo de fruto");
+    if (linhas.producoes.length === 0) throw new Error("Lance ao menos uma produção de polpa");
+
+    const resumo = resumirOP(dadosDoResumo(op, linhas), configuracao);
+    if (resumo.aVerificar.length > 0 && !opcoes.confirmarVerificar) {
+      throw new Error(`Confirme para encerrar com itens a verificar: ${resumo.aVerificar.join(", ")}`);
+    }
+
+    await tx.ordemProducao.update({
+      where: { id },
+      data: {
+        status: "ENCERRADA",
+        encerradaEm: new Date(),
+        custoFrutoTotal: resumo.custo.custoFrutoTotal,
+        custoInsumosTotal: resumo.custo.custoInsumosTotal,
+        custoKgPolpa: resumo.custo.custoKgPolpa,
+      },
+    });
+    await tx.lote.updateMany({
+      where: { producaoOP: { is: { ordemProducaoId: id, removidoEm: null } } },
+      data: { custoKg: resumo.custo.custoKgPolpa },
+    });
+    await auditar(
+      sessao,
+      tx,
+      id,
+      "ENCERRAR",
+      {
+        status: "ENCERRADA",
+        custo: resumo.custo,
+        rendimento: resumo.rendimento,
+        balanco: resumo.balanco,
+        branqueamento: resumo.branqueamento,
+        confirmouVerificar: resumo.aVerificar.length > 0,
+      },
+      { status: op.status },
+    );
+  });
+}
+
+function motivoValido(motivo: string, mensagem: string): string {
+  const limpo = motivo.trim();
+  if (limpo.length < 3) throw new Error(mensagem);
+  return limpo;
+}
+
+/** Volta a OP encerrada para aberta, se a polpa não saiu: a polpa é bloqueada de novo e os custos são limpos. */
+export async function reabrirOP(sessao: SessaoAtiva, id: string, motivo: string): Promise<void> {
+  autorizar(sessao);
+  const motivoLimpo = motivoValido(motivo, "Informe o motivo da reabertura");
+
+  await prisma.$transaction(async (tx) => {
+    const op = await travarOP(tx, sessao.filialId, id, ["ENCERRADA"]);
+    const situacao = await situacaoParaDesfazer(op, tx);
+    if (!situacao.pode) throw new Error(situacao.motivo);
+
+    await tx.ordemProducao.update({
+      where: { id },
+      data: {
+        status: "ABERTA",
+        encerradaEm: null,
+        custoFrutoTotal: null,
+        custoInsumosTotal: null,
+        custoKgPolpa: null,
+        motivoReabertura: motivoLimpo,
+      },
+    });
+    await auditar(
+      sessao,
+      tx,
+      id,
+      "REABRIR",
+      { status: "ABERTA", motivo: motivoLimpo },
+      {
+        status: op.status,
+        custoKgPolpa: op.custoKgPolpa === null ? null : Number(op.custoKgPolpa),
+      },
+    );
+  });
+}
+
+/** Desfaz a OP (aberta ou encerrada, se a polpa não saiu): devolve o fruto e zera os lotes de polpa. */
+export async function cancelarOP(sessao: SessaoAtiva, id: string, motivo: string): Promise<void> {
+  autorizar(sessao);
+  const motivoLimpo = motivoValido(motivo, "Informe o motivo do cancelamento");
+
+  await prisma.$transaction(async (tx) => {
+    const op = await travarOP(tx, sessao.filialId, id, ["ABERTA", "ENCERRADA"]);
+    const situacao = await situacaoParaDesfazer(op, tx);
+    if (!situacao.pode) throw new Error(situacao.motivo);
+
+    const consumos = await tx.consumoOP.findMany({ where: { ordemProducaoId: id, removidoEm: null } });
+    for (const consumo of consumos) {
+      await registrarMovimento(tx, {
+        filialId: sessao.filialId,
+        loteId: consumo.loteId,
+        data: op.data,
+        tipo: "ESTORNO_CONSUMO_OP",
+        quantidadeKg: Number(consumo.quantidadeKg),
+        usuarioId: sessao.usuarioId,
+        consumoOpId: consumo.id,
+      });
+    }
+    const producoes = await tx.producaoOP.findMany({
+      where: { ordemProducaoId: id, removidoEm: null },
+      include: { lote: { select: { saldoKg: true } } },
+    });
+    for (const producao of producoes) {
+      await registrarMovimento(tx, {
+        filialId: sessao.filialId,
+        loteId: producao.loteId,
+        data: op.data,
+        tipo: "ESTORNO_PRODUCAO_OP",
+        quantidadeKg: -Number(producao.lote.saldoKg),
+        usuarioId: sessao.usuarioId,
+        producaoOpId: producao.id,
+      });
+    }
+
+    await tx.ordemProducao.update({
+      where: { id },
+      data: { status: "CANCELADA", motivoCancelamento: motivoLimpo, canceladaEm: new Date() },
+    });
+    await auditar(
+      sessao,
+      tx,
+      id,
+      "CANCELAR",
+      { status: "CANCELADA", motivo: motivoLimpo, consumosEstornados: consumos.length, polpasZeradas: producoes.length },
+      { status: op.status },
+    );
+  });
+}
+
+const LINHAS_ATIVAS = { where: { removidoEm: null } } as const;
+
+/** Resumo da OP; encerrada usa o custo gravado, as demais o calculado agora (provisório). */
+function resumoComCustoGravado(
+  op: Parameters<typeof dadosDoResumo>[0] & {
+    status: StatusOrdemProducao;
+    custoFrutoTotal: Prisma.Decimal | null;
+    custoInsumosTotal: Prisma.Decimal | null;
+    custoKgPolpa: Prisma.Decimal | null;
+  },
+  linhas: LinhasOP,
+  configuracao: ConfiguracaoResumo,
+): ResumoOP {
+  const resumo = resumirOP(dadosDoResumo(op, linhas), configuracao);
+  if (op.status !== "ENCERRADA" || op.custoKgPolpa === null) return resumo;
+  const custoFrutoTotal = Number(op.custoFrutoTotal);
+  const custoInsumosTotal = Number(op.custoInsumosTotal);
+  return {
+    ...resumo,
+    custo: {
+      custoFrutoTotal,
+      custoInsumosTotal,
+      custoTotal: arredondar(custoFrutoTotal + custoInsumosTotal, 2),
+      custoKgPolpa: Number(op.custoKgPolpa),
+    },
+  };
+}
+
+function linhasEmNumeros(op: {
+  consumos: { quantidadeKg: Prisma.Decimal; custoKg: Prisma.Decimal }[];
+  producoes: { quantidadeKg: Prisma.Decimal }[];
+  insumos: { quantidade: Prisma.Decimal; custoUnitario: Prisma.Decimal }[];
+}): LinhasOP {
+  return {
+    consumos: op.consumos.map((c) => ({ quantidadeKg: Number(c.quantidadeKg), custoKg: Number(c.custoKg) })),
+    producoes: op.producoes.map((p) => ({ quantidadeKg: Number(p.quantidadeKg) })),
+    insumos: op.insumos.map((i) => ({ quantidade: Number(i.quantidade), custoUnitario: Number(i.custoUnitario) })),
+  };
+}
+
+export type FiltroOPs = { inicio: Date; fim: Date; frutaId?: string; status?: StatusOrdemProducao };
+
+export async function listarOPs(filialId: string, filtros: FiltroOPs) {
+  const configuracao = await obterConfiguracaoProducao(filialId);
+  const ops = await prisma.ordemProducao.findMany({
+    where: {
+      filialId,
+      data: { gte: filtros.inicio, lte: filtros.fim },
+      ...(filtros.frutaId ? { frutaId: filtros.frutaId } : {}),
+      ...(filtros.status ? { status: filtros.status } : {}),
+    },
+    include: {
+      fruta: { select: { nome: true, exigeBranqueamento: true } },
+      consumos: { ...LINHAS_ATIVAS, select: { quantidadeKg: true, custoKg: true } },
+      producoes: { ...LINHAS_ATIVAS, select: { quantidadeKg: true } },
+      insumos: { ...LINHAS_ATIVAS, select: { quantidade: true, custoUnitario: true } },
+    },
+    orderBy: [{ data: "desc" }, { numero: "desc" }],
+  });
+  return ops.map(({ consumos, producoes, insumos, ...op }) => ({
+    ...op,
+    resumo: resumoComCustoGravado(op, linhasEmNumeros({ consumos, producoes, insumos }), configuracao),
+  }));
+}
+
+export type OPListada = Awaited<ReturnType<typeof listarOPs>>[number];
+
+export async function obterOP(filialId: string, numero: string) {
+  const op = await prisma.ordemProducao.findUnique({
+    where: { filialId_numero: { filialId, numero } },
+    include: {
+      fruta: { select: { id: true, nome: true, exigeBranqueamento: true } },
+      usuario: { select: { nome: true } },
+      consumos: {
+        ...LINHAS_ATIVAS,
+        include: {
+          lote: { select: { id: true, codigo: true, validade: true, produto: { select: { descricao: true } } } },
+        },
+        orderBy: { criadoEm: "asc" },
+      },
+      producoes: {
+        ...LINHAS_ATIVAS,
+        include: {
+          lote: { select: { id: true, codigo: true, validade: true } },
+          produto: { select: { codigo: true, descricao: true } },
+          local: { select: { nome: true } },
+        },
+        orderBy: { criadoEm: "asc" },
+      },
+      insumos: {
+        ...LINHAS_ATIVAS,
+        include: { insumo: { select: { nome: true, unidade: true } } },
+        orderBy: { criadoEm: "asc" },
+      },
+    },
+  });
+  if (!op) return null;
+  const configuracao = await obterConfiguracaoProducao(filialId);
+  return {
+    ...op,
+    resumo: resumoComCustoGravado(op, linhasEmNumeros(op), configuracao),
+    situacaoDesfazer: await situacaoParaDesfazer(op),
+  };
+}
+
+export type OPDetalhada = NonNullable<Awaited<ReturnType<typeof obterOP>>>;
 
 /** Lotes de fruto da fruta com saldo, em ordem FEFO (RN-27), com a marca de vencido na data da OP. */
 export async function lotesParaConsumo(filialId: string, frutaId: string, data: Date) {

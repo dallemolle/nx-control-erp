@@ -10,6 +10,8 @@ import {
 } from "@/lib/schemas/ordemProducao";
 import { recepcaoSchema } from "@/lib/schemas/recepcao";
 import {
+  configurarVendas,
+  criarCadastrosDeVenda,
   criarCatalogoDeTeste,
   criarFixtureProducao,
   criarLoteDeTeste,
@@ -22,12 +24,20 @@ import {
   adicionarProducao,
   atualizarCabecalhoOP,
   atualizarProcessoOP,
+  cancelarOP,
   criarOP,
+  encerrarOP,
+  listarOPs,
   lotesParaConsumo,
+  obterOP,
+  reabrirOP,
   removerConsumo,
   removerInsumo,
   removerProducao,
+  situacaoParaDesfazer,
 } from "./ordemProducao";
+import { cancelarPedido, criarPedido } from "./pedidoVenda";
+import { pedidoVendaSchema } from "@/lib/schemas/pedidoVenda";
 import { cancelarRecepcao, criarRecepcao } from "./recepcaoFruto";
 import { registrarMovimento } from "./estoque";
 
@@ -370,6 +380,200 @@ describe("ordem de produção", () => {
       await expect(adicionarProducao(adm(), op.id, producao(cat.produtoPolpaId, 1))).rejects.toThrow(mensagem);
       await expect(adicionarInsumo(adm(), op.id, insumo(cat.insumoId, 1))).rejects.toThrow(mensagem);
       await expect(removerConsumo(adm(), linha.id)).rejects.toThrow(mensagem);
+    });
+  });
+
+  describe("encerrar, reabrir e cancelar", () => {
+    const PROCESSO_OK = {
+      branqueamentoTemperaturaC: "85",
+      branqueamentoTempoS: "12",
+      aguaLitros: "0",
+      carocoResiduoKg: "38",
+      perdaKg: "2",
+    };
+
+    /** 100 kg de fruto a 1,5 → AGC 40 + AFN 20, 60 embalagens a 0,5; balanço 0 e branqueamento OK. */
+    async function opCompleta(processo: Record<string, string> = PROCESSO_OK) {
+      const op = await nova({ data: "2026-11-13" });
+      const lote = await fruto(100, { data: d("2026-11-13"), validade: d("2026-11-14") });
+      const consumoId = (await adicionarConsumo(adm(), op.id, consumo(lote.id, 100))).id;
+      const grosso = await adicionarProducao(
+        adm(),
+        op.id,
+        producaoSchema.parse({ produtoId: cat.produtoPolpaId, quantidadeKg: 40, localId: cat.localCamaraId }),
+      );
+      const fino = await adicionarProducao(
+        adm(),
+        op.id,
+        producaoSchema.parse({ produtoId: cat.produtoPolpaFinoId, quantidadeKg: 20, localId: cat.localCamaraId }),
+      );
+      await adicionarInsumo(adm(), op.id, insumoOPSchema.parse({ insumoId: cat.insumoId, quantidade: 60 }));
+      await atualizarProcessoOP(adm(), op.id, processoOPSchema.parse(processo));
+      return { op, lote, consumoId, grosso, fino };
+    }
+
+    test("encerra e grava o custo", async () => {
+      const { op, grosso, fino } = await opCompleta();
+      await encerrarOP(adm(), op.id, { confirmarVerificar: false });
+
+      const encerrada = await prisma.ordemProducao.findUniqueOrThrow({ where: { id: op.id } });
+      expect(encerrada.status).toBe("ENCERRADA");
+      expect(encerrada.encerradaEm).not.toBeNull();
+      expect(Number(encerrada.custoFrutoTotal)).toBe(150);
+      expect(Number(encerrada.custoInsumosTotal)).toBe(30);
+      expect(Number(encerrada.custoKgPolpa)).toBe(3);
+      for (const loteId of [grosso.loteId, fino.loteId]) {
+        expect(Number((await prisma.lote.findUniqueOrThrow({ where: { id: loteId } })).custoKg)).toBe(3);
+      }
+    });
+
+    test("encerrar exige consumo e produção", async () => {
+      const vazia = await nova();
+      await expect(encerrarOP(adm(), vazia.id, { confirmarVerificar: true })).rejects.toThrow(
+        "Lance ao menos um consumo de fruto",
+      );
+      const lote = await fruto();
+      await adicionarConsumo(adm(), vazia.id, consumo(lote.id, 10));
+      await expect(encerrarOP(adm(), vazia.id, { confirmarVerificar: true })).rejects.toThrow(
+        "Lance ao menos uma produção de polpa",
+      );
+    });
+
+    test("com Verificar exige confirmação", async () => {
+      const { op } = await opCompleta({ ...PROCESSO_OK, branqueamentoTemperaturaC: "", branqueamentoTempoS: "" });
+      await expect(encerrarOP(adm(), op.id, { confirmarVerificar: false })).rejects.toThrow(
+        "Confirme para encerrar com itens a verificar: Branqueamento",
+      );
+      await encerrarOP(adm(), op.id, { confirmarVerificar: true });
+      const auditoria = await prisma.auditLog.findFirstOrThrow({
+        where: { entidadeId: op.id, acao: "ENCERRAR" },
+      });
+      expect(auditoria.valorNovo).toMatchObject({ confirmouVerificar: true, branqueamento: "VERIFICAR" });
+    });
+
+    test("concorrência: encerrar e lançar ao mesmo tempo não deixa linha fora do custo", async () => {
+      const { op } = await opCompleta();
+      const outro = await fruto(10, { data: d("2026-11-13"), validade: d("2026-11-14") });
+      const [, lancamento] = await Promise.allSettled([
+        encerrarOP(adm(), op.id, { confirmarVerificar: true }),
+        adicionarConsumo(adm(), op.id, consumo(outro.id, 10)),
+      ]);
+      if (lancamento.status === "rejected") {
+        expect(String(lancamento.reason)).toContain(`A OP ${op.numero} está encerrada`);
+      }
+      const encerrada = await prisma.ordemProducao.findUniqueOrThrow({ where: { id: op.id } });
+      expect(encerrada.status).toBe("ENCERRADA");
+      const consumos = await prisma.consumoOP.findMany({ where: { ordemProducaoId: op.id, removidoEm: null } });
+      const custoFruto = consumos.reduce((s, c) => s + Number(c.quantidadeKg) * Number(c.custoKg), 0);
+      expect(Number(encerrada.custoFrutoTotal)).toBeCloseTo(custoFruto, 2);
+    });
+
+    test("reabrir sem saída volta a aberta e limpa os custos", async () => {
+      const { op, grosso } = await opCompleta();
+      await encerrarOP(adm(), op.id, { confirmarVerificar: false });
+      await expect(reabrirOP(adm(), op.id, "")).rejects.toThrow("Informe o motivo da reabertura");
+
+      await reabrirOP(adm(), op.id, "Faltou um insumo");
+      const reaberta = await prisma.ordemProducao.findUniqueOrThrow({ where: { id: op.id } });
+      expect(reaberta.status).toBe("ABERTA");
+      expect(reaberta.custoKgPolpa).toBeNull();
+      expect(reaberta.encerradaEm).toBeNull();
+      expect(reaberta.motivoReabertura).toBe("Faltou um insumo");
+      await expect(reabrirOP(adm(), op.id, "De novo")).rejects.toThrow(`A OP ${op.numero} está aberta`);
+
+      await adicionarInsumo(adm(), op.id, insumoOPSchema.parse({ insumoId: cat.insumoId, quantidade: 60 }));
+      await encerrarOP(adm(), op.id, { confirmarVerificar: false });
+      expect(Number((await prisma.ordemProducao.findUniqueOrThrow({ where: { id: op.id } })).custoKgPolpa)).toBe(3.5);
+      expect(Number((await prisma.lote.findUniqueOrThrow({ where: { id: grosso.loteId } })).custoKg)).toBe(3.5);
+    });
+
+    test("reabrir e cancelar recusados depois de uma venda, mesmo cancelada", async () => {
+      const cad = await criarCadastrosDeVenda(fx);
+      await configurarVendas(fx, cad);
+      const { op, grosso } = await opCompleta();
+      await encerrarOP(adm(), op.id, { confirmarVerificar: false });
+
+      const pedido = await criarPedido(
+        fx.sessao("VENDAS"),
+        pedidoVendaSchema.parse({
+          data: "2026-11-13",
+          clienteId: cad.clienteId,
+          formaPagamento: "A_PRAZO",
+          vencimento: "2026-12-13",
+          retiraNaPropriedade: "true",
+          itens: JSON.stringify([{ loteId: grosso.loteId, quantidadeKg: 5, precoKg: 10 }]),
+        }),
+      );
+      await cancelarPedido(adm(), pedido.pedidoId, "Cliente desistiu");
+
+      const mensagem = `O lote ${grosso.codigoLote} já teve venda ou ajuste`;
+      await expect(reabrirOP(adm(), op.id, "Corrigir")).rejects.toThrow(mensagem);
+      await expect(cancelarOP(adm(), op.id, "Corrigir")).rejects.toThrow(mensagem);
+      expect(await situacaoParaDesfazer({ id: op.id, status: "ENCERRADA" })).toEqual({ pode: false, motivo: mensagem });
+    });
+
+    test("cancelar OP aberta estorna tudo", async () => {
+      const { op, lote, grosso, fino } = await opCompleta();
+      await expect(cancelarOP(adm(), op.id, "")).rejects.toThrow("Informe o motivo do cancelamento");
+
+      await cancelarOP(adm(), op.id, "Lançada por engano");
+      expect(await saldo(lote.id)).toBe(100);
+      expect(await saldo(grosso.loteId)).toBe(0);
+      expect(await saldo(fino.loteId)).toBe(0);
+      const cancelada = await prisma.ordemProducao.findUniqueOrThrow({ where: { id: op.id } });
+      expect(cancelada.status).toBe("CANCELADA");
+      expect(cancelada.motivoCancelamento).toBe("Lançada por engano");
+      expect(cancelada.canceladaEm).not.toBeNull();
+
+      const mensagem = `A OP ${op.numero} está cancelada`;
+      await expect(adicionarConsumo(adm(), op.id, consumo(lote.id, 1))).rejects.toThrow(mensagem);
+      await expect(cancelarOP(adm(), op.id, "De novo")).rejects.toThrow(mensagem);
+    });
+
+    test("cancelar OP encerrada sem saída", async () => {
+      const { op, lote } = await opCompleta();
+      await encerrarOP(adm(), op.id, { confirmarVerificar: false });
+      await cancelarOP(adm(), op.id, "Batelada descartada");
+      expect(await saldo(lote.id)).toBe(100);
+      expect((await prisma.ordemProducao.findUniqueOrThrow({ where: { id: op.id } })).status).toBe("CANCELADA");
+    });
+
+    test("listarOPs e obterOP", async () => {
+      const { op, fino } = await opCompleta();
+      await encerrarOP(adm(), op.id, { confirmarVerificar: false });
+      const aberta = await nova({ data: "2026-11-13" });
+
+      const todas = await listarOPs(fx.filialAId, { inicio: d("2026-11-13"), fim: d("2026-11-13") });
+      const listada = todas.find((o) => o.id === op.id)!;
+      expect(listada.fruta.nome).toBe("Açaí");
+      expect(listada.resumo.rendimento).toBe(0.6);
+      expect(listada.resumo.custo.custoKgPolpa).toBe(3);
+      expect(listada.resumo.balanco.status).toBe("OK");
+      expect(listada.resumo.branqueamento).toBe("OK");
+
+      const encerradas = await listarOPs(fx.filialAId, {
+        inicio: d("2026-11-13"),
+        fim: d("2026-11-13"),
+        status: "ENCERRADA",
+      });
+      expect(encerradas.map((o) => o.id)).toContain(op.id);
+      expect(encerradas.map((o) => o.id)).not.toContain(aberta.id);
+      const deOutraFruta = await listarOPs(fx.filialAId, {
+        inicio: d("2026-11-13"),
+        fim: d("2026-11-13"),
+        frutaId: cat.outraFrutaId,
+      });
+      expect(deOutraFruta).toHaveLength(0);
+
+      await reabrirOP(adm(), op.id, "Tirar o fino");
+      await removerProducao(adm(), fino.id);
+      const detalhe = await obterOP(fx.filialAId, op.numero);
+      expect(detalhe?.producoes).toHaveLength(1);
+      expect(detalhe?.consumos).toHaveLength(1);
+      expect(detalhe?.insumos).toHaveLength(1);
+      expect(detalhe?.resumo.polpaKg).toBe(40);
+      expect(detalhe?.situacaoDesfazer).toEqual({ pode: true });
+      expect(await obterOP(fx.filialBId, op.numero)).toBeNull();
     });
   });
 
