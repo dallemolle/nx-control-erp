@@ -39,6 +39,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/producao/processamento", label: "Processamento", acao: "producao:ler" },
       { href: "/producao/estoque", label: "Estoque", acao: "producao:ler" },
       { href: "/producao/ajustes", label: "Ajustes de estoque", acao: "producao:ler" },
+      { href: "/producao/rastreabilidade", label: "Rastreabilidade", acao: "producao:ler" },
     ],
   },
   {

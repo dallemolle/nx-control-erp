@@ -52,7 +52,7 @@ describe("secoesVisiveis", () => {
     expect(secoesVisiveis("CONSULTA").every((s) => s.itens.length > 0)).toBe(true);
   });
 
-  test("seção Produção com recepção, processamento, estoque e ajustes para quem tem producao:ler", () => {
+  test("seção Produção com recepção, processamento, estoque, ajustes e rastreabilidade para quem tem producao:ler", () => {
     for (const perfil of ["PRODUCAO", "VENDAS", "CONSULTA", "FINANCEIRO"] as const) {
       const producao = secoesVisiveis(perfil).find((s) => s.titulo === "Produção");
       expect(producao?.itens.map((i) => i.href)).toEqual([
@@ -60,6 +60,7 @@ describe("secoesVisiveis", () => {
         "/producao/processamento",
         "/producao/estoque",
         "/producao/ajustes",
+        "/producao/rastreabilidade",
       ]);
     }
   });
