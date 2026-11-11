@@ -144,7 +144,8 @@ Regras:
 - **Consultas fixas:** lote + recepção/OP de origem; consumos do lote;
   OPs envolvidas com consumos, produções e lotes de polpa (um `findMany`
   com `in`); itens de pedido dos lotes envolvidos com pedido, entrega e
-  cliente (um `findMany` com `in`); `groupBy` dos movimentos do lote.
+  cliente (um `findMany` com `in`); movimentos do lote (um `findMany`,
+  com o motivo do ajuste).
   Nenhum laço de consulta por lote, OP ou pedido.
 - `clientes` ordenado por data do pedido e número.
 
@@ -169,7 +170,7 @@ Server Component. Parâmetros: `?lote=<código ou trecho>&cancelados=1`.
 - **Cartão Clientes que receberam:** total de clientes distintos e de kg;
   tabela com caminho, lote vendido, OP, pedido, data, cliente, documento,
   telefone, e-mail, município, endereço, kg e entrega.
-- **Mostrar cancelados:** caixa que alterna `cancelados=1`; linhas
+- **Mostrar cancelados:** botão que alterna `cancelados=1`; linhas
   canceladas/removidas com badge.
 - **Links:** lote → `/producao/rastreabilidade?lote=`, OP →
   `/producao/processamento/[numero]`, pedido → `/vendas/pedidos/[numero]`.
@@ -177,9 +178,9 @@ Server Component. Parâmetros: `?lote=<código ou trecho>&cancelados=1`.
 ### Atalhos e menu
 
 - `nav-items.ts`: item **Rastreabilidade** em Produção.
-- Link **Rastrear** no estoque (por lote), na recepção (por recepção), no
-  detalhe da OP (lotes consumidos e produzidos) e no detalhe do pedido
-  (por item).
+- O **código do lote vira link** para a rastreabilidade no estoque, na
+  recepção, no detalhe da OP (lotes consumidos e produzidos) e no detalhe
+  do pedido (por item). Sem botão extra nas linhas.
 
 ## 4. Exportação (`/producao/rastreabilidade/export`)
 
