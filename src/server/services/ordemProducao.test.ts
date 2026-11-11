@@ -1,7 +1,13 @@
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { prisma } from "@/server/db/client";
 import { FilialSomenteLeituraError, PermissionError } from "@/server/auth/permissions";
-import { cabecalhoOPSchema, consumoSchema, processoOPSchema } from "@/lib/schemas/ordemProducao";
+import {
+  cabecalhoOPSchema,
+  consumoSchema,
+  insumoOPSchema,
+  processoOPSchema,
+  producaoSchema,
+} from "@/lib/schemas/ordemProducao";
 import { recepcaoSchema } from "@/lib/schemas/recepcao";
 import {
   criarCatalogoDeTeste,
@@ -12,11 +18,15 @@ import {
 } from "./producaoTestFixtures";
 import {
   adicionarConsumo,
+  adicionarInsumo,
+  adicionarProducao,
   atualizarCabecalhoOP,
   atualizarProcessoOP,
   criarOP,
   lotesParaConsumo,
   removerConsumo,
+  removerInsumo,
+  removerProducao,
 } from "./ordemProducao";
 import { cancelarRecepcao, criarRecepcao } from "./recepcaoFruto";
 import { registrarMovimento } from "./estoque";
@@ -254,6 +264,113 @@ describe("ordem de produção", () => {
     await expect(
       criarOP(adm(), cabecalhoOPSchema.parse({ data: "2026-11-10", frutaId: "nao-existe" })),
     ).rejects.toThrow("Fruta não encontrada ou inativa");
+  });
+
+  describe("produção e insumos", () => {
+    const producao = (produtoId: string, quantidadeKg: number, extra: Record<string, unknown> = {}) =>
+      producaoSchema.parse({ produtoId, quantidadeKg, localId: cat.localCamaraId, embalagens: "", ...extra });
+    const insumo = (insumoId: string, quantidade: number) => insumoOPSchema.parse({ insumoId, quantidade });
+    const custoDoLote = async (loteId: string) =>
+      Number((await prisma.lote.findUniqueOrThrow({ where: { id: loteId } })).custoKg);
+
+    test("produção cria o lote de polpa", async () => {
+      const op = await nova({ data: "2026-11-12" });
+      const linha = await adicionarProducao(adm(), op.id, producao(cat.produtoPolpaId, 60, { embalagens: "60" }));
+
+      expect(linha.codigoLote).toBe("AGC-261112-01");
+      const lote = await prisma.lote.findUniqueOrThrow({ where: { id: linha.loteId } });
+      expect(lote.origem).toBe("PRODUCAO");
+      expect(lote.data).toEqual(d("2026-11-12"));
+      expect(lote.validade).toEqual(d("2027-11-12"));
+      expect(lote.localId).toBe(cat.localCamaraId);
+      expect(Number(lote.saldoKg)).toBe(60);
+      expect(Number(lote.quantidadeInicialKg)).toBe(60);
+      const producaoOP = await prisma.producaoOP.findUniqueOrThrow({ where: { id: linha.id } });
+      expect(producaoOP.embalagens).toBe(60);
+      const movimentos = await prisma.movimentoEstoque.findMany({ where: { producaoOpId: linha.id } });
+      expect(movimentos.map((m) => [m.tipo, Number(m.quantidadeKg)])).toEqual([["PRODUCAO_OP", 60]]);
+    });
+
+    test("custo provisório igual em todas as polpas", async () => {
+      const op = await nova();
+      const lote = await fruto();
+      await adicionarConsumo(adm(), op.id, consumo(lote.id, 100));
+      const grosso = await adicionarProducao(adm(), op.id, producao(cat.produtoPolpaId, 40));
+      const fino = await adicionarProducao(adm(), op.id, producao(cat.produtoPolpaFinoId, 20));
+      expect(await custoDoLote(grosso.loteId)).toBe(2.5);
+      expect(await custoDoLote(fino.loteId)).toBe(2.5);
+
+      const embalagem = await adicionarInsumo(adm(), op.id, insumo(cat.insumoId, 60));
+      expect(await custoDoLote(grosso.loteId)).toBe(3);
+      expect(await custoDoLote(fino.loteId)).toBe(3);
+
+      await removerInsumo(adm(), embalagem.id);
+      expect(await custoDoLote(grosso.loteId)).toBe(2.5);
+
+      await removerProducao(adm(), fino.id);
+      expect(await custoDoLote(grosso.loteId)).toBe(3.75);
+      expect(await saldo(fino.loteId)).toBe(0);
+      const linhaFino = await prisma.producaoOP.findUniqueOrThrow({ where: { id: fino.id } });
+      expect(linhaFino.removidoEm).not.toBeNull();
+      const estorno = await prisma.movimentoEstoque.findFirstOrThrow({
+        where: { producaoOpId: fino.id, tipo: "ESTORNO_PRODUCAO_OP" },
+      });
+      expect(Number(estorno.quantidadeKg)).toBe(-20);
+      await expect(removerProducao(adm(), fino.id)).rejects.toThrow("Linha já removida");
+    });
+
+    test("insumo com custo congelado no lançamento", async () => {
+      const op = await nova();
+      const lote = await fruto();
+      await adicionarConsumo(adm(), op.id, consumo(lote.id, 10));
+      const polpa = await adicionarProducao(adm(), op.id, producao(cat.produtoPolpaId, 10));
+      const linha = await adicionarInsumo(adm(), op.id, insumo(cat.insumoId, 10));
+      const antes = await custoDoLote(polpa.loteId);
+
+      await prisma.insumo.update({ where: { id: cat.insumoId }, data: { custoUnitario: 9 } });
+      try {
+        const gravada = await prisma.insumoOP.findUniqueOrThrow({ where: { id: linha.id } });
+        expect(Number(gravada.custoUnitario)).toBe(0.5);
+        await adicionarProducao(adm(), op.id, producao(cat.produtoPolpaFinoId, 10));
+        // 15 de fruto + 5 de insumo ÷ 20 kg: o preço novo do cadastro não entra.
+        expect(await custoDoLote(polpa.loteId)).toBe(1);
+        expect(antes).toBe(2);
+      } finally {
+        await prisma.insumo.update({ where: { id: cat.insumoId }, data: { custoUnitario: 0.5 } });
+      }
+    });
+
+    test("recusas na produção e no insumo", async () => {
+      const op = await nova();
+      await expect(adicionarProducao(adm(), op.id, producao(cat.produtoFrutoId, 1))).rejects.toThrow(
+        "Produto de polpa não encontrado ou inativo",
+      );
+      await expect(adicionarProducao(adm(), op.id, producao(cat.produtoPolpaOutraId, 1))).rejects.toThrow(
+        "O produto é de outra fruta",
+      );
+      const localB = await prisma.localArmazenamento.create({
+        data: { filialId: fx.filialBId, nome: "Câmara B", tipo: "CAMARA_FRIA" },
+      });
+      await expect(
+        adicionarProducao(adm(), op.id, producao(cat.produtoPolpaId, 1, { localId: localB.id })),
+      ).rejects.toThrow("Local de armazenamento não encontrado ou inativo");
+      await expect(adicionarInsumo(adm(), op.id, insumo(cat.insumoInativoId, 1))).rejects.toThrow(
+        "Insumo não encontrado ou inativo",
+      );
+    });
+
+    test("OP encerrada recusa linhas", async () => {
+      const op = await nova();
+      const lote = await fruto();
+      const linha = await adicionarConsumo(adm(), op.id, consumo(lote.id, 1));
+      await prisma.ordemProducao.update({ where: { id: op.id }, data: { status: "ENCERRADA" } });
+
+      const mensagem = `A OP ${op.numero} está encerrada`;
+      await expect(adicionarConsumo(adm(), op.id, consumo(lote.id, 1))).rejects.toThrow(mensagem);
+      await expect(adicionarProducao(adm(), op.id, producao(cat.produtoPolpaId, 1))).rejects.toThrow(mensagem);
+      await expect(adicionarInsumo(adm(), op.id, insumo(cat.insumoId, 1))).rejects.toThrow(mensagem);
+      await expect(removerConsumo(adm(), linha.id)).rejects.toThrow(mensagem);
+    });
   });
 
   test("lotesParaConsumo: fruto da fruta, com saldo, em ordem FEFO", async () => {

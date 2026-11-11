@@ -3,9 +3,15 @@ import { prisma } from "@/server/db/client";
 import { podeExecutar, requireAlteracaoFilial, requirePermission } from "@/server/auth/permissions";
 import { registrarAuditoria, type ClientePrisma } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
-import type { CabecalhoOPValues, ConsumoValues, ProcessoOPValues } from "@/lib/schemas/ordemProducao";
+import type {
+  CabecalhoOPValues,
+  ConsumoValues,
+  InsumoOPValues,
+  ProcessoOPValues,
+  ProducaoValues,
+} from "@/lib/schemas/ordemProducao";
 import { formatarData } from "@/lib/formatacao";
-import { proximoCodigoDeLote } from "@/lib/producao/lote";
+import { calcularValidade, prefixoDoLote, proximoCodigoDeLote } from "@/lib/producao/lote";
 import { loteVencidoNaData } from "@/lib/producao/venda";
 import { custoOP, prefixoDaOP, type LinhasOP } from "@/lib/producao/op";
 import { registrarMovimento } from "./estoque";
@@ -298,6 +304,166 @@ export async function removerConsumo(sessao: SessaoAtiva, consumoId: string): Pr
     await auditar(sessao, tx, op.id, "REMOVER_CONSUMO", {
       lote: linha.lote.codigo,
       quantidadeKg: Number(linha.quantidadeKg),
+    });
+  });
+}
+
+/**
+ * Polpa produzida: cria o lote de polpa na hora (código e validade pela data
+ * da OP, RN-07/RN-08), bloqueado para venda e ajuste até a OP encerrar (D-07).
+ */
+export async function adicionarProducao(sessao: SessaoAtiva, opId: string, dados: ProducaoValues) {
+  autorizar(sessao);
+  const produto = await prisma.produto.findFirst({
+    where: { id: dados.produtoId, empresaId: sessao.empresaId, ativo: true, categoria: "POLPA" },
+    select: { id: true, codigo: true, descricao: true, frutaId: true, validadeDias: true },
+  });
+  if (!produto) throw new Error("Produto de polpa não encontrado ou inativo");
+  const local = await prisma.localArmazenamento.findFirst({
+    where: { id: dados.localId, filialId: sessao.filialId, ativo: true },
+    select: { id: true, nome: true },
+  });
+  if (!local) throw new Error("Local de armazenamento não encontrado ou inativo");
+
+  for (let tentativa = 1; ; tentativa++) {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const op = await travarOP(tx, sessao.filialId, opId);
+        if (produto.frutaId !== op.frutaId) throw new Error("O produto é de outra fruta");
+
+        const prefixo = prefixoDoLote(produto.codigo, op.data);
+        const existentes = await tx.lote.findMany({
+          where: { filialId: sessao.filialId, codigo: { startsWith: `${prefixo}-` } },
+          select: { codigo: true },
+        });
+        const codigo = proximoCodigoDeLote(
+          prefixo,
+          existentes.map((l) => l.codigo),
+        );
+        const lote = await tx.lote.create({
+          data: {
+            filialId: sessao.filialId,
+            codigo,
+            produtoId: produto.id,
+            origem: "PRODUCAO",
+            data: op.data,
+            validade: calcularValidade(op.data, produto.validadeDias),
+            localId: local.id,
+            quantidadeInicialKg: dados.quantidadeKg,
+            saldoKg: 0,
+            custoKg: 0,
+          },
+        });
+        const linha = await tx.producaoOP.create({
+          data: {
+            ordemProducaoId: opId,
+            loteId: lote.id,
+            produtoId: produto.id,
+            quantidadeKg: dados.quantidadeKg,
+            embalagens: dados.embalagens ?? null,
+            localId: local.id,
+          },
+        });
+        await registrarMovimento(tx, {
+          filialId: sessao.filialId,
+          loteId: lote.id,
+          data: op.data,
+          tipo: "PRODUCAO_OP",
+          quantidadeKg: dados.quantidadeKg,
+          usuarioId: sessao.usuarioId,
+          producaoOpId: linha.id,
+        });
+        await recalcularCustoProvisorio(tx, opId);
+        await auditar(sessao, tx, opId, "ADICIONAR_PRODUCAO", {
+          lote: codigo,
+          produto: produto.descricao,
+          quantidadeKg: dados.quantidadeKg,
+          embalagens: dados.embalagens ?? null,
+          local: local.nome,
+        });
+        return { id: linha.id, loteId: lote.id, codigoLote: codigo };
+      });
+    } catch (erro) {
+      // Outro lote do mesmo produto e dia pegou o código antes: refaz com o próximo.
+      if (!conflitoDeNumero(erro) || tentativa >= TENTATIVAS_NUMERACAO) throw erro;
+    }
+  }
+}
+
+/** Remove a polpa: o lote fica zerado (o código nunca é reaproveitado) e a linha marcada. */
+export async function removerProducao(sessao: SessaoAtiva, producaoId: string): Promise<void> {
+  autorizar(sessao);
+  await prisma.$transaction(async (tx) => {
+    const linha = await tx.producaoOP.findFirst({
+      where: { id: producaoId, ordemProducao: { filialId: sessao.filialId } },
+      include: { lote: { select: { codigo: true, saldoKg: true } } },
+    });
+    if (!linha) throw new Error("Linha não encontrada");
+    const op = await travarOP(tx, sessao.filialId, linha.ordemProducaoId);
+    if (linha.removidoEm) throw new Error("Linha já removida");
+
+    await tx.producaoOP.update({ where: { id: producaoId }, data: { removidoEm: new Date() } });
+    await registrarMovimento(tx, {
+      filialId: sessao.filialId,
+      loteId: linha.loteId,
+      data: op.data,
+      tipo: "ESTORNO_PRODUCAO_OP",
+      quantidadeKg: -Number(linha.lote.saldoKg),
+      usuarioId: sessao.usuarioId,
+      producaoOpId: linha.id,
+    });
+    await recalcularCustoProvisorio(tx, op.id);
+    await auditar(sessao, tx, op.id, "REMOVER_PRODUCAO", {
+      lote: linha.lote.codigo,
+      quantidadeKg: Number(linha.quantidadeKg),
+    });
+  });
+}
+
+/** Insumo da OP com o custo unitário do cadastro naquele momento (D-05). */
+export async function adicionarInsumo(sessao: SessaoAtiva, opId: string, dados: InsumoOPValues) {
+  autorizar(sessao);
+  const insumo = await prisma.insumo.findFirst({
+    where: { id: dados.insumoId, empresaId: sessao.empresaId, ativo: true },
+  });
+  if (!insumo) throw new Error("Insumo não encontrado ou inativo");
+
+  return prisma.$transaction(async (tx) => {
+    await travarOP(tx, sessao.filialId, opId);
+    const linha = await tx.insumoOP.create({
+      data: {
+        ordemProducaoId: opId,
+        insumoId: insumo.id,
+        quantidade: dados.quantidade,
+        custoUnitario: insumo.custoUnitario,
+      },
+    });
+    await recalcularCustoProvisorio(tx, opId);
+    await auditar(sessao, tx, opId, "ADICIONAR_INSUMO", {
+      insumo: insumo.nome,
+      quantidade: dados.quantidade,
+      custoUnitario: Number(insumo.custoUnitario),
+    });
+    return { id: linha.id };
+  });
+}
+
+export async function removerInsumo(sessao: SessaoAtiva, insumoOpId: string): Promise<void> {
+  autorizar(sessao);
+  await prisma.$transaction(async (tx) => {
+    const linha = await tx.insumoOP.findFirst({
+      where: { id: insumoOpId, ordemProducao: { filialId: sessao.filialId } },
+      include: { insumo: { select: { nome: true } } },
+    });
+    if (!linha) throw new Error("Linha não encontrada");
+    const op = await travarOP(tx, sessao.filialId, linha.ordemProducaoId);
+    if (linha.removidoEm) throw new Error("Linha já removida");
+
+    await tx.insumoOP.update({ where: { id: insumoOpId }, data: { removidoEm: new Date() } });
+    await recalcularCustoProvisorio(tx, op.id);
+    await auditar(sessao, tx, op.id, "REMOVER_INSUMO", {
+      insumo: linha.insumo.nome,
+      quantidade: Number(linha.quantidade),
     });
   });
 }
