@@ -12,6 +12,7 @@ import { formatarData, formatarMoeda } from "@/lib/formatacao";
 import { paraDataIso } from "@/lib/producao/periodo";
 import { cn } from "@/lib/utils";
 import { BranqueamentoBadge, KG, PERCENTUAL, StatusOPBadge, VerificacaoBadge } from "../formatos";
+import { LinkRastreio } from "../../_shared/link-rastreio";
 import { DesfazerOP, EditarCabecalhoOP, EncerrarOP } from "./op-acoes";
 import { FormConsumo, FormInsumo, FormProducao, RemoverLinha } from "./linhas-op";
 import { ProcessoForm } from "./processo-form";
@@ -227,7 +228,7 @@ export default async function OPPage({
                 {op.consumos.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="font-medium whitespace-nowrap">
-                      {c.lote.codigo}
+                      <LinkRastreio codigo={c.lote.codigo} />
                       {c.motivoLiberacaoVencido ? (
                         <p className="text-xs font-normal text-muted-foreground">
                           Vencido, liberado: {c.motivoLiberacaoVencido}
@@ -285,7 +286,9 @@ export default async function OPPage({
                 {op.producoes.length === 0 ? <Vazio colunas={7} texto="Nenhuma polpa lançada." /> : null}
                 {op.producoes.map((p) => (
                   <TableRow key={p.id}>
-                    <TableCell className="font-medium whitespace-nowrap">{p.lote.codigo}</TableCell>
+                    <TableCell className="font-medium whitespace-nowrap">
+                      <LinkRastreio codigo={p.lote.codigo} />
+                    </TableCell>
                     <TableCell>{p.produto.descricao}</TableCell>
                     <TableCell className="text-right tabular-nums">{KG.format(Number(p.quantidadeKg))}</TableCell>
                     <TableCell className="text-right tabular-nums">{p.embalagens ?? "—"}</TableCell>

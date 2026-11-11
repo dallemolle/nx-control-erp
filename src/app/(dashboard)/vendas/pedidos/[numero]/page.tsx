@@ -19,6 +19,7 @@ import { hojeDeCalendario, paraDataIso } from "@/lib/producao/periodo";
 import { nomeDaContaBancaria } from "@/lib/contaBancaria";
 import { EntregaAcoes } from "../../_shared/entrega-acoes";
 import { KG, PERCENTUAL, SituacaoPagamentoBadge } from "../../_shared/formatos";
+import { LinkRastreio } from "../../../producao/_shared/link-rastreio";
 import { CancelarPedido, ObservacaoPedido } from "./pedido-acoes";
 
 function Dado({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
@@ -130,7 +131,9 @@ export default async function PedidoPage({ params }: { params: Promise<{ numero:
                       <p className="text-xs text-destructive">Lote vencido liberado: {item.motivoLiberacaoVencido}</p>
                     ) : null}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap">{item.lote.codigo}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    <LinkRastreio codigo={item.lote.codigo} />
+                  </TableCell>
                   <TableCell className="text-right tabular-nums">{KG.format(Number(item.quantidadeKg))}</TableCell>
                   <TableCell className="text-right tabular-nums">{formatarMoeda(item.precoKg)}</TableCell>
                   <TableCell className="text-right tabular-nums">{formatarMoeda(item.valor)}</TableCell>
