@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.1.18](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.17...nx-control-erp-v0.1.18) (2026-11-11)
+
+
+### Novidades
+
+* **export:** PDF com várias seções ([cb0273f](https://github.com/dallemolle/nx-control-erp/commit/cb0273fe5d81f858b088b6f3f2bdce5b32b8c2bc))
+* **producao:** cálculos de rendimento, balanço, branqueamento e custo da OP ([867ccdc](https://github.com/dallemolle/nx-control-erp/commit/867ccdc6d8f227887a522998e2d750bd367817f5))
+* **producao:** código do lote abre a rastreabilidade ([1487937](https://github.com/dallemolle/nx-control-erp/commit/148793782cdfd3b969c30c8a1287af7a081fc6b9))
+* **producao:** destino do lote a partir do ledger ([9c90597](https://github.com/dallemolle/nx-control-erp/commit/9c90597704eb1dc8a68f08eeb1e23c8094473177))
+* **producao:** detalhe da OP com consumo, produção, insumos e processo ([297340f](https://github.com/dallemolle/nx-control-erp/commit/297340fe35122ed833ced3336b953f6c80fb7689))
+* **producao:** encerramento, reabertura e cancelamento da OP ([cae48e8](https://github.com/dallemolle/nx-control-erp/commit/cae48e87a999a4515a27b308acddef85158f7192))
+* **producao:** etiqueta com CNPJ, endereço e texto do produto, uma por embalagem ([541ecb1](https://github.com/dallemolle/nx-control-erp/commit/541ecb155bb19659e9c497ad1a4ef2ba06c50c76))
+* **producao:** exportação da rastreabilidade em PDF, CSV e Excel ([e5dc6a3](https://github.com/dallemolle/nx-control-erp/commit/e5dc6a3bc2b0a9f091441da58365c93f524040eb))
+* **producao:** lista de ordens de produção ([af7b40e](https://github.com/dallemolle/nx-control-erp/commit/af7b40e3c1d4ce68770c71ab666759de657a3e7e))
+* **producao:** modelo da ordem de produção e permissão de liberar fruto vencido ([b3285ed](https://github.com/dallemolle/nx-control-erp/commit/b3285ed0658add90188a49922d66827899a3d959))
+* **producao:** ordem de produção com consumo de fruto ([2d847cc](https://github.com/dallemolle/nx-control-erp/commit/2d847ccbc94ae099a8d9e99cd01a9ef98c917593))
+* **producao:** polpa bloqueada para venda e ajuste até encerrar a OP ([3ead21a](https://github.com/dallemolle/nx-control-erp/commit/3ead21a9c39227c762503256417939205cee2c5b))
+* **producao:** produção de lotes de polpa e insumos com custo provisório ([fa9c290](https://github.com/dallemolle/nx-control-erp/commit/fa9c290791f8def3060a3ddb1a997cc62f0fa2a9))
+* **producao:** serviço de rastreabilidade por lote ([091fd72](https://github.com/dallemolle/nx-control-erp/commit/091fd72862ce0e20812c8681f6a16cadc62cbdfc))
+* **producao:** tela de rastreabilidade por lote ([0ddfa7b](https://github.com/dallemolle/nx-control-erp/commit/0ddfa7b40b5bbb6eb8673db48203e033b0984293))
+
+
+### Correções
+
+* **producao:** formulário de processo sem aviso de valor padrão alterado e texto da lista de lotes ([699acc0](https://github.com/dallemolle/nx-control-erp/commit/699acc0ea2d71033f99364d54216129b32b39bb4))
+
 ## [0.1.17](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.16...nx-control-erp-v0.1.17) (2026-11-10)
 
 
