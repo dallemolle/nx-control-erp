@@ -983,6 +983,7 @@ git commit -m "feat(producao): resumo por status de validade no estoque"
 **Files:**
 - Create: `src/server/services/relatorioProducao/painel.ts`
 - Test: `src/server/services/relatorioProducao/painel.test.ts`
+- Test: `src/server/services/relatorioProducao/painel.permissao.test.ts`
 
 **Interfaces:**
 - Consumes: Task 1 (agregadores); `listarOPs(filialId, FiltroOPs)`; `listarLotes(filialId, {}, hoje)`; `listarEntregas(filialId, {}, hoje)`; `saldoRemanescenteParcela(valor, baixas)` (`src/server/services/fluxoDeCaixaProjetado.ts:44`).
@@ -1281,13 +1282,50 @@ describe("painel de produção", () => {
 
 Notas para quem executa:
 - Conferir os nomes dos retornos antes de rodar: `criarRecepcao` → `{ recepcaoId, loteId, codigoLote }`; `adicionarProducao` → `{ loteId, codigoLote, … }`; `criarPedido` → `{ pedidoId, numero }` (ver `rastreabilidade.test.ts`). Ajustar só o nome da propriedade, nunca o cenário.
-- Hoje **todos os perfis têm `producao:ler`** (`permissions.ts`), então não há teste de recusa por perfil; o `requirePermission` do serviço e o 403 da rota ficam como defesa.
+- Hoje **todos os perfis têm `producao:ler`** (`permissions.ts`), então a recusa não dá para testar com um perfil real. Ela é testada à parte, simulando a falta da permissão (Step 1b).
 - Se o `pedidoVendaSchema` recusar `vencimento: ""` no Pix, retirar a chave `vencimento` do `extra` em vez de passar vazio.
+
+- [ ] **Step 1b: Teste da recusa sem `producao:ler` (arquivo próprio)**
+
+Nenhum perfil real fica sem `producao:ler`, então o teste troca `requirePermission` por uma versão que recusa só essa ação. O `vi.mock` vale para o arquivo inteiro, por isso fica separado do cenário. Ele trava a linha do `requirePermission` no serviço: se for apagada, o teste falha.
+
+```ts
+// src/server/services/relatorioProducao/painel.permissao.test.ts
+import { describe, expect, test, vi } from "vitest";
+import { PermissionError } from "@/server/auth/permissions";
+import type { SessaoAtiva } from "@/server/auth/sessao";
+import { buscarPainelProducao } from "./painel";
+
+vi.mock("@/server/auth/permissions", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@/server/auth/permissions")>();
+  return {
+    ...real,
+    requirePermission: (perfil: Parameters<typeof real.requirePermission>[0], acao: Parameters<typeof real.requirePermission>[1]) => {
+      if (acao === "producao:ler") throw new real.PermissionError(perfil, acao);
+    },
+  };
+});
+
+describe("painel de produção: permissão", () => {
+  test("sem producao:ler o painel é recusado antes de consultar o banco", async () => {
+    const sessao: SessaoAtiva = {
+      usuarioId: "u",
+      nome: "Teste",
+      empresaId: "e",
+      perfil: "CONSULTA",
+      filialId: "f",
+      podeAlterarFilial: false,
+    };
+    const dia = new Date("2026-11-20T00:00:00.000Z");
+    await expect(buscarPainelProducao(sessao, { inicio: dia, fim: dia }, dia)).rejects.toThrow(PermissionError);
+  });
+});
+```
 
 - [ ] **Step 2: Rodar e ver falhar**
 
-Run: `npx vitest run src/server/services/relatorioProducao/painel.test.ts`
-Expected: FAIL — `Cannot find module './painel'`.
+Run: `npx vitest run src/server/services/relatorioProducao`
+Expected: FAIL — `Cannot find module './painel'` nos dois arquivos.
 
 - [ ] **Step 3: Implementar o serviço**
 
@@ -1486,8 +1524,8 @@ export async function buscarPainelProducao(sessao: SessaoAtiva, periodo: Periodo
 
 - [ ] **Step 4: Rodar e ver passar**
 
-Run: `npx vitest run src/server/services/relatorioProducao/painel.test.ts`
-Expected: PASS. Se um número divergir, **conferir primeiro o cenário contra a tabela acima** (a conta à mão é a referência). Só mexer no serviço se a regra do serviço estiver errada, e anotar a diferença no relatório final.
+Run: `npx vitest run src/server/services/relatorioProducao`
+Expected: PASS nos dois arquivos. Conferir o teste de permissão: apagar a linha `requirePermission(...)` do serviço, ver o teste falhar, e restaurar a linha. Se um número divergir, **conferir primeiro o cenário contra a tabela acima** (a conta à mão é a referência). Só mexer no serviço se a regra do serviço estiver errada, e anotar a diferença no relatório final.
 
 - [ ] **Step 5: Commit**
 
