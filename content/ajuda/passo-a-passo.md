@@ -222,6 +222,16 @@ Quando a polpa foi lançada com o nº de embalagens, sai **uma etiqueta por emba
 
 O endereço é configurado em Administração → Configuração de produção. O texto do produto (ingredientes, "manter congelado a −18 °C" e outros dizeres obrigatórios) fica no cadastro de cada produto.
 
+### 5.6. Rastreabilidade (recall)
+
+Em **Produção → Rastreabilidade**, digite o código do lote e clique em **Rastrear**. Também dá para clicar no código do lote no estoque, na recepção, na OP ou no pedido. Se digitar só parte do código (ex.: `FA-2611`), aparece a lista de lotes que batem.
+
+- **Lote de polpa:** mostra a OP que o produziu (branqueamento, rendimento, balanço), os lotes de fruto usados, com a origem de cada um, e os clientes que compraram a polpa.
+- **Lote de fruto:** mostra a recepção (talhão ou produtor), as OPs que o usaram, os lotes de polpa gerados e **todos os clientes** que compraram o fruto ou qualquer polpa dessas OPs. Num recall, essa é a lista de quem avisar.
+- **Destino do lote:** quanto entrou, quanto foi vendido, usado em OP ou ajustado (amostra, avaria, vencido…) e o saldo.
+
+Pedidos e OPs cancelados e linhas removidas ficam ocultos. Use **Mostrar cancelados** para vê-los. O **PDF** traz o relatório completo para a fiscalização; **CSV** e **Excel** trazem a lista de clientes com contato.
+
 ## 6. Vendas
 
 Antes do primeiro pedido, em Administração → Configuração de produção (seção 8.5), escolha a **categoria de venda**, a **conta de recebimento** (Pix, transferência e cartão) e a **conta Caixa** (dinheiro). A conta Caixa é cadastrada em Cadastros → Contas bancárias, com o tipo Caixa.

@@ -180,6 +180,11 @@ receber** gerado (doc 6). "A receber" = saldo em aberto das parcelas.
 No recall, essa é justamente a pergunta "quem comprou algo feito com este
 fruto?". Também não há limite de quantidade.
 
+**Destino do lote:** a consulta também mostra para onde foi cada kg
+(vendido, consumido em OP, ajustes por motivo, saldo), pelos movimentos de
+estoque. **Lista conservadora (D-22):** para um fruto, entram todos os
+clientes de qualquer polpa das OPs que o usaram, sem ratear kg.
+
 **RN-29 — Etiqueta.** *(ETIQUETA)* Nome da empresa, descrição do produto,
 lote, data de fabricação, validade, conservação/armazenamento, campo de
 peso líquido e nº do registro ADEPARA. Gerada em PDF (já existe `gerarPdf`).

@@ -1,6 +1,11 @@
 # Fase 7f — Rastreabilidade
 
-Data: 2026-11-10 · Status: desenho aprovado
+Data: 2026-11-10 · Status: implementada (2026-11-11)
+
+Ajustes na implementação: os links de exportação usam o `ExportarLinks`
+das outras telas (em vez de botões no cartão do lote); a conclusão da fase
+ficou registrada em `docs/fases/fase-7-producao-estoque-vendas.md`, como
+nas fases anteriores.
 
 Sexto sub-projeto da Fase 7 (ver
 [plano de entrega](../../modulos/producao-estoque-vendas/09-plano-de-entrega.md)).

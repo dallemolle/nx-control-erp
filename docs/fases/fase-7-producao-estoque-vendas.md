@@ -17,7 +17,12 @@ produção com consumo de fruto, lotes de polpa, insumos e processo;
 rendimento, balanço de massa, branqueamento e custo ao vivo; polpa
 bloqueada para venda e ajuste até encerrar; encerramento com custo
 gravado, reabertura e cancelamento; etiqueta configurável, uma por
-embalagem. Próximo: 7f (rastreabilidade).
+embalagem. 7f (rastreabilidade) concluída em 2026-11-11: consulta por lote
+para trás e para frente, até os clientes da polpa feita com o fruto (lista
+conservadora, D-22), destino de cada kg pelo ledger, cancelados ocultos com
+opção de mostrar (D-23), PDF completo para a fiscalização e CSV/Excel com
+os clientes atingidos; o código do lote vira link nas outras telas.
+Próximo: 7g (painel e relatórios).
 
 ## Escopo
 
