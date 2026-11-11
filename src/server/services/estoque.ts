@@ -1,4 +1,4 @@
-import type { Prisma, TipoMovimentoEstoque } from "@prisma/client";
+import type { Prisma, StatusOrdemProducao, TipoMovimentoEstoque } from "@prisma/client";
 import { prisma } from "@/server/db/client";
 import { requireAlteracaoFilial, requirePermission } from "@/server/auth/permissions";
 import { registrarAuditoria } from "@/server/audit/registrar";
@@ -43,6 +43,31 @@ export async function registrarMovimento(tx: Prisma.TransactionClient, movimento
   return tx.movimentoEstoque.create({ data: movimento });
 }
 
+/** Lote que pode sair por venda ou ajuste: recepção não excluída, ou polpa de OP encerrada (D-07). */
+export const LOTE_LIBERADO: Prisma.LoteWhereInput = {
+  OR: [
+    { origem: "RECEPCAO", OR: [{ recepcao: { is: null } }, { recepcao: { is: { status: "ATIVA" } } }] },
+    { origem: "PRODUCAO", producaoOP: { is: { removidoEm: null, ordemProducao: { status: "ENCERRADA" } } } },
+  ],
+};
+
+export const SELECT_BLOQUEIO_PRODUCAO = {
+  producaoOP: { select: { removidoEm: true, ordemProducao: { select: { status: true } } } },
+} satisfies Prisma.LoteSelect;
+
+/** Mensagem do bloqueio de um lote de polpa, ou null se ele pode sair. */
+export function bloqueioDaProducao(lote: {
+  codigo: string;
+  producaoOP: { removidoEm: Date | null; ordemProducao: { status: StatusOrdemProducao } } | null;
+}): string | null {
+  const producao = lote.producaoOP;
+  if (!producao) return null;
+  if (producao.removidoEm) return `O lote ${lote.codigo} foi removido da OP`;
+  if (producao.ordemProducao.status === "CANCELADA") return `O lote ${lote.codigo} é de uma OP cancelada`;
+  if (producao.ordemProducao.status === "ABERTA") return `O lote ${lote.codigo} está numa OP aberta`;
+  return null;
+}
+
 export type FiltroLotes = {
   produtoId?: string;
   localId?: string;
@@ -66,6 +91,7 @@ export async function listarLotes(filialId: string, filtros: FiltroLotes, refere
       produto: { select: { codigo: true, descricao: true, conservacao: true } },
       local: { select: { nome: true } },
       recepcao: { select: { status: true } },
+      ...SELECT_BLOQUEIO_PRODUCAO,
     },
     orderBy: [{ validade: "asc" }, { codigo: "asc" }],
   });
@@ -74,6 +100,8 @@ export async function listarLotes(filialId: string, filtros: FiltroLotes, refere
     const saldoKg = Number(lote.saldoKg);
     return {
       ...lote,
+      emProducao: lote.producaoOP?.removidoEm === null && lote.producaoOP.ordemProducao.status === "ABERTA",
+      bloqueio: bloqueioDaProducao(lote),
       dias: diasParaVencer(lote.validade, referencia),
       status: statusDoLote(
         { saldoKg, validade: lote.validade, conservacao: lote.produto.conservacao },

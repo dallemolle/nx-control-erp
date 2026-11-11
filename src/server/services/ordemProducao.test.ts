@@ -15,6 +15,7 @@ import {
   criarCatalogoDeTeste,
   criarFixtureProducao,
   criarLoteDeTeste,
+  type CadastrosDeVenda,
   type CatalogoDeTeste,
   type FixtureProducao,
 } from "./producaoTestFixtures";
@@ -36,8 +37,11 @@ import {
   removerProducao,
   situacaoParaDesfazer,
 } from "./ordemProducao";
-import { cancelarPedido, criarPedido } from "./pedidoVenda";
+import { cancelarPedido, criarPedido, lotesParaVenda } from "./pedidoVenda";
+import { criarAjuste } from "./ajusteEstoque";
+import { listarLotes, moverLote } from "./estoque";
 import { pedidoVendaSchema } from "@/lib/schemas/pedidoVenda";
+import { ajusteSchema } from "@/lib/schemas/ajusteEstoque";
 import { cancelarRecepcao, criarRecepcao } from "./recepcaoFruto";
 import { registrarMovimento } from "./estoque";
 
@@ -46,6 +50,7 @@ const d = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
 describe("ordem de produção", () => {
   let fx: FixtureProducao;
   let cat: CatalogoDeTeste;
+  let cad: CadastrosDeVenda;
 
   const adm = () => fx.sessao("ADMINISTRADOR");
 
@@ -73,6 +78,8 @@ describe("ordem de produção", () => {
   beforeAll(async () => {
     fx = await criarFixtureProducao("op");
     cat = await criarCatalogoDeTeste(fx);
+    cad = await criarCadastrosDeVenda(fx);
+    await configurarVendas(fx, cad);
   });
 
   afterAll(async () => {
@@ -488,8 +495,6 @@ describe("ordem de produção", () => {
     });
 
     test("reabrir e cancelar recusados depois de uma venda, mesmo cancelada", async () => {
-      const cad = await criarCadastrosDeVenda(fx);
-      await configurarVendas(fx, cad);
       const { op, grosso } = await opCompleta();
       await encerrarOP(adm(), op.id, { confirmarVerificar: false });
 
@@ -574,6 +579,84 @@ describe("ordem de produção", () => {
       expect(detalhe?.resumo.polpaKg).toBe(40);
       expect(detalhe?.situacaoDesfazer).toEqual({ pode: true });
       expect(await obterOP(fx.filialBId, op.numero)).toBeNull();
+    });
+  });
+
+  describe("bloqueio da polpa até encerrar (D-07)", () => {
+    const vender = (loteId: string, kg = 1) =>
+      criarPedido(
+        fx.sessao("VENDAS"),
+        pedidoVendaSchema.parse({
+          data: "2026-11-14",
+          clienteId: cad.clienteId,
+          formaPagamento: "A_PRAZO",
+          vencimento: "2026-12-14",
+          retiraNaPropriedade: "true",
+          itens: JSON.stringify([{ loteId, quantidadeKg: kg, precoKg: 10 }]),
+        }),
+      );
+    const ajustar = (loteId: string, sentido: "ENTRADA" | "SAIDA" = "SAIDA") =>
+      criarAjuste(
+        fx.sessao("PRODUCAO"),
+        ajusteSchema.parse({ loteId, data: "2026-11-14", sentido, quantidadeKg: "1", motivo: "AVARIA" }),
+      );
+
+    /** OP de 14/11 com 10 kg de fruto e duas polpas de 5 kg; branqueamento sem valor (confirmar ao encerrar). */
+    async function opComPolpa() {
+      const op = await nova({ data: "2026-11-14" });
+      const lote = await fruto(10, { data: d("2026-11-14"), validade: d("2026-11-15") });
+      await adicionarConsumo(adm(), op.id, consumo(lote.id, 10));
+      const polpa = (produtoId: string) =>
+        adicionarProducao(
+          adm(),
+          op.id,
+          producaoSchema.parse({ produtoId, quantidadeKg: 5, localId: cat.localCamaraId }),
+        );
+      return { op, grosso: await polpa(cat.produtoPolpaId), fino: await polpa(cat.produtoPolpaFinoId) };
+    }
+
+    test("polpa de OP aberta fica fora da venda e do ajuste; mover é permitido", async () => {
+      const { grosso } = await opComPolpa();
+      const mensagem = `O lote ${grosso.codigoLote} está numa OP aberta`;
+
+      const paraVenda = await lotesParaVenda(fx.filialAId, d("2026-11-14"));
+      expect(paraVenda.map((l) => l.id)).not.toContain(grosso.loteId);
+      await expect(vender(grosso.loteId)).rejects.toThrow(mensagem);
+      await expect(ajustar(grosso.loteId)).rejects.toThrow(mensagem);
+
+      await moverLote(fx.sessao("PRODUCAO"), grosso.loteId, cat.localRecepcaoId);
+      const listados = await listarLotes(fx.filialAId, {}, d("2026-11-14"));
+      const listado = listados.find((l) => l.id === grosso.loteId)!;
+      expect(listado.emProducao).toBe(true);
+      expect(listado.bloqueio).toBe(mensagem);
+    });
+
+    test("depois de encerrar, vende", async () => {
+      const { op, grosso } = await opComPolpa();
+      await encerrarOP(adm(), op.id, { confirmarVerificar: true });
+
+      const paraVenda = await lotesParaVenda(fx.filialAId, d("2026-11-14"));
+      expect(paraVenda.map((l) => l.id)).toContain(grosso.loteId);
+      await vender(grosso.loteId, 2);
+      expect(await saldo(grosso.loteId)).toBe(3);
+      const listado = (await listarLotes(fx.filialAId, {}, d("2026-11-14"))).find((l) => l.id === grosso.loteId)!;
+      expect(listado.emProducao).toBe(false);
+      expect(listado.bloqueio).toBeNull();
+    });
+
+    test("linha removida e OP cancelada continuam bloqueadas", async () => {
+      const removida = await opComPolpa();
+      await removerProducao(adm(), removida.fino.id);
+      await encerrarOP(adm(), removida.op.id, { confirmarVerificar: true });
+      await expect(ajustar(removida.fino.loteId, "ENTRADA")).rejects.toThrow(
+        `O lote ${removida.fino.codigoLote} foi removido da OP`,
+      );
+
+      const cancelada = await opComPolpa();
+      await cancelarOP(adm(), cancelada.op.id, "Descartada");
+      await expect(ajustar(cancelada.grosso.loteId, "ENTRADA")).rejects.toThrow(
+        `O lote ${cancelada.grosso.codigoLote} é de uma OP cancelada`,
+      );
     });
   });
 
