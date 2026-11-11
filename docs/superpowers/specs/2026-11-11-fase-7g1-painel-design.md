@@ -229,7 +229,9 @@ Nenhuma escrita, então nenhuma auditoria nova.
   `verificar` (integração); `filtrosDeEntregas` e `filtrosDasOPs` (unidade).
 - **Estoque:** `resumoPorStatus` respeitando produto, local e data de
   referência, sem contar lote zerado.
-- **Exportação:** linhas do CSV do painel (unidade) e 403 sem permissão.
+- **Exportação:** linhas do CSV do painel (unidade). Hoje todo perfil tem
+  `producao:ler`, então a recusa (403 na rota, `requirePermission` no
+  serviço) fica como defesa, sem teste por perfil.
 - Conferência no navegador, no desktop e no celular (390px): painel com o
   cenário, cliques nos alertas, resumo do estoque, os três formatos de
   exportação.
