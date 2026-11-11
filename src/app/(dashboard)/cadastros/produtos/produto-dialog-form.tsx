@@ -27,6 +27,7 @@ type Produto = {
   armazenamento: string | null;
   unidadeComercial: string | null;
   fatorUnidadeKg: number | null;
+  textoEtiqueta: string | null;
 };
 
 type FrutaOpcao = { id: string; nome: string };
@@ -178,6 +179,22 @@ export function ProdutoDialogForm({ produto, frutas }: { produto?: Produto; frut
           <p className="-mt-2 text-xs text-muted-foreground">
             Ex.: rasa = 14 kg. Permite lançar quantidade e preço por rasa.
           </p>
+
+          <Separator />
+          <div className="space-y-2">
+            <Label htmlFor="textoEtiqueta">Texto da etiqueta (opcional)</Label>
+            <textarea
+              id="textoEtiqueta"
+              name="textoEtiqueta"
+              rows={3}
+              maxLength={600}
+              defaultValue={produto?.textoEtiqueta ?? ""}
+              className="w-full rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30"
+            />
+            <p className="text-xs text-muted-foreground">
+              Ingredientes, instruções de conservação e outros dizeres obrigatórios. Sai em letra pequena, até 3 linhas.
+            </p>
+          </div>
 
           {state.erro ? <p className="text-sm text-destructive">{state.erro}</p> : null}
           <Button type="submit" className="w-full" disabled={pendente}>

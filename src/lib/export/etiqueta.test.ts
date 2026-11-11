@@ -12,6 +12,9 @@ const DADOS: DadosEtiqueta = {
   armazenamento: "−18 °C",
   pesoLiquidoKg: 120.5,
   registroAdepara: "ADEPARA 123",
+  cnpj: null,
+  endereco: null,
+  texto: null,
 };
 
 describe("gerarEtiquetaPdf", () => {
@@ -27,5 +30,27 @@ describe("gerarEtiquetaPdf", () => {
     await expect(
       gerarEtiquetaPdf({ ...DADOS, armazenamento: null, registroAdepara: null, rotuloData: "Recepção" }),
     ).resolves.toBeInstanceOf(Uint8Array);
+  });
+
+  test("uma página de 100 × 70 mm por cópia", async () => {
+    const pdf = await PDFDocument.load(await gerarEtiquetaPdf({ ...DADOS, copias: 3 }));
+    expect(pdf.getPageCount()).toBe(3);
+    for (const pagina of pdf.getPages()) {
+      expect(pagina.getSize().width).toBeCloseTo(283.46, 1);
+      expect(pagina.getSize().height).toBeCloseTo(198.43, 1);
+    }
+  });
+
+  test("CNPJ, endereço e texto longo do produto cabem sem lançar", async () => {
+    const texto = `Ingredientes: polpa de açaí. Manter congelado a −18 °C. ${"Não recongelar após aberto. ".repeat(20)}`;
+    const pdf = await PDFDocument.load(
+      await gerarEtiquetaPdf({
+        ...DADOS,
+        cnpj: "00.000.000/0001-00",
+        endereco: "Estrada da Fazenda, km 10 – Zona Rural – Município/PA – CEP 00000-000 – endereço bem longo",
+        texto,
+      }),
+    );
+    expect(pdf.getPageCount()).toBe(1);
   });
 });

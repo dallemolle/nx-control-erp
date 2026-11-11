@@ -5,6 +5,8 @@ import type { SessaoAtiva } from "@/server/auth/sessao";
 
 export type ConfiguracaoProducaoValores = {
   registroAdepara: string | null;
+  /** Endereço impresso na etiqueta do lote (D-10). */
+  enderecoEtiqueta: string | null;
   alertaVencimentoCongeladoDias: number;
   alertaVencimentoResfriadoDias: number;
   branqueamentoTemperaturaMinC: number;
@@ -25,6 +27,7 @@ export type ConfiguracaoProducaoValores = {
 
 export const CONFIGURACAO_PRODUCAO_PADRAO: ConfiguracaoProducaoValores = {
   registroAdepara: null,
+  enderecoEtiqueta: null,
   alertaVencimentoCongeladoDias: 30,
   alertaVencimentoResfriadoDias: 1,
   branqueamentoTemperaturaMinC: 80,
@@ -43,6 +46,7 @@ export async function obterConfiguracaoProducao(filialId: string): Promise<Confi
   if (!c) return { ...CONFIGURACAO_PRODUCAO_PADRAO };
   return {
     registroAdepara: c.registroAdepara,
+    enderecoEtiqueta: c.enderecoEtiqueta,
     alertaVencimentoCongeladoDias: c.alertaVencimentoCongeladoDias,
     alertaVencimentoResfriadoDias: c.alertaVencimentoResfriadoDias,
     branqueamentoTemperaturaMinC: Number(c.branqueamentoTemperaturaMinC),

@@ -95,6 +95,12 @@ export function ConfiguracaoForm({
               defaultValue={valores.registroAdepara ?? ""}
               ajuda="Aparece na etiqueta do lote."
             />
+            <Campo
+              id="enderecoEtiqueta"
+              rotulo="Endereço na etiqueta"
+              defaultValue={valores.enderecoEtiqueta ?? ""}
+              ajuda="Endereço do estabelecimento, em uma linha. O CNPJ vem do cadastro da filial."
+            />
           </CardContent>
         </Card>
 
