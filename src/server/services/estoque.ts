@@ -33,6 +33,8 @@ export type NovoMovimento = {
   usuarioId: string;
   ajusteId?: string;
   itemPedidoId?: string;
+  consumoOpId?: string;
+  producaoOpId?: string;
 };
 
 /** Grava o movimento e atualiza o saldo do lote, na transação de quem chama. */

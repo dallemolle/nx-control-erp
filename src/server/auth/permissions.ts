@@ -30,7 +30,8 @@ export type Acao =
   | "venda:ler"
   | "venda:escrever"
   | "venda:cancelar"
-  | "venda:liberarVencido";
+  | "venda:liberarVencido"
+  | "producao:liberarVencido";
 
 export class PermissionError extends Error {
   constructor(perfil: Perfil, acao: Acao) {
@@ -92,6 +93,7 @@ const PERMISSOES: Record<Perfil, ReadonlySet<Acao> | "TODAS"> = {
     "producao:ler",
     "venda:ler",
     "venda:liberarVencido",
+    "producao:liberarVencido",
   ]),
   AUDITOR: new Set([
     "cadastro:ler",
