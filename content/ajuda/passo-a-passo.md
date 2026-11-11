@@ -40,7 +40,7 @@ Cada vínculo de usuário com uma empresa tem um perfil, que determina o que a p
 | Gestor | Acesso de leitura aos relatórios gerenciais — Dashboard executivo, auditoria — para acompanhar o negócio sem operar o dia a dia financeiro. |
 | Auditor | Acesso de leitura à auditoria e ao dashboard executivo, para revisão e conformidade. |
 | Consulta | Acesso de leitura às telas operacionais, sem poder cadastrar, editar ou aprovar nada. |
-| Produção | Pessoal do galpão: cadastra frutas, produtos, insumos, talhões e locais de armazenamento, lança a recepção de fruto e os ajustes de estoque e imprime etiquetas. Nas próximas versões, também o processamento. Não acessa o financeiro (a conta a pagar da compra de fruto é criada pela própria recepção). |
+| Produção | Pessoal do galpão: cadastra frutas, produtos, insumos, talhões e locais de armazenamento, lança a recepção de fruto, o processamento (OP) e os ajustes de estoque e imprime etiquetas. Não acessa o financeiro (a conta a pagar da compra de fruto é criada pela própria recepção). |
 | Vendas | Cadastra e edita clientes, lança pedidos de venda e cuida das entregas. Não cancela pedidos nem libera lote vencido, e não acessa o financeiro (a conta a receber e o recebimento à vista são criados pelo próprio pedido). |
 
 > Além do perfil, cada acesso a uma filial específica pode ser "somente leitura", independentemente do perfil — ou seja, mesmo um Financeiro pode ficar restrito a só consultar uma determinada filial, se assim for configurado.
@@ -177,7 +177,27 @@ O quadro de resumo mostra na hora o peso líquido, o % de descarte, o preço por
 
 **Corrigir uma recepção:** qualidade, documento e observação podem ser editados a qualquer momento. Para corrigir peso, preço, produto ou origem, use **Excluir** e lance de novo. A exclusão só é possível enquanto o lote não teve saída (ajuste, venda ou processamento) e a conta a pagar não foi paga. O lote excluído fica zerado e o número dele não é reaproveitado.
 
-### 5.2. Estoque
+### 5.2. Processamento (OP)
+
+Cada batelada de fruto processado em polpa é uma **ordem de produção (OP)**. Em Produção → Processamento → **Nova OP**, informe a data, a fruta e o responsável. A OP recebe um número (ex.: OP-261110-01: data e sequência do dia) e abre o detalhe, com quatro abas:
+
+- **Consumo:** escolha os lotes de fruto da mesma fruta (em ordem de validade, com o saldo de cada um) e quantos kg entraram. O fruto sai do estoque na hora. Lote vencido na data da OP é recusado; só o Gestor ou o Administrador libera, informando o motivo.
+- **Produção:** cada polpa produzida (produto, kg, nº de embalagens e local) vira um **lote de polpa** com número e validade. Esses lotes ficam **bloqueados para venda e ajuste até a OP ser encerrada** (aparecem como "Em produção" no estoque).
+- **Insumos:** embalagens, energia, mão de obra etc. O custo unitário é o do cadastro no momento do lançamento; mudar o cadastro depois não altera a OP.
+- **Processo:** branqueamento (temperatura e tempo, só para fruta que exige, como o açaí), água, caroço/resíduo, perda e observação.
+
+O quadro de resumo mostra ao vivo o rendimento (polpa ÷ fruto), o **balanço de massa** (OK ou Verificar, pela tolerância da configuração), o **branqueamento** (OK, Verificar ou Não se aplica) e o custo: fruto + insumos, dividido igualmente por kg entre todas as polpas da OP. Enquanto a OP está aberta, o custo é provisório.
+
+Errou uma linha? Use **Remover** e lance de novo: o estoque é estornado.
+
+**Encerrar OP** grava o custo e libera a polpa. Se o balanço ou o branqueamento estiver "Verificar", o sistema pede uma confirmação, que fica registrada na auditoria. Depois de encerrada:
+
+- **Reabrir** (com motivo) volta a OP para aberta, para corrigir e encerrar de novo;
+- **Cancelar** (com motivo) devolve o fruto aos lotes de origem e zera a polpa.
+
+Os dois só funcionam enquanto nenhum lote de polpa da OP teve venda ou ajuste. A etiqueta da polpa só pode ser impressa depois de encerrar.
+
+### 5.3. Estoque
 
 Mostra os lotes com saldo, em ordem de validade (o que vence primeiro aparece primeiro). Cada lote tem um status:
 
@@ -190,13 +210,17 @@ Mostra os lotes com saldo, em ordem de validade (o que vence primeiro aparece pr
 
 Filtre por produto, local e status, ou mude a **data de referência** para ver como estava (ou estará) o estoque em outro dia. A aba **Por produto e local** soma o saldo e o valor a custo, e mostra a ocupação de cada local que tem capacidade cadastrada. O botão **Mover** troca o local do lote inteiro.
 
-### 5.3. Ajustes de estoque
+### 5.4. Ajustes de estoque
 
 Use para tudo que sai ou entra no estoque sem ser recepção ou venda: lote vencido, avaria/quebra, amostra para a ADEPARA ou laboratório, consumo interno ou acerto de inventário. Escolha o lote (a lista vem em ordem de validade, com o saldo de cada um), se é saída ou entrada, a quantidade em kg e o motivo. Uma saída maior que o saldo do lote é recusada. Só o Administrador e o perfil Produção lançam ajustes.
 
-### 5.4. Etiqueta do lote
+### 5.5. Etiqueta do lote
 
-Em PDF de 100 × 70 mm, pronta para imprimir: empresa, produto, lote, data de recepção ou fabricação, validade, peso líquido, conservação e o registro ADEPARA da filial. Abre pelo botão **Etiqueta** na recepção e no estoque.
+Em PDF de 100 × 70 mm, pronta para imprimir: empresa e CNPJ da filial, endereço, produto, lote, data de recepção ou fabricação, validade, peso líquido, conservação, o texto do produto e o registro ADEPARA da filial. Abre pelo botão **Etiqueta** na recepção, no estoque e na aba Produção da OP encerrada.
+
+Quando a polpa foi lançada com o nº de embalagens, sai **uma etiqueta por embalagem**, cada uma com o peso da embalagem (kg do lote ÷ embalagens).
+
+O endereço é configurado em Administração → Configuração de produção. O texto do produto (ingredientes, "manter congelado a −18 °C" e outros dizeres obrigatórios) fica no cadastro de cada produto.
 
 ## 6. Vendas
 
@@ -278,7 +302,7 @@ O tipo **Caixa (dinheiro em espécie)** é para o dinheiro guardado na empresa. 
 Base para a recepção de fruto, as vendas por lote e o processamento (este nas próximas versões). Podem ser editados pelo Administrador e pelo perfil Produção. Cadastre nesta ordem:
 
 1. **Frutas** (da empresa): nome, **custo-padrão do fruto próprio** (R$/kg, usado no custo e na margem do fruto colhido nos talhões; deixe 0 se ainda não souber) e se a fruta **exige branqueamento** no processamento (o açaí exige).
-2. **Produtos** (da empresa): código, descrição, fruta, categoria (fruto ou polpa), conservação (in natura, resfriado ou congelado), validade em dias, preço de referência e texto de armazenamento da etiqueta. O **código** (ex.: FA, AGC) vira o início do número de lote (FA-260927-01). A **unidade comercial** é opcional: para o açaí, "rasa = 14 kg" permite lançar quantidade e preço por rasa.
+2. **Produtos** (da empresa): código, descrição, fruta, categoria (fruto ou polpa), conservação (in natura, resfriado ou congelado), validade em dias, preço de referência, texto de armazenamento e texto livre da etiqueta (ingredientes e outros dizeres). O **código** (ex.: FA, AGC) vira o início do número de lote (FA-260927-01). A **unidade comercial** é opcional: para o açaí, "rasa = 14 kg" permite lançar quantidade e preço por rasa.
 3. **Talhões** (da filial): áreas de cultivo próprias, com cultura, área (ha) e ano de plantio. São a origem do fruto colhido.
 4. **Locais de armazenamento** (da filial): câmaras, freezers e áreas de recepção, com temperatura e capacidade (opcional, usada para mostrar a ocupação no estoque).
 5. **Insumos** (da empresa): embalagens, energia e mão de obra, com unidade e custo unitário de referência.
@@ -309,7 +333,7 @@ Registra automaticamente toda alteração relevante feita no sistema — quem fe
 
 ### 8.5. Configuração de produção
 
-Parâmetros da filial atual usados pela produção: registro na ADEPARA (vai para a etiqueta do lote), com quantos dias de antecedência um lote congelado ou resfriado aparece como "vencendo", temperatura e tempo mínimos do branqueamento, e a tolerância do balanço de massa (em %). Enquanto nada for salvo, valem os padrões: 30 dias (congelado), 1 dia (in natura e resfriado), 80 °C, 10 segundos e 3%. Só o Administrador altera esta tela.
+Parâmetros da filial atual usados pela produção: registro na ADEPARA e endereço (vão para a etiqueta do lote), com quantos dias de antecedência um lote congelado ou resfriado aparece como "vencendo", temperatura e tempo mínimos do branqueamento, e a tolerância do balanço de massa (em %). Enquanto nada for salvo, valem os padrões: 30 dias (congelado), 1 dia (in natura e resfriado), 80 °C, 10 segundos e 3%. Só o Administrador altera esta tela.
 
 O card **Vendas** define a **categoria de venda** (uma categoria de receita, usada na conta a receber de cada pedido), a **conta de recebimento** (usada nas vendas em Pix, transferência e cartão; não pode ser uma conta Caixa) e a **conta Caixa** (usada nas vendas em dinheiro). Sem a categoria de venda, nenhum pedido é aceito.
 

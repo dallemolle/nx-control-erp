@@ -2,7 +2,7 @@ import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { podeExecutar } from "@/server/auth/permissions";
 import { prisma } from "@/server/db/client";
 import { obterConfiguracaoProducao } from "@/server/services/configuracaoProducao";
-import { bloqueioDaProducao, SELECT_BLOQUEIO_PRODUCAO } from "@/server/services/estoque";
+import { bloqueioDaProducao } from "@/server/services/estoque";
 import { gerarEtiquetaPdf } from "@/lib/export/etiqueta";
 import { arredondar } from "@/lib/producao/arredondar";
 
