@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { dataDoArquivo, formatoExportDaUrl, responderExport } from "./responder";
+import { dataDoArquivo, formatoExportDaUrl, responderArquivoPdf, responderExport } from "./responder";
 import type { ColunaExport } from "./csv";
 
 type Linha = { nome: string; valor: number };
@@ -76,5 +76,16 @@ describe("responderExport", () => {
     });
     expect(resposta.headers.get("Content-Type")).toBe("text/csv; charset=utf-8");
     expect(cabecalhoCarregado).toBe(false);
+  });
+});
+
+describe("responderArquivoPdf", () => {
+  test("PDF como anexo com a data no nome", () => {
+    const resposta = responderArquivoPdf(new Uint8Array([37, 80, 68, 70]), "rastreabilidade-FA-261110-01");
+    expect(resposta.headers.get("Content-Type")).toBe("application/pdf");
+    expect(resposta.headers.get("Content-Disposition")).toMatch(
+      /^attachment; filename="rastreabilidade-FA-261110-01-\d{4}-\d{2}-\d{2}\.pdf"$/,
+    );
+    expect(resposta.headers.get("Cache-Control")).toBe("private, no-store");
   });
 });

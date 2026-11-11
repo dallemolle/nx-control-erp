@@ -174,12 +174,13 @@ const ACOES_FASE_7: Acao[] = [
   "venda:escrever",
   "venda:cancelar",
   "venda:liberarVencido",
+  "producao:liberarVencido",
 ];
 
 const ESPERADO_FASE_7: Record<Exclude<Perfil, "ADMINISTRADOR">, Acao[]> = {
   FINANCEIRO: ["cliente:escrever", "producao:ler", "venda:ler", "venda:escrever", "venda:cancelar"],
   TESOURARIA: ["cliente:escrever", "producao:ler", "venda:ler"],
-  GESTOR: ["producao:ler", "venda:ler", "venda:liberarVencido"],
+  GESTOR: ["producao:ler", "venda:ler", "venda:liberarVencido", "producao:liberarVencido"],
   AUDITOR: ["producao:ler", "venda:ler"],
   CONSULTA: ["producao:ler", "venda:ler"],
   PRODUCAO: ["cadastroProducao:escrever", "producao:ler", "producao:escrever", "estoque:ajustar", "venda:ler"],

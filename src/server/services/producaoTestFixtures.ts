@@ -61,6 +61,8 @@ export async function criarFixtureProducao(sufixo: string): Promise<FixtureProdu
       await prisma.lancamentoBancario.deleteMany({ where: filiais });
       // Estoque e recepções antes de lote/produto/local (relações Restrict).
       await prisma.movimentoEstoque.deleteMany({ where: filiais });
+      // OP antes de lote, fruta, produto, local e insumo (linhas em cascata).
+      await prisma.ordemProducao.deleteMany({ where: filiais });
       await prisma.pedidoVenda.deleteMany({ where: filiais });
       await prisma.ajusteEstoque.deleteMany({ where: filiais });
       await prisma.recepcaoFruto.deleteMany({ where: filiais });
@@ -88,6 +90,17 @@ export type CatalogoDeTeste = {
   fornecedorId: string;
   /** Categoria DESPESA da filial A, para a compra de fruto. */
   categoriaCompraId: string;
+  /** "AFN", polpa de açaí fino (mesma fruta). */
+  produtoPolpaFinoId: string;
+  /** Cupuaçu: não exige branqueamento. */
+  outraFrutaId: string;
+  /** "FC", fruto de cupuaçu. */
+  produtoFrutoOutraId: string;
+  /** "CPC", polpa de cupuaçu. */
+  produtoPolpaOutraId: string;
+  /** "Embalagem 1 kg", un, R$ 0,50. */
+  insumoId: string;
+  insumoInativoId: string;
 };
 
 /** Catálogo mínimo da produção na filial A da fixture. */
@@ -135,6 +148,48 @@ export async function criarCatalogoDeTeste(fx: FixtureProducao): Promise<Catalog
   const categoria = await prisma.categoriaFinanceira.create({
     data: { filialId: fx.filialAId, nome: "Compra de fruto", tipo: "DESPESA" },
   });
+  const polpaFino = await prisma.produto.create({
+    data: {
+      empresaId: fx.empresaId,
+      codigo: "AFN",
+      descricao: "Polpa de açaí fino",
+      categoria: "POLPA",
+      frutaId: fruta.id,
+      conservacao: "CONGELADO",
+      validadeDias: 365,
+    },
+  });
+  const outraFruta = await prisma.fruta.create({
+    data: { empresaId: fx.empresaId, nome: "Cupuaçu", custoPadraoKg: 2, exigeBranqueamento: false },
+  });
+  const frutoOutra = await prisma.produto.create({
+    data: {
+      empresaId: fx.empresaId,
+      codigo: "FC",
+      descricao: "Fruto de cupuaçu",
+      categoria: "FRUTO",
+      frutaId: outraFruta.id,
+      conservacao: "IN_NATURA",
+      validadeDias: 1,
+    },
+  });
+  const polpaOutra = await prisma.produto.create({
+    data: {
+      empresaId: fx.empresaId,
+      codigo: "CPC",
+      descricao: "Polpa de cupuaçu",
+      categoria: "POLPA",
+      frutaId: outraFruta.id,
+      conservacao: "CONGELADO",
+      validadeDias: 365,
+    },
+  });
+  const insumo = await prisma.insumo.create({
+    data: { empresaId: fx.empresaId, nome: "Embalagem 1 kg", unidade: "un", custoUnitario: 0.5 },
+  });
+  const insumoInativo = await prisma.insumo.create({
+    data: { empresaId: fx.empresaId, nome: "Insumo inativo", unidade: "un", custoUnitario: 1, ativo: false },
+  });
   return {
     frutaId: fruta.id,
     produtoFrutoId: produtoFruto.id,
@@ -144,6 +199,12 @@ export async function criarCatalogoDeTeste(fx: FixtureProducao): Promise<Catalog
     localCamaraId: localCamara.id,
     fornecedorId: fornecedor.id,
     categoriaCompraId: categoria.id,
+    produtoPolpaFinoId: polpaFino.id,
+    outraFrutaId: outraFruta.id,
+    produtoFrutoOutraId: frutoOutra.id,
+    produtoPolpaOutraId: polpaOutra.id,
+    insumoId: insumo.id,
+    insumoInativoId: insumoInativo.id,
   };
 }
 
@@ -209,13 +270,24 @@ export async function configurarVendas(fx: FixtureProducao, cad: CadastrosDeVend
 /** Lote com entrada registrada pelo caminho real do estoque (kg 0 cria lote zerado, sem movimento). */
 export async function criarLoteDeTeste(
   fx: FixtureProducao,
-  opcoes: { produtoId: string; localId: string; kg: number; custoKg?: number; data?: Date; validade?: Date; codigo?: string },
+  opcoes: {
+    produtoId: string;
+    localId: string;
+    kg: number;
+    custoKg?: number;
+    data?: Date;
+    validade?: Date;
+    codigo?: string;
+    /** Padrão: filial A. */
+    filialId?: string;
+  },
 ) {
   const data = opcoes.data ?? new Date("2026-11-09");
+  const filialId = opcoes.filialId ?? fx.filialAId;
   return prisma.$transaction(async (tx) => {
     const lote = await tx.lote.create({
       data: {
-        filialId: fx.filialAId,
+        filialId,
         codigo: opcoes.codigo ?? `T-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`,
         produtoId: opcoes.produtoId,
         origem: "RECEPCAO",
@@ -229,7 +301,7 @@ export async function criarLoteDeTeste(
     });
     if (opcoes.kg > 0) {
       await registrarMovimento(tx, {
-        filialId: fx.filialAId,
+        filialId,
         loteId: lote.id,
         data,
         tipo: "ENTRADA",

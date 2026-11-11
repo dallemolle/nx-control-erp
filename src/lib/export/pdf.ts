@@ -17,6 +17,7 @@ const TAMANHO_TITULO = 13;
 const TAMANHO_CONTEXTO = 8;
 const TAMANHO_TABELA = 7.5;
 const TAMANHO_RODAPE = 7;
+const TAMANHO_TITULO_SECAO = 10;
 const ENTRELINHA = TAMANHO_TABELA * 1.3;
 const RESPIRO_X = 3;
 const RESPIRO_Y = 3;
@@ -153,6 +154,18 @@ function dataHoraBrasilia(data: Date): string {
   });
 }
 
+export type SecaoPdf<T> = {
+  /** Título acima da tabela; sem título, a tabela vem logo após o cabeçalho do documento. */
+  titulo?: string;
+  linhas: T[];
+  colunas: ColunaExport<T>[];
+};
+
+/** Apaga o tipo da linha para juntar seções de tipos diferentes no mesmo relatório. */
+export function secaoPdf<T>(secao: SecaoPdf<T>): SecaoPdf<unknown> {
+  return secao as unknown as SecaoPdf<unknown>;
+}
+
 /**
  * Tabela simples em A4 paisagem: título e contexto na 1ª página, cabeçalho das
  * colunas repetido em toda página, zebra nas linhas, números alinhados à
@@ -161,6 +174,15 @@ function dataHoraBrasilia(data: Date): string {
 export async function gerarPdf<T>(
   linhas: T[],
   colunas: ColunaExport<T>[],
+  cabecalho: CabecalhoPdf,
+  agora: Date = new Date(),
+): Promise<Uint8Array> {
+  return gerarPdfSecoes([secaoPdf({ linhas, colunas })], cabecalho, agora);
+}
+
+/** Como `gerarPdf`, com várias tabelas em sequência, cada uma com título e colunas próprias. */
+export async function gerarPdfSecoes(
+  secoes: SecaoPdf<unknown>[],
   cabecalho: CabecalhoPdf,
   agora: Date = new Date(),
 ): Promise<Uint8Array> {
@@ -174,50 +196,10 @@ export async function gerarPdf<T>(
   const negrito = await documento.embedFont(StandardFonts.HelveticaBold);
   const limpar = criarSanitizador(fonte);
 
-  const rotulos = colunas.map((coluna) => limpar(coluna.rotulo));
-  const celulas = linhas.map((linha) =>
-    colunas.map((coluna) => {
-      const valor = coluna.valor(linha);
-      return { texto: limpar(formatarValorPdf(coluna, valor)), numerico: typeof valor === "number" };
-    }),
-  );
-
-  const naturais = colunas.map((_, indice) => {
-    const maiorPalavraRotulo = Math.max(...rotulos[indice].split(" ").map((p) => negrito.widthOfTextAtSize(p, TAMANHO_TABELA)));
-    const maiorCelula = celulas.reduce(
-      (maior, linha) => Math.max(maior, fonte.widthOfTextAtSize(linha[indice].texto, TAMANHO_TABELA)),
-      0,
-    );
-    return Math.max(maiorPalavraRotulo, maiorCelula, LARGURA_MINIMA_COLUNA - 2 * RESPIRO_X) + 2 * RESPIRO_X;
-  });
-  const larguras = calcularLargurasColunas(naturais, LARGURA_UTIL);
-  // Coluna de números: o título acompanha o alinhamento à direita dos valores.
-  const colunaNumerica = colunas.map((_, indice) => celulas.some((linha) => linha[indice].numerico));
-  const larguraTexto = (indice: number) => larguras[indice] - 2 * RESPIRO_X;
-
   const paginas: PDFPage[] = [];
   let pagina!: PDFPage;
   let y = 0;
-
-  const linhasRotulo = rotulos.map((rotulo, indice) =>
-    quebrarEmLinhas(rotulo, negrito, TAMANHO_TABELA, larguraTexto(indice), 3),
-  );
-  const alturaCabecalhoTabela = Math.max(...linhasRotulo.map((l) => l.length)) * ENTRELINHA + 2 * RESPIRO_Y;
-
-  const desenharCabecalhoTabela = () => {
-    pagina.drawRectangle({ x: MARGEM, y: y - alturaCabecalhoTabela, width: LARGURA_UTIL, height: alturaCabecalhoTabela, color: COR_FUNDO_CABECALHO });
-    let x = MARGEM;
-    linhasRotulo.forEach((linhasDaCelula, indice) => {
-      linhasDaCelula.forEach((texto, n) => {
-        const xTexto = colunaNumerica[indice]
-          ? x + larguras[indice] - RESPIRO_X - negrito.widthOfTextAtSize(texto, TAMANHO_TABELA)
-          : x + RESPIRO_X;
-        pagina.drawText(texto, { x: xTexto, y: y - RESPIRO_Y - (n + 1) * ENTRELINHA + 2, size: TAMANHO_TABELA, font: negrito, color: COR_TEXTO });
-      });
-      x += larguras[indice];
-    });
-    y -= alturaCabecalhoTabela;
-  };
+  const limiteInferior = MARGEM + ALTURA_RODAPE;
 
   const novaPagina = () => {
     pagina = documento.addPage([LARGURA_PAGINA, ALTURA_PAGINA]);
@@ -235,40 +217,92 @@ export async function gerarPdf<T>(
     }
   }
   y -= 8;
-  desenharCabecalhoTabela();
 
-  const limiteInferior = MARGEM + ALTURA_RODAPE;
-
-  if (celulas.length === 0) {
-    pagina.drawText("Nenhum registro encontrado.", { x: MARGEM + RESPIRO_X, y: y - RESPIRO_Y - ENTRELINHA + 2, size: TAMANHO_TABELA, font: fonte, color: COR_SECUNDARIA });
-  }
-
-  celulas.forEach((linha, numeroLinha) => {
-    const quebradas = linha.map((celula, indice) =>
-      quebrarEmLinhas(celula.texto, fonte, TAMANHO_TABELA, larguraTexto(indice), MAX_LINHAS_POR_CELULA),
+  secoes.forEach((secao, indiceSecao) => {
+    const { colunas } = secao;
+    const rotulos = colunas.map((coluna) => limpar(coluna.rotulo));
+    const celulas = secao.linhas.map((linha) =>
+      colunas.map((coluna) => {
+        const valor = coluna.valor(linha);
+        return { texto: limpar(formatarValorPdf(coluna, valor)), numerico: typeof valor === "number" };
+      }),
     );
-    const altura = Math.max(...quebradas.map((l) => l.length)) * ENTRELINHA + 2 * RESPIRO_Y;
 
-    if (y - altura < limiteInferior) {
-      novaPagina();
-      desenharCabecalhoTabela();
-    }
-
-    if (numeroLinha % 2 === 1) {
-      pagina.drawRectangle({ x: MARGEM, y: y - altura, width: LARGURA_UTIL, height: altura, color: COR_ZEBRA });
-    }
-
-    let x = MARGEM;
-    quebradas.forEach((linhasDaCelula, indice) => {
-      linhasDaCelula.forEach((texto, n) => {
-        const larguraDoTexto = fonte.widthOfTextAtSize(texto, TAMANHO_TABELA);
-        const xTexto = linha[indice].numerico ? x + larguras[indice] - RESPIRO_X - larguraDoTexto : x + RESPIRO_X;
-        pagina.drawText(texto, { x: xTexto, y: y - RESPIRO_Y - (n + 1) * ENTRELINHA + 2, size: TAMANHO_TABELA, font: fonte, color: COR_TEXTO });
-      });
-      x += larguras[indice];
+    const naturais = colunas.map((_, indice) => {
+      const maiorPalavraRotulo = Math.max(...rotulos[indice].split(" ").map((p) => negrito.widthOfTextAtSize(p, TAMANHO_TABELA)));
+      const maiorCelula = celulas.reduce(
+        (maior, linha) => Math.max(maior, fonte.widthOfTextAtSize(linha[indice].texto, TAMANHO_TABELA)),
+        0,
+      );
+      return Math.max(maiorPalavraRotulo, maiorCelula, LARGURA_MINIMA_COLUNA - 2 * RESPIRO_X) + 2 * RESPIRO_X;
     });
-    y -= altura;
-    pagina.drawLine({ start: { x: MARGEM, y }, end: { x: MARGEM + LARGURA_UTIL, y }, thickness: 0.3, color: COR_LINHA });
+    const larguras = calcularLargurasColunas(naturais, LARGURA_UTIL);
+    // Coluna de números: o título acompanha o alinhamento à direita dos valores.
+    const colunaNumerica = colunas.map((_, indice) => celulas.some((linha) => linha[indice].numerico));
+    const larguraTexto = (indice: number) => larguras[indice] - 2 * RESPIRO_X;
+
+    const linhasRotulo = rotulos.map((rotulo, indice) =>
+      quebrarEmLinhas(rotulo, negrito, TAMANHO_TABELA, larguraTexto(indice), 3),
+    );
+    const alturaCabecalhoTabela = Math.max(...linhasRotulo.map((l) => l.length)) * ENTRELINHA + 2 * RESPIRO_Y;
+
+    const desenharCabecalhoTabela = () => {
+      pagina.drawRectangle({ x: MARGEM, y: y - alturaCabecalhoTabela, width: LARGURA_UTIL, height: alturaCabecalhoTabela, color: COR_FUNDO_CABECALHO });
+      let x = MARGEM;
+      linhasRotulo.forEach((linhasDaCelula, indice) => {
+        linhasDaCelula.forEach((texto, n) => {
+          const xTexto = colunaNumerica[indice]
+            ? x + larguras[indice] - RESPIRO_X - negrito.widthOfTextAtSize(texto, TAMANHO_TABELA)
+            : x + RESPIRO_X;
+          pagina.drawText(texto, { x: xTexto, y: y - RESPIRO_Y - (n + 1) * ENTRELINHA + 2, size: TAMANHO_TABELA, font: negrito, color: COR_TEXTO });
+        });
+        x += larguras[indice];
+      });
+      y -= alturaCabecalhoTabela;
+    };
+
+    if (indiceSecao > 0) y -= 14;
+    // Título, cabeçalho e a primeira linha juntos: nada de título sozinho no pé da página.
+    const alturaTitulo = secao.titulo ? TAMANHO_TITULO_SECAO + 6 : 0;
+    if (y - alturaTitulo - alturaCabecalhoTabela - (ENTRELINHA + 2 * RESPIRO_Y) < limiteInferior) novaPagina();
+    if (secao.titulo) {
+      pagina.drawText(limpar(secao.titulo), { x: MARGEM, y: y - TAMANHO_TITULO_SECAO, size: TAMANHO_TITULO_SECAO, font: negrito, color: COR_TEXTO });
+      y -= alturaTitulo;
+    }
+    desenharCabecalhoTabela();
+
+    if (celulas.length === 0) {
+      pagina.drawText("Nenhum registro encontrado.", { x: MARGEM + RESPIRO_X, y: y - RESPIRO_Y - ENTRELINHA + 2, size: TAMANHO_TABELA, font: fonte, color: COR_SECUNDARIA });
+      y -= ENTRELINHA + 2 * RESPIRO_Y;
+    }
+
+    celulas.forEach((linha, numeroLinha) => {
+      const quebradas = linha.map((celula, indice) =>
+        quebrarEmLinhas(celula.texto, fonte, TAMANHO_TABELA, larguraTexto(indice), MAX_LINHAS_POR_CELULA),
+      );
+      const altura = Math.max(...quebradas.map((l) => l.length)) * ENTRELINHA + 2 * RESPIRO_Y;
+
+      if (y - altura < limiteInferior) {
+        novaPagina();
+        desenharCabecalhoTabela();
+      }
+
+      if (numeroLinha % 2 === 1) {
+        pagina.drawRectangle({ x: MARGEM, y: y - altura, width: LARGURA_UTIL, height: altura, color: COR_ZEBRA });
+      }
+
+      let x = MARGEM;
+      quebradas.forEach((linhasDaCelula, indice) => {
+        linhasDaCelula.forEach((texto, n) => {
+          const larguraDoTexto = fonte.widthOfTextAtSize(texto, TAMANHO_TABELA);
+          const xTexto = linha[indice].numerico ? x + larguras[indice] - RESPIRO_X - larguraDoTexto : x + RESPIRO_X;
+          pagina.drawText(texto, { x: xTexto, y: y - RESPIRO_Y - (n + 1) * ENTRELINHA + 2, size: TAMANHO_TABELA, font: fonte, color: COR_TEXTO });
+        });
+        x += larguras[indice];
+      });
+      y -= altura;
+      pagina.drawLine({ start: { x: MARGEM, y }, end: { x: MARGEM + LARGURA_UTIL, y }, thickness: 0.3, color: COR_LINHA });
+    });
   });
 
   const rodapeEsquerda = limpar(`${cabecalho.titulo} · gerado em ${dataHoraBrasilia(agora)}`);

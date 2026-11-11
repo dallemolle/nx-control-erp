@@ -76,7 +76,7 @@ export default async function AjustesPage({
           <AjusteDialogForm
             hoje={paraDataIso(hoje)}
             lotes={lotes
-              .filter((l) => l.recepcao?.status !== "CANCELADA")
+              .filter((l) => l.recepcao?.status !== "CANCELADA" && !l.bloqueio)
               .map((l) => ({
                 id: l.id,
                 saldoKg: Number(l.saldoKg),

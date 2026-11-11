@@ -11,6 +11,7 @@ import { hojeDeCalendario, paraDataIso, periodoDaUrl } from "@/lib/producao/peri
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { BarraDeFiltros } from "../_shared/barra-de-filtros";
 import { NovaRecepcao, type OpcoesRecepcao } from "./recepcao-dialog-form";
+import { LinkRastreio } from "../_shared/link-rastreio";
 import { RecepcaoAcoes } from "./recepcao-acoes";
 
 type SearchParams = { inicio?: string; fim?: string; fruta?: string; origem?: string };
@@ -112,7 +113,7 @@ export default async function RecepcaoPage({ searchParams }: { searchParams: Pro
                 <TableRow key={r.id} className={cancelada ? "text-muted-foreground" : undefined}>
                   <TableCell>{formatarData(r.data)}</TableCell>
                   <TableCell className="font-medium whitespace-nowrap">
-                    {r.lote.codigo}
+                    <LinkRastreio codigo={r.lote.codigo} />
                     {cancelada ? (
                       <Badge variant="destructive" className="ml-2" title={r.motivoCancelamento ?? undefined}>
                         Excluída

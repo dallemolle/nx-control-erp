@@ -300,10 +300,13 @@ Rendimento, balanço (kg, %, status) e status do branqueamento são
 gravadas que possam ficar desatualizadas.
 
 **Ciclo de vida da OP:** `ABERTA`, enquanto consumo, produção e insumos são
-lançados, com os lotes de polpa já criados e vendáveis →
-`ENCERRADA` (grava os custos e recalcula o `custoKg` dos lotes de polpa da
-OP) → `CANCELADA` (estorna consumos e remove a polpa, só se nenhum lote da
-OP tiver saída). Ver D-07 sobre polpa vendida antes de a OP encerrar.
+lançados; cada linha movimenta o estoque na hora e os lotes de polpa já
+existem, com custo provisório, mas **bloqueados para venda e ajuste**
+(D-07) → `ENCERRADA` (grava os custos e o `custoKg` final dos lotes de
+polpa, que ficam liberados; pode ser **reaberta** se nenhum lote da OP
+teve saída) → `CANCELADA` (estorna consumos e zera a polpa, só se nenhum
+lote da OP tiver saída). Detalhes na
+[spec da 7e](../../superpowers/specs/2026-11-10-fase-7e-processamento-design.md).
 
 ## Vendas e entregas
 
