@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,7 +47,7 @@ function Numero({
 /** Aba "Processo": salva todos os campos de uma vez. */
 export function ProcessoForm({
   opId,
-  valores,
+  valores: valoresIniciais,
   exigeBranqueamento,
   minimos,
 }: {
@@ -57,6 +57,9 @@ export function ProcessoForm({
   minimos: { temperaturaMinC: number; tempoMinS: number };
 }) {
   const [state, formAction, pendente] = useActionState(atualizarProcessoOPAction, ESTADO_INICIAL);
+  // Valores iniciais congelados: depois de salvar, a página volta com os mesmos números e o
+  // Input da Base UI reclama se o `defaultValue` de um campo não controlado mudar.
+  const [valores] = useState(valoresIniciais);
   return (
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="opId" value={opId} />

@@ -89,7 +89,7 @@ function CamposConsumo({ lotes, podeLiberarVencido }: { lotes: LoteConsumoOpcao[
       <Campo id="consumo-lote" rotulo="Lote de fruto">
         <Select name="loteId" value={loteId || null} onValueChange={(v) => setLoteId(v ?? "")}>
           <SelectTrigger id="consumo-lote" className="w-full">
-            <SelectValue placeholder={lotes.length ? "Selecione o lote" : "Nenhum lote de fruto com saldo"} />
+            <SelectValue placeholder={lotes.length ? "Selecione o lote" : "Nenhum lote de fruto disponível"} />
           </SelectTrigger>
           <SelectContent>
             {lotes.map((l) => (
