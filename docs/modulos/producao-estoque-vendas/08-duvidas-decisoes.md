@@ -42,6 +42,9 @@ Afetam a planilha **hoje**, enquanto o sistema não substitui.
 | D-21 | Vendas antigas no financeiro | As 29 vendas da planilha (set–out/2026) já foram lançadas no financeiro do sistema (contas a receber, lançamentos bancários)? | Se **não**: importar com título já baixado. Se **sim**: importar só como histórico de venda e estoque, **sem gerar título**, para não duplicar receita. | 🔴 7d Importação | **Sem importação de dados antigos** por ora; se for preciso, resolver depois do desenvolvimento. A 7d fica adiada (2026-11-10). |
 | D-22 | Recall do fruto | Na rastreabilidade de um fruto, ratear os kg da polpa entre os frutos da OP para dizer "quanto" cada cliente recebeu? | Não: listar todos os clientes de qualquer polpa da OP. A pergunta do recall é "quem pode ter recebido". | 7f | **Lista conservadora, sem rateio** (2026-11-10). |
 | D-23 | Cancelados na rastreabilidade | Pedidos e OPs cancelados e linhas removidas aparecem? | Ocultos por padrão, com a opção "Mostrar cancelados" (marcados), também na exportação. | 7f | **Ocultos, com opção de mostrar** (2026-11-10). |
+| D-24 | Tamanho da 7g | Painel e cinco relatórios numa entrega só? | Dividir: 7g1 painel + estoque; 7g2 mensal, vendas, origem, processamento e gráficos. | 7g | **Duas entregas** (2026-11-11). |
+| D-25 | Relatório de estoque | Tela nova em Relatórios ou completar a tela de Estoque? | Completar a tela existente com o resumo por status e o PDF em seções. | 7g1 | **Tela existente** (2026-11-11). |
+| D-26 | Contagem do painel | O que entra nos números do painel? | Cancelados fora; OP aberta no volume, custo médio só de encerradas; a receber, estoque e entregas na data de hoje; OPs a verificar no período. | 7g1 | **Como recomendado** (2026-11-11). |
 
 ## Decisões técnicas já tomadas neste desenho
 

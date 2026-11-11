@@ -197,6 +197,8 @@ Errou uma linha? Use **Remover** e lance de novo: o estoque é estornado.
 
 Os dois só funcionam enquanto nenhum lote de polpa da OP teve venda ou ajuste. A etiqueta da polpa só pode ser impressa depois de encerrar.
 
+Na lista de OPs, o filtro **A verificar** mostra só as OPs (não canceladas) com balanço ou branqueamento fora do limite.
+
 ### 5.3. Estoque
 
 Mostra os lotes com saldo, em ordem de validade (o que vence primeiro aparece primeiro). Cada lote tem um status:
@@ -209,6 +211,8 @@ Mostra os lotes com saldo, em ordem de validade (o que vence primeiro aparece pr
 | Zerado | Sem saldo. |
 
 Filtre por produto, local e status, ou mude a **data de referência** para ver como estava (ou estará) o estoque em outro dia. A aba **Por produto e local** soma o saldo e o valor a custo, e mostra a ocupação de cada local que tem capacidade cadastrada. O botão **Mover** troca o local do lote inteiro.
+
+No topo, três cartões contam os lotes com saldo e os kg em cada situação (OK, Vencendo, Vencido) na data de referência. Clique num cartão para ver só esses lotes; clique de novo para limpar. O PDF traz esse resumo e a aba que estiver aberta (a lista de lotes, ou o saldo por produto e local com a ocupação).
 
 ### 5.4. Ajustes de estoque
 
@@ -231,6 +235,22 @@ Em **Produção → Rastreabilidade**, digite o código do lote e clique em **Ra
 - **Destino do lote:** quanto entrou, quanto foi vendido, usado em OP ou ajustado (amostra, avaria, vencido…) e o saldo.
 
 Pedidos e OPs cancelados e linhas removidas ficam ocultos. Use **Mostrar cancelados** para vê-los. O **PDF** traz o relatório completo para a fiscalização; **CSV** e **Excel** trazem a lista de clientes com contato.
+
+### 5.7. Painel de produção
+
+Produção → **Painel** resume o período escolhido (padrão: o mês atual; atalhos Mês atual, Mês anterior e Ano) em três blocos:
+
+- **Recepção e processamento:** fruto recebido (kg líquido), quanto veio de terceiros, descarte na triagem, nº de OPs, fruto processado, polpa produzida, rendimento e custo médio da polpa, com uma linha por fruta.
+- **Vendas:** faturamento (in natura e polpa de cada fruta), kg vendidos, preço médio, nº de pedidos, ticket médio, margem bruta e o total a receber.
+- **Estoque e alertas:** estoque de polpa, fruto aguardando processamento, valor do estoque a custo e os alertas.
+
+Como o painel conta:
+
+- Pedidos, recepções e OPs cancelados ficam fora.
+- OP aberta entra no volume (fruto processado, polpa e rendimento), mas o **custo médio** usa só OPs encerradas, que já têm o custo gravado.
+- **A receber**, estoque e entregas mostram a situação de hoje, qualquer que seja o período.
+
+Cada alerta com ocorrência fica destacado e abre a lista já filtrada: lotes vencendo ou vencidos (Estoque), entregas em aberto ou atrasadas (Entregas) e OPs do período com balanço ou branqueamento a verificar (Processamento). Os links de exportação geram o PDF do painel e uma planilha com um indicador por linha.
 
 ## 6. Vendas
 
@@ -273,7 +293,7 @@ Quando não dá para cancelar, o botão fica desabilitado e o motivo aparece ao 
 
 ### 6.3. Entregas
 
-Vendas → Entregas lista as entregas pendentes e em rota (mude o filtro de status para ver as entregues, as canceladas ou todas), com data prevista, cliente, endereço, responsável e o **atraso** em dias, destacado quando passa da data prevista. Em cada linha: **Em rota**, **Entregue** (informe a data e quem recebeu) e **Editar** (data prevista, endereço, responsável e observação). As mesmas ações aparecem no pedido. A entrega de um pedido cancelado fica cancelada e não muda mais. Exporte em CSV, Excel ou PDF.
+Vendas → Entregas lista as entregas pendentes e em rota (mude o filtro de status para ver as entregues, as canceladas ou todas), com data prevista, cliente, endereço, responsável e o **atraso** em dias, destacado quando passa da data prevista. Em cada linha: **Em rota**, **Entregue** (informe a data e quem recebeu) e **Editar** (data prevista, endereço, responsável e observação). As mesmas ações aparecem no pedido. A entrega de um pedido cancelado fica cancelada e não muda mais. Marque **Só atrasadas** para ver apenas as entregas que passaram da data prevista. Exporte em CSV, Excel ou PDF.
 
 ### 6.4. Recibo
 

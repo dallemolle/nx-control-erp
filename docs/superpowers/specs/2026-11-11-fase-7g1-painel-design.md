@@ -1,6 +1,12 @@
 # Fase 7g1 — Painel de produção e relatório de estoque
 
-Data: 2026-11-11 · Status: desenho aprovado
+Data: 2026-11-11 · Status: implementada (2026-11-11)
+
+Ajustes na implementação: `VerificarOP` fica em `src/lib/producao/op.ts`
+(o filtro da URL não importa o serviço); os cartões de status do Estoque
+sempre abrem a lista por lote; a aba "Por produto e local" ganhou
+exportação própria (CSV/Excel por produto × local, PDF com resumo,
+saldos e ocupação); a ajuda do painel é a seção 5.7.
 
 Primeira metade do sétimo sub-projeto da Fase 7 (ver
 [plano de entrega](../../modulos/producao-estoque-vendas/09-plano-de-entrega.md)).

@@ -21,8 +21,14 @@ embalagem. 7f (rastreabilidade) concluída em 2026-11-11: consulta por lote
 para trás e para frente, até os clientes da polpa feita com o fruto (lista
 conservadora, D-22), destino de cada kg pelo ledger, cancelados ocultos com
 opção de mostrar (D-23), PDF completo para a fiscalização e CSV/Excel com
-os clientes atingidos; o código do lote vira link nas outras telas.
-Próximo: 7g (painel e relatórios).
+os clientes atingidos; o código do lote vira link nas outras telas. 7g
+dividida em duas entregas (D-24). 7g1 (painel) concluída em 2026-11-11:
+painel de produção com indicadores do período por fruta (recepção,
+processamento, vendas e estoque), alertas que abrem a lista já filtrada e
+exportação em PDF, CSV e Excel; resumo por status de validade e PDF em
+seções na tela de Estoque (D-25); filtros "só atrasadas" nas Entregas e "a
+verificar" nas OPs; regras de contagem em D-26. Próximo: 7g2 (relatórios
+mensal, de vendas, de origem e de processamento, com gráficos).
 
 ## Escopo
 
@@ -50,8 +56,8 @@ as dúvidas e o plano de entrega estão em
 ## Sub-projetos
 
 7a Fundação · 7b Recepção e estoque · 7c Vendas e entregas · 7d Importação e
-corte da planilha · 7e Processamento (OP) · 7f Rastreabilidade · 7g Painel e
-relatórios. Detalhes, dependências e critérios de pronto no
+corte da planilha · 7e Processamento (OP) · 7f Rastreabilidade · 7g1 Painel
+· 7g2 Relatórios. Detalhes, dependências e critérios de pronto no
 [plano de entrega](../modulos/producao-estoque-vendas/09-plano-de-entrega.md).
 
 Pré-requisito relacionado: conta "Caixa" (Fase B do
