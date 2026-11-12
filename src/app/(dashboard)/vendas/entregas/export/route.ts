@@ -44,6 +44,7 @@ export async function GET(request: Request) {
           }`,
           filtros.inicio ? `Prevista de: ${formatarData(filtros.inicio)}` : null,
           filtros.fim ? `Prevista até: ${formatarData(filtros.fim)}` : null,
+          filtros.atrasadas ? "Só atrasadas" : null,
         ],
       }),
   });

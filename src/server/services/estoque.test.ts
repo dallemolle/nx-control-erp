@@ -8,7 +8,7 @@ import {
   type CatalogoDeTeste,
   type FixtureProducao,
 } from "./producaoTestFixtures";
-import { listarLotes, moverLote, registrarMovimento, resumoProdutoLocal } from "./estoque";
+import { listarLotes, moverLote, registrarMovimento, resumoPorStatus, resumoProdutoLocal } from "./estoque";
 
 const HOJE = new Date("2026-11-09");
 const dia = (dias: number) => new Date(HOJE.getTime() + dias * 86_400_000);
@@ -162,5 +162,46 @@ describe("estoque: consultas e mudança de local", () => {
       "Local de armazenamento não encontrado ou inativo",
     );
     await expect(moverLote(fx.sessao("VENDAS"), lote.id, cat.localRecepcaoId)).rejects.toThrow(PermissionError);
+  });
+});
+
+describe("resumoPorStatus", () => {
+  let fx: FixtureProducao;
+  let cat: CatalogoDeTeste;
+  const ref = new Date("2026-11-20T00:00:00.000Z");
+
+  beforeAll(async () => {
+    fx = await criarFixtureProducao("estoque-status");
+    cat = await criarCatalogoDeTeste(fx);
+    const polpa = (kg: number, validade: string, localId = cat.localCamaraId) =>
+      criarLoteDeTeste(fx, {
+        produtoId: cat.produtoPolpaId,
+        localId,
+        kg,
+        data: new Date("2026-11-01"),
+        validade: new Date(validade),
+      });
+    await polpa(10, "2027-06-01"); // OK
+    await polpa(4, "2026-12-10"); // Vencendo (20 dias ≤ 30, congelado)
+    await polpa(3, "2026-11-15"); // Vencido
+    await polpa(0, "2026-11-15"); // Zerado: não entra
+    await polpa(7, "2027-06-01", cat.localRecepcaoId); // OK, outro local
+  });
+  afterAll(async () => {
+    await fx.limpar();
+  });
+
+  test("conta lotes com saldo por status na data de referência", async () => {
+    expect(await resumoPorStatus(fx.filialAId, {}, ref)).toEqual({
+      OK: { quantidade: 2, kg: 17 },
+      VENCENDO: { quantidade: 1, kg: 4 },
+      VENCIDO: { quantidade: 1, kg: 3 },
+    });
+  });
+
+  test("respeita o local", async () => {
+    const r = await resumoPorStatus(fx.filialAId, { localId: cat.localRecepcaoId }, ref);
+    expect(r.OK).toEqual({ quantidade: 1, kg: 7 });
+    expect(r.VENCIDO).toEqual({ quantidade: 0, kg: 0 });
   });
 });

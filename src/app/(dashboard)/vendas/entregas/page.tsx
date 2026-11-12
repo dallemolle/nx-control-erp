@@ -26,6 +26,7 @@ export default async function EntregasPage({ searchParams }: { searchParams: Pro
     status: filtros.status ? (sp.status ?? "") : "",
     inicio: filtros.inicio ? paraDataIso(filtros.inicio) : "",
     fim: filtros.fim ? paraDataIso(filtros.fim) : "",
+    atraso: filtros.atrasadas ? "1" : "",
   };
   const query = new URLSearchParams(Object.entries(valoresFiltro).filter(([, v]) => v)).toString();
 
@@ -53,6 +54,7 @@ export default async function EntregasPage({ searchParams }: { searchParams: Pro
           },
           { tipo: "data", campo: "inicio", rotulo: "Prevista de" },
           { tipo: "data", campo: "fim", rotulo: "Até" },
+          { tipo: "checkbox", campo: "atraso", rotulo: "Só atrasadas" },
         ]}
       />
       <ExportarLinks baseHref="/vendas/entregas/export" queryString={query} />

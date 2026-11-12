@@ -151,4 +151,16 @@ describe("entregas", () => {
 
     expect(await listarEntregas(fx.filialAId, { inicio: d("2026-09-01"), fim: d("2026-09-30") }, hoje)).toHaveLength(0);
   });
+
+  test("filtro de atrasadas: só entrega em aberto com atraso maior que zero", async () => {
+    const atrasada = await novoPedido("2026-11-01");
+    const noPrazo = await novoPedido("2026-11-30");
+    const hoje = d("2026-11-20");
+
+    const lista = await listarEntregas(fx.filialAId, { atrasadas: true }, hoje);
+    const ids = lista.map((e) => e.pedidoId);
+    expect(ids).toContain(atrasada);
+    expect(ids).not.toContain(noPrazo);
+    expect(lista.every((e) => (e.atraso ?? 0) > 0)).toBe(true);
+  });
 });

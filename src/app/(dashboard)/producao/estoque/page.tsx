@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { prisma } from "@/server/db/client";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { podeExecutar, requirePermission } from "@/server/auth/permissions";
-import { listarLotes, resumoProdutoLocal } from "@/server/services/estoque";
+import { listarLotes, resumoPorStatus, resumoProdutoLocal } from "@/server/services/estoque";
 import { ROTULOS_STATUS_LOTE, STATUS_LOTE } from "@/lib/producao/statusLote";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
 import { paraDataIso } from "@/lib/producao/periodo";
@@ -16,6 +16,7 @@ import { LinkRastreio } from "../_shared/link-rastreio";
 import { StatusLoteBadge } from "../_shared/status-lote-badge";
 import { MoverLoteDialog } from "./mover-lote-dialog";
 import { filtrosDoEstoque, type ParametrosEstoque } from "./filtros";
+import { ResumoStatusEstoque } from "./resumo-status";
 
 const KG = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 const PERCENTUAL = new Intl.NumberFormat("pt-BR", { style: "percent", maximumFractionDigits: 1 });
@@ -29,7 +30,9 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
   const visao = sp.visao === "resumo" ? "resumo" : "lotes";
   const { filtros, referencia } = filtrosDoEstoque(sp);
 
-  const [produtos, locais] = await Promise.all([
+  // Na visão por produto e local não há filtro de produto/local: o resumo é da filial toda.
+  const filtroResumo = visao === "lotes" ? { produtoId: filtros.produtoId, localId: filtros.localId } : {};
+  const [produtos, locais, resumo] = await Promise.all([
     prisma.produto.findMany({
       where: { empresaId: sessao.empresaId },
       select: { id: true, codigo: true, descricao: true },
@@ -40,6 +43,7 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
       select: { id: true, nome: true },
       orderBy: { nome: "asc" },
     }),
+    resumoPorStatus(sessao.filialId, filtroResumo, referencia),
   ]);
 
   const valoresFiltro = {
@@ -51,6 +55,9 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
   };
   const query = new URLSearchParams(Object.entries(valoresFiltro).filter(([, v]) => v)).toString();
   const hrefVisao = (v: string) => `/producao/estoque?${new URLSearchParams({ ...Object.fromEntries(new URLSearchParams(query)), visao: v })}`;
+  // O cartão sempre abre a lista por lote, que é onde o status filtra.
+  const hrefStatus = (s: string) =>
+    `/producao/estoque?${new URLSearchParams(Object.entries({ ...valoresFiltro, status: s }).filter(([, v]) => v))}`;
 
   return (
     <div className="space-y-6">
@@ -60,6 +67,12 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
           Saldo por lote, em ordem de validade (o que vence primeiro sai primeiro).
         </p>
       </div>
+
+      <ResumoStatusEstoque
+        resumo={resumo}
+        ativo={visao === "lotes" ? (filtros.status ?? "") : ""}
+        hrefStatus={hrefStatus}
+      />
 
       <div className="flex flex-wrap gap-2" role="tablist">
         {(["lotes", "resumo"] as const).map((v) => (
@@ -89,7 +102,7 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
           podeMover={podeMover}
         />
       ) : (
-        <VisaoResumo filialId={sessao.filialId} />
+        <VisaoResumo filialId={sessao.filialId} queryExport={`referencia=${paraDataIso(referencia)}&visao=resumo`} />
       )}
     </div>
   );
@@ -233,10 +246,11 @@ async function VisaoLotes({
   );
 }
 
-async function VisaoResumo({ filialId }: { filialId: string }) {
+async function VisaoResumo({ filialId, queryExport }: { filialId: string; queryExport: string }) {
   const { linhas, locais } = await resumoProdutoLocal(filialId);
   return (
     <div className="space-y-6">
+      <ExportarLinks baseHref="/producao/estoque/export" queryString={queryExport} />
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
