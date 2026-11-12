@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.19](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.18...nx-control-erp-v0.1.19) (2026-11-12)
+
+
+### Novidades
+
+* **producao:** contas do painel de produção ([e851a91](https://github.com/dallemolle/nx-control-erp/commit/e851a91d94fa8c37ccd89a0fdece8884036edd30))
+* **producao:** exportação do painel em PDF, CSV e Excel ([88798a3](https://github.com/dallemolle/nx-control-erp/commit/88798a3a2cdf052eeba686bfc68d8fc64c631720))
+* **producao:** filtro de OPs a verificar ([c9d7d93](https://github.com/dallemolle/nx-control-erp/commit/c9d7d935cffc85d8a83aa514c8b8a2e315ca80c2))
+* **producao:** indicadores do painel de produção ([8c88b9c](https://github.com/dallemolle/nx-control-erp/commit/8c88b9c19b73ef21b87a4eb12d3bb2dba5632a8b))
+* **producao:** resumo por status de validade no estoque ([b6990b6](https://github.com/dallemolle/nx-control-erp/commit/b6990b637318d1ef339344b54395273ec3df246a))
+* **producao:** tela do painel de produção ([2513537](https://github.com/dallemolle/nx-control-erp/commit/25135374caf57c540331bca1fde2fbf1efe0122b))
+* **vendas:** filtro de entregas atrasadas ([8f163b6](https://github.com/dallemolle/nx-control-erp/commit/8f163b6c8a4504cd7b1ec8f678dd5fa2e97a828e))
+
 ## [0.1.18](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.17...nx-control-erp-v0.1.18) (2026-11-11)
 
 
