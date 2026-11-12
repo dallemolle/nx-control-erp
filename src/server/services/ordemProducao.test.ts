@@ -675,3 +675,66 @@ describe("ordem de produção", () => {
     expect(lotes.find((l) => l.id === tarde.id)?.vencido).toBe(false);
   });
 });
+
+describe("listarOPs: filtro a verificar", () => {
+  let fx: FixtureProducao;
+  let cat: CatalogoDeTeste;
+  const ids = { ok: "", balanco: "", cancelada: "" };
+
+  beforeAll(async () => {
+    fx = await criarFixtureProducao("op-verificar");
+    cat = await criarCatalogoDeTeste(fx);
+    const adm = fx.sessao("ADMINISTRADOR");
+    const fruto = await criarLoteDeTeste(fx, {
+      produtoId: cat.produtoFrutoOutraId,
+      localId: cat.localRecepcaoId,
+      kg: 100,
+      custoKg: 2,
+      data: new Date("2026-11-10"),
+      validade: new Date("2027-11-10"),
+    });
+    const nova = () => criarOP(adm, cabecalhoOPSchema.parse({ data: "2026-11-10", frutaId: cat.outraFrutaId }));
+    const consumir = (opId: string, kg: number) =>
+      adicionarConsumo(adm, opId, consumoSchema.parse({ loteId: fruto.id, quantidadeKg: kg, motivoLiberacaoVencido: "" }));
+    const produzir = (opId: string, kg: number) =>
+      adicionarProducao(
+        adm,
+        opId,
+        producaoSchema.parse({ produtoId: cat.produtoPolpaOutraId, quantidadeKg: kg, localId: cat.localCamaraId }),
+      );
+    const processo = (opId: string, carocoResiduoKg: string) =>
+      atualizarProcessoOP(adm, opId, processoOPSchema.parse({ aguaLitros: "0", carocoResiduoKg, perdaKg: "0" }));
+
+    // Cupuaçu não exige branqueamento: só o balanço decide.
+    const ok = await nova();
+    await consumir(ok.id, 10);
+    await produzir(ok.id, 4);
+    await processo(ok.id, "6");
+    const balanco = await nova();
+    await consumir(balanco.id, 10);
+    await produzir(balanco.id, 4);
+    const cancelada = await nova();
+    await consumir(cancelada.id, 10);
+    await produzir(cancelada.id, 4);
+    await cancelarOP(adm, cancelada.id, "Teste");
+    Object.assign(ids, { ok: ok.id, balanco: balanco.id, cancelada: cancelada.id });
+  });
+  afterAll(async () => {
+    await fx.limpar();
+  });
+
+  const periodo = { inicio: new Date("2026-11-01"), fim: new Date("2026-11-30") };
+
+  test("balanco: só OP com balanço Verificar e não cancelada", async () => {
+    const lista = await listarOPs(fx.filialAId, { ...periodo, verificar: "balanco" });
+    expect(lista.map((op) => op.id)).toEqual([ids.balanco]);
+  });
+
+  test("branqueamento: nenhuma (cupuaçu não se aplica)", async () => {
+    expect(await listarOPs(fx.filialAId, { ...periodo, verificar: "branqueamento" })).toEqual([]);
+  });
+
+  test("sem filtro: as três", async () => {
+    expect(await listarOPs(fx.filialAId, periodo)).toHaveLength(3);
+  });
+});

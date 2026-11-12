@@ -51,7 +51,13 @@ export async function atualizarEntrega(sessao: SessaoAtiva, pedidoId: string, da
 
 export const STATUS_ENTREGA_ABERTA: StatusEntrega[] = ["PENDENTE", "EM_ROTA"];
 
-export type FiltroEntregas = { status?: StatusEntrega[]; inicio?: Date; fim?: Date };
+export type FiltroEntregas = {
+  status?: StatusEntrega[];
+  inicio?: Date;
+  fim?: Date;
+  /** Só as com atraso maior que zero na data de hoje (alerta do painel). */
+  atrasadas?: boolean;
+};
 
 /** Entregas da filial com o atraso calculado (RN-24); por padrão, só as em aberto. */
 export async function listarEntregas(filialId: string, filtros: FiltroEntregas, hoje: Date) {
@@ -71,7 +77,8 @@ export async function listarEntregas(filialId: string, filtros: FiltroEntregas, 
     include: { pedido: { select: { numero: true, cliente: { select: { nome: true } } } } },
     orderBy: [{ dataPrevista: "asc" }, { pedido: { numero: "asc" } }],
   });
-  return entregas.map((entrega) => ({ ...entrega, atraso: atrasoEntregaDias(entrega, hoje) }));
+  const listadas = entregas.map((entrega) => ({ ...entrega, atraso: atrasoEntregaDias(entrega, hoje) }));
+  return filtros.atrasadas ? listadas.filter((entrega) => (entrega.atraso ?? 0) > 0) : listadas;
 }
 
 export type EntregaListada = Awaited<ReturnType<typeof listarEntregas>>[number];

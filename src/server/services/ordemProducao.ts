@@ -22,6 +22,7 @@ import {
   type DadosResumoOP,
   type LinhasOP,
   type ResumoOP,
+  type VerificarOP,
 } from "@/lib/producao/op";
 import { obterConfiguracaoProducao } from "./configuracaoProducao";
 import { registrarMovimento } from "./estoque";
@@ -708,7 +709,14 @@ export function linhasEmNumeros(op: {
   };
 }
 
-export type FiltroOPs = { inicio: Date; fim: Date; frutaId?: string; status?: StatusOrdemProducao };
+export type FiltroOPs = {
+  inicio: Date;
+  fim: Date;
+  frutaId?: string;
+  status?: StatusOrdemProducao;
+  /** Só OPs não canceladas com balanço (RN-11) ou branqueamento (RN-12) "Verificar". */
+  verificar?: VerificarOP;
+};
 
 export async function listarOPs(filialId: string, filtros: FiltroOPs) {
   const configuracao = await obterConfiguracaoProducao(filialId);
@@ -727,10 +735,18 @@ export async function listarOPs(filialId: string, filtros: FiltroOPs) {
     },
     orderBy: [{ data: "desc" }, { numero: "desc" }],
   });
-  return ops.map(({ consumos, producoes, insumos, ...op }) => ({
+  const listadas = ops.map(({ consumos, producoes, insumos, ...op }) => ({
     ...op,
     resumo: resumoComCustoGravado(op, linhasEmNumeros({ consumos, producoes, insumos }), configuracao),
   }));
+  if (!filtros.verificar) return listadas;
+  return listadas.filter(
+    (op) =>
+      op.status !== "CANCELADA" &&
+      (filtros.verificar === "balanco"
+        ? op.resumo.balanco.status === "VERIFICAR"
+        : op.resumo.branqueamento === "VERIFICAR"),
+  );
 }
 
 export type OPListada = Awaited<ReturnType<typeof listarOPs>>[number];

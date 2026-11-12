@@ -15,7 +15,7 @@ depois do desenvolvimento, se forem necessários; a seção
 [Importação da planilha](#importação-da-planilha-7d) fica como referência.
 
 ```
-7a Fundação ─► 7b Recepção e estoque ─► 7c Vendas e entregas ─► 7e Processamento (OP) ─► 7f Rastreabilidade ─► 7g Painel e relatórios
+7a Fundação ─► 7b Recepção e estoque ─► 7c Vendas e entregas ─► 7e Processamento (OP) ─► 7f Rastreabilidade ─► 7g1 Painel ─► 7g2 Relatórios
 
           (Fase B fiscal: conta Caixa — antes ou junto de 7c)
           (7d Importação + corte: adiada para depois do desenvolvimento)
@@ -29,7 +29,8 @@ depois do desenvolvimento, se forem necessários; a seção
 | **7d Importação + corte** *(adiada)* | Script de importação da planilha (cadastros, 16 recepções, 29 vendas) com simulação prévia (dry-run); conferência de saldos contra `ESTOQUE_LOTES`; recepção e venda in natura passam a ser lançadas só no sistema. | 7c | D-17, D-18, D-21 | M |
 | **7e Processamento** | OP com consumo, produção (lotes de polpa), insumos e processo; rendimento, balanço e branqueamento ao vivo; encerramento com custo gravado; cancelamento. | 7b | D-06, D-07, D-08 | L |
 | **7f Rastreabilidade** | Consulta por lote para trás e para frente, até os clientes da polpa derivada (RN-28); PDF para fiscalização. | 7c, 7e | D-10 | M |
-| **7g Painel e relatórios** | Painel de produção com alertas; relatório mensal, de vendas, de origem, de processamento e de estoque; exports. | 7c, 7e | — | L |
+| **7g1 Painel** | Painel de produção com indicadores, alertas clicáveis e exportação; resumo por status e PDF em seções no Estoque; filtros "só atrasadas" e "a verificar". | 7c, 7e | D-24, D-25, D-26 | M |
+| **7g2 Relatórios** | Relatório mensal, de vendas, de origem e de processamento, com gráficos e exports. | 7g1 | — | L |
 
 Tamanho: **M** ≈ o porte de "comparação entre safras"; **L** ≈ o porte de
 "contas a pagar/receber".

@@ -117,6 +117,30 @@ export async function listarLotes(filialId: string, filtros: FiltroLotes, refere
 
 export type LoteListado = Awaited<ReturnType<typeof listarLotes>>[number];
 
+export type StatusResumido = Exclude<StatusLote, "ZERADO">;
+export const STATUS_RESUMIDOS: StatusResumido[] = ["OK", "VENCENDO", "VENCIDO"];
+export type ResumoStatus = Record<StatusResumido, { quantidade: number; kg: number }>;
+
+/** Nº de lotes e kg por status de validade (RN-16), só lotes com saldo; ignora o filtro de status. */
+export async function resumoPorStatus(
+  filialId: string,
+  filtros: Pick<FiltroLotes, "produtoId" | "localId">,
+  referencia: Date,
+): Promise<ResumoStatus> {
+  const lotes = await listarLotes(filialId, { produtoId: filtros.produtoId, localId: filtros.localId }, referencia);
+  const resumo: ResumoStatus = {
+    OK: { quantidade: 0, kg: 0 },
+    VENCENDO: { quantidade: 0, kg: 0 },
+    VENCIDO: { quantidade: 0, kg: 0 },
+  };
+  for (const lote of lotes) {
+    if (lote.status === "ZERADO") continue;
+    resumo[lote.status].quantidade += 1;
+    resumo[lote.status].kg = arredondar(resumo[lote.status].kg + Number(lote.saldoKg), 3);
+  }
+  return resumo;
+}
+
 /** Saldo e valor por produto × local, mais a ocupação de cada local com capacidade. */
 export async function resumoProdutoLocal(filialId: string) {
   const [lotes, locais] = await Promise.all([
