@@ -103,8 +103,8 @@ Serviço: `buscarRelatorioMensal(sessao, ano)` em
 - **Gráficos (no topo, antes das tabelas):**
   - recebido × processado × vendido (kg) por mês — barras agrupadas;
   - faturamento (barras) e margem % (linha) por mês.
-- Mês sem movimento: células "—" nas razões e 0 nas somas; ano sem nada:
-  tabelas com "Nada no ano" e gráficos ocultos.
+- Mês sem movimento: células "—" nas razões e 0 nas somas; ano sem nenhum
+  movimento: a mensagem "Nada no ano." no lugar dos gráficos e das tabelas.
 
 ## 4. Relatório de vendas (`/producao/relatorios/vendas`)
 
