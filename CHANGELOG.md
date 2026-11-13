@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.1.20](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.19...nx-control-erp-v0.1.20) (2026-11-13)
+
+
+### Novidades
+
+* **producao:** cálculo do relatório de vendas ([1f8e76d](https://github.com/dallemolle/nx-control-erp/commit/1f8e76d41d37b1d022174d377bbdaf65d946c8fd))
+* **producao:** cálculo do relatório mensal ([9a0fdac](https://github.com/dallemolle/nx-control-erp/commit/9a0fdac11b5a23d960340537cbaa151b03c311af))
+* **producao:** exportação dos relatórios mensal e de vendas ([e32aac2](https://github.com/dallemolle/nx-control-erp/commit/e32aac29c04164d5c7ba539c1908398606031e8e))
+* **producao:** serviço do relatório de vendas ([c072466](https://github.com/dallemolle/nx-control-erp/commit/c072466a0c1f3d29019f41bf3b76f6d01b684871))
+* **producao:** serviço do relatório mensal ([f0bd6c5](https://github.com/dallemolle/nx-control-erp/commit/f0bd6c50471bc43125556a44c59cf1bf072b256e))
+* **producao:** tela do relatório de vendas ([e4d45b4](https://github.com/dallemolle/nx-control-erp/commit/e4d45b476704ec45dd10598b158c801a253f4e76))
+* **producao:** tela do relatório mensal ([6611749](https://github.com/dallemolle/nx-control-erp/commit/661174900f54726016fd4783e07e7a97bec7bcf6))
+
+
+### Correções
+
+* **producao:** ajustes da conferência dos relatórios no navegador ([3d04895](https://github.com/dallemolle/nx-control-erp/commit/3d04895877b880a776b4fc060afae12a5bb95b0f))
+
 ## [0.1.19](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.18...nx-control-erp-v0.1.19) (2026-11-12)
 
 
