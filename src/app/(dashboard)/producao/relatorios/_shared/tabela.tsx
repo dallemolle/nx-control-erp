@@ -6,6 +6,7 @@ import type { Unidade } from "@/lib/producao/relatorios";
 const KG = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 const PCT = new Intl.NumberFormat("pt-BR", { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const INTEIRO = new Intl.NumberFormat("pt-BR");
+const DECIMAL2 = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /** Célula numérica; a unidade vai no cabeçalho da coluna. */
 export function formatarCelula(valor: number | null, unidade: Unidade): string {
@@ -13,6 +14,7 @@ export function formatarCelula(valor: number | null, unidade: Unidade): string {
   if (unidade === "kg") return KG.format(valor);
   if (unidade === "%") return PCT.format(valor);
   if (unidade === "nº") return INTEIRO.format(valor);
+  if (unidade === "ha" || unidade === "t/ha") return DECIMAL2.format(valor);
   return formatarMoeda(valor);
 }
 

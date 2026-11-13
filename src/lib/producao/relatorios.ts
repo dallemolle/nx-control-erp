@@ -95,7 +95,7 @@ export function frutasComMovimento<F extends { id: string }>(total: ColunaMensal
   );
 }
 
-export type Unidade = "kg" | "%" | "R$" | "R$/kg" | "nº";
+export type Unidade = "kg" | "%" | "R$" | "R$/kg" | "nº" | "ha" | "t/ha";
 
 export type IndicadorMensal = {
   rotulo: string;
