@@ -1,14 +1,20 @@
 import { describe, expect, test } from "vitest";
 import {
+  agregarVendasDetalhadas,
   agruparPorMes,
   blocosMensais,
+  canalPrincipal,
   frutasComMovimento,
   montarColunasMensais,
   mesUTC,
   polpaPorProdutoMes,
+  rotuloCanal,
+  somarSaldos,
   type ItemDatado,
+  type ItemVenda,
   type OPDatada,
   type RecepcaoDatada,
+  type SaldoAReceber,
 } from "./relatorios";
 
 const d = (iso: string) => new Date(iso);
@@ -117,5 +123,112 @@ describe("polpa por produto × mês", () => {
     expect(m.get("agc")!.total).toBe(20.5);
     expect(m.get("afn")!.meses[10]).toBe(15);
     expect(m.get("afn")!.meses[9]).toBe(0);
+  });
+});
+
+describe("relatório de vendas", () => {
+  const item = (extra: Partial<ItemVenda>): ItemVenda => ({
+    pedidoId: "p",
+    produtoId: "agc",
+    categoria: "POLPA",
+    frutaId: "a",
+    quantidadeKg: 1,
+    precoKg: 10,
+    custoKg: 4,
+    clienteId: "c1",
+    cliente: "Cliente exemplo",
+    canal: "ATACADO",
+    formaPagamento: "A_PRAZO",
+    ...extra,
+  });
+
+  test("canal principal: maior faturamento; empate pela ordem do cadastro; sem canal por último", () => {
+    expect(canalPrincipal([item({ canal: "VAREJO", quantidadeKg: 2 }), item({ canal: "ATACADO" })])).toBe("VAREJO");
+    expect(canalPrincipal([item({ canal: "VAREJO" }), item({ canal: "ATACADO" })])).toBe("ATACADO");
+    expect(canalPrincipal([item({ canal: null }), item({ canal: "OUTRO" })])).toBe("OUTRO");
+    expect(canalPrincipal([item({ canal: null })])).toBeNull();
+    expect(canalPrincipal([])).toBeNull();
+  });
+
+  test("rótulo do canal", () => {
+    expect(rotuloCanal(null)).toBe("Sem canal");
+    expect(rotuloCanal("ATACADO")).toBe("Atacado / distribuidor");
+  });
+
+  const itens: ItemVenda[] = [
+    item({ pedidoId: "p2", quantidadeKg: 20, precoKg: 30, custoKg: 4 }),
+    item({ pedidoId: "p3", produtoId: "cpc", quantidadeKg: 4, precoKg: 20, custoKg: 5, canal: "VAREJO", formaPagamento: "PIX" }),
+    item({
+      pedidoId: "p4",
+      produtoId: "cpc",
+      clienteId: "c2",
+      cliente: "Mercado B",
+      quantidadeKg: 10,
+      precoKg: 20,
+      custoKg: 5,
+      canal: "VAREJO",
+      formaPagamento: "DINHEIRO",
+    }),
+    item({
+      pedidoId: "p5",
+      clienteId: "c3",
+      cliente: "Cliente fiscal",
+      quantidadeKg: 5,
+      precoKg: 32,
+      custoKg: 4,
+      canal: null,
+      formaPagamento: "PIX",
+    }),
+  ];
+  const saldos: SaldoAReceber[] = [
+    { clienteId: "c1", cliente: "Cliente exemplo", formaPagamento: "A_PRAZO", saldo: 600 },
+    { clienteId: "c4", cliente: "Cliente antigo", formaPagamento: "A_PRAZO", saldo: 300 },
+  ];
+  const r = agregarVendasDetalhadas(itens, saldos);
+
+  test("total", () => {
+    expect(r.total).toMatchObject({ kg: 39, faturamento: 1040, custo: 170, margem: 870, aReceber: 900, percentual: 1 });
+    expect(somarSaldos(saldos)).toBe(900);
+  });
+
+  test("por cliente: faturamento, depois quem só tem saldo", () => {
+    expect(r.porCliente.map((c) => [c.cliente, c.kg, c.faturamento, c.margem, c.canal, c.aReceber])).toEqual([
+      ["Cliente exemplo", 24, 680, 580, "ATACADO", 600],
+      ["Mercado B", 10, 200, 150, "VAREJO", 0],
+      ["Cliente fiscal", 5, 160, 140, null, 0],
+      ["Cliente antigo", 0, 0, 0, null, 300],
+    ]);
+    expect(r.porCliente[0].percentual).toBeCloseTo(680 / 1040, 10);
+    expect(r.porCliente[3].precoMedio).toBeNull();
+  });
+
+  test("por produto, canal e forma", () => {
+    expect(r.porProduto.map((p) => [p.produtoId, p.kg, p.faturamento, p.custoMedio])).toEqual([
+      ["agc", 25, 760, 4],
+      ["cpc", 14, 280, 5],
+    ]);
+    expect(r.porProduto[0].margemPercentual).toBeCloseTo(660 / 760, 10);
+    expect(r.porCanal.map((c) => [c.canal, c.kg, c.faturamento])).toEqual([
+      ["ATACADO", 20, 600],
+      ["VAREJO", 14, 280],
+      [null, 5, 160],
+    ]);
+    expect(r.porForma.map((f) => [f.formaPagamento, f.faturamento, f.aReceber])).toEqual([
+      ["A_PRAZO", 600, 900],
+      ["PIX", 240, 0],
+      ["DINHEIRO", 200, 0],
+    ]);
+  });
+
+  test("sem venda e sem saldo: listas vazias e razões nulas", () => {
+    const vazio = agregarVendasDetalhadas([], []);
+    expect(vazio.porCliente).toEqual([]);
+    expect(vazio.total).toMatchObject({
+      faturamento: 0,
+      aReceber: 0,
+      precoMedio: null,
+      margemPercentual: null,
+      percentual: null,
+    });
   });
 });

@@ -1,8 +1,12 @@
+import type { CanalVenda, FormaPagamentoVenda } from "@prisma/client";
+import { CANAL_VENDA, FORMA_PAGAMENTO_VENDA, ROTULOS_CANAL_VENDA } from "@/lib/schemas/enums";
 import { arredondar } from "./arredondar";
+import { calcularItem } from "./venda";
 import {
   agregarOPs,
   agregarRecepcoes,
   agregarVendas,
+  razao,
   type GrupoRecepcao,
   type ItemDoPainel,
   type OPDoPainel,
@@ -154,4 +158,141 @@ export function blocosMensais(frutas: { id: string; nome: string }[]): BlocoMens
       ],
     },
   ];
+}
+
+// Relatório de vendas ------------------------------------------------------
+
+export type ItemVenda = ItemDoPainel & {
+  clienteId: string;
+  cliente: string;
+  canal: CanalVenda | null;
+  formaPagamento: FormaPagamentoVenda;
+};
+export type ItemVendido = ItemVenda & { data: Date };
+
+/** Saldo de uma parcela aberta (RN-26), com o cliente e a forma do pedido de origem. */
+export type SaldoAReceber = { clienteId: string; cliente: string; formaPagamento: FormaPagamentoVenda; saldo: number };
+
+export type IndicadoresVenda = {
+  kg: number;
+  faturamento: number;
+  custo: number;
+  margem: number;
+  margemPercentual: number | null;
+  precoMedio: number | null;
+  /** Σ custo ÷ Σ kg. */
+  custoMedio: number | null;
+  /** Fração do faturamento total. */
+  percentual: number | null;
+};
+export type LinhaCliente = IndicadoresVenda & {
+  clienteId: string;
+  cliente: string;
+  canal: CanalVenda | null;
+  aReceber: number;
+};
+export type LinhaProdutoVenda = IndicadoresVenda & { produtoId: string };
+export type LinhaCanal = IndicadoresVenda & { canal: CanalVenda | null };
+export type LinhaForma = IndicadoresVenda & { formaPagamento: FormaPagamentoVenda; aReceber: number };
+
+type Soma = { kg: number; faturamento: number; custo: number };
+
+function somarItens(itens: ItemVenda[]): Soma {
+  let kg = 0;
+  let faturamento = 0;
+  let custo = 0;
+  for (const item of itens) {
+    const r = calcularItem(item);
+    kg += item.quantidadeKg;
+    faturamento += r.valor;
+    custo += r.custo;
+  }
+  return { kg: arredondar(kg, 3), faturamento: arredondar(faturamento, 2), custo: arredondar(custo, 2) };
+}
+
+function indicadores(s: Soma, faturamentoTotal: number): IndicadoresVenda {
+  const margem = arredondar(s.faturamento - s.custo, 2);
+  return {
+    ...s,
+    margem,
+    margemPercentual: razao(margem, s.faturamento),
+    precoMedio: razao(s.faturamento, s.kg),
+    custoMedio: razao(s.custo, s.kg),
+    percentual: razao(s.faturamento, faturamentoTotal),
+  };
+}
+
+function agrupar<T, K>(itens: T[], chave: (item: T) => K): Map<K, T[]> {
+  const grupos = new Map<K, T[]>();
+  for (const item of itens) grupos.set(chave(item), [...(grupos.get(chave(item)) ?? []), item]);
+  return grupos;
+}
+
+const ordemCanal = (c: CanalVenda | null) => (c === null ? CANAL_VENDA.length : CANAL_VENDA.indexOf(c));
+
+export function rotuloCanal(canal: CanalVenda | null): string {
+  return canal === null ? "Sem canal" : ROTULOS_CANAL_VENDA[canal];
+}
+
+/** Canal que mais faturou nos itens; empate pela ordem do cadastro, "sem canal" por último. */
+export function canalPrincipal(itens: ItemVenda[]): CanalVenda | null {
+  let melhor: { canal: CanalVenda | null; valor: number } | null = null;
+  for (const [canal, grupo] of agrupar(itens, (i) => i.canal)) {
+    const valor = somarItens(grupo).faturamento;
+    if (!melhor || valor > melhor.valor || (valor === melhor.valor && ordemCanal(canal) < ordemCanal(melhor.canal))) {
+      melhor = { canal, valor };
+    }
+  }
+  return melhor?.canal ?? null;
+}
+
+export function somarSaldos(saldos: SaldoAReceber[]): number {
+  return arredondar(
+    saldos.reduce((s, x) => s + x.saldo, 0),
+    2,
+  );
+}
+
+/** Tabelas do relatório de vendas: itens do período e saldos a receber de hoje (D-29). */
+export function agregarVendasDetalhadas(itens: ItemVenda[], saldos: SaldoAReceber[]) {
+  const soma = somarItens(itens);
+  const total = { ...indicadores(soma, soma.faturamento), aReceber: somarSaldos(saldos) };
+  const ind = (grupo: ItemVenda[]) => indicadores(somarItens(grupo), soma.faturamento);
+
+  const itensPorCliente = agrupar(itens, (i) => i.clienteId);
+  const saldosPorCliente = agrupar(saldos, (s) => s.clienteId);
+  const nomes = new Map([...itens, ...saldos].map((x) => [x.clienteId, x.cliente]));
+  const porCliente: LinhaCliente[] = [...nomes].map(([clienteId, cliente]) => {
+    const grupo = itensPorCliente.get(clienteId) ?? [];
+    return {
+      ...ind(grupo),
+      clienteId,
+      cliente,
+      canal: canalPrincipal(grupo),
+      aReceber: somarSaldos(saldosPorCliente.get(clienteId) ?? []),
+    };
+  });
+  porCliente.sort(
+    (a, b) => b.faturamento - a.faturamento || b.aReceber - a.aReceber || a.cliente.localeCompare(b.cliente),
+  );
+
+  const porProduto: LinhaProdutoVenda[] = [...agrupar(itens, (i) => i.produtoId)]
+    .map(([produtoId, grupo]) => ({ ...ind(grupo), produtoId }))
+    .sort((a, b) => b.faturamento - a.faturamento || a.produtoId.localeCompare(b.produtoId));
+
+  const porCanal: LinhaCanal[] = [...agrupar(itens, (i) => i.canal)]
+    .map(([canal, grupo]) => ({ ...ind(grupo), canal }))
+    .sort((a, b) => b.faturamento - a.faturamento || ordemCanal(a.canal) - ordemCanal(b.canal));
+
+  const itensPorForma = agrupar(itens, (i) => i.formaPagamento);
+  const saldosPorForma = agrupar(saldos, (s) => s.formaPagamento);
+  const porForma: LinhaForma[] = FORMA_PAGAMENTO_VENDA.filter((f) => itensPorForma.has(f) || saldosPorForma.has(f))
+    .map((formaPagamento) => ({
+      ...ind(itensPorForma.get(formaPagamento) ?? []),
+      formaPagamento,
+      aReceber: somarSaldos(saldosPorForma.get(formaPagamento) ?? []),
+    }))
+    .sort((a, b) => b.faturamento - a.faturamento || b.aReceber - a.aReceber);
+
+  return { total, porCliente, porProduto, porCanal, porForma };
 }
