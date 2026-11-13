@@ -2,7 +2,7 @@ import { paraDataIso } from "@/lib/producao/periodo";
 
 const dia = (ano: number, mes: number, d: number) => paraDataIso(new Date(Date.UTC(ano, mes, d)));
 
-/** Atalhos do filtro do painel, a partir de hoje (data de calendário). */
+/** Atalhos de período (painel e relatórios), a partir de hoje (data de calendário). */
 export function atalhosDePeriodo(hoje: Date): { rotulo: string; inicio: string; fim: string }[] {
   const ano = hoje.getUTCFullYear();
   const mes = hoje.getUTCMonth();

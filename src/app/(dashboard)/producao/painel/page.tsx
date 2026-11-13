@@ -7,7 +7,7 @@ import { formatarData, formatarMoeda } from "@/lib/formatacao";
 import { hojeDeCalendario, paraDataIso, periodoDaUrl } from "@/lib/producao/periodo";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { BarraDeFiltros } from "../_shared/barra-de-filtros";
-import { atalhosDePeriodo } from "./atalhos";
+import { atalhosDePeriodo } from "../_shared/atalhos";
 import { Alerta, Bloco, fmt, Indicador } from "./cartoes";
 
 type Parametros = { inicio?: string; fim?: string };

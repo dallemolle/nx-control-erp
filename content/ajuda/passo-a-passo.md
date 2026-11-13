@@ -252,6 +252,26 @@ Como o painel conta:
 
 Cada alerta com ocorrência fica destacado e abre a lista já filtrada: lotes vencendo ou vencidos (Estoque), entregas em aberto ou atrasadas (Entregas) e OPs do período com balanço ou branqueamento a verificar (Processamento). Os links de exportação geram o PDF do painel e uma planilha com um indicador por linha.
 
+### 5.8. Relatórios de produção
+
+Os relatórios seguem as mesmas regras do painel: cancelados ficam fora, OP aberta entra no volume, o custo da polpa usa só OPs encerradas e o a receber é a posição de hoje. Todos exportam PDF, CSV e Excel.
+
+**Relatório mensal** (Produção → Relatório mensal): escolha o ano pelas setas. No topo, dois gráficos: recebido × processado × vendido (kg) e faturamento com a margem por mês. Abaixo, quatro tabelas com os doze meses e o total:
+
+- **Recepção:** kg próprio e de terceiros de cada fruta (peso líquido) e o total recebido.
+- **Processamento:** fruto processado, polpa produzida e rendimento de cada fruta, e o nº de OPs.
+- **Vendas:** faturamento de fruto in natura, de polpa de cada fruta e o total, kg vendidos e margem bruta.
+- **Custos:** custo da polpa por kg de cada fruta e quanto foi pago a terceiros pelo fruto.
+
+Por último, a polpa produzida de cada produto mês a mês. A planilha (CSV/Excel) traz um indicador por linha, com as colunas Bloco, Indicador, Fruta, Mês e Valor, pronta para tabela dinâmica.
+
+**Relatório de vendas** (Produção → Relatório de vendas): escolha o período (padrão: o mês atual). Os gráficos mostram o faturamento por canal e os dez clientes que mais compraram. As tabelas:
+
+- **Vendas por cliente:** todos os clientes em ordem de faturamento, com kg, % do total, preço médio, margem, **canal principal** (o canal que mais faturou com o cliente no período) e o **a receber de hoje**. Clientes sem compra no período mas com saldo em aberto aparecem no fim, para a cobrança.
+- **Por produto:** kg, faturamento, preço médio, custo médio e margem.
+- **Por canal:** kg, faturamento e participação; pedidos sem canal aparecem como "Sem canal".
+- **Por forma de pagamento:** faturamento do período e o que falta receber hoje.
+
 ## 6. Vendas
 
 Antes do primeiro pedido, em Administração → Configuração de produção (seção 8.5), escolha a **categoria de venda**, a **conta de recebimento** (Pix, transferência e cartão) e a **conta Caixa** (dinheiro). A conta Caixa é cadastrada em Cadastros → Contas bancárias, com o tipo Caixa.

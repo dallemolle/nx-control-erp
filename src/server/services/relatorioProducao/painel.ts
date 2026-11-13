@@ -1,8 +1,6 @@
-import type { StatusParcela } from "@prisma/client";
 import { prisma } from "@/server/db/client";
 import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
-import { arredondar } from "@/lib/producao/arredondar";
 import {
   agregarEstoque,
   agregarOPs,
@@ -16,10 +14,8 @@ import {
 import { listarOPs } from "../ordemProducao";
 import { listarLotes } from "../estoque";
 import { listarEntregas } from "../entrega";
-import { saldoRemanescenteParcela } from "../fluxoDeCaixaProjetado";
-
-/** Parcela ainda devida (RN-26); paga, cancelada e renegociada ficam fora. */
-const PARCELA_ABERTA: StatusParcela[] = ["EM_ABERTO", "A_VENCER", "VENCIDO", "PARCIALMENTE_PAGO"];
+import { somarSaldos } from "@/lib/producao/relatorios";
+import { buscarItensVendidos, buscarSaldosAReceber, opDoPainel } from "./consultas";
 
 export type Periodo = { inicio: Date; fim: Date };
 
@@ -61,7 +57,7 @@ export async function buscarPainelProducao(sessao: SessaoAtiva, periodo: Periodo
   const { filialId, empresaId } = sessao;
   const noPeriodo = { gte: periodo.inicio, lte: periodo.fim };
 
-  const [produtos, frutas, recepcoes, ops, itens, parcelas, lotes, entregas] = await Promise.all([
+  const [produtos, frutas, recepcoes, ops, itens, saldos, lotes, entregas] = await Promise.all([
     prisma.produto.findMany({
       where: { empresaId },
       select: { id: true, codigo: true, descricao: true, categoria: true, frutaId: true },
@@ -73,17 +69,8 @@ export async function buscarPainelProducao(sessao: SessaoAtiva, periodo: Periodo
       _sum: { pesoBrutoKg: true, descarteKg: true },
     }),
     listarOPs(filialId, periodo),
-    prisma.itemPedidoVenda.findMany({
-      where: { pedido: { filialId, status: "CONFIRMADO", data: noPeriodo } },
-      select: { pedidoId: true, quantidadeKg: true, precoKg: true, custoKg: true, lote: { select: { produtoId: true } } },
-    }),
-    prisma.parcela.findMany({
-      where: {
-        status: { in: PARCELA_ABERTA },
-        titulo: { pedidoVenda: { is: { filialId, status: "CONFIRMADO" } } },
-      },
-      select: { valorAtualizado: true, baixas: { where: { statusAprovacao: "APROVADO" }, select: { valorPago: true } } },
-    }),
+    buscarItensVendidos(filialId, periodo),
+    buscarSaldosAReceber(filialId),
     listarLotes(filialId, {}, hoje),
     listarEntregas(filialId, {}, hoje),
   ]);
@@ -103,45 +90,9 @@ export async function buscarPainelProducao(sessao: SessaoAtiva, periodo: Periodo
     })),
   );
 
-  const proc = agregarOPs(
-    ops.map((op) => ({
-      frutaId: op.frutaId,
-      status: op.status,
-      frutoKg: op.resumo.frutoKg,
-      polpaKg: op.resumo.polpaKg,
-      custoTotal: op.resumo.custo.custoTotal,
-      balancoVerificar: op.resumo.balanco.status === "VERIFICAR",
-      branqueamentoVerificar: op.resumo.branqueamento === "VERIFICAR",
-    })),
-  );
-
-  const vendas = agregarVendas(
-    itens.map((item) => {
-      const p = produto.get(item.lote.produtoId)!;
-      return {
-        pedidoId: item.pedidoId,
-        produtoId: p.id,
-        categoria: p.categoria,
-        frutaId: p.frutaId,
-        quantidadeKg: Number(item.quantidadeKg),
-        precoKg: Number(item.precoKg),
-        custoKg: Number(item.custoKg),
-      };
-    }),
-  );
-
-  const aReceber = arredondar(
-    parcelas.reduce(
-      (soma, parcela) =>
-        soma +
-        saldoRemanescenteParcela(
-          Number(parcela.valorAtualizado),
-          parcela.baixas.map((b) => ({ valorPago: Number(b.valorPago) })),
-        ),
-      0,
-    ),
-    2,
-  );
+  const proc = agregarOPs(ops.map(opDoPainel));
+  const vendas = agregarVendas(itens);
+  const aReceber = somarSaldos(saldos);
 
   const estoque = agregarEstoque(
     lotes

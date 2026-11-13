@@ -34,3 +34,9 @@ export function periodoDaUrl(
 export function paraDataIso(data: Date): string {
   return data.toISOString().slice(0, 10);
 }
+
+/** `AAAA` da URL (2000–2100) → ano; qualquer outra coisa → ano de `hoje`. */
+export function anoDaUrl(valor: string | undefined, hoje: Date): number {
+  const ano = valor && /^\d{4}$/.test(valor) ? Number(valor) : NaN;
+  return ano >= 2000 && ano <= 2100 ? ano : hoje.getUTCFullYear();
+}

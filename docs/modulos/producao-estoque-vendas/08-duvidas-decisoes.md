@@ -45,6 +45,9 @@ Afetam a planilha **hoje**, enquanto o sistema não substitui.
 | D-24 | Tamanho da 7g | Painel e cinco relatórios numa entrega só? | Dividir: 7g1 painel + estoque; 7g2 mensal, vendas, origem, processamento e gráficos. | 7g | **Duas entregas** (2026-11-11). |
 | D-25 | Relatório de estoque | Tela nova em Relatórios ou completar a tela de Estoque? | Completar a tela existente com o resumo por status e o PDF em seções. | 7g1 | **Tela existente** (2026-11-11). |
 | D-26 | Contagem do painel | O que entra nos números do painel? | Cancelados fora; OP aberta no volume, custo médio só de encerradas; a receber, estoque e entregas na data de hoje; OPs a verificar no período. | 7g1 | **Como recomendado** (2026-11-11). |
+| D-27 | Tamanho da 7g2 | Quatro relatórios e gráficos numa entrega só? | Dividir: 7g2a mensal + vendas; 7g2b origem + processamento. | 7g2 | **Duas entregas** (2026-11-12). |
+| D-28 | Onde ficam os relatórios | Menu de Produção, de Vendas ou uma tela com abas? | `/producao/relatorios/<nome>`, uma tela por relatório, no grupo Produção, com `producao:ler`. | 7g2 | **Grupo Produção** (2026-11-12). |
+| D-29 | Contagem dos relatórios | Os relatórios contam como o painel? | Mesmas regras da D-26; um mês do mensal bate com o painel daquele mês e o a receber do relatório de vendas bate com o do painel. Canal principal do cliente = canal com mais faturamento no período. | 7g2 | **Regras do painel** (2026-11-12). |
 
 ## Decisões técnicas já tomadas neste desenho
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { dataDaUrl, hojeDeCalendario, periodoDaUrl } from "./periodo";
+import { anoDaUrl, dataDaUrl, hojeDeCalendario, periodoDaUrl } from "./periodo";
 
 const dia = (d: Date) => d.toISOString().slice(0, 10);
 
@@ -22,5 +22,19 @@ describe("datas de calendário da produção", () => {
     expect([dia(padrao.inicio), dia(padrao.fim)]).toEqual(["2026-11-01", "2026-11-30"]);
     const informado = periodoDaUrl({ inicio: "2026-10-05", fim: "2026-10-20" }, agora);
     expect([dia(informado.inicio), dia(informado.fim)]).toEqual(["2026-10-05", "2026-10-20"]);
+  });
+});
+
+describe("anoDaUrl", () => {
+  const hoje = new Date("2026-11-12T00:00:00.000Z");
+  test("ano válido da URL", () => {
+    expect(anoDaUrl("2025", hoje)).toBe(2025);
+  });
+  test("vazio, texto ou fora da faixa cai no ano de hoje", () => {
+    expect(anoDaUrl(undefined, hoje)).toBe(2026);
+    expect(anoDaUrl("abc", hoje)).toBe(2026);
+    expect(anoDaUrl("1999", hoje)).toBe(2026);
+    expect(anoDaUrl("2101", hoje)).toBe(2026);
+    expect(anoDaUrl("2025.5", hoje)).toBe(2026);
   });
 });
