@@ -27,8 +27,13 @@ painel de produção com indicadores do período por fruta (recepção,
 processamento, vendas e estoque), alertas que abrem a lista já filtrada e
 exportação em PDF, CSV e Excel; resumo por status de validade e PDF em
 seções na tela de Estoque (D-25); filtros "só atrasadas" nas Entregas e "a
-verificar" nas OPs; regras de contagem em D-26. Próximo: 7g2 (relatórios
-mensal, de vendas, de origem e de processamento, com gráficos).
+verificar" nas OPs; regras de contagem em D-26. 7g2 dividida em duas
+entregas (D-27). 7g2a (relatório mensal e de vendas) concluída em
+2026-11-12: telas em `/producao/relatorios/mensal` e
+`/producao/relatorios/vendas` (D-28), com gráficos e exportação em PDF, CSV
+e Excel; mesmas regras de contagem do painel (D-29), com um mês do mensal
+batendo com o painel daquele mês e o a receber do relatório de vendas
+batendo com o do painel. Próximo: 7g2b (origem e processamento).
 
 ## Escopo
 
@@ -57,7 +62,7 @@ as dúvidas e o plano de entrega estão em
 
 7a Fundação · 7b Recepção e estoque · 7c Vendas e entregas · 7d Importação e
 corte da planilha · 7e Processamento (OP) · 7f Rastreabilidade · 7g1 Painel
-· 7g2 Relatórios. Detalhes, dependências e critérios de pronto no
+· 7g2a Mensal e vendas · 7g2b Origem e processamento. Detalhes, dependências e critérios de pronto no
 [plano de entrega](../modulos/producao-estoque-vendas/09-plano-de-entrega.md).
 
 Pré-requisito relacionado: conta "Caixa" (Fase B do
