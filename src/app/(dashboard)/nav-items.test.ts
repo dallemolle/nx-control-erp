@@ -59,6 +59,8 @@ describe("secoesVisiveis", () => {
         "/producao/painel",
         "/producao/relatorios/mensal",
         "/producao/relatorios/vendas",
+        "/producao/relatorios/origem",
+        "/producao/relatorios/processamento",
         "/producao/recepcao",
         "/producao/processamento",
         "/producao/estoque",

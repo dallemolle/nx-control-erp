@@ -38,6 +38,8 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/producao/painel", label: "Painel", acao: "producao:ler" },
       { href: "/producao/relatorios/mensal", label: "Relatório mensal", acao: "producao:ler" },
       { href: "/producao/relatorios/vendas", label: "Relatório de vendas", acao: "producao:ler" },
+      { href: "/producao/relatorios/origem", label: "Relatório de origem", acao: "producao:ler" },
+      { href: "/producao/relatorios/processamento", label: "Relatório de processamento", acao: "producao:ler" },
       { href: "/producao/recepcao", label: "Recepção de fruto", acao: "producao:ler" },
       { href: "/producao/processamento", label: "Processamento", acao: "producao:ler" },
       { href: "/producao/estoque", label: "Estoque", acao: "producao:ler" },
