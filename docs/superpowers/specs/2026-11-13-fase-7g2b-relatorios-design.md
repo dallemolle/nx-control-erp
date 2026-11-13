@@ -1,6 +1,12 @@
 # Fase 7g2b — Relatório de origem e relatório de processamento
 
-Data: 2026-11-13 · Status: desenho aprovado
+Data: 2026-11-13 · Status: implementada (2026-11-13)
+
+Ajustes na implementação: as funções puras ficaram em
+`src/lib/producao/relatoriosOrigem.ts` e `relatoriosProcessamento.ts` (o
+`relatorios.ts` já estava grande); no CSV de origem, cada linha é uma origem ×
+fruta com todos os indicadores daquele par; no CSV de processamento, o custo
+médio aparece na linha da seção Custo.
 
 Segunda metade da 7g2 (D-27); com ela a 7g fica concluída. A primeira
 metade está na [spec da 7g2a](2026-11-12-fase-7g2a-relatorios-design.md),
@@ -47,7 +53,8 @@ resumo da OP e o custo gravado das encerradas).
   (`agruparPorMes`).
 - Recepções e OPs canceladas ficam fora; linhas de OP removidas também
   (D-29).
-- Funções puras em `src/lib/producao/relatorios.ts`; divisões com
+- Funções puras em `src/lib/producao/relatoriosOrigem.ts` e
+  `relatoriosProcessamento.ts`; divisões com
   denominador zero devolvem `null` (tela mostra "—").
 - Tabelas com `TabelaRelatorio`/`formatarCelula` de
   `producao/relatorios/_shared/tabela.tsx`.

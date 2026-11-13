@@ -48,6 +48,9 @@ Afetam a planilha **hoje**, enquanto o sistema não substitui.
 | D-27 | Tamanho da 7g2 | Quatro relatórios e gráficos numa entrega só? | Dividir: 7g2a mensal + vendas; 7g2b origem + processamento. | 7g2 | **Duas entregas** (2026-11-12). |
 | D-28 | Onde ficam os relatórios | Menu de Produção, de Vendas ou uma tela com abas? | `/producao/relatorios/<nome>`, uma tela por relatório, no grupo Produção, com `producao:ler`. | 7g2 | **Grupo Produção** (2026-11-12). |
 | D-29 | Contagem dos relatórios | Os relatórios contam como o painel? | Mesmas regras da D-26; um mês do mensal bate com o painel daquele mês e o a receber do relatório de vendas bate com o do painel. Canal principal do cliente = canal com mais faturamento no período. | 7g2 | **Regras do painel** (2026-11-12). |
+| D-30 | Últimas OPs no relatório de processamento | Repetir a lista de OPs dentro do relatório? | Não: a tela Processamento já lista as OPs do período com as mesmas colunas e exporta; o relatório traz só o link "Ver as OPs do período". | 7g2b | **Só o link** (2026-11-13). |
+| D-31 | OP aberta no relatório de processamento | A OP aberta entra em tudo? | Volumes (nº de OPs, fruto, polpa, rendimento médio) com abertas, como no painel; rendimento mínimo e máximo, balanço e custo só com encerradas, porque a OP aberta sem polpa lançada distorce mínimo e balanço. | 7g2b | **Como recomendado** (2026-11-13). |
+| D-32 | Ano e valor no relatório de origem | De onde vem o ano da produtividade e do preço por mês? Fruto próprio tem valor pago? | Ano da data "Até" do período (um filtro só). Valor pago e preço médio só de fornecedores; talhão mostra "—" (o valor gravado é o custo-padrão, D-04). | 7g2b | **Como recomendado** (2026-11-13). |
 
 ## Decisões técnicas já tomadas neste desenho
 

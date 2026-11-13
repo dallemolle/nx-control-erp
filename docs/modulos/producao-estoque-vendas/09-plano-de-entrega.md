@@ -31,7 +31,7 @@ depois do desenvolvimento, se forem necessários; a seção
 | **7f Rastreabilidade** | Consulta por lote para trás e para frente, até os clientes da polpa derivada (RN-28); PDF para fiscalização. | 7c, 7e | D-10 | M |
 | **7g1 Painel** | Painel de produção com indicadores, alertas clicáveis e exportação; resumo por status e PDF em seções no Estoque; filtros "só atrasadas" e "a verificar". | 7c, 7e | D-24, D-25, D-26 | M |
 | **7g2a Mensal e vendas** | Relatório mensal (recepção, processamento, vendas e custos por mês, polpa por produto × mês) e relatório de vendas (por cliente, produto, canal e forma), com gráficos e exports. | 7g1 | D-27, D-28, D-29 | M |
-| **7g2b Origem e processamento** | Relatório de origem da matéria-prima e de processamento, com exports. | 7g2a | — | M |
+| **7g2b Origem e processamento** | Relatório de origem da matéria-prima e de processamento, com exports. | 7g2a | D-30, D-31, D-32 | M |
 
 Tamanho: **M** ≈ o porte de "comparação entre safras"; **L** ≈ o porte de
 "contas a pagar/receber".
