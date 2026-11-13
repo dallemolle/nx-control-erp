@@ -1,6 +1,10 @@
 # Fase 7g2a — Relatório mensal e relatório de vendas
 
-Data: 2026-11-12 · Status: desenho aprovado
+Data: 2026-11-12 · Status: implementada (2026-11-12)
+
+Ajustes na implementação: no PDF de vendas as seções usam um tipo de linha
+único (`LinhaPdf`); no CSV de vendas não há linhas de total (para não somar
+em dobro numa tabela dinâmica), só no PDF e na tela.
 
 Primeira metade da 7g2 (ver
 [plano de entrega](../../modulos/producao-estoque-vendas/09-plano-de-entrega.md)).
