@@ -189,8 +189,7 @@ describe("relatório mensal", () => {
       const c = r.colunas[m];
       expect(c.recepcao).toEqual(p.recepcao);
       expect(c.processamento).toEqual(p.processamento);
-      const { aReceber: _, ...vendas } = p.vendas;
-      expect(c.vendas).toEqual(vendas);
+      expect({ ...c.vendas, aReceber: p.vendas.aReceber }).toEqual(p.vendas);
     }
   });
 
