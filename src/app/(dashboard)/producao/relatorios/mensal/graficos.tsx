@@ -25,8 +25,8 @@ export function VolumesChart({ dados }: { dados: PontoMensal[] }) {
         <YAxis tickFormatter={(v: number) => NUMERO.format(v)} />
         <Tooltip formatter={(v) => `${NUMERO.format(Number(v))} kg`} />
         <Legend />
-        <Bar dataKey="recebido" fill="var(--chart-1)" name="Recebido" />
-        <Bar dataKey="processado" fill="var(--chart-2)" name="Processado" />
+        <Bar dataKey="recebido" fill="var(--chart-2)" name="Recebido" />
+        <Bar dataKey="processado" fill="var(--chart-3)" name="Processado" />
         <Bar dataKey="vendido" fill="var(--chart-4)" name="Vendido" />
       </BarChart>
     </ChartContainer>
@@ -46,7 +46,7 @@ export function FaturamentoMargemChart({ dados }: { dados: PontoMensal[] }) {
         />
         <Legend />
         <Bar yAxisId="valor" dataKey="faturamento" fill="var(--chart-2)" name="Faturamento" />
-        <Line yAxisId="pct" dataKey="margemPercentual" stroke="var(--chart-5)" name="Margem %" connectNulls={false} />
+        <Line yAxisId="pct" dataKey="margemPercentual" stroke="var(--chart-4)" strokeWidth={2} name="Margem %" connectNulls={false} />
       </ComposedChart>
     </ChartContainer>
   );

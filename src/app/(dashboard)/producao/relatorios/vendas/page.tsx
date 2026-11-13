@@ -34,8 +34,8 @@ export default async function RelatorioVendasPage({ searchParams }: { searchPara
       <div className="space-y-1">
         <h1 className="text-lg font-semibold">Relatório de vendas</h1>
         <p className="text-sm text-muted-foreground">
-          {formatarData(periodo.inicio)} a {formatarData(periodo.fim)}. Pedidos cancelados ficam fora; a receber na
-          data de hoje.
+          {formatarData(periodo.inicio)} a {formatarData(periodo.fim)}. Pedidos cancelados ficam fora; a
+          receber na data de hoje.
         </p>
       </div>
 
@@ -73,7 +73,7 @@ export default async function RelatorioVendasPage({ searchParams }: { searchPara
           <section className="space-y-2">
             <h2 className="text-sm font-semibold">Top 10 clientes</h2>
             <FaturamentoBarras
-              cor="var(--chart-1)"
+              cor="var(--chart-3)"
               dados={r.porCliente
                 .filter((c) => c.faturamento > 0)
                 .slice(0, 10)
@@ -126,37 +126,38 @@ export default async function RelatorioVendasPage({ searchParams }: { searchPara
         ]}
       />
 
+      <TabelaRelatorio
+        titulo="Por produto"
+        colunas={[
+          { rotulo: "Produto" },
+          n("Kg"),
+          n("Faturamento"),
+          n("Preço médio", "R$/kg"),
+          n("Custo médio", "R$/kg"),
+          n("Margem %"),
+        ]}
+        linhas={r.porProduto.map((p) => ({
+          chave: p.produtoId,
+          celulas: [
+            p.produto,
+            f(p.kg, "kg"),
+            f(p.faturamento, "R$"),
+            f(p.precoMedio, "R$/kg"),
+            f(p.custoMedio, "R$/kg"),
+            f(p.margemPercentual, "%"),
+          ],
+        }))}
+        total={[
+          "Total",
+          f(t.kg, "kg"),
+          f(t.faturamento, "R$"),
+          f(t.precoMedio, "R$/kg"),
+          f(t.custoMedio, "R$/kg"),
+          f(t.margemPercentual, "%"),
+        ]}
+      />
+
       <div className="grid gap-6 lg:grid-cols-2">
-        <TabelaRelatorio
-          titulo="Por produto"
-          colunas={[
-            { rotulo: "Produto" },
-            n("Kg"),
-            n("Faturamento"),
-            n("Preço médio", "R$/kg"),
-            n("Custo médio", "R$/kg"),
-            n("Margem %"),
-          ]}
-          linhas={r.porProduto.map((p) => ({
-            chave: p.produtoId,
-            celulas: [
-              p.produto,
-              f(p.kg, "kg"),
-              f(p.faturamento, "R$"),
-              f(p.precoMedio, "R$/kg"),
-              f(p.custoMedio, "R$/kg"),
-              f(p.margemPercentual, "%"),
-            ],
-          }))}
-          total={[
-            "Total",
-            f(t.kg, "kg"),
-            f(t.faturamento, "R$"),
-            f(t.precoMedio, "R$/kg"),
-            f(t.custoMedio, "R$/kg"),
-            f(t.margemPercentual, "%"),
-          ]}
-        />
         <TabelaRelatorio
           titulo="Por canal"
           colunas={[{ rotulo: "Canal" }, n("Kg"), n("Faturamento"), n("% do total")]}
@@ -171,7 +172,11 @@ export default async function RelatorioVendasPage({ searchParams }: { searchPara
           colunas={[{ rotulo: "Forma" }, n("Faturamento"), n("A receber", "hoje")]}
           linhas={r.porForma.map((p) => ({
             chave: p.formaPagamento,
-            celulas: [ROTULOS_FORMA_PAGAMENTO_VENDA[p.formaPagamento], f(p.faturamento, "R$"), f(p.aReceber, "R$")],
+            celulas: [
+              ROTULOS_FORMA_PAGAMENTO_VENDA[p.formaPagamento],
+              f(p.faturamento, "R$"),
+              f(p.aReceber, "R$"),
+            ],
           }))}
           total={["Total", f(t.faturamento, "R$"), f(t.aReceber, "R$")]}
         />

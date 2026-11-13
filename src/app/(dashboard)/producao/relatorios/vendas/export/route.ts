@@ -6,7 +6,7 @@ import { COLUNAS_VENDAS, linhasDeVendas, secoesDeVendas } from "@/server/export/
 import { gerarPdfSecoes } from "@/lib/export/pdf";
 import { responderArquivoPdf, responderExport } from "@/lib/export/responder";
 import { formatarData } from "@/lib/formatacao";
-import { hojeDeCalendario, paraDataIso, periodoDaUrl } from "@/lib/producao/periodo";
+import { hojeDeCalendario, periodoDaUrl } from "@/lib/producao/periodo";
 
 export async function GET(request: Request) {
   const sessao = await requireSessaoAtiva();
@@ -17,7 +17,8 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const periodo = periodoDaUrl(Object.fromEntries(url.searchParams));
   const relatorio = await buscarRelatorioVendas(sessao, periodo, hojeDeCalendario());
-  const nome = `relatorio-vendas-${paraDataIso(periodo.inicio)}`;
+  // O responder acrescenta a data de hoje ao nome.
+  const nome = "relatorio-vendas";
   const cabecalho = () =>
     cabecalhoDoRelatorio(sessao, {
       titulo: "Relatório de vendas",

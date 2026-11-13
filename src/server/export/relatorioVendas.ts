@@ -1,6 +1,6 @@
 import type { ColunaExport } from "@/lib/export/csv";
 import { secaoPdf, type SecaoPdf } from "@/lib/export/pdf";
-import { rotuloCanal, type IndicadoresVenda } from "@/lib/producao/relatorios";
+import { rotuloCanal, type IndicadoresVenda, type LinhaCliente } from "@/lib/producao/relatorios";
 import { ROTULOS_FORMA_PAGAMENTO_VENDA } from "@/lib/schemas/enums";
 import type { RelatorioVendas } from "@/server/services/relatorioProducao/vendas";
 
@@ -13,6 +13,9 @@ export type LinhaVendas = IndicadoresVenda & {
   aReceber: number | null;
 };
 
+/** Cliente que só tem saldo (sem compra no período) não tem canal principal. */
+const canalDoCliente = (c: LinhaCliente) => (c.faturamento > 0 ? rotuloCanal(c.canal) : "");
+
 /** Uma linha por item de cada seção, sem totais (para filtrar por Seção no Excel). */
 export function linhasDeVendas(r: RelatorioVendas): LinhaVendas[] {
   return [
@@ -21,7 +24,7 @@ export function linhasDeVendas(r: RelatorioVendas): LinhaVendas[] {
         ...c,
         secao: "Cliente",
         item: c.cliente,
-        canal: rotuloCanal(c.canal),
+        canal: canalDoCliente(c),
         aReceber: c.aReceber,
       }),
     ),
@@ -74,7 +77,7 @@ export function secoesDeVendas(r: RelatorioVendas): SecaoPdf<unknown>[] {
     secaoPdf<LinhaPdf>({
       titulo: "Vendas por cliente",
       linhas: [
-        ...r.porCliente.map((c, i) => ({ ...c, rotulo: c.cliente, canal: rotuloCanal(c.canal), ordem: i + 1 })),
+        ...r.porCliente.map((c, i) => ({ ...c, rotulo: c.cliente, canal: canalDoCliente(c), ordem: i + 1 })),
         total,
       ],
       colunas: [

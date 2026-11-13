@@ -47,6 +47,15 @@ describe("exportação de vendas", () => {
     expect(col("A receber").valor(linhas[1])).toBe("");
   });
 
+  test("cliente só com saldo não tem canal principal", () => {
+    const soSaldo = agregarVendasDetalhadas(
+      [],
+      [{ clienteId: "c9", cliente: "Cliente antigo", formaPagamento: "A_PRAZO", saldo: 300 }],
+    );
+    const linha = linhasDeVendas({ ...r, ...soSaldo, porProduto: [] })[0];
+    expect(linha).toMatchObject({ item: "Cliente antigo", canal: "", aReceber: 300 });
+  });
+
   test("PDF: quatro seções", () => {
     expect(secoesDeVendas(r).map((s) => s.titulo)).toEqual([
       "Vendas por cliente",

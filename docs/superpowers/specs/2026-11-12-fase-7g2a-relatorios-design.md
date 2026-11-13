@@ -4,7 +4,11 @@ Data: 2026-11-12 · Status: implementada (2026-11-12)
 
 Ajustes na implementação: no PDF de vendas as seções usam um tipo de linha
 único (`LinhaPdf`); no CSV de vendas não há linhas de total (para não somar
-em dobro numa tabela dinâmica), só no PDF e na tela.
+em dobro numa tabela dinâmica), só no PDF e na tela; nome dos arquivos sem
+ano/período (o responder já acrescenta a data, seção 6); cliente só com
+saldo fica sem canal principal; na tela de vendas a tabela por produto
+ocupa a largura toda; cores dos gráficos `--chart-2` a `--chart-4`, que têm
+contraste nos temas claro e escuro.
 
 Primeira metade da 7g2 (ver
 [plano de entrega](../../modulos/producao-estoque-vendas/09-plano-de-entrega.md)).
@@ -171,8 +175,8 @@ mesmos parâmetros da tela.
     Margem R$, Margem %, Canal principal, A receber (cada seção preenche só
     as colunas que se aplicam). Montagem em
     `src/server/export/relatorioVendas.ts`.
-- Nomes: `relatorio-mensal-AAAA` e `relatorio-vendas-AAAA-MM-DD` (data do
-  início do período).
+- Nomes: `relatorio-mensal` e `relatorio-vendas`; o `responderExport` /
+  `responderArquivoPdf` acrescenta a data de hoje, como no painel.
 
 ## 7. Menu e permissões
 

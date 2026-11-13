@@ -16,7 +16,8 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const ano = anoDaUrl(url.searchParams.get("ano") ?? undefined, hojeDeCalendario());
   const relatorio = await buscarRelatorioMensal(sessao, ano);
-  const nome = `relatorio-mensal-${ano}`;
+  // O responder acrescenta a data de hoje ao nome.
+  const nome = "relatorio-mensal";
   const cabecalho = () =>
     cabecalhoDoRelatorio(sessao, {
       titulo: "Relatório mensal de produção",
