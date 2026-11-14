@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.21](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.20...nx-control-erp-v0.1.21) (2026-11-14)
+
+
+### Novidades
+
+* **producao:** contas do relatório de origem ([c1d704a](https://github.com/dallemolle/nx-control-erp/commit/c1d704a2dbd348bc29c063b4899cac9a36149d74))
+* **producao:** contas do relatório de processamento ([d25449c](https://github.com/dallemolle/nx-control-erp/commit/d25449cb4d17ee34108b5f848382981bbd795223))
+* **producao:** exportação do relatório de origem ([45cbf00](https://github.com/dallemolle/nx-control-erp/commit/45cbf00da904c70c88327d91442623f9f8aff18d))
+* **producao:** exportação do relatório de processamento ([fae000d](https://github.com/dallemolle/nx-control-erp/commit/fae000d3c35ce44e4334dd5fc05fa2111d680ea8))
+* **producao:** relatórios de origem e processamento no menu ([c2ce2d6](https://github.com/dallemolle/nx-control-erp/commit/c2ce2d6e5f2531eb6c5db3554180c49959a3bf5a))
+* **producao:** serviço do relatório de origem ([ab80007](https://github.com/dallemolle/nx-control-erp/commit/ab80007e568f464fba04fafe6c546a65ca358818))
+* **producao:** serviço do relatório de processamento ([6eda145](https://github.com/dallemolle/nx-control-erp/commit/6eda1455b20dcd6706ed9c8fa96c1b45bc8f8b2a))
+* **producao:** tela do relatório de origem ([1c80928](https://github.com/dallemolle/nx-control-erp/commit/1c809285012c93f4cbfa0629fba3784ac5b45af2))
+* **producao:** tela do relatório de processamento ([2e8b14c](https://github.com/dallemolle/nx-control-erp/commit/2e8b14cd49e3b3c24e8493ca6b84b370ec1ef60b))
+
 ## [0.1.20](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.19...nx-control-erp-v0.1.20) (2026-11-13)
 
 
