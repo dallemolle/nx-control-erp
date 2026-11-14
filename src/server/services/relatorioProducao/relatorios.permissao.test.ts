@@ -2,6 +2,8 @@ import { describe, expect, test, vi } from "vitest";
 import { PermissionError } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { buscarRelatorioMensal } from "./mensal";
+import { buscarRelatorioOrigem } from "./origem";
+import { buscarRelatorioProcessamento } from "./processamento";
 import { buscarRelatorioVendas } from "./vendas";
 
 vi.mock("@/server/auth/permissions", async (importOriginal) => {
@@ -31,5 +33,13 @@ describe("relatórios de produção: permissão", () => {
 
   test("sem producao:ler o de vendas é recusado antes de consultar o banco", async () => {
     await expect(buscarRelatorioVendas(sessao, { inicio: dia, fim: dia }, dia)).rejects.toThrow(PermissionError);
+  });
+
+  test("sem producao:ler o de origem é recusado antes de consultar o banco", async () => {
+    await expect(buscarRelatorioOrigem(sessao, { inicio: dia, fim: dia })).rejects.toThrow(PermissionError);
+  });
+
+  test("sem producao:ler o de processamento é recusado antes de consultar o banco", async () => {
+    await expect(buscarRelatorioProcessamento(sessao, { inicio: dia, fim: dia })).rejects.toThrow(PermissionError);
   });
 });

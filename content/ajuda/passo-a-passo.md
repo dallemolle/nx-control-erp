@@ -272,6 +272,22 @@ Por último, a polpa produzida de cada produto mês a mês. A planilha (CSV/Exce
 - **Por canal:** kg, faturamento e participação; pedidos sem canal aparecem como "Sem canal".
 - **Por forma de pagamento:** faturamento do período e o que falta receber hoje.
 
+**Relatório de origem** (Produção → Relatório de origem): escolha o período (padrão: o mês atual). O gráfico mostra as dez origens que mais entregaram fruto. As tabelas:
+
+- **Por origem:** cada talhão próprio e cada fornecedor, com o kg líquido de cada fruta, o total, o valor pago, o preço médio por kg, o descarte e o nº de cargas. Valor pago e preço médio aparecem só para fornecedores; nos talhões ficam "—", porque o fruto próprio é lançado pelo custo-padrão da fruta, não por um pagamento.
+- **Produtividade dos talhões:** área, kg colhido no período e no ano, toneladas por hectare no ano e nº de colheitas no ano. Entram os talhões ativos e os inativos que tiveram colheita no ano.
+- **Preço médio pago a terceiros por mês:** quanto foi pago por kg líquido de cada fruta, mês a mês e no ano. Mês sem compra fica "—".
+
+O "ano" dessas duas últimas tabelas é o ano da data **Até** do período.
+
+**Relatório de processamento** (Produção → Relatório de processamento): escolha o período. As tabelas:
+
+- **Resumo por fruta:** nº de OPs, fruto processado, polpa produzida e rendimento médio, contando OPs abertas e encerradas (os mesmos números do painel). O rendimento mínimo e máximo e o custo médio da polpa usam só OPs encerradas, porque uma OP ainda aberta pode ter o fruto lançado e a polpa não.
+- **Balanço de massa:** fruto, água, polpa, caroço/resíduo, perda e a diferença (kg e %) das OPs encerradas, com quantas ficaram "Verificar".
+- **Custo por fruta:** custo do fruto, dos insumos e total das OPs encerradas, com o custo por kg de polpa.
+
+Para ver cada OP, use o link **Ver as OPs do período**, que abre a tela Processamento já filtrada.
+
 ## 6. Vendas
 
 Antes do primeiro pedido, em Administração → Configuração de produção (seção 8.5), escolha a **categoria de venda**, a **conta de recebimento** (Pix, transferência e cartão) e a **conta Caixa** (dinheiro). A conta Caixa é cadastrada em Cadastros → Contas bancárias, com o tipo Caixa.
