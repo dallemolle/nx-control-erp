@@ -5,7 +5,7 @@ import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { arredondar } from "@/lib/producao/arredondar";
 import { diasParaVencer, statusDoLote, type StatusLote } from "@/lib/producao/statusLote";
-import { MSG_SEM_PRAZO_LIBERACAO, situacaoLiberacao } from "@/lib/producao/liberacaoVencido";
+import { liberacaoCobre, MSG_SEM_PRAZO_LIBERACAO, situacaoLiberacao } from "@/lib/producao/liberacaoVencido";
 import { loteVencidoNaData } from "@/lib/producao/venda";
 import { hojeDeCalendario } from "@/lib/producao/periodo";
 import { formatarData } from "@/lib/formatacao";
@@ -232,6 +232,16 @@ export async function moverLote(sessao: SessaoAtiva, loteId: string, localId: st
     anterior: { localId: lote.localId },
     novo: { localId },
   });
+}
+
+/**
+ * Lote vencido na data da operação (pedido ou OP) só sai com liberação que
+ * cubra essa data (D-35); o perfil de quem lança não importa.
+ */
+export function exigirLiberacao(lote: { codigo: string; validade: Date; liberadoAte: Date | null }, data: Date): void {
+  if (liberacaoCobre(lote.liberadoAte, data)) return;
+  const venceu = `O lote ${lote.codigo} venceu em ${formatarData(lote.validade)}`;
+  throw new Error(lote.liberadoAte ? `${venceu}; a liberação vale até ${formatarData(lote.liberadoAte)}` : venceu);
 }
 
 function autorizarLiberacao(sessao: SessaoAtiva) {

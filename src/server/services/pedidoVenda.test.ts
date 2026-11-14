@@ -26,7 +26,7 @@ import {
   obterPedido,
 } from "./pedidoVenda";
 import { cancelarRecepcao, criarRecepcao } from "./recepcaoFruto";
-import { registrarMovimento } from "./estoque";
+import { liberarLoteVencido, registrarMovimento, revogarLiberacaoLote } from "./estoque";
 import { registrarBaixa, rejeitarBaixa } from "./baixa";
 
 const d = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
@@ -277,29 +277,64 @@ describe("pedido de venda", () => {
     ).rejects.toThrow("Lote não encontrado");
   });
 
-  test("lote vencido na data do pedido: bloqueado, liberado só por quem pode e com motivo", async () => {
-    const vencido = await novoLote({ validade: d("2026-11-09") });
-    const semMotivo = [{ loteId: vencido.id, quantidadeKg: 1, precoKg: 5 }];
-    const comMotivo = [{ ...semMotivo[0], motivoLiberacaoVencido: "Cliente ciente; uso imediato" }];
+  describe("lote vencido (D-35: liberação no lote)", () => {
+    const itemDe = (pedidoId: string) => prisma.itemPedidoVenda.findFirstOrThrow({ where: { pedidoId } });
+    const um = (loteId: string) => [{ loteId, quantidadeKg: 1, precoKg: 5 }];
+    /** Polpa vencida em 09/11, liberada pelo gestor até 14/11 (prazo de 5 dias no produto). */
+    const vencidoLiberado = async () => {
+      const lote = await novoLote({ validade: d("2026-11-09") });
+      await liberarLoteVencido(fx.sessao("GESTOR"), lote.id, "Cliente ciente", d("2026-11-10"));
+      return lote;
+    };
 
-    await expect(criarPedido(fx.sessao("ADMINISTRADOR"), pedido(semMotivo))).rejects.toThrow(
-      `O lote ${vencido.codigo} venceu em 09/11/2026`,
-    );
-    await expect(criarPedido(fx.sessao("VENDAS"), pedido(comMotivo))).rejects.toThrow(
-      `O lote ${vencido.codigo} venceu em 09/11/2026`,
-    );
-    const liberado = await criarPedido(fx.sessao("ADMINISTRADOR"), pedido(comMotivo));
-    const item = await prisma.itemPedidoVenda.findFirstOrThrow({ where: { pedidoId: liberado.pedidoId } });
-    expect(item.motivoLiberacaoVencido).toBe("Cliente ciente; uso imediato");
+    beforeAll(async () => {
+      await prisma.produto.update({ where: { id: cat.produtoPolpaId }, data: { diasLiberacaoVencido: 5 } });
+    });
 
-    // Validade igual à data do pedido não está vencido; motivo enviado é descartado.
-    const noLimite = await novoLote({ validade: d("2026-11-10") });
-    const r = await criarPedido(
-      fx.sessao("VENDAS"),
-      pedido([{ loteId: noLimite.id, quantidadeKg: 1, precoKg: 5, motivoLiberacaoVencido: "sem necessidade" }]),
-    );
-    const itemNoLimite = await prisma.itemPedidoVenda.findFirstOrThrow({ where: { pedidoId: r.pedidoId } });
-    expect(itemNoLimite.motivoLiberacaoVencido).toBeNull();
+    test("lote vencido sem liberação é recusado, até para o administrador", async () => {
+      const vencido = await novoLote({ validade: d("2026-11-09") });
+      await expect(criarPedido(fx.sessao("ADMINISTRADOR"), pedido(um(vencido.id)))).rejects.toThrow(
+        `O lote ${vencido.codigo} venceu em 09/11/2026`,
+      );
+    });
+
+    test("lote liberado: VENDAS vende dentro do prazo e o motivo vem do lote", async () => {
+      const lote = await vencidoLiberado();
+      const r = await criarPedido(fx.sessao("VENDAS"), pedido(um(lote.id)));
+      expect((await itemDe(r.pedidoId)).motivoLiberacaoVencido).toBe("Cliente ciente");
+
+      await expect(criarPedido(fx.sessao("VENDAS"), pedido(um(lote.id), { data: "2026-11-15" }))).rejects.toThrow(
+        `O lote ${lote.codigo} venceu em 09/11/2026; a liberação vale até 14/11/2026`,
+      );
+    });
+
+    test("pedido antes da validade de um lote liberado grava motivo nulo", async () => {
+      const lote = await vencidoLiberado();
+      const r = await criarPedido(fx.sessao("VENDAS"), pedido(um(lote.id), { data: "2026-11-08" }));
+      expect((await itemDe(r.pedidoId)).motivoLiberacaoVencido).toBeNull();
+    });
+
+    test("revogar depois de vender mantém o item e bloqueia a próxima venda", async () => {
+      const lote = await vencidoLiberado();
+      const r = await criarPedido(fx.sessao("VENDAS"), pedido(um(lote.id)));
+      await revogarLiberacaoLote(fx.sessao("GESTOR"), lote.id);
+      expect((await itemDe(r.pedidoId)).motivoLiberacaoVencido).toBe("Cliente ciente");
+      await expect(criarPedido(fx.sessao("VENDAS"), pedido(um(lote.id)))).rejects.toThrow(
+        `O lote ${lote.codigo} venceu em 09/11/2026`,
+      );
+    });
+
+    test("validade igual à data do pedido não está vencido", async () => {
+      const noLimite = await novoLote({ validade: d("2026-11-10") });
+      const r = await criarPedido(fx.sessao("VENDAS"), pedido(um(noLimite.id)));
+      expect((await itemDe(r.pedidoId)).motivoLiberacaoVencido).toBeNull();
+    });
+
+    test("lotesParaVenda traz a data da liberação", async () => {
+      const lote = await vencidoLiberado();
+      const opcoes = await lotesParaVenda(fx.filialAId, d("2026-11-10"));
+      expect(opcoes.find((l) => l.id === lote.id)?.liberadoAte).toEqual(d("2026-11-14"));
+    });
   });
 
   test("pedidos simultâneos recebem números distintos e consecutivos", async () => {

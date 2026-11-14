@@ -48,10 +48,13 @@ export default async function NovoPedidoPage() {
     hoje: paraDataIso(hoje),
     clientes,
     contas: contas.map((c) => ({ id: c.id, tipo: c.tipo, rotulo: nomeDaContaBancaria(c) })),
-    lotes: lotes.map((l) => ({ ...l, validade: paraDataIso(l.validade) })),
+    lotes: lotes.map((l) => ({
+      ...l,
+      validade: paraDataIso(l.validade),
+      liberadoAte: l.liberadoAte ? paraDataIso(l.liberadoAte) : null,
+    })),
     contaCaixaPadraoId: configuracao.contaCaixaPadraoId,
     contaRecebimentoPadraoId: configuracao.contaRecebimentoPadraoId,
-    podeLiberarVencido: podeExecutar(sessao.perfil, "venda:liberarVencido"),
   };
 
   return (

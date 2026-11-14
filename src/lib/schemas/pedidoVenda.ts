@@ -20,7 +20,6 @@ export const itemPedidoSchema = z.object({
   loteId: z.string().trim().min(1, "Selecione o lote"),
   quantidadeKg: z.coerce.number().positive("Informe a quantidade"),
   precoKg: z.coerce.number().positive("Informe o preço"),
-  motivoLiberacaoVencido: textoOpcional,
 });
 
 export type ItemPedidoFormValues = z.infer<typeof itemPedidoSchema>;

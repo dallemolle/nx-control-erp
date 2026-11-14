@@ -1,11 +1,10 @@
 import { Prisma, type ClassificacaoFiscal, type StatusPedidoVenda } from "@prisma/client";
 import { prisma } from "@/server/db/client";
-import { podeExecutar, requireAlteracaoFilial, requirePermission } from "@/server/auth/permissions";
+import { requireAlteracaoFilial, requirePermission } from "@/server/auth/permissions";
 import { registrarAuditoria, type ClientePrisma } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { DadosEditaveisPedido, PedidoVendaFormValues } from "@/lib/schemas/pedidoVenda";
 import { ROTULOS_FORMA_PAGAMENTO_VENDA } from "@/lib/schemas/enums";
-import { formatarData } from "@/lib/formatacao";
 import {
   calcularItem,
   calcularPedido,
@@ -14,7 +13,13 @@ import {
   type SituacaoPagamento,
 } from "@/lib/producao/venda";
 import { obterConfiguracaoProducao } from "./configuracaoProducao";
-import { bloqueioDaProducao, LOTE_LIBERADO, registrarMovimento, SELECT_BLOQUEIO_PRODUCAO } from "./estoque";
+import {
+  bloqueioDaProducao,
+  exigirLiberacao,
+  LOTE_LIBERADO,
+  registrarMovimento,
+  SELECT_BLOQUEIO_PRODUCAO,
+} from "./estoque";
 import { criarTituloInterno } from "./titulo";
 import { efetivarBaixa } from "./baixa";
 
@@ -68,7 +73,6 @@ export async function criarPedido(sessao: SessaoAtiva, dados: PedidoVendaFormVal
 
   const vistos = new Set<string>();
   const liberados = new Set<string>();
-  const podeLiberar = podeExecutar(sessao.perfil, "venda:liberarVencido");
   for (const item of dados.itens) {
     const lote = lotesPorId.get(item.loteId);
     if (!lote) throw new Error("Lote não encontrado");
@@ -78,10 +82,8 @@ export async function criarPedido(sessao: SessaoAtiva, dados: PedidoVendaFormVal
     const bloqueio = bloqueioDaProducao(lote);
     if (bloqueio) throw new Error(bloqueio);
     if (loteVencidoNaData(lote.validade, dados.data)) {
-      // D-03: só quem pode liberar, item a item, com motivo.
-      if (!podeLiberar || !item.motivoLiberacaoVencido) {
-        throw new Error(`O lote ${lote.codigo} venceu em ${formatarData(lote.validade)}`);
-      }
+      // D-35: só sai se o gestor liberou o lote e a liberação cobre a data do pedido.
+      exigirLiberacao(lote, dados.data);
       liberados.add(lote.id);
     }
   }
@@ -93,8 +95,8 @@ export async function criarPedido(sessao: SessaoAtiva, dados: PedidoVendaFormVal
       quantidadeKg: item.quantidadeKg,
       precoKg: item.precoKg,
       custoKg: Number(lote.custoKg),
-      // Motivo enviado para lote que não está vencido é descartado.
-      motivoLiberacaoVencido: liberados.has(lote.id) ? (item.motivoLiberacaoVencido ?? null) : null,
+      // Motivo copiado do lote só quando ele está vencido na data do pedido.
+      motivoLiberacaoVencido: liberados.has(lote.id) ? lote.motivoLiberacao : null,
     };
   });
   const totais = calcularPedido(itens);
@@ -391,6 +393,7 @@ export async function lotesParaVenda(filialId: string, data: Date) {
     custoKg: Number(lote.custoKg),
     validade: lote.validade,
     vencido: loteVencidoNaData(lote.validade, data),
+    liberadoAte: lote.liberadoAte,
     produto: {
       id: lote.produto.id,
       codigo: lote.produto.codigo,
