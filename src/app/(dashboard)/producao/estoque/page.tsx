@@ -1,31 +1,13 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { prisma } from "@/server/db/client";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
-import {
-  podeEscreverCadastroProducao,
-  podeExecutar,
-  requirePermission,
-} from "@/server/auth/permissions";
-import {
-  liberacaoCobre,
-  situacaoLiberacao,
-} from "@/lib/producao/liberacaoVencido";
+import { podeEscreverCadastroProducao, podeExecutar, requirePermission } from "@/server/auth/permissions";
+import { liberacaoCobre, situacaoLiberacao } from "@/lib/producao/liberacaoVencido";
 import { loteVencidoNaData } from "@/lib/producao/venda";
-import {
-  listarLotes,
-  resumoPorStatus,
-  resumoProdutoLocal,
-} from "@/server/services/estoque";
+import { listarLotes, resumoPorStatus, resumoProdutoLocal } from "@/server/services/estoque";
 import { ROTULOS_STATUS_LOTE, STATUS_LOTE } from "@/lib/producao/statusLote";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
 import { hojeDeCalendario, paraDataIso } from "@/lib/producao/periodo";
@@ -35,41 +17,21 @@ import { BarraDeFiltros } from "../_shared/barra-de-filtros";
 import { LinkRastreio } from "../_shared/link-rastreio";
 import { StatusLoteBadge } from "../_shared/status-lote-badge";
 import { MoverLoteDialog } from "./mover-lote-dialog";
-import {
-  LiberarLoteDialog,
-  RevogarLiberacaoDialog,
-} from "./liberar-lote-dialog";
+import { LiberarLoteDialog, RevogarLiberacaoDialog } from "./liberar-lote-dialog";
 import { filtrosDoEstoque, type ParametrosEstoque } from "./filtros";
 import { ResumoStatusEstoque } from "./resumo-status";
 
-const KG = new Intl.NumberFormat("pt-BR", {
-  minimumFractionDigits: 3,
-  maximumFractionDigits: 3,
-});
-const PERCENTUAL = new Intl.NumberFormat("pt-BR", {
-  style: "percent",
-  maximumFractionDigits: 1,
-});
+const KG = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+const PERCENTUAL = new Intl.NumberFormat("pt-BR", { style: "percent", maximumFractionDigits: 1 });
 
-export default async function EstoquePage({
-  searchParams,
-}: {
-  searchParams: Promise<ParametrosEstoque>;
-}) {
+export default async function EstoquePage({ searchParams }: { searchParams: Promise<ParametrosEstoque> }) {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "producao:ler");
-  const podeMover =
-    podeExecutar(sessao.perfil, "producao:escrever") &&
-    sessao.podeAlterarFilial;
+  const podeMover = podeExecutar(sessao.perfil, "producao:escrever") && sessao.podeAlterarFilial;
   const permissoesLote = {
     podeMover,
-    podeLiberar:
-      podeExecutar(sessao.perfil, "estoque:liberarVencido") &&
-      sessao.podeAlterarFilial,
-    podeEditarProduto: podeEscreverCadastroProducao(
-      sessao.perfil,
-      sessao.podeAlterarFilial,
-    ),
+    podeLiberar: podeExecutar(sessao.perfil, "estoque:liberarVencido") && sessao.podeAlterarFilial,
+    podeEditarProduto: podeEscreverCadastroProducao(sessao.perfil, sessao.podeAlterarFilial),
   };
 
   const sp = await searchParams;
@@ -77,10 +39,7 @@ export default async function EstoquePage({
   const { filtros, referencia } = filtrosDoEstoque(sp);
 
   // Na visão por produto e local não há filtro de produto/local: o resumo é da filial toda.
-  const filtroResumo =
-    visao === "lotes"
-      ? { produtoId: filtros.produtoId, localId: filtros.localId }
-      : {};
+  const filtroResumo = visao === "lotes" ? { produtoId: filtros.produtoId, localId: filtros.localId } : {};
   const [produtos, locais, resumo] = await Promise.all([
     prisma.produto.findMany({
       where: { empresaId: sessao.empresaId },
@@ -102,11 +61,8 @@ export default async function EstoquePage({
     zerados: filtros.incluirZerados ? "1" : "",
     referencia: paraDataIso(referencia),
   };
-  const query = new URLSearchParams(
-    Object.entries(valoresFiltro).filter(([, v]) => v),
-  ).toString();
-  const hrefVisao = (v: string) =>
-    `/producao/estoque?${new URLSearchParams({ ...Object.fromEntries(new URLSearchParams(query)), visao: v })}`;
+  const query = new URLSearchParams(Object.entries(valoresFiltro).filter(([, v]) => v)).toString();
+  const hrefVisao = (v: string) => `/producao/estoque?${new URLSearchParams({ ...Object.fromEntries(new URLSearchParams(query)), visao: v })}`;
   // O cartão sempre abre a lista por lote, que é onde o status filtra.
   const hrefStatus = (s: string) =>
     `/producao/estoque?${new URLSearchParams(Object.entries({ ...valoresFiltro, status: s }).filter(([, v]) => v))}`;
@@ -116,8 +72,7 @@ export default async function EstoquePage({
       <div>
         <h1 className="text-lg font-semibold">Estoque</h1>
         <p className="text-sm text-muted-foreground">
-          Saldo por lote, em ordem de validade (o que vence primeiro sai
-          primeiro).
+          Saldo por lote, em ordem de validade (o que vence primeiro sai primeiro).
         </p>
       </div>
 
@@ -155,10 +110,7 @@ export default async function EstoquePage({
           permissoes={permissoesLote}
         />
       ) : (
-        <VisaoResumo
-          filialId={sessao.filialId}
-          queryExport={`referencia=${paraDataIso(referencia)}&visao=resumo`}
-        />
+        <VisaoResumo filialId={sessao.filialId} queryExport={`referencia=${paraDataIso(referencia)}&visao=resumo`} />
       )}
     </div>
   );
@@ -181,20 +133,18 @@ async function VisaoLotes({
   query: string;
   produtos: { id: string; codigo: string; descricao: string }[];
   locais: { id: string; nome: string }[];
-  permissoes: {
-    podeMover: boolean;
-    podeLiberar: boolean;
-    podeEditarProduto: boolean;
-  };
+  permissoes: { podeMover: boolean; podeLiberar: boolean; podeEditarProduto: boolean };
 }) {
   const { podeMover, podeLiberar, podeEditarProduto } = permissoes;
   // Liberação usa o dia de hoje, não a data de referência da consulta (D-35).
   const hoje = hojeDeCalendario();
   const lotes = await listarLotes(filialId, filtros, referencia);
-  const totalKg = lotes.reduce(
-    (soma, l) => soma + Math.max(0, Number(l.saldoKg)),
-    0,
-  );
+  const linhas = lotes.map((lote) => ({
+    lote,
+    liberado: liberacaoCobre(lote.liberadoAte, hoje),
+    liberavel: podeLiberar && Number(lote.saldoKg) > 0 && !lote.bloqueio && loteVencidoNaData(lote.validade, hoje),
+  }));
+  const totalKg = lotes.reduce((soma, l) => soma + Math.max(0, Number(l.saldoKg)), 0);
   const totalValor = lotes.reduce((soma, l) => soma + l.valor, 0);
 
   return (
@@ -207,10 +157,7 @@ async function VisaoLotes({
             campo: "produto",
             rotulo: "Produto",
             rotuloTodos: "Todos",
-            opcoes: produtos.map((p) => ({
-              valor: p.id,
-              rotulo: `${p.codigo} · ${p.descricao}`,
-            })),
+            opcoes: produtos.map((p) => ({ valor: p.id, rotulo: `${p.codigo} · ${p.descricao}` })),
           },
           {
             tipo: "select",
@@ -224,10 +171,7 @@ async function VisaoLotes({
             campo: "status",
             rotulo: "Status",
             rotuloTodos: "Todos",
-            opcoes: STATUS_LOTE.map((s) => ({
-              valor: s,
-              rotulo: ROTULOS_STATUS_LOTE[s],
-            })),
+            opcoes: STATUS_LOTE.map((s) => ({ valor: s, rotulo: ROTULOS_STATUS_LOTE[s] })),
           },
           { tipo: "data", campo: "referencia", rotulo: "Data de referência" },
           { tipo: "checkbox", campo: "zerados", rotulo: "Mostrar zerados" },
@@ -255,129 +199,79 @@ async function VisaoLotes({
           <TableBody>
             {lotes.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={11}
-                  className="py-8 text-center text-sm text-muted-foreground"
-                >
+                <TableCell colSpan={11} className="py-8 text-center text-sm text-muted-foreground">
                   Nenhum lote com esses filtros.
                 </TableCell>
               </TableRow>
             ) : null}
-            {lotes.map((lote) => {
-              const liberado = liberacaoCobre(lote.liberadoAte, hoje);
-              const liberavel =
-                podeLiberar &&
-                Number(lote.saldoKg) > 0 &&
-                !lote.bloqueio &&
-                loteVencidoNaData(lote.validade, hoje);
-              return (
-                <TableRow key={lote.id}>
-                  <TableCell className="font-medium whitespace-nowrap">
-                    <LinkRastreio codigo={lote.codigo} />
-                  </TableCell>
-                  <TableCell>{lote.produto.descricao}</TableCell>
-                  <TableCell>{lote.local.nome}</TableCell>
-                  <TableCell>{formatarData(lote.data)}</TableCell>
-                  <TableCell>{formatarData(lote.validade)}</TableCell>
-                  <TableCell
-                    className={cn(
-                      "text-right tabular-nums",
-                      lote.dias < 0 && "text-destructive",
-                    )}
-                  >
-                    {lote.dias}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      <StatusLoteBadge status={lote.status} />
-                      {lote.emProducao ? (
-                        <Badge variant="outline">Em produção</Badge>
-                      ) : null}
-                    </div>
-                    {liberado && lote.liberadoAte ? (
-                      <p
-                        className="mt-1 text-xs text-muted-foreground"
-                        title={`Liberado por ${lote.liberadoPor?.nome ?? "—"}${
-                          lote.liberadoEm
-                            ? ` em ${formatarData(lote.liberadoEm)}`
-                            : ""
-                        }: ${lote.motivoLiberacao ?? ""}`}
+            {linhas.map(({ lote, liberado, liberavel }) => (
+              <TableRow key={lote.id}>
+                <TableCell className="font-medium whitespace-nowrap">
+                  <LinkRastreio codigo={lote.codigo} />
+                </TableCell>
+                <TableCell>{lote.produto.descricao}</TableCell>
+                <TableCell>{lote.local.nome}</TableCell>
+                <TableCell>{formatarData(lote.data)}</TableCell>
+                <TableCell>{formatarData(lote.validade)}</TableCell>
+                <TableCell className={cn("text-right tabular-nums", lote.dias < 0 && "text-destructive")}>
+                  {lote.dias}
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    <StatusLoteBadge status={lote.status} />
+                    {lote.emProducao ? <Badge variant="outline">Em produção</Badge> : null}
+                  </div>
+                  {liberado && lote.liberadoAte ? (
+                    <p
+                      className="mt-1 text-xs text-muted-foreground"
+                      title={`Liberado por ${lote.liberadoPor?.nome ?? "—"}${
+                        lote.liberadoEm ? ` em ${formatarData(lote.liberadoEm)}` : ""
+                      }: ${lote.motivoLiberacao ?? ""}`}
+                    >
+                      Movimentação liberada até {formatarData(lote.liberadoAte)}
+                    </p>
+                  ) : null}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">{KG.format(Number(lote.saldoKg))}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatarMoeda(lote.custoKg)}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatarMoeda(lote.valor)}</TableCell>
+                <TableCell>
+                  <div className="flex justify-end gap-2">
+                    {lote.bloqueio ? null : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        nativeButton={false}
+                        render={<Link href={`/producao/lotes/${lote.id}/etiqueta`} target="_blank" />}
                       >
-                        Movimentação liberada até{" "}
-                        {formatarData(lote.liberadoAte)}
-                      </p>
+                        Etiqueta
+                      </Button>
+                    )}
+                    {podeMover && Number(lote.saldoKg) > 0 ? (
+                      <MoverLoteDialog lote={{ id: lote.id, codigo: lote.codigo, localId: lote.localId }} locais={locais} />
                     ) : null}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {KG.format(Number(lote.saldoKg))}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatarMoeda(lote.custoKg)}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatarMoeda(lote.valor)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-2">
-                      {lote.bloqueio ? null : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          nativeButton={false}
-                          render={
-                            <Link
-                              href={`/producao/lotes/${lote.id}/etiqueta`}
-                              target="_blank"
-                            />
-                          }
-                        >
-                          Etiqueta
-                        </Button>
-                      )}
-                      {podeMover && Number(lote.saldoKg) > 0 ? (
-                        <MoverLoteDialog
-                          lote={{
-                            id: lote.id,
-                            codigo: lote.codigo,
-                            localId: lote.localId,
-                          }}
-                          locais={locais}
-                        />
-                      ) : null}
-                      {liberavel && liberado && lote.liberadoAte ? (
-                        <RevogarLiberacaoDialog
-                          lote={{ id: lote.id, codigo: lote.codigo }}
-                          liberadoAte={lote.liberadoAte}
-                        />
-                      ) : null}
-                      {liberavel && !liberado ? (
-                        <LiberarLoteDialog
-                          lote={{ id: lote.id, codigo: lote.codigo }}
-                          situacao={situacaoLiberacao(
-                            lote.validade,
-                            lote.produto.diasLiberacaoVencido,
-                            hoje,
-                          )}
-                          podeEditarProduto={podeEditarProduto}
-                        />
-                      ) : null}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+                    {liberavel && liberado && lote.liberadoAte ? (
+                      <RevogarLiberacaoDialog lote={{ id: lote.id, codigo: lote.codigo }} liberadoAte={lote.liberadoAte} />
+                    ) : null}
+                    {liberavel && !liberado ? (
+                      <LiberarLoteDialog
+                        lote={{ id: lote.id, codigo: lote.codigo }}
+                        situacao={situacaoLiberacao(lote.validade, lote.produto.diasLiberacaoVencido, hoje)}
+                        podeEditarProduto={podeEditarProduto}
+                      />
+                    ) : null}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
           {lotes.length > 0 ? (
             <tfoot>
               <TableRow className="font-medium">
                 <TableCell colSpan={7}>Total</TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {KG.format(totalKg)}
-                </TableCell>
+                <TableCell className="text-right tabular-nums">{KG.format(totalKg)}</TableCell>
                 <TableCell />
-                <TableCell className="text-right tabular-nums">
-                  {formatarMoeda(totalValor)}
-                </TableCell>
+                <TableCell className="text-right tabular-nums">{formatarMoeda(totalValor)}</TableCell>
                 <TableCell />
               </TableRow>
             </tfoot>
@@ -388,20 +282,11 @@ async function VisaoLotes({
   );
 }
 
-async function VisaoResumo({
-  filialId,
-  queryExport,
-}: {
-  filialId: string;
-  queryExport: string;
-}) {
+async function VisaoResumo({ filialId, queryExport }: { filialId: string; queryExport: string }) {
   const { linhas, locais } = await resumoProdutoLocal(filialId);
   return (
     <div className="space-y-6">
-      <ExportarLinks
-        baseHref="/producao/estoque/export"
-        queryString={queryExport}
-      />
+      <ExportarLinks baseHref="/producao/estoque/export" queryString={queryExport} />
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -415,10 +300,7 @@ async function VisaoResumo({
           <TableBody>
             {linhas.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={4}
-                  className="py-8 text-center text-sm text-muted-foreground"
-                >
+                <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
                   Nenhum lote com saldo.
                 </TableCell>
               </TableRow>
@@ -427,12 +309,8 @@ async function VisaoResumo({
               <TableRow key={`${l.produtoId}-${l.localId}`}>
                 <TableCell>{l.produto}</TableCell>
                 <TableCell>{l.local}</TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {KG.format(l.saldoKg)}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {formatarMoeda(l.valor)}
-                </TableCell>
+                <TableCell className="text-right tabular-nums">{KG.format(l.saldoKg)}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatarMoeda(l.valor)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -455,18 +333,11 @@ async function VisaoResumo({
               {locais.map((l) => (
                 <TableRow key={l.localId}>
                   <TableCell>{l.nome}</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {KG.format(l.saldoKg)}
-                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{KG.format(l.saldoKg)}</TableCell>
                   <TableCell className="text-right tabular-nums">
                     {l.capacidadeKg === null ? "—" : KG.format(l.capacidadeKg)}
                   </TableCell>
-                  <TableCell
-                    className={cn(
-                      "text-right tabular-nums",
-                      (l.ocupacao ?? 0) > 1 && "text-destructive",
-                    )}
-                  >
+                  <TableCell className={cn("text-right tabular-nums", (l.ocupacao ?? 0) > 1 && "text-destructive")}>
                     {l.ocupacao === null ? "—" : PERCENTUAL.format(l.ocupacao)}
                   </TableCell>
                 </TableRow>
