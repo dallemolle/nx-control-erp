@@ -30,6 +30,7 @@ function paraBanco(dados: ProdutoFormValues) {
     unidadeComercial: dados.unidadeComercial ?? null,
     fatorUnidadeKg: dados.fatorUnidadeKg ?? null,
     textoEtiqueta: dados.textoEtiqueta ?? null,
+    diasLiberacaoVencido: dados.diasLiberacaoVencido ?? null,
   };
 }
 
@@ -82,6 +83,7 @@ export async function atualizarProduto(sessao: SessaoAtiva, id: string, dados: P
       unidadeComercial: anterior.unidadeComercial,
       fatorUnidadeKg: anterior.fatorUnidadeKg === null ? null : Number(anterior.fatorUnidadeKg),
       textoEtiqueta: anterior.textoEtiqueta,
+      diasLiberacaoVencido: anterior.diasLiberacaoVencido,
     },
     novo,
   });

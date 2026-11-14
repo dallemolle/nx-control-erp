@@ -95,6 +95,7 @@ export default async function ProdutosPage() {
                           unidadeComercial: produto.unidadeComercial,
                           fatorUnidadeKg: numeroOuNulo(produto.fatorUnidadeKg),
                           textoEtiqueta: produto.textoEtiqueta,
+                          diasLiberacaoVencido: produto.diasLiberacaoVencido,
                         }}
                       />
                       <form action={alternarAtivoProdutoAction}>
