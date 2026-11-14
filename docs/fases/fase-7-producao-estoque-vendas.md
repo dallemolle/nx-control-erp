@@ -33,7 +33,12 @@ entregas (D-27). 7g2a (relatório mensal e de vendas) concluída em
 `/producao/relatorios/vendas` (D-28), com gráficos e exportação em PDF, CSV
 e Excel; mesmas regras de contagem do painel (D-29), com um mês do mensal
 batendo com o painel daquele mês e o a receber do relatório de vendas
-batendo com o do painel. Próximo: 7g2b (origem e processamento).
+batendo com o do painel. 7g2b (relatório de origem e de processamento)
+concluída em 2026-11-13: telas em `/producao/relatorios/origem` e
+`/producao/relatorios/processamento`, com exportação em PDF, CSV e Excel; a
+lista de OPs não se repete no relatório (D-30); OP aberta só nos volumes
+(D-31); ano da data "Até" e valor pago só de terceiros (D-32). Com ela a 7g
+está concluída.
 
 ## Escopo
 

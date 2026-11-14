@@ -1,6 +1,7 @@
 import type { StatusParcela } from "@prisma/client";
 import { prisma } from "@/server/db/client";
 import type { ItemVendido, OPDatada, SaldoAReceber } from "@/lib/producao/relatorios";
+import type { OPDoProcessamento } from "@/lib/producao/relatoriosProcessamento";
 import type { OPListada } from "../ordemProducao";
 import { saldoRemanescenteParcela } from "../fluxoDeCaixaProjetado";
 
@@ -91,5 +92,17 @@ export function opDoPainel(op: OPListada): OPDatada {
     balancoVerificar: op.resumo.balanco.status === "VERIFICAR",
     branqueamentoVerificar: op.resumo.branqueamento === "VERIFICAR",
     data: op.data,
+  };
+}
+
+/** OP da listagem com o processo (água, caroço, perda) e o custo separado em fruto e insumos. */
+export function opDoProcessamento(op: OPListada): OPDoProcessamento {
+  return {
+    ...opDoPainel(op),
+    aguaLitros: Number(op.aguaLitros),
+    carocoResiduoKg: Number(op.carocoResiduoKg),
+    perdaKg: Number(op.perdaKg),
+    custoFrutoTotal: op.resumo.custo.custoFrutoTotal,
+    custoInsumosTotal: op.resumo.custo.custoInsumosTotal,
   };
 }
