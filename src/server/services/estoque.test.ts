@@ -1,14 +1,27 @@
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { prisma } from "@/server/db/client";
-import { PermissionError } from "@/server/auth/permissions";
+import { FilialSomenteLeituraError, PermissionError } from "@/server/auth/permissions";
 import {
+  configurarVendas,
+  criarCadastrosDeVenda,
   criarCatalogoDeTeste,
   criarFixtureProducao,
   criarLoteDeTeste,
   type CatalogoDeTeste,
   type FixtureProducao,
 } from "./producaoTestFixtures";
-import { listarLotes, moverLote, registrarMovimento, resumoPorStatus, resumoProdutoLocal } from "./estoque";
+import {
+  liberarLoteVencido,
+  listarLotes,
+  moverLote,
+  registrarMovimento,
+  resumoPorStatus,
+  resumoProdutoLocal,
+  revogarLiberacaoLote,
+} from "./estoque";
+import { MSG_SEM_PRAZO_LIBERACAO } from "@/lib/producao/liberacaoVencido";
+import { cabecalhoOPSchema, producaoSchema } from "@/lib/schemas/ordemProducao";
+import { adicionarProducao, criarOP } from "./ordemProducao";
 
 const HOJE = new Date("2026-11-09");
 const dia = (dias: number) => new Date(HOJE.getTime() + dias * 86_400_000);
@@ -203,5 +216,139 @@ describe("resumoPorStatus", () => {
     const r = await resumoPorStatus(fx.filialAId, { localId: cat.localRecepcaoId }, ref);
     expect(r.OK).toEqual({ quantidade: 1, kg: 7 });
     expect(r.VENCIDO).toEqual({ quantidade: 0, kg: 0 });
+  });
+});
+
+describe("liberação de lote vencido (D-35)", () => {
+  let fx: FixtureProducao;
+  let cat: CatalogoDeTeste;
+  const d = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
+  const hoje = d("2026-11-14");
+
+  /** Polpa (prazo de 5 dias no produto) com saldo. */
+  const polpa = (validade: string, kg = 10) =>
+    criarLoteDeTeste(fx, {
+      produtoId: cat.produtoPolpaId,
+      localId: cat.localCamaraId,
+      kg,
+      data: d("2026-10-01"),
+      validade: d(validade),
+    });
+  const lerLote = (id: string) => prisma.lote.findUniqueOrThrow({ where: { id } });
+  const liberar = (loteId: string, motivo = "Uso imediato", perfil: "GESTOR" | "VENDAS" | "PRODUCAO" = "GESTOR") =>
+    liberarLoteVencido(fx.sessao(perfil), loteId, motivo, hoje);
+
+  beforeAll(async () => {
+    fx = await criarFixtureProducao("liberacao");
+    cat = await criarCatalogoDeTeste(fx);
+    await configurarVendas(fx, await criarCadastrosDeVenda(fx));
+    await prisma.produto.update({ where: { id: cat.produtoPolpaId }, data: { diasLiberacaoVencido: 5 } });
+  });
+  afterAll(async () => {
+    await fx.limpar();
+  });
+
+  test("GESTOR libera lote vencido até validade + N dias", async () => {
+    const lote = await polpa("2026-11-12");
+    expect(await liberar(lote.id)).toEqual({ liberadoAte: d("2026-11-17") });
+
+    const gravado = await lerLote(lote.id);
+    expect(gravado.liberadoAte).toEqual(d("2026-11-17"));
+    expect(gravado.liberadoPorId).toBe(fx.usuarioId);
+    expect(gravado.motivoLiberacao).toBe("Uso imediato");
+    expect(gravado.liberadoEm).not.toBeNull();
+    expect(await prisma.auditLog.count({ where: { entidadeId: lote.id, acao: "LIBERAR_VENCIDO" } })).toBe(1);
+  });
+
+  test("recusas ao liberar", async () => {
+    const lote = await polpa("2026-11-12");
+    await expect(liberar(lote.id, "x", "VENDAS")).rejects.toThrow(PermissionError);
+    await expect(liberar(lote.id, "x", "PRODUCAO")).rejects.toThrow(PermissionError);
+    await expect(
+      liberarLoteVencido(fx.sessao("GESTOR", { somenteLeitura: true }), lote.id, "x", hoje),
+    ).rejects.toThrow(FilialSomenteLeituraError);
+
+    const emDia = await polpa("2026-11-14");
+    await expect(liberar(emDia.id)).rejects.toThrow(`O lote ${emDia.codigo} ainda não venceu`);
+
+    const zerado = await polpa("2026-11-12", 0);
+    await expect(liberar(zerado.id)).rejects.toThrow(`O lote ${zerado.codigo} está zerado`);
+
+    const fruto = await criarLoteDeTeste(fx, {
+      produtoId: cat.produtoFrutoId,
+      localId: cat.localRecepcaoId,
+      kg: 10,
+      validade: d("2026-11-12"),
+    });
+    await expect(liberar(fruto.id)).rejects.toThrow(MSG_SEM_PRAZO_LIBERACAO);
+
+    const antigo = await polpa("2026-11-01");
+    await expect(liberar(antigo.id)).rejects.toThrow(
+      "O prazo máximo de liberação deste lote terminou em 06/11/2026",
+    );
+
+    await expect(liberar(lote.id, "  ")).rejects.toThrow("Informe o motivo da liberação");
+
+    const localB = await prisma.localArmazenamento.create({
+      data: { filialId: fx.filialBId, nome: "Câmara B", tipo: "CAMARA_FRIA" },
+    });
+    const deOutraFilial = await criarLoteDeTeste(fx, {
+      produtoId: cat.produtoPolpaId,
+      localId: localB.id,
+      kg: 10,
+      validade: d("2026-11-12"),
+      filialId: fx.filialBId,
+    });
+    await expect(liberar(deOutraFilial.id)).rejects.toThrow("Lote não encontrado");
+  });
+
+  test("polpa em OP aberta não pode ser liberada", async () => {
+    const op = await criarOP(
+      fx.sessao("ADMINISTRADOR"),
+      cabecalhoOPSchema.parse({ data: "2026-11-01", frutaId: cat.frutaId }),
+    );
+    const producao = await adicionarProducao(
+      fx.sessao("ADMINISTRADOR"),
+      op.id,
+      producaoSchema.parse({ produtoId: cat.produtoPolpaId, quantidadeKg: 10, localId: cat.localCamaraId, embalagens: "" }),
+    );
+    await prisma.lote.update({ where: { id: producao.loteId }, data: { validade: d("2026-11-12") } });
+    await expect(liberar(producao.loteId)).rejects.toThrow(`O lote ${producao.codigoLote} está numa OP aberta`);
+  });
+
+  test("mudar N no produto não muda a liberação feita", async () => {
+    const lote = await polpa("2026-11-12");
+    await liberar(lote.id);
+    await prisma.produto.update({ where: { id: cat.produtoPolpaId }, data: { diasLiberacaoVencido: 30 } });
+    try {
+      expect((await lerLote(lote.id)).liberadoAte).toEqual(d("2026-11-17"));
+    } finally {
+      await prisma.produto.update({ where: { id: cat.produtoPolpaId }, data: { diasLiberacaoVencido: 5 } });
+    }
+  });
+
+  test("liberar de novo substitui o motivo e audita", async () => {
+    const lote = await polpa("2026-11-12");
+    await liberar(lote.id, "Primeiro");
+    await liberar(lote.id, "Segundo");
+    expect((await lerLote(lote.id)).motivoLiberacao).toBe("Segundo");
+    expect(await prisma.auditLog.count({ where: { entidadeId: lote.id, acao: "LIBERAR_VENCIDO" } })).toBe(2);
+  });
+
+  test("revogar limpa a liberação e audita; sem liberação é recusado", async () => {
+    const lote = await polpa("2026-11-12");
+    await liberar(lote.id);
+    await revogarLiberacaoLote(fx.sessao("GESTOR"), lote.id);
+    expect(await lerLote(lote.id)).toMatchObject({
+      liberadoAte: null,
+      liberadoEm: null,
+      liberadoPorId: null,
+      motivoLiberacao: null,
+    });
+    expect(await prisma.auditLog.count({ where: { entidadeId: lote.id, acao: "REVOGAR_LIBERACAO" } })).toBe(1);
+    await expect(revogarLiberacaoLote(fx.sessao("GESTOR"), lote.id)).rejects.toThrow(
+      `O lote ${lote.codigo} não está liberado`,
+    );
+    await expect(revogarLiberacaoLote(fx.sessao("VENDAS"), lote.id)).rejects.toThrow(PermissionError);
   });
 });
