@@ -19,8 +19,8 @@ bloqueada para venda e ajuste até encerrar; encerramento com custo
 gravado, reabertura e cancelamento; etiqueta configurável, uma por
 embalagem. 7f (rastreabilidade) concluída em 2026-11-11: consulta por lote
 para trás e para frente, até os clientes da polpa feita com o fruto (lista
-conservadora, D-22), destino de cada kg pelo ledger, cancelados ocultos com
-opção de mostrar (D-23), PDF completo para a fiscalização e CSV/Excel com
+conservadora, D-33), destino de cada kg pelo ledger, cancelados ocultos com
+opção de mostrar (D-34), PDF completo para a fiscalização e CSV/Excel com
 os clientes atingidos; o código do lote vira link nas outras telas. 7g
 dividida em duas entregas (D-24). 7g1 (painel) concluída em 2026-11-11:
 painel de produção com indicadores do período por fruta (recepção,

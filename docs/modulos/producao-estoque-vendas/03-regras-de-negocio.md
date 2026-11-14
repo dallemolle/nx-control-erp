@@ -182,7 +182,7 @@ fruto?". Também não há limite de quantidade.
 
 **Destino do lote:** a consulta também mostra para onde foi cada kg
 (vendido, consumido em OP, ajustes por motivo, saldo), pelos movimentos de
-estoque. **Lista conservadora (D-22):** para um fruto, entram todos os
+estoque. **Lista conservadora (D-33):** para um fruto, entram todos os
 clientes de qualquer polpa das OPs que o usaram, sem ratear kg.
 
 **RN-29 — Etiqueta.** *(ETIQUETA)* Nome da empresa, descrição do produto,
