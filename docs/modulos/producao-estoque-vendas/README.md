@@ -39,10 +39,12 @@ sub-projeto em `docs/superpowers/specs/` (mesmo ciclo das Fases 1–6).
   ao reordenar linhas, saldo que não fica negativo, custo congelado na data
   da operação, recall completo (fruto → polpa → cliente), venda gerando
   título a receber, multi-filial e auditoria.
-- **Maiores decisões em aberto** (ver doc 8): perfil operacional novo,
-  cliente sem CPF/CNPJ, custo do fruto de produção própria, baixa automática
-  de venda à vista e rateio do custo da OP entre polpas de qualidades
-  diferentes.
+- **Situação (2026-11-14):** sub-projetos 7a, 7b, 7c, 7e, 7f e 7g
+  implementados; 7d (importação da planilha) adiada. Todas as decisões do
+  doc 8 estão registradas. Ficam no backlog o rateio do custo da OP por
+  qualidade (D-06) e quem libera fruto vencido na OP; a etiqueta (D-10)
+  aguarda a lista da ADEPARA; a empresa e a filial reais da Hortitex são
+  cadastradas na implantação (D-17).
 
 ## Dados sensíveis
 
