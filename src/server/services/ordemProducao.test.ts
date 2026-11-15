@@ -39,7 +39,7 @@ import {
 } from "./ordemProducao";
 import { cancelarPedido, criarPedido, lotesParaVenda } from "./pedidoVenda";
 import { criarAjuste } from "./ajusteEstoque";
-import { listarLotes, moverLote } from "./estoque";
+import { liberarLoteVencido, listarLotes, moverLote } from "./estoque";
 import { pedidoVendaSchema } from "@/lib/schemas/pedidoVenda";
 import { ajusteSchema } from "@/lib/schemas/ajusteEstoque";
 import { cancelarRecepcao, criarRecepcao } from "./recepcaoFruto";
@@ -69,8 +69,7 @@ describe("ordem de produção", () => {
   const nova = (extra: Record<string, unknown> = {}) =>
     criarOP(adm(), cabecalhoOPSchema.parse({ data: "2026-11-10", frutaId: cat.frutaId, ...extra }));
 
-  const consumo = (loteId: string, quantidadeKg: number | string, motivo?: string) =>
-    consumoSchema.parse({ loteId, quantidadeKg, motivoLiberacaoVencido: motivo ?? "" });
+  const consumo = (loteId: string, quantidadeKg: number | string) => consumoSchema.parse({ loteId, quantidadeKg });
 
   const saldo = async (loteId: string) =>
     Number((await prisma.lote.findUniqueOrThrow({ where: { id: loteId } })).saldoKg);
@@ -180,25 +179,34 @@ describe("ordem de produção", () => {
     await expect(adicionarConsumo(adm(), op.id, consumo(deOutraFilial.id, 1))).rejects.toThrow("Lote não encontrado");
   });
 
-  test("fruto vencido: bloqueado, salvo liberação com motivo", async () => {
+  test("fruto vencido: recusado sem liberação; PRODUCAO consome o lote liberado com o motivo do lote", async () => {
+    await prisma.produto.update({ where: { id: cat.produtoFrutoId }, data: { diasLiberacaoVencido: 3 } });
     const op = await nova();
     const vencido = await fruto(100, { validade: d("2026-11-09") });
 
-    await expect(
-      adicionarConsumo(fx.sessao("PRODUCAO"), op.id, consumo(vencido.id, 10, "Processar hoje")),
-    ).rejects.toThrow(`O lote ${vencido.codigo} venceu em 09/11/2026`);
     await expect(adicionarConsumo(adm(), op.id, consumo(vencido.id, 10))).rejects.toThrow(
       `O lote ${vencido.codigo} venceu em 09/11/2026`,
     );
 
-    const liberado = await adicionarConsumo(adm(), op.id, consumo(vencido.id, 10, "Processar hoje"));
+    await liberarLoteVencido(fx.sessao("GESTOR"), vencido.id, "Processar hoje", d("2026-11-10"));
+    const liberado = await adicionarConsumo(fx.sessao("PRODUCAO"), op.id, consumo(vencido.id, 10));
     const linha = await prisma.consumoOP.findUniqueOrThrow({ where: { id: liberado.id } });
     expect(linha.motivoLiberacaoVencido).toBe("Processar hoje");
 
     const noLimite = await fruto(100, { validade: d("2026-11-10") });
-    const aceito = await adicionarConsumo(fx.sessao("PRODUCAO"), op.id, consumo(noLimite.id, 10, "Desnecessário"));
+    const aceito = await adicionarConsumo(fx.sessao("PRODUCAO"), op.id, consumo(noLimite.id, 10));
     const linhaNoLimite = await prisma.consumoOP.findUniqueOrThrow({ where: { id: aceito.id } });
     expect(linhaNoLimite.motivoLiberacaoVencido).toBeNull();
+  });
+
+  test("liberação que não cobre a data da OP é recusada", async () => {
+    await prisma.produto.update({ where: { id: cat.produtoFrutoId }, data: { diasLiberacaoVencido: 3 } });
+    const vencido = await fruto(100, { validade: d("2026-11-09") });
+    await liberarLoteVencido(fx.sessao("GESTOR"), vencido.id, "Processar hoje", d("2026-11-10"));
+    const opDepois = await nova({ data: "2026-11-13" });
+    await expect(adicionarConsumo(fx.sessao("PRODUCAO"), opDepois.id, consumo(vencido.id, 10))).rejects.toThrow(
+      `O lote ${vencido.codigo} venceu em 09/11/2026; a liberação vale até 12/11/2026`,
+    );
   });
 
   test("remover consumo estorna e permite lançar de novo", async () => {
@@ -695,7 +703,7 @@ describe("listarOPs: filtro a verificar", () => {
     });
     const nova = () => criarOP(adm, cabecalhoOPSchema.parse({ data: "2026-11-10", frutaId: cat.outraFrutaId }));
     const consumir = (opId: string, kg: number) =>
-      adicionarConsumo(adm, opId, consumoSchema.parse({ loteId: fruto.id, quantidadeKg: kg, motivoLiberacaoVencido: "" }));
+      adicionarConsumo(adm, opId, consumoSchema.parse({ loteId: fruto.id, quantidadeKg: kg }));
     const produzir = (opId: string, kg: number) =>
       adicionarProducao(
         adm,

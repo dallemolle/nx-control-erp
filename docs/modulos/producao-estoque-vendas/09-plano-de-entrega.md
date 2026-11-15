@@ -14,6 +14,9 @@ numeração recomeça (D-18). A importação e o corte da planilha ficam para
 depois do desenvolvimento, se forem necessários; a seção
 [Importação da planilha](#importação-da-planilha-7d) fica como referência.
 
+**7d cancelada (2026-11-14):** os dados da planilha estão desatualizados e
+não serão importados (D-21). A seção de importação fica só como histórico.
+
 ```
 7a Fundação ─► 7b Recepção e estoque ─► 7c Vendas e entregas ─► 7e Processamento (OP) ─► 7f Rastreabilidade ─► 7g1 Painel ─► 7g2a Mensal e vendas ─► 7g2b Origem e processamento
 
@@ -26,7 +29,7 @@ depois do desenvolvimento, se forem necessários; a seção
 | **7a Fundação** | Perfis PRODUCAO e VENDAS; ações de RBAC; cadastros de fruta, produto (com rasa), talhão, local, insumo; configuração de produção por filial; ajustes em Cliente/Fornecedor; menu Produção e Vendas. | — | D-09, D-02 | M |
 | **7b Recepção e estoque** | Recepção de fruto (própria/terceiro, rasa); lote com nº imutável; ledger e saldo; validade e status; tela de estoque (por lote e produto × local, ocupação); ajustes; título a pagar de terceiro; etiqueta em PDF. | 7a | D-04, D-13 | L |
 | **7c Vendas e entregas** | Pedido com itens por lote (FEFO, bloqueios RN-18/19); custo e margem gravados; título a receber na mesma transação; baixa automática à vista; cancelamento com estorno; entregas e atraso; recibo em PDF. | 7b; **Fase B (conta Caixa)** para dinheiro | D-03, D-11, D-16 | L |
-| **7d Importação + corte** *(adiada)* | Script de importação da planilha (cadastros, 16 recepções, 29 vendas) com simulação prévia (dry-run); conferência de saldos contra `ESTOQUE_LOTES`; recepção e venda in natura passam a ser lançadas só no sistema. | 7c | D-17, D-18, D-21 | M |
+| **7d Importação + corte** *(cancelada)* | Script de importação da planilha (cadastros, 16 recepções, 29 vendas) com simulação prévia (dry-run); conferência de saldos contra `ESTOQUE_LOTES`; recepção e venda in natura passam a ser lançadas só no sistema. | 7c | D-17, D-18, D-21 | M |
 | **7e Processamento** | OP com consumo, produção (lotes de polpa), insumos e processo; rendimento, balanço e branqueamento ao vivo; encerramento com custo gravado; cancelamento. | 7b | D-06, D-07, D-08 | L |
 | **7f Rastreabilidade** | Consulta por lote para trás e para frente, até os clientes da polpa derivada (RN-28); PDF para fiscalização. | 7c, 7e | D-10 | M |
 | **7g1 Painel** | Painel de produção com indicadores, alertas clicáveis e exportação; resumo por status e PDF em seções no Estoque; filtros "só atrasadas" e "a verificar". | 7c, 7e | D-24, D-25, D-26 | M |

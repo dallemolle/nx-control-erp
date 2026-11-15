@@ -33,11 +33,10 @@ export type OpcoesPedido = {
     retiraNaPropriedade: boolean;
   }[];
   contas: { id: string; tipo: string; rotulo: string }[];
-  /** `validade` em `AAAA-MM-DD`. */
-  lotes: (Omit<LoteParaVenda, "validade"> & { validade: string })[];
+  /** `validade` e `liberadoAte` em `AAAA-MM-DD`. */
+  lotes: (Omit<LoteParaVenda, "validade" | "liberadoAte"> & { validade: string; liberadoAte: string | null })[];
   contaCaixaPadraoId: string | null;
   contaRecebimentoPadraoId: string | null;
-  podeLiberarVencido: boolean;
 };
 
 type ItemForm = {
@@ -46,7 +45,6 @@ type ItemForm = {
   unidade: "KG" | "COMERCIAL";
   quantidade: string;
   precoKg: string;
-  motivo: string;
 };
 
 const ESTADO_INICIAL: FormState = {};
@@ -72,7 +70,6 @@ const itemVazio = (chave: number): ItemForm => ({
   unidade: "KG",
   quantidade: "",
   precoKg: "",
-  motivo: "",
 });
 
 export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
@@ -121,7 +118,6 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
       loteId,
       unidade: "KG",
       precoKg: lote?.produto.precoReferenciaKg ? String(lote.produto.precoReferenciaKg) : "",
-      motivo: "",
     });
   }
 
@@ -136,7 +132,10 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
       lote && Number.isFinite(quantidadeKg) && Number.isFinite(precoKg)
         ? calcularItem({ quantidadeKg, precoKg, custoKg: lote.custoKg })
         : null;
-    return { item, lote, quantidadeKg, precoKg, calculo, vencido: lote ? lote.validade < data : false };
+    const vencido = lote ? lote.validade < data : false;
+    // D-35: a liberação feita no lote cobre a data do pedido (último dia inclusive)?
+    const liberadoAte = vencido && lote?.liberadoAte && data <= lote.liberadoAte ? lote.liberadoAte : null;
+    return { item, lote, quantidadeKg, precoKg, calculo, vencido, liberadoAte };
   });
   const completas = linhas.filter((l) => l.calculo && l.lote);
   const totais = calcularPedido(
@@ -149,7 +148,6 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
         loteId: l.item.loteId,
         quantidadeKg: Number.isFinite(l.quantidadeKg) ? l.quantidadeKg : null,
         precoKg: Number.isFinite(l.precoKg) ? l.precoKg : null,
-        motivoLiberacaoVencido: l.vencido ? l.item.motivo : "",
       })),
   );
 
@@ -287,7 +285,7 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold">Itens</h2>
-        {linhas.map(({ item, lote, quantidadeKg, calculo, vencido }, indice) => {
+        {linhas.map(({ item, lote, quantidadeKg, calculo, vencido, liberadoAte }, indice) => {
           const usados = new Set(itens.filter((i) => i.chave !== item.chave).map((i) => i.loteId));
           const temUnidade = Boolean(lote?.produto.unidadeComercial && lote.produto.fatorUnidadeKg);
           const acimaDoSaldo = lote && Number.isFinite(quantidadeKg) && quantidadeKg > lote.saldoKg;
@@ -370,18 +368,11 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
               {acimaDoSaldo ? (
                 <p className="text-sm text-destructive">Acima do saldo do lote ({KG.format(lote.saldoKg)} kg).</p>
               ) : null}
-              {vencido && opcoes.podeLiberarVencido ? (
-                <Campo id={`motivo-${item.chave}`} rotulo="Motivo da liberação do lote vencido">
-                  <Input
-                    id={`motivo-${item.chave}`}
-                    value={item.motivo}
-                    onChange={(e) => mudarItem(item.chave, { motivo: e.target.value })}
-                    required
-                  />
-                </Campo>
+              {vencido && liberadoAte ? (
+                <p className="text-sm text-muted-foreground">Liberado até {formatarData(liberadoAte)}</p>
               ) : null}
-              {vencido && !opcoes.podeLiberarVencido ? (
-                <p className="text-sm text-destructive">Lote vencido: só gestor ou administrador libera.</p>
+              {vencido && !liberadoAte ? (
+                <p className="text-sm text-destructive">Lote vencido: peça a liberação ao gestor na tela de Estoque.</p>
               ) : null}
               {calculo ? (
                 <dl className="flex flex-wrap gap-x-4 gap-y-1 text-sm">

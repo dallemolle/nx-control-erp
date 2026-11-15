@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
-import { moverLote } from "@/server/services/estoque";
+import { liberarLoteVencido, moverLote, revogarLiberacaoLote } from "@/server/services/estoque";
 
 export type FormState = { erro?: string; sucesso?: boolean };
 
@@ -19,4 +19,27 @@ export async function moverLoteAction(_prev: FormState, formData: FormData): Pro
   }
   revalidatePath("/producao/estoque");
   return { sucesso: true };
+}
+
+async function executarNoLote(acao: () => Promise<unknown>): Promise<FormState> {
+  try {
+    await acao();
+  } catch (erro) {
+    return { erro: erro instanceof Error ? erro.message : "Ocorreu um erro inesperado" };
+  }
+  revalidatePath("/producao/estoque");
+  return { sucesso: true };
+}
+
+export async function liberarLoteAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const sessao = await requireSessaoAtiva();
+  const loteId = String(formData.get("loteId") ?? "");
+  const motivo = String(formData.get("motivo") ?? "");
+  return executarNoLote(() => liberarLoteVencido(sessao, loteId, motivo));
+}
+
+export async function revogarLiberacaoAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const sessao = await requireSessaoAtiva();
+  const loteId = String(formData.get("loteId") ?? "");
+  return executarNoLote(() => revogarLiberacaoLote(sessao, loteId));
 }

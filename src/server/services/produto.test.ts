@@ -56,6 +56,25 @@ describe("produto (por empresa)", () => {
     expect(atualizado.textoEtiqueta).toBeNull();
   });
 
+  test("dias de liberação após vencimento: grava e vazio vira nulo", async () => {
+    const base = {
+      codigo: "AGL",
+      descricao: "Polpa com liberação",
+      categoria: "POLPA",
+      frutaId,
+      conservacao: "CONGELADO",
+      validadeDias: "365",
+    };
+    const p = await criarProduto(fx.sessao("PRODUCAO"), produtoSchema.parse({ ...base, diasLiberacaoVencido: "5" }));
+    expect(p.diasLiberacaoVencido).toBe(5);
+    const atualizado = await atualizarProduto(
+      fx.sessao("PRODUCAO"),
+      p.id,
+      produtoSchema.parse({ ...base, diasLiberacaoVencido: "" }),
+    );
+    expect(atualizado.diasLiberacaoVencido).toBeNull();
+  });
+
   test("código repetido na empresa é recusado com mensagem", async () => {
     await expect(criarProduto(fx.sessao("PRODUCAO"), dados())).rejects.toThrow(
       "Já existe um produto com este código",

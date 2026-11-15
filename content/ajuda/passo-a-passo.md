@@ -37,7 +37,7 @@ Cada vínculo de usuário com uma empresa tem um perfil, que determina o que a p
 | Administrador | Acesso completo a tudo — cadastros, lançamentos, aprovações, relatórios, gestão de usuários/empresas/filiais e auditoria. |
 | Financeiro | Cadastra e edita títulos a pagar/receber, registra baixas (pagamentos/recebimentos) e cadastros auxiliares. Não aprova baixas nem acessa auditoria. |
 | Tesouraria | Aprova ou rejeita baixas registradas pelo Financeiro, e cuida da tesouraria (lançamentos manuais, transferências entre contas, saldo bancário). |
-| Gestor | Acesso de leitura aos relatórios gerenciais — Dashboard executivo, auditoria — para acompanhar o negócio sem operar o dia a dia financeiro. |
+| Gestor | Acesso de leitura aos relatórios gerenciais — Dashboard executivo, auditoria — para acompanhar o negócio sem operar o dia a dia financeiro. Na tela de Estoque, libera lote vencido para venda e OP (seção 5.3). |
 | Auditor | Acesso de leitura à auditoria e ao dashboard executivo, para revisão e conformidade. |
 | Consulta | Acesso de leitura às telas operacionais, sem poder cadastrar, editar ou aprovar nada. |
 | Produção | Pessoal do galpão: cadastra frutas, produtos, insumos, talhões e locais de armazenamento, lança a recepção de fruto, o processamento (OP) e os ajustes de estoque e imprime etiquetas. Não acessa o financeiro (a conta a pagar da compra de fruto é criada pela própria recepção). |
@@ -181,7 +181,7 @@ O quadro de resumo mostra na hora o peso líquido, o % de descarte, o preço por
 
 Cada batelada de fruto processado em polpa é uma **ordem de produção (OP)**. Em Produção → Processamento → **Nova OP**, informe a data, a fruta e o responsável. A OP recebe um número (ex.: OP-261110-01: data e sequência do dia) e abre o detalhe, com quatro abas:
 
-- **Consumo:** escolha os lotes de fruto da mesma fruta (em ordem de validade, com o saldo de cada um) e quantos kg entraram. O fruto sai do estoque na hora. Lote vencido na data da OP é recusado; só o Gestor ou o Administrador libera, informando o motivo.
+- **Consumo:** escolha os lotes de fruto da mesma fruta (em ordem de validade, com o saldo de cada um) e quantos kg entraram. O fruto sai do estoque na hora. Lote vencido na data da OP é recusado, a não ser que tenha sido liberado na tela de Estoque e a liberação cubra a data da OP (seção 5.3).
 - **Produção:** cada polpa produzida (produto, kg, nº de embalagens e local) vira um **lote de polpa** com número e validade. Esses lotes ficam **bloqueados para venda e ajuste até a OP ser encerrada** (aparecem como "Em produção" no estoque).
 - **Insumos:** embalagens, energia, mão de obra etc. O custo unitário é o do cadastro no momento do lançamento; mudar o cadastro depois não altera a OP.
 - **Processo:** branqueamento (temperatura e tempo, só para fruta que exige, como o açaí), água, caroço/resíduo, perda e observação.
@@ -213,6 +213,8 @@ Mostra os lotes com saldo, em ordem de validade (o que vence primeiro aparece pr
 Filtre por produto, local e status, ou mude a **data de referência** para ver como estava (ou estará) o estoque em outro dia. A aba **Por produto e local** soma o saldo e o valor a custo, e mostra a ocupação de cada local que tem capacidade cadastrada. O botão **Mover** troca o local do lote inteiro.
 
 No topo, três cartões contam os lotes com saldo e os kg em cada situação (OK, Vencendo, Vencido) na data de referência. Clique num cartão para ver só esses lotes; clique de novo para limpar. O PDF traz esse resumo e a aba que estiver aberta (a lista de lotes, ou o saldo por produto e local com a ocupação).
+
+**Liberar lote vencido:** lote vencido não sai em pedido nem em OP. Quando ele ainda pode ser aproveitado, o Gestor (ou o Administrador) clica em **Liberar** no lote e informa o motivo. A liberação vale até a validade mais os **dias de liberação após vencimento** do produto (cadastro do produto, seção 7.6): com 5 dias, um lote que venceu em 10/11 pode sair até 15/11. Se o produto não tiver esse prazo, a tela pede para configurá-lo; se o prazo já passou, o lote não pode mais ser liberado. Enquanto valer, o lote mostra "Movimentação liberada até dd/mm/aaaa" (passe o mouse para ver quem liberou e o motivo), e qualquer pessoa que lança pedido ou OP pode usá-lo; o motivo é copiado para o item. **Revogar** desfaz a liberação. As duas ações ficam na auditoria.
 
 ### 5.4. Ajustes de estoque
 
@@ -312,7 +314,7 @@ Ao salvar, o pedido recebe um **número** sequencial da filial e o sistema:
 
 O perfil Vendas faz tudo isso sem acessar o financeiro.
 
-**Lote vencido:** um lote com a validade anterior à data do pedido é bloqueado ("O lote … venceu em …"). Só o Administrador e o Gestor podem liberar, item a item, informando o motivo — que fica gravado no item e na auditoria.
+**Lote vencido:** um lote com a validade anterior à data do pedido é bloqueado ("O lote … venceu em …"). Ele só sai se o Gestor o tiver liberado na tela de Estoque (seção 5.3) e a liberação cobrir a data do pedido; o formulário mostra "Liberado até dd/mm/aaaa" e o motivo da liberação fica gravado no item.
 
 ### 6.2. Consultar e cancelar pedidos
 
@@ -368,7 +370,7 @@ O tipo **Caixa (dinheiro em espécie)** é para o dinheiro guardado na empresa. 
 Base para a recepção de fruto, as vendas por lote e o processamento (este nas próximas versões). Podem ser editados pelo Administrador e pelo perfil Produção. Cadastre nesta ordem:
 
 1. **Frutas** (da empresa): nome, **custo-padrão do fruto próprio** (R$/kg, usado no custo e na margem do fruto colhido nos talhões; deixe 0 se ainda não souber) e se a fruta **exige branqueamento** no processamento (o açaí exige).
-2. **Produtos** (da empresa): código, descrição, fruta, categoria (fruto ou polpa), conservação (in natura, resfriado ou congelado), validade em dias, preço de referência, texto de armazenamento e texto livre da etiqueta (ingredientes e outros dizeres). O **código** (ex.: FA, AGC) vira o início do número de lote (FA-260927-01). A **unidade comercial** é opcional: para o açaí, "rasa = 14 kg" permite lançar quantidade e preço por rasa.
+2. **Produtos** (da empresa): código, descrição, fruta, categoria (fruto ou polpa), conservação (in natura, resfriado ou congelado), validade em dias, preço de referência, texto de armazenamento e texto livre da etiqueta (ingredientes e outros dizeres). O **código** (ex.: FA, AGC) vira o início do número de lote (FA-260927-01). A **unidade comercial** é opcional: para o açaí, "rasa = 14 kg" permite lançar quantidade e preço por rasa. **Dias de liberação após vencimento** (opcional) é a tolerância máxima para o Gestor liberar um lote vencido do produto (seção 5.3); vazio, o produto não pode ser liberado.
 3. **Talhões** (da filial): áreas de cultivo próprias, com cultura, área (ha) e ano de plantio. São a origem do fruto colhido.
 4. **Locais de armazenamento** (da filial): câmaras, freezers e áreas de recepção, com temperatura e capacidade (opcional, usada para mostrar a ocupação no estoque).
 5. **Insumos** (da empresa): embalagens, energia e mão de obra, com unidade e custo unitário de referência.

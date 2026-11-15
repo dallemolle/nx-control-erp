@@ -5,6 +5,10 @@ import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { arredondar } from "@/lib/producao/arredondar";
 import { diasParaVencer, statusDoLote, type StatusLote } from "@/lib/producao/statusLote";
+import { liberacaoCobre, MSG_SEM_PRAZO_LIBERACAO, situacaoLiberacao } from "@/lib/producao/liberacaoVencido";
+import { loteVencidoNaData } from "@/lib/producao/venda";
+import { hojeDeCalendario } from "@/lib/producao/periodo";
+import { formatarData } from "@/lib/formatacao";
 import { obterConfiguracaoProducao } from "./configuracaoProducao";
 
 /**
@@ -88,9 +92,10 @@ export async function listarLotes(filialId: string, filtros: FiltroLotes, refere
       ...(mostrarZerados ? {} : { saldoKg: { gt: 0 } }),
     },
     include: {
-      produto: { select: { codigo: true, descricao: true, conservacao: true } },
+      produto: { select: { codigo: true, descricao: true, conservacao: true, diasLiberacaoVencido: true } },
       local: { select: { nome: true } },
       recepcao: { select: { status: true } },
+      liberadoPor: { select: { nome: true } },
       ...SELECT_BLOQUEIO_PRODUCAO,
     },
     orderBy: [{ validade: "asc" }, { codigo: "asc" }],
@@ -226,5 +231,100 @@ export async function moverLote(sessao: SessaoAtiva, loteId: string, localId: st
     acao: "MOVER",
     anterior: { localId: lote.localId },
     novo: { localId },
+  });
+}
+
+/**
+ * Lote vencido na data da operação (pedido ou OP) só sai com liberação que
+ * cubra essa data (D-35); o perfil de quem lança não importa.
+ */
+export function exigirLiberacao(lote: { codigo: string; validade: Date; liberadoAte: Date | null }, data: Date): void {
+  if (liberacaoCobre(lote.liberadoAte, data)) return;
+  const venceu = `O lote ${lote.codigo} venceu em ${formatarData(lote.validade)}`;
+  throw new Error(lote.liberadoAte ? `${venceu}; a liberação vale até ${formatarData(lote.liberadoAte)}` : venceu);
+}
+
+function autorizarLiberacao(sessao: SessaoAtiva) {
+  requirePermission(sessao.perfil, "estoque:liberarVencido");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
+}
+
+/**
+ * Libera o lote vencido para sair em pedido e OP até validade + N dias do
+ * produto (D-35). A data fica gravada no lote; liberar de novo substitui.
+ */
+export async function liberarLoteVencido(
+  sessao: SessaoAtiva,
+  loteId: string,
+  motivo: string,
+  hoje: Date = hojeDeCalendario(),
+): Promise<{ liberadoAte: Date }> {
+  autorizarLiberacao(sessao);
+
+  const lote = await prisma.lote.findFirst({
+    where: { id: loteId, filialId: sessao.filialId },
+    include: {
+      produto: { select: { diasLiberacaoVencido: true } },
+      recepcao: { select: { status: true } },
+      ...SELECT_BLOQUEIO_PRODUCAO,
+    },
+  });
+  if (!lote) throw new Error("Lote não encontrado");
+  if (lote.recepcao?.status === "CANCELADA") throw new Error(`O lote ${lote.codigo} é de uma recepção excluída`);
+  const bloqueio = bloqueioDaProducao(lote);
+  if (bloqueio) throw new Error(bloqueio);
+  if (Number(lote.saldoKg) <= 0) throw new Error(`O lote ${lote.codigo} está zerado`);
+  if (!loteVencidoNaData(lote.validade, hoje)) throw new Error(`O lote ${lote.codigo} ainda não venceu`);
+
+  const situacao = situacaoLiberacao(lote.validade, lote.produto.diasLiberacaoVencido, hoje);
+  if (situacao.tipo === "SEM_PRAZO") throw new Error(MSG_SEM_PRAZO_LIBERACAO);
+  if (situacao.tipo === "PRAZO_ENCERRADO") {
+    throw new Error(`O prazo máximo de liberação deste lote terminou em ${formatarData(situacao.limite)}`);
+  }
+  const motivoLimpo = motivo.trim();
+  if (!motivoLimpo) throw new Error("Informe o motivo da liberação");
+
+  await prisma.lote.update({
+    where: { id: lote.id },
+    data: {
+      liberadoAte: situacao.liberadoAte,
+      liberadoEm: new Date(),
+      liberadoPorId: sessao.usuarioId,
+      motivoLiberacao: motivoLimpo,
+    },
+  });
+  await registrarAuditoria({
+    empresaId: sessao.empresaId,
+    filialId: sessao.filialId,
+    usuarioId: sessao.usuarioId,
+    entidade: "Lote",
+    entidadeId: lote.id,
+    acao: "LIBERAR_VENCIDO",
+    anterior: lote.liberadoAte ? { liberadoAte: lote.liberadoAte, motivo: lote.motivoLiberacao } : null,
+    novo: { liberadoAte: situacao.liberadoAte, motivo: motivoLimpo },
+  });
+  return { liberadoAte: situacao.liberadoAte };
+}
+
+/** Desfaz a liberação: o lote volta a ser bloqueado em pedido e OP. */
+export async function revogarLiberacaoLote(sessao: SessaoAtiva, loteId: string): Promise<void> {
+  autorizarLiberacao(sessao);
+  const lote = await prisma.lote.findFirst({ where: { id: loteId, filialId: sessao.filialId } });
+  if (!lote) throw new Error("Lote não encontrado");
+  if (!lote.liberadoAte) throw new Error(`O lote ${lote.codigo} não está liberado`);
+
+  await prisma.lote.update({
+    where: { id: lote.id },
+    data: { liberadoAte: null, liberadoEm: null, liberadoPorId: null, motivoLiberacao: null },
+  });
+  await registrarAuditoria({
+    empresaId: sessao.empresaId,
+    filialId: sessao.filialId,
+    usuarioId: sessao.usuarioId,
+    entidade: "Lote",
+    entidadeId: lote.id,
+    acao: "REVOGAR_LIBERACAO",
+    anterior: { liberadoAte: lote.liberadoAte, motivo: lote.motivoLiberacao },
+    novo: null,
   });
 }

@@ -222,7 +222,7 @@ export async function buscarLotes(sessao: SessaoAtiva, trecho: string): Promise<
 /**
  * Rastreabilidade do lote (RN-28): para trás (recepção, ou OP e frutos), para
  * frente (OPs e polpas, só fruto), destino de cada kg e clientes que receberam
- * o lote ou a polpa derivada (D-22). Cancelados só com `incluirCancelados` (D-23).
+ * o lote ou a polpa derivada (D-33). Cancelados só com `incluirCancelados` (D-34).
  */
 export async function rastrearLote(
   sessao: SessaoAtiva,

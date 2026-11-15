@@ -71,7 +71,7 @@ produção.
 `LOTES_FRUTO_ATIVOS`)* Uma OP consome um ou mais lotes de fruto, próprios
 ou de terceiros. Só lotes de fruto com saldo podem ser escolhidos, e o kg
 consumido não pode passar do saldo do lote (RN-19). O custo do consumo é
-`kg × custo/kg do lote`.
+`kg × custo/kg do lote`. Fruto vencido na data da OP segue a RN-18.
 
 **RN-10 — Rendimento.** *(PROCESSAMENTO!M)*
 `rendimento = polpa produzida ÷ fruto consumido`. Ex.: 120 kg de polpa
@@ -120,10 +120,20 @@ data (substitui `CONFIG!B6`).
 **RN-17 — Valor em estoque.** *(ESTOQUE_LOTES!U)*
 `max(0, saldo) × custo/kg do lote`.
 
-**RN-18 — Venda de lote vencido.** *(VENDAS!U, "Lote vencido na data")*
-A planilha permite e só alerta. **Proposta:** bloquear venda de lote
-vencido na data da venda, com exceção registrada para quem tiver
-permissão (D-03).
+**RN-18 — Saída de lote vencido.** *(VENDAS!U, "Lote vencido na data")*
+A planilha permite e só alerta. **Mudança:** lote vencido na data do
+pedido ou da OP (validade anterior a ela) é recusado, a não ser que esteja
+**liberado** (D-35). Quem tem `estoque:liberarVencido` libera o lote na
+tela de Estoque, com motivo; a liberação vale até
+`validade + dias de liberação após vencimento do produto` (último dia
+inclusive), fica gravada no lote e pode ser revogada. Produto sem esse
+prazo não pode ser liberado, e passado o prazo o lote não pode mais ser
+liberado. Dentro do prazo, qualquer perfil que lança pedido ou OP usa o
+lote, e o motivo da liberação é copiado para o item.
+
+> Exemplo: polpa com 5 dias de liberação, validade 10/11. Liberada em
+> 12/11, sai até 15/11; um pedido de 16/11 é recusado ("a liberação vale
+> até 15/11/2026").
 
 **RN-19 — Saldo nunca negativo.** *(VENDAS!U, "Saldo negativo")*
 **Mudança:** a planilha permite e só alerta. O sistema **recusa** consumo,
@@ -182,7 +192,7 @@ fruto?". Também não há limite de quantidade.
 
 **Destino do lote:** a consulta também mostra para onde foi cada kg
 (vendido, consumido em OP, ajustes por motivo, saldo), pelos movimentos de
-estoque. **Lista conservadora (D-22):** para um fruto, entram todos os
+estoque. **Lista conservadora (D-33):** para um fruto, entram todos os
 clientes de qualquer polpa das OPs que o usaram, sem ratear kg.
 
 **RN-29 — Etiqueta.** *(ETIQUETA)* Nome da empresa, descrição do produto,

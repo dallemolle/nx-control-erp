@@ -56,7 +56,7 @@ describe("rastreabilidade", () => {
       }),
     );
   const consumir = (opId: string, loteId: string, kg: number) =>
-    adicionarConsumo(adm(), opId, consumoSchema.parse({ loteId, quantidadeKg: kg, motivoLiberacaoVencido: "" }));
+    adicionarConsumo(adm(), opId, consumoSchema.parse({ loteId, quantidadeKg: kg }));
   const produzir = (opId: string, produtoId: string, kg: number) =>
     adicionarProducao(adm(), opId, producaoSchema.parse({ produtoId, quantidadeKg: kg, localId: cat.localCamaraId }));
   const vender = (loteId: string, kg: number, extra: Record<string, unknown> = {}) =>

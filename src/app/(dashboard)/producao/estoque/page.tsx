@@ -4,17 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { prisma } from "@/server/db/client";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
-import { podeExecutar, requirePermission } from "@/server/auth/permissions";
+import { podeEscreverCadastroProducao, podeExecutar, requirePermission } from "@/server/auth/permissions";
+import { liberacaoCobre, situacaoLiberacao } from "@/lib/producao/liberacaoVencido";
+import { loteVencidoNaData } from "@/lib/producao/venda";
 import { listarLotes, resumoPorStatus, resumoProdutoLocal } from "@/server/services/estoque";
 import { ROTULOS_STATUS_LOTE, STATUS_LOTE } from "@/lib/producao/statusLote";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
-import { paraDataIso } from "@/lib/producao/periodo";
+import { hojeDeCalendario, paraDataIso } from "@/lib/producao/periodo";
 import { cn } from "@/lib/utils";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { BarraDeFiltros } from "../_shared/barra-de-filtros";
 import { LinkRastreio } from "../_shared/link-rastreio";
 import { StatusLoteBadge } from "../_shared/status-lote-badge";
 import { MoverLoteDialog } from "./mover-lote-dialog";
+import { LiberarLoteDialog, RevogarLiberacaoDialog } from "./liberar-lote-dialog";
 import { filtrosDoEstoque, type ParametrosEstoque } from "./filtros";
 import { ResumoStatusEstoque } from "./resumo-status";
 
@@ -25,6 +28,11 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "producao:ler");
   const podeMover = podeExecutar(sessao.perfil, "producao:escrever") && sessao.podeAlterarFilial;
+  const permissoesLote = {
+    podeMover,
+    podeLiberar: podeExecutar(sessao.perfil, "estoque:liberarVencido") && sessao.podeAlterarFilial,
+    podeEditarProduto: podeEscreverCadastroProducao(sessao.perfil, sessao.podeAlterarFilial),
+  };
 
   const sp = await searchParams;
   const visao = sp.visao === "resumo" ? "resumo" : "lotes";
@@ -99,7 +107,7 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
           query={query}
           produtos={produtos}
           locais={locais}
-          podeMover={podeMover}
+          permissoes={permissoesLote}
         />
       ) : (
         <VisaoResumo filialId={sessao.filialId} queryExport={`referencia=${paraDataIso(referencia)}&visao=resumo`} />
@@ -116,7 +124,7 @@ async function VisaoLotes({
   query,
   produtos,
   locais,
-  podeMover,
+  permissoes,
 }: {
   filialId: string;
   filtros: ReturnType<typeof filtrosDoEstoque>["filtros"];
@@ -125,9 +133,17 @@ async function VisaoLotes({
   query: string;
   produtos: { id: string; codigo: string; descricao: string }[];
   locais: { id: string; nome: string }[];
-  podeMover: boolean;
+  permissoes: { podeMover: boolean; podeLiberar: boolean; podeEditarProduto: boolean };
 }) {
+  const { podeMover, podeLiberar, podeEditarProduto } = permissoes;
+  // Liberação usa o dia de hoje, não a data de referência da consulta (D-35).
+  const hoje = hojeDeCalendario();
   const lotes = await listarLotes(filialId, filtros, referencia);
+  const linhas = lotes.map((lote) => ({
+    lote,
+    liberado: liberacaoCobre(lote.liberadoAte, hoje),
+    liberavel: podeLiberar && Number(lote.saldoKg) > 0 && !lote.bloqueio && loteVencidoNaData(lote.validade, hoje),
+  }));
   const totalKg = lotes.reduce((soma, l) => soma + Math.max(0, Number(l.saldoKg)), 0);
   const totalValor = lotes.reduce((soma, l) => soma + l.valor, 0);
 
@@ -188,7 +204,7 @@ async function VisaoLotes({
                 </TableCell>
               </TableRow>
             ) : null}
-            {lotes.map((lote) => (
+            {linhas.map(({ lote, liberado, liberavel }) => (
               <TableRow key={lote.id}>
                 <TableCell className="font-medium whitespace-nowrap">
                   <LinkRastreio codigo={lote.codigo} />
@@ -205,6 +221,16 @@ async function VisaoLotes({
                     <StatusLoteBadge status={lote.status} />
                     {lote.emProducao ? <Badge variant="outline">Em produção</Badge> : null}
                   </div>
+                  {liberado && lote.liberadoAte ? (
+                    <p
+                      className="mt-1 text-xs text-muted-foreground"
+                      title={`Liberado por ${lote.liberadoPor?.nome ?? "—"}${
+                        lote.liberadoEm ? ` em ${formatarData(lote.liberadoEm)}` : ""
+                      }: ${lote.motivoLiberacao ?? ""}`}
+                    >
+                      Movimentação liberada até {formatarData(lote.liberadoAte)}
+                    </p>
+                  ) : null}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{KG.format(Number(lote.saldoKg))}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatarMoeda(lote.custoKg)}</TableCell>
@@ -223,6 +249,16 @@ async function VisaoLotes({
                     )}
                     {podeMover && Number(lote.saldoKg) > 0 ? (
                       <MoverLoteDialog lote={{ id: lote.id, codigo: lote.codigo, localId: lote.localId }} locais={locais} />
+                    ) : null}
+                    {liberavel && liberado && lote.liberadoAte ? (
+                      <RevogarLiberacaoDialog lote={{ id: lote.id, codigo: lote.codigo }} liberadoAte={lote.liberadoAte} />
+                    ) : null}
+                    {liberavel && !liberado ? (
+                      <LiberarLoteDialog
+                        lote={{ id: lote.id, codigo: lote.codigo }}
+                        situacao={situacaoLiberacao(lote.validade, lote.produto.diasLiberacaoVencido, hoje)}
+                        podeEditarProduto={podeEditarProduto}
+                      />
                     ) : null}
                   </div>
                 </TableCell>
