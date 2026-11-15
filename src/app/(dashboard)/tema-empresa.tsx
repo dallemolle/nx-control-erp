@@ -3,7 +3,9 @@ import { cssDoTema, urlGoogleFonts } from "@/lib/tema/css";
 
 /**
  * CSS do tema da empresa e fontes do Google. O CSS é montado só com valores
- * validados (src/lib/tema); React eleva `<link>` e `<style>` com `precedence` ao `<head>`.
+ * validados (src/lib/tema). `<style>` e a folha de fontes ficam no lugar, sem
+ * `precedence`: assim o React os remove ao restaurar o padrão ou trocar de
+ * empresa (um recurso elevado ao `<head>` continuaria lá até recarregar a página).
  */
 export function TemaEmpresaHead({ tema, chave }: { tema: Tema; chave: string }) {
   const fontes = urlGoogleFonts(tema);
@@ -13,12 +15,10 @@ export function TemaEmpresaHead({ tema, chave }: { tema: Tema; chave: string }) 
         <>
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-          <link rel="stylesheet" href={fontes} precedence="tema-empresa" />
+          <link rel="stylesheet" href={fontes} />
         </>
       ) : null}
-      <style href={`tema-empresa-${chave}`} precedence="tema-empresa">
-        {cssDoTema(tema)}
-      </style>
+      <style key={chave}>{cssDoTema(tema)}</style>
     </>
   );
 }

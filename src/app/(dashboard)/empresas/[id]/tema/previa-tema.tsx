@@ -91,7 +91,7 @@ export function PreviaDoTema({ previa, logoUrl, logoEscuroUrl }: {
     corDeTextoContrastante(variaveis["--sidebar"]) === "#ffffff" ? (logoEscuroUrl ?? logoUrl) : logoUrl;
   return (
     <div className="space-y-3">
-      {previa.urlFontes ? <link rel="stylesheet" href={previa.urlFontes} precedence="previa-tema" /> : null}
+      {previa.urlFontes ? <link rel="stylesheet" href={previa.urlFontes} /> : null}
       <div className="grid gap-3 lg:grid-cols-2">
         <AmostraModo titulo="Claro" variaveis={previa.claro} previa={previa} logoUrl={logo(previa.claro)} />
         {previa.escuro ? (
