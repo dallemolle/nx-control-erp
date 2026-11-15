@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { HERANCA, ROTULOS } from "@/lib/tema/editor";
 import type { PapelCor, ParContraste } from "@/lib/tema/validar";
@@ -38,8 +38,13 @@ export function CampoCor({
 }) {
   const id = useId();
   const automatico = valor === undefined;
-  const [texto, setTexto] = useState(valor ?? efetivo);
-  useEffect(() => setTexto(valor ?? efetivo), [valor, efetivo]);
+  const atual = valor ?? efetivo;
+  const [texto, setTexto] = useState(atual);
+  const [atualAnterior, setAtualAnterior] = useState(atual);
+  if (atual !== atualAnterior) {
+    setAtualAnterior(atual);
+    setTexto(atual);
+  }
   const textoValido = /^#[0-9a-fA-F]{6}$/.test(texto);
   const meus = pares.filter((par) => par.texto === papel);
   const problema = meus.find((par) => !par.ok);
@@ -69,9 +74,9 @@ export function CampoCor({
             setTexto(e.target.value);
             if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) onChange(e.target.value);
           }}
-          onBlur={() => setTexto(valor ?? efetivo)}
         />
       </div>
+      {!automatico && !textoValido ? <p className="text-xs text-destructive">Use #RRGGBB</p> : null}
       {opcional ? (
         <label className="flex items-center gap-2 text-xs text-muted-foreground">
           <input type="checkbox" checked={automatico} onChange={(e) => onChange(e.target.checked ? undefined : efetivo)} />
@@ -93,7 +98,7 @@ export function CampoCor({
 export function Grupo({ titulo, aberto = false, children }: { titulo: string; aberto?: boolean; children: ReactNode }) {
   return (
     <details open={aberto} className="group rounded-lg border">
-      <summary className="cursor-pointer list-none px-3 py-2 text-sm font-medium select-none">
+      <summary className="cursor-pointer list-none px-3 [&::-webkit-details-marker]:hidden py-2 text-sm font-medium select-none">
         <span className="mr-1 inline-block transition-transform group-open:rotate-90">›</span>
         {titulo}
       </summary>
