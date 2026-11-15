@@ -1,22 +1,37 @@
 import type { ReactNode, CSSProperties } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/server/db/client";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { obterVersaoInfo } from "@/lib/versao";
 import { corDeTextoContrastante, tomDestaque } from "@/lib/corContraste";
+import { temModoEscuro } from "@/lib/tema/css";
+import { logoDaSidebar } from "@/lib/tema/logo";
+import { temaAplicavel } from "@/server/services/temaEmpresa";
 import { Sidebar } from "./sidebar";
 import { BotaoMenuLateral, MenuLateralProvider } from "./menu-lateral-context";
 import { ThemeToggle } from "./theme-toggle";
+import { TemaEmpresaHead } from "./tema-empresa";
 import { sair } from "./actions";
+
+/** Favicon da empresa, quando configurado na tela Tema e marca. */
+export async function generateMetadata(): Promise<Metadata> {
+  const sessao = await requireSessaoAtiva();
+  const empresa = await prisma.empresa.findUnique({ where: { id: sessao.empresaId }, select: { faviconUrl: true } });
+  return empresa?.faviconUrl ? { icons: { icon: empresa.faviconUrl } } : {};
+}
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const sessao = await requireSessaoAtiva();
   const empresa = await prisma.empresa.findUniqueOrThrow({ where: { id: sessao.empresaId } });
   const filial = await prisma.filial.findUniqueOrThrow({ where: { id: sessao.filialId } });
   const versaoInfo = obterVersaoInfo();
+  const tema = temaAplicavel(empresa.tema);
+  const modoAparencia = !tema ? "livre" : temModoEscuro(tema) ? "claro-escuro" : "so-claro";
 
-  const estiloSidebar: CSSProperties | undefined = empresa.corPrimaria
+  // Com tema, a sidebar vem do tema; a cor única da empresa só vale sem tema.
+  const estiloSidebar: CSSProperties | undefined = !tema && empresa.corPrimaria
     ? ({
         "--sidebar": empresa.corPrimaria,
         "--sidebar-foreground": corDeTextoContrastante(empresa.corPrimaria),
@@ -29,12 +44,18 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   return (
     <MenuLateralProvider>
+      {tema ? <TemaEmpresaHead tema={tema} chave={`${empresa.id}-${empresa.atualizadoEm.getTime()}`} /> : null}
       <div className="flex min-h-screen">
         <Sidebar
           perfil={sessao.perfil}
           versaoInfo={versaoInfo}
           estilo={estiloSidebar}
-          logoUrl={empresa.logoUrl}
+          logoUrl={logoDaSidebar({
+            tema,
+            corPrimaria: empresa.corPrimaria,
+            logoUrl: empresa.logoUrl,
+            logoEscuroUrl: empresa.logoEscuroUrl,
+          })}
         />
         {/* min-w-0: sem ele, uma tabela larga estica a coluna e a página inteira rola na horizontal. */}
         <div className="flex min-w-0 flex-1 flex-col">
@@ -51,7 +72,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <ThemeToggle />
+              <ThemeToggle modo={modoAparencia} />
               {/* No celular estes dois vão para o rodapé do menu lateral. */}
               <Button
                 render={<Link href="/selecionar-empresa" />}

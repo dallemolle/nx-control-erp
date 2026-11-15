@@ -91,6 +91,11 @@ model Empresa {
   moedaPadrao  String   @default("BRL")
   corPrimaria  String?
   logoUrl      String?
+  /// Tema por empresa (formato nx-tema v1, validado; docs/temas/README.md).
+  tema          Json?
+  /// Logo para fundo escuro; logoUrl é o de fundo claro.
+  logoEscuroUrl String?
+  faviconUrl    String?
   ativo        Boolean  @default(true)
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt

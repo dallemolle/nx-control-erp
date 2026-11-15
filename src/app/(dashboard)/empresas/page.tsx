@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -50,6 +51,14 @@ export default async function EmpresasPage() {
               </TableCell>
               <TableCell className="flex justify-end gap-2">
                 <EmpresaDialogForm empresa={empresa} />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  nativeButton={false}
+                  render={<Link href={`/empresas/${empresa.id}/tema`} />}
+                >
+                  Tema e marca
+                </Button>
                 <form action={alternarAtivoEmpresaAction}>
                   <input type="hidden" name="id" value={empresa.id} />
                   <input type="hidden" name="ativo" value={(!empresa.ativo).toString()} />

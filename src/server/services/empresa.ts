@@ -7,6 +7,9 @@ import type { EmpresaFormValues } from "@/lib/schemas/empresa";
 
 export const TAMANHO_MAXIMO_LOGO_BYTES = 1 * 1024 * 1024;
 const TIPOS_LOGO_ACEITOS = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"];
+const TIPOS_FAVICON_ACEITOS = ["image/png", "image/svg+xml", "image/x-icon", "image/vnd.microsoft.icon"];
+
+export type TipoImagemEmpresa = "logo" | "logo-escuro" | "favicon";
 
 /**
  * Logo usa um Blob Store público separado do store privado dos anexos de título.
@@ -18,12 +21,17 @@ function storeIdBlobLogo(): string | undefined {
   return process.env.BLOB_LOGO_READ_WRITE_TOKEN_STORE_ID;
 }
 
-function validarArquivoLogo(arquivo: File): void {
+function validarArquivoLogo(arquivo: File, tipo: TipoImagemEmpresa = "logo"): void {
+  const nome = tipo === "favicon" ? "Favicon" : "Logo";
   if (arquivo.size > TAMANHO_MAXIMO_LOGO_BYTES) {
-    throw new Error(`Logo maior que o limite de ${TAMANHO_MAXIMO_LOGO_BYTES / (1024 * 1024)} MB`);
+    throw new Error(`${nome} maior que o limite de ${TAMANHO_MAXIMO_LOGO_BYTES / (1024 * 1024)} MB`);
   }
-  if (!TIPOS_LOGO_ACEITOS.includes(arquivo.type)) {
-    throw new Error("Formato de logo não aceito — use PNG, JPG, SVG ou WebP");
+  if (tipo === "favicon" ? !TIPOS_FAVICON_ACEITOS.includes(arquivo.type) : !TIPOS_LOGO_ACEITOS.includes(arquivo.type)) {
+    throw new Error(
+      tipo === "favicon"
+        ? "Formato de favicon não aceito — use PNG, SVG ou ICO"
+        : "Formato de logo não aceito — use PNG, JPG, SVG ou WebP",
+    );
   }
 }
 
@@ -34,17 +42,28 @@ async function processarLogo(
   arquivo: File | null,
   removerLogo: boolean,
 ): Promise<string | null | undefined> {
+  return processarImagemEmpresa(empresaId, logoUrlAtual, arquivo, removerLogo, "logo");
+}
+
+/** Logo, logo para fundo escuro ou favicon no Blob público. undefined = não mexe; null = limpa; string = nova url. */
+export async function processarImagemEmpresa(
+  empresaId: string,
+  urlAtual: string | null,
+  arquivo: File | null,
+  remover: boolean,
+  tipo: TipoImagemEmpresa,
+): Promise<string | null | undefined> {
   if (arquivo && arquivo.size > 0) {
-    validarArquivoLogo(arquivo);
-    const blob = await put(`empresas/${empresaId}/logo-${Date.now()}`, arquivo, {
+    validarArquivoLogo(arquivo, tipo);
+    const blob = await put(`empresas/${empresaId}/${tipo}-${Date.now()}`, arquivo, {
       access: "public",
       storeId: storeIdBlobLogo(),
     });
-    if (logoUrlAtual) await del(logoUrlAtual, { storeId: storeIdBlobLogo() }).catch(() => {});
+    if (urlAtual) await del(urlAtual, { storeId: storeIdBlobLogo() }).catch(() => {});
     return blob.url;
   }
-  if (removerLogo && logoUrlAtual) {
-    await del(logoUrlAtual, { storeId: storeIdBlobLogo() }).catch(() => {});
+  if (remover && urlAtual) {
+    await del(urlAtual, { storeId: storeIdBlobLogo() }).catch(() => {});
     return null;
   }
   return undefined;
