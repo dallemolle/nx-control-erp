@@ -1,6 +1,10 @@
 # Liberação de lote vencido no próprio lote
 
-Data: 2026-11-14 · Status: em desenho
+Data: 2026-11-14 · Status: implementada (2026-11-14)
+
+Ajustes na implementação: a checagem do pedido e da OP mora numa função só,
+`exigirLiberacao` em `src/server/services/estoque.ts`; a tela da OP mostra
+"liberado até" apenas quando a liberação cobre a data da OP.
 
 Item do backlog da Fase 7 ("Liberar fruto vencido na OP") e o mesmo problema
 na venda. Hoje a liberação é feita **item a item, no lançamento**: quem cria o

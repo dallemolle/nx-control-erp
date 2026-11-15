@@ -62,8 +62,9 @@ Duas seções novas, além de itens na seção Cadastros:
    cadastro, editável), forma de pagamento, vencimento se for a prazo.
 2. Itens: escolhe o lote (lista FEFO), kg (ou rasas) e preço (sugestão:
    preço de referência do produto). Mostra valor, custo e margem por item.
-3. O sistema recusa kg acima do saldo (RN-19) e lote vencido (RN-18,
-   salvo exceção com permissão).
+3. O sistema recusa kg acima do saldo (RN-19) e lote vencido (RN-18),
+   salvo se o lote foi liberado na tela de Estoque e a liberação cobre a
+   data do pedido (D-35).
 4. Ao salvar, o sistema numera o pedido, baixa o estoque e cria o título a
    receber (doc 6). À vista e já pago (Pix/dinheiro): ver D-11.
 5. Botões: entrega, recibo/romaneio em PDF.
@@ -76,6 +77,14 @@ atraso em dias (RN-24). Atualiza status, data realizada e quem recebeu.
 Produção → Ajustes → **Novo ajuste**: lote, kg (+/−), motivo, observação.
 Saída maior que o saldo é recusada. Atalho na tela de estoque: **Baixar
 vencidos**, que gera ajuste "Vencido" para os lotes selecionados.
+
+### F5b — Liberar lote vencido (D-35)
+Produção → Estoque, lote vencido com saldo → **Liberar** (Gestor e
+Administrador). A liberação vale até validade + N dias, com N no cadastro
+do produto ("Dias de liberação após vencimento"); sem N, a tela pede para
+configurar o produto. Motivo obrigatório; liberar e **Revogar** ficam na
+auditoria. Dentro do prazo, pedido e OP aceitam o lote, com o motivo do
+lote copiado para o item.
 
 ### F6 — Rastrear um lote (recall / ADEPARA)
 Produção → Rastreabilidade: busca pelo código do lote.
@@ -120,8 +129,7 @@ Ações novas em `src/server/auth/permissions.ts`:
 | `venda:ler` | Ver pedidos, entregas e relatórios de venda. |
 | `venda:escrever` | Criar pedidos e atualizar entregas. |
 | `venda:cancelar` | Cancelar pedido (estorna estoque e título). |
-| `venda:liberarVencido` | Vender lote vencido como exceção (RN-18). |
-| `producao:liberarVencido` | Consumir fruto vencido numa OP como exceção, com motivo (7e). ADMIN e GESTOR. |
+| `estoque:liberarVencido` | Liberar e revogar lote vencido na tela de Estoque, até validade + N dias do produto (RN-18, D-35). ADMIN e GESTOR. Substituiu `venda:liberarVencido` e `producao:liberarVencido` em 2026-11-14. |
 | `producao:configurar` | Configuração de produção da filial (ADEPARA, alertas, branqueamento). |
 
 Cadastros novos (produto, fruta, talhão, local, insumo) usam o
@@ -141,7 +149,7 @@ novos**.
 | venda:ler | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | venda:escrever | ✓ | | ✓ | ✓ | | | |
 | venda:cancelar | ✓ | | | ✓ | | | |
-| venda:liberarVencido | ✓ | | | | ✓ | | |
+| estoque:liberarVencido | ✓ | | | | ✓ | | |
 | producao:configurar | ✓ | | | | | | |
 | cadastro:escrever | ✓ | | | ✓ | | | |
 

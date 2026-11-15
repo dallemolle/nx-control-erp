@@ -10,9 +10,9 @@ movimentos, ajustes e etiqueta. Conta Caixa (Fase B fiscal) concluída. 7c
 lote, conta a receber criada junto (já paga quando à vista, com dinheiro na
 conta Caixa), liberação de lote vencido com motivo, cancelamento com estorno
 de estoque e do recebimento, entregas com atraso e recibo em PDF. 7d
-(importação da planilha) adiada em 2026-11-10: sem importação de dados
-antigos por ora, filial da Hortitex cadastrada na implantação e numeração
-recomeçando. 7e (processamento/OP) concluída em 2026-11-10: ordem de
+(importação da planilha) adiada em 2026-11-10 e cancelada em 2026-11-14:
+não haverá importação dos dados da planilha (desatualizados), a filial da
+Hortitex é cadastrada na implantação e a numeração recomeça. 7e (processamento/OP) concluída em 2026-11-10: ordem de
 produção com consumo de fruto, lotes de polpa, insumos e processo;
 rendimento, balanço de massa, branqueamento e custo ao vivo; polpa
 bloqueada para venda e ajuste até encerrar; encerramento com custo
@@ -38,7 +38,11 @@ concluída em 2026-11-13: telas em `/producao/relatorios/origem` e
 `/producao/relatorios/processamento`, com exportação em PDF, CSV e Excel; a
 lista de OPs não se repete no relatório (D-30); OP aberta só nos volumes
 (D-31); ano da data "Até" e valor pago só de terceiros (D-32). Com ela a 7g
-está concluída.
+está concluída. Liberação de lote vencido no lote concluída em 2026-11-14
+(D-35): o Gestor libera na tela de Estoque até validade + N dias do
+produto, e pedido e OP aceitam o lote liberado sem depender do perfil de
+quem lança; substitui a liberação por item da 7c e da 7e. A etiqueta
+(D-10) ficou fechada com os campos configuráveis.
 
 ## Escopo
 

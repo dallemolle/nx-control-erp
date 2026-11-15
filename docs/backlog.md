@@ -192,8 +192,3 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   grosso usa mais fruto por kg e vale mais; quando a margem por qualidade
   importar, ratear por um fator de equivalência (ex.: proporcional ao
   preço de referência de cada produto).
-- **Liberar fruto vencido na OP.** A permissão `producao:liberarVencido`
-  é do Gestor, que não lança OP; o perfil Produção lança mas não libera.
-  Na prática só o Administrador usa fruto vencido numa OP (a venda da 7c
-  tem a mesma situação). Se o galpão precisar resolver sozinho, dar a
-  permissão ao perfil Produção.
