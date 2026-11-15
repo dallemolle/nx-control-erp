@@ -1,6 +1,6 @@
 import { Prisma, type StatusOrdemProducao } from "@prisma/client";
 import { prisma } from "@/server/db/client";
-import { podeExecutar, requireAlteracaoFilial, requirePermission } from "@/server/auth/permissions";
+import { requireAlteracaoFilial, requirePermission } from "@/server/auth/permissions";
 import { registrarAuditoria, type ClientePrisma } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type {
@@ -10,7 +10,6 @@ import type {
   ProcessoOPValues,
   ProducaoValues,
 } from "@/lib/schemas/ordemProducao";
-import { formatarData } from "@/lib/formatacao";
 import { calcularValidade, prefixoDoLote, proximoCodigoDeLote } from "@/lib/producao/lote";
 import { loteVencidoNaData } from "@/lib/producao/venda";
 import { arredondar } from "@/lib/producao/arredondar";
@@ -25,7 +24,7 @@ import {
   type VerificarOP,
 } from "@/lib/producao/op";
 import { obterConfiguracaoProducao } from "./configuracaoProducao";
-import { registrarMovimento } from "./estoque";
+import { exigirLiberacao, registrarMovimento } from "./estoque";
 
 const TENTATIVAS_NUMERACAO = 3;
 const ROTULO_STATUS: Record<StatusOrdemProducao, string> = {
@@ -236,7 +235,6 @@ export async function atualizarProcessoOP(sessao: SessaoAtiva, id: string, dados
  */
 export async function adicionarConsumo(sessao: SessaoAtiva, opId: string, dados: ConsumoValues) {
   autorizar(sessao);
-  const podeLiberar = podeExecutar(sessao.perfil, "producao:liberarVencido");
 
   return prisma.$transaction(async (tx) => {
     const op = await travarOP(tx, sessao.filialId, opId);
@@ -255,11 +253,9 @@ export async function adicionarConsumo(sessao: SessaoAtiva, opId: string, dados:
     if (repetido > 0) throw new Error(`O lote ${lote.codigo} já está nesta OP`);
 
     const vencido = loteVencidoNaData(lote.validade, op.data);
-    if (vencido && (!podeLiberar || !dados.motivoLiberacaoVencido)) {
-      throw new Error(`O lote ${lote.codigo} venceu em ${formatarData(lote.validade)}`);
-    }
-    // Motivo enviado para lote que não está vencido é descartado.
-    const motivo = vencido ? (dados.motivoLiberacaoVencido ?? null) : null;
+    // D-35: fruto vencido só entra com liberação do lote que cubra a data da OP.
+    if (vencido) exigirLiberacao(lote, op.data);
+    const motivo = vencido ? lote.motivoLiberacao : null;
 
     const linha = await tx.consumoOP.create({
       data: {
@@ -810,6 +806,7 @@ export async function lotesParaConsumo(filialId: string, frutaId: string, data: 
     custoKg: Number(lote.custoKg),
     validade: lote.validade,
     vencido: loteVencidoNaData(lote.validade, data),
+    liberadoAte: lote.liberadoAte,
     produto: lote.produto,
   }));
 }

@@ -10,6 +10,7 @@ import { lotesParaConsumo, obterOP } from "@/server/services/ordemProducao";
 import { obterConfiguracaoProducao } from "@/server/services/configuracaoProducao";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
 import { paraDataIso } from "@/lib/producao/periodo";
+import { liberacaoCobre } from "@/lib/producao/liberacaoVencido";
 import { cn } from "@/lib/utils";
 import { BranqueamentoBadge, KG, PERCENTUAL, StatusOPBadge, VerificacaoBadge } from "../formatos";
 import { LinkRastreio } from "../../_shared/link-rastreio";
@@ -206,8 +207,9 @@ export default async function OPPage({
                   saldoKg: l.saldoKg,
                   validade: paraDataIso(l.validade),
                   vencido: l.vencido,
+                  liberadoAte:
+                    l.liberadoAte && liberacaoCobre(l.liberadoAte, op.data) ? paraDataIso(l.liberadoAte) : null,
                 }))}
-              podeLiberarVencido={podeExecutar(sessao.perfil, "producao:liberarVencido")}
             />
           ) : null}
           <div className="overflow-x-auto">
