@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.22](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.21...nx-control-erp-v0.1.22) (2026-11-15)
+
+
+### Novidades
+
+* **producao:** liberar e revogar lote vencido no lote ([1b1ab04](https://github.com/dallemolle/nx-control-erp/commit/1b1ab0449afcdd32c34aa6ed5c005f40a7bf15b8))
+* **producao:** OP aceita fruto vencido liberado no lote ([1bb1f20](https://github.com/dallemolle/nx-control-erp/commit/1bb1f208ca31c37ebb3d4ac24cccc8ab5e043713))
+* **producao:** prazo de liberação no produto e ação na tela de Estoque ([831d598](https://github.com/dallemolle/nx-control-erp/commit/831d5987f591c30fe486552e400cddb6cbfc813b))
+* **producao:** regras puras da liberação de lote vencido ([994440e](https://github.com/dallemolle/nx-control-erp/commit/994440eaebab96d139110bfee145c5e621b9c962))
+* **vendas:** pedido aceita lote vencido liberado no lote ([5837040](https://github.com/dallemolle/nx-control-erp/commit/5837040d05e52a4e0c2fdcea69bf410e06207526))
+
 ## [0.1.21](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.20...nx-control-erp-v0.1.21) (2026-11-14)
 
 
