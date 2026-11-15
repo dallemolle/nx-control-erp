@@ -1,5 +1,6 @@
 "use client";
 
+import { unstable_rethrow } from "next/navigation";
 import { useEffect, useMemo, useReducer, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -105,16 +106,24 @@ export function EditorTema({
     const confirmar =
       avisos.length > 0 && window.confirm(`O tema tem ${avisos.length} aviso(s) de contraste. Salvar mesmo assim?`);
     if (avisos.length > 0 && !confirmar) return;
+    const enviado = tema;
     iniciar(async () => {
-      const resultado = await aplicarTemaAction(
-        {},
-        formData({ empresaId, texto: JSON.stringify(tema), confirmarAvisos: confirmar ? "true" : "false" }),
-      );
+      let resultado;
+      try {
+        resultado = await aplicarTemaAction(
+          {},
+          formData({ empresaId, texto: JSON.stringify(enviado), confirmarAvisos: confirmar ? "true" : "false" }),
+        );
+      } catch (erro) {
+        unstable_rethrow(erro);
+        setMensagem({ tipo: "erro", texto: "Não foi possível salvar. Tente de novo." });
+        return;
+      }
       if (resultado.erro) {
         setMensagem({ tipo: "erro", texto: resultado.erro });
         return;
       }
-      despachar({ tipo: "salvo" });
+      despachar({ tipo: "salvo", tema: enviado });
       setGravado(true);
       setMensagem({ tipo: "ok", texto: "Tema salvo. As telas do painel já usam as cores novas." });
     });
@@ -123,7 +132,14 @@ export function EditorTema({
   function restaurar() {
     if (!window.confirm("Voltar ao visual padrão do sistema? Os logos continuam.")) return;
     iniciar(async () => {
-      const resultado = await restaurarTemaAction({}, formData({ empresaId }));
+      let resultado;
+      try {
+        resultado = await restaurarTemaAction({}, formData({ empresaId }));
+      } catch (erro) {
+        unstable_rethrow(erro);
+        setMensagem({ tipo: "erro", texto: "Não foi possível restaurar. Tente de novo." });
+        return;
+      }
       if (resultado.erro) {
         setMensagem({ tipo: "erro", texto: resultado.erro });
         return;
@@ -140,11 +156,13 @@ export function EditorTema({
     const link = document.createElement("a");
     link.href = url;
     link.download = nomeArquivoTema(nomeEmpresa);
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  async function importar(texto: string) {
+  function importar(texto: string) {
     const resultado = analisarTexto(texto);
     if (!resultado.ok) {
       setErrosImportacao(resultado.erros);
@@ -158,10 +176,11 @@ export function EditorTema({
   }
 
   function irParaProblema() {
-    document.querySelector<HTMLElement>("[data-problema='essencial'], [data-problema='secundario']")?.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-    });
+    const alvo = document.querySelector<HTMLElement>("[data-problema='essencial'], [data-problema='secundario']");
+    if (!alvo) return;
+    const detalhes = alvo.closest("details");
+    if (detalhes) detalhes.open = true;
+    alvo.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
   return (
@@ -195,15 +214,14 @@ export function EditorTema({
         </label>
       </div>
 
-      <div role="tablist" aria-label="Modo em edição" className="inline-flex rounded-lg border p-0.5">
+      <div role="group" aria-label="Modo em edição" className="inline-flex rounded-lg border p-0.5">
         {(["claro", "escuro"] as Modo[])
           .filter((m) => m === "claro" || tema.cores.escuro)
           .map((m) => (
             <button
               key={m}
               type="button"
-              role="tab"
-              aria-selected={modo === m}
+              aria-pressed={modo === m}
               onClick={() => despachar({ tipo: "modo", modo: m })}
               className={`rounded-md px-3 py-1 text-sm ${modo === m ? "bg-primary text-primary-foreground" : ""}`}
             >
@@ -294,7 +312,7 @@ export function EditorTema({
           </button>
         ) : null}
         {erros.length > 0 ? (
-          <ul className="list-disc space-y-0.5 pl-5 text-xs text-destructive">
+          <ul className="max-h-32 list-disc space-y-0.5 overflow-y-auto pl-5 text-xs text-destructive">
             {erros.map((erro) => (
               <li key={erro} className="break-words">
                 {erro}
@@ -358,7 +376,8 @@ export function EditorTema({
                 accept="application/json,.json"
                 onChange={async (e) => {
                   const arquivo = e.target.files?.[0];
-                  if (arquivo) await importar(await arquivo.text());
+                  e.target.value = "";
+                  if (arquivo) importar(await arquivo.text());
                 }}
               />
             </div>

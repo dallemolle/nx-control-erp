@@ -109,10 +109,20 @@ describe("reduzirEditor", () => {
     expect(carregado.tema).toEqual(hortitex());
     expect(carregado.salvo).toEqual(TEMA_PADRAO);
     expect(aplicar(carregado, { tipo: "descartar" }).tema).toEqual(TEMA_PADRAO);
-    expect(aplicar(carregado, { tipo: "salvo" }).salvo).toEqual(hortitex());
+    expect(aplicar(carregado, { tipo: "salvo", tema: hortitex() }).salvo).toEqual(hortitex());
     const restaurado = aplicar(carregado, { tipo: "restaurado", tema: TEMA_PADRAO });
     expect(restaurado.tema).toEqual(TEMA_PADRAO);
     expect(restaurado.salvo).toEqual(TEMA_PADRAO);
+  });
+
+  test("salvo grava o tema enviado, não o que está no editor quando a resposta volta", () => {
+    const a = hortitex();
+    const carregado = aplicar(estadoInicial(TEMA_PADRAO), { tipo: "carregar", tema: a });
+    const editado = aplicar(carregado, { tipo: "cor", papel: "fundo", valor: "#123456" });
+    const depois = aplicar(editado, { tipo: "salvo", tema: a });
+    expect(depois.salvo).toEqual(a);
+    expect(depois.tema).toEqual(editado.tema);
+    expect(temasIguais(depois.tema, depois.salvo)).toBe(false);
   });
 });
 

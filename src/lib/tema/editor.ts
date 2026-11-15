@@ -19,7 +19,7 @@ export type AcaoEditor =
   | { tipo: "raio"; px: number | undefined }
   | { tipo: "carregar"; tema: Tema }
   | { tipo: "descartar" }
-  | { tipo: "salvo" }
+  | { tipo: "salvo"; tema: Tema }
   | { tipo: "restaurado"; tema: Tema };
 
 export const ROTULOS: Record<PapelCor, string> = {
@@ -183,7 +183,7 @@ export function reduzirEditor(estado: EstadoEditor, acao: AcaoEditor): EstadoEdi
     case "descartar":
       return { ...estado, tema: estado.salvo, modo: "claro" };
     case "salvo":
-      return { ...estado, salvo: atual };
+      return { ...estado, salvo: acao.tema };
     case "restaurado":
       return { tema: acao.tema, salvo: acao.tema, modo: "claro" };
   }
