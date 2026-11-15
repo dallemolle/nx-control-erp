@@ -1,6 +1,12 @@
 # Tema por empresa (white-label)
 
-Data: 2026-11-15 · Status: em desenho
+Data: 2026-11-15 · Status: implementada (2026-11-15)
+
+Ajustes na implementação: as fontes do tema são aplicadas com regras
+`font-family` (o `@theme inline` do `globals.css` fixa as variáveis de fonte);
+o `<style>` do tema fica no lugar, sem `precedence`, para sair do documento ao
+restaurar o padrão ou trocar de empresa; a seção Marca também recebe o logo
+para fundo claro.
 
 Pedido do cliente: a aplicação deve ter a cara do cliente (cores, fontes,
 raio de borda, logo), configurável **por empresa**, sem mudar o padrão do

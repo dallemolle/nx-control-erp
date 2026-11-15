@@ -381,6 +381,14 @@ Base para a recepção de fruto, as vendas por lote e o processamento (este nas 
 
 Cadastro das empresas atendidas pelo sistema. Ao criar uma empresa, o sistema já cria automaticamente uma filial "Matriz" e vincula quem criou como Administrador dela.
 
+**Tema e marca:** o botão **Tema e marca** na linha da empresa (só o Administrador) deixa o painel com a cara do cliente: cores no modo claro e no escuro, fontes, cantos arredondados, logos e o ícone da aba do navegador. Empresa sem tema usa o visual padrão do sistema.
+
+- **Importar tema:** o tema é um arquivo `.json` num formato próprio. O jeito mais fácil de criá-lo é com uma IA: baixe o **modelo de pedido para a IA** na própria tela, cole o texto numa IA junto com o manual de marca do cliente e importe a resposta (arquivo ou texto colado). Clique em **Validar**: a tela mostra os erros (o tema não pode ser aplicado), os avisos de contraste (pode aplicar, confirmando) e uma prévia no claro e no escuro. Depois, **Aplicar tema**.
+- **Regras:** cores no formato `#RRGGBB`; o texto precisa ter contraste suficiente com o fundo (4,5:1), principalmente o texto principal, o dos botões, o da barra lateral e o do topo. Se der erro, cole a mensagem de volta na IA e peça a correção.
+- **Com tema**, o botão de aparência do topo mostra só **Claro** e **Escuro** (ou some, se o tema não tiver modo escuro), e as cores valem para todas as pessoas da empresa.
+- **Exportar tema** baixa o tema atual; **Restaurar padrão** volta ao visual do sistema (os logos continuam).
+- **Marca:** logo para fundo claro, logo para fundo escuro (usado quando a barra lateral é escura) e favicon (PNG, SVG ou ICO), até 1 MB cada.
+
 ### 8.2. Filiais
 
 Cadastro das filiais (unidades operacionais) de cada empresa. Cada filial tem seu próprio conjunto de cadastros (categorias, centros de custo/lucro, safras, projetos, contas bancárias) e seus próprios títulos e lançamentos.
