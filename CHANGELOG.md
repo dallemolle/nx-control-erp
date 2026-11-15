@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.25](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.24...nx-control-erp-v0.1.25) (2026-11-15)
+
+
+### Novidades
+
+* **tema:** campos de cor, fonte e raio e prévia por modo ([3c12018](https://github.com/dallemolle/nx-control-erp/commit/3c12018b0e32c5a1174358b0197e14f6b83b54e8))
+* **tema:** editor visual com prévia ao vivo na tela de tema ([b27caf0](https://github.com/dallemolle/nx-control-erp/commit/b27caf0f43e66a778f652fe41d35ad4d3bc94e73))
+* **tema:** estado do editor visual (reducer e auxiliares) ([7c9babf](https://github.com/dallemolle/nx-control-erp/commit/7c9babfdd8c6c206954d49773d8079d363ca2f6f))
+* **tema:** tema padrão do sistema no formato nx-tema ([e468dd1](https://github.com/dallemolle/nx-control-erp/commit/e468dd1473056f392f3e18603ae6d233de951844))
+
+
+### Correções
+
+* **tema:** ajustes finais do editor visual ([dfa2ef1](https://github.com/dallemolle/nx-control-erp/commit/dfa2ef134274ec108c2f5cd42829d30889022abb))
+* **tema:** rascunho do nome da fonte, validação inline e hex inválido persistente ([64b37a7](https://github.com/dallemolle/nx-control-erp/commit/64b37a7e67d7f072b0b1eb51f333f1bc72100822))
+* **tema:** salvo grava o tema enviado, tratamento de falha no envio e ajustes do editor ([e5351c7](https://github.com/dallemolle/nx-control-erp/commit/e5351c7629937e046ea47755d48b3cf11da0978d))
+
 ## [0.1.24](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.23...nx-control-erp-v0.1.24) (2026-11-15)
 
 
