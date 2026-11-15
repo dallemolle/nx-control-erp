@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.23](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.22...nx-control-erp-v0.1.23) (2026-11-15)
+
+
+### Novidades
+
+* **tema:** formato nx-tema, validação e contraste ([d1cffe5](https://github.com/dallemolle/nx-control-erp/commit/d1cffe5857f49049abc2385b33796be3b10b8a8f))
+* **tema:** tela de tema e marca da empresa ([20aac0d](https://github.com/dallemolle/nx-control-erp/commit/20aac0d89dc8e7152ef317ad31cc105e24ed7fb1))
+* **tema:** tema da empresa aplicado no painel ([e073665](https://github.com/dallemolle/nx-control-erp/commit/e073665b80effe4262f3bb38eb8dd4aebbfb823d))
+* **tema:** tema e marca gravados na empresa ([a5a2a10](https://github.com/dallemolle/nx-control-erp/commit/a5a2a1069bf6dca701a44f582ebc1809585eb0e5))
+* **tema:** variáveis CSS e fontes do tema ([4fd4ca5](https://github.com/dallemolle/nx-control-erp/commit/4fd4ca59806e6a2fbbc2e9f995ee7374cac90321))
+
+
+### Correções
+
+* **tema:** CSS do tema sai do documento ao restaurar ou trocar de empresa ([69e6681](https://github.com/dallemolle/nx-control-erp/commit/69e6681945978b3a968b54cf8679e739a9836377))
+
 ## [0.1.22](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.21...nx-control-erp-v0.1.22) (2026-11-15)
 
 
