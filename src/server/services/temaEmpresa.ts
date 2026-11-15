@@ -4,19 +4,12 @@ import { requirePermission } from "@/server/auth/permissions";
 import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { Tema } from "@/lib/tema/schema";
-import { validarTema, type ResultadoValidacao } from "@/lib/tema/validar";
+import { analisarTexto, validarTema } from "@/lib/tema/validar";
 import { processarImagemEmpresa } from "./empresa";
 
 export const MSG_CONFIRMAR_AVISOS = "O tema tem avisos de contraste: confirme para aplicar";
 
-/** JSON colado ou enviado → validação; texto que não é JSON vira erro, não exceção. */
-export function analisarTexto(texto: string): ResultadoValidacao {
-  try {
-    return validarTema(JSON.parse(texto));
-  } catch (erro) {
-    return { ok: false, erros: [`JSON inválido: ${erro instanceof Error ? erro.message : String(erro)}`] };
-  }
-}
+export { analisarTexto };
 
 async function empresaGerenciavel(sessao: SessaoAtiva, empresaId: string) {
   requirePermission(sessao.perfil, "empresa:gerenciar");
