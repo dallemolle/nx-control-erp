@@ -1,6 +1,26 @@
 # Editor visual do tema
 
-Data: 2026-11-15 · Status: aprovado, aguardando plano
+Data: 2026-11-15 · Status: implementada (2026-11-15)
+
+Ajustes na implementação (o texto abaixo é o desenho original):
+
+1. **Salvar** reaproveita `aplicarTemaAction` (não há `salvarTemaAction`); o
+   editor a chama direto num `startTransition`, com `try/catch` e
+   `unstable_rethrow`.
+2. **Exportar** é gerado no navegador a partir do estado do editor; a rota
+   `/empresas/[id]/tema/exportar` foi removida.
+3. `paresDeContraste` ficou em `validar.ts` e `validarTema` o usa (fonte
+   única); `analisarTexto` foi para `src/lib/tema/validar.ts` (o serviço o
+   reexporta).
+4. Foram removidos `validarTemaAction`, `importar-tema-form.tsx` e o
+   `RestaurarTemaForm`.
+5. Os grupos recolhíveis usam `<details>` nativo.
+6. A ação "salvo" do reducer leva o tema que foi enviado, para que edições
+   feitas durante o salvamento continuem marcadas como não salvas.
+7. Nome e pilha avançada das fontes são validados na hora com as regras do
+   próprio schema; o seletor de modo é um grupo de botões `aria-pressed` (não
+   abas); um tema importado precisa passar na validação (erros de contraste
+   incluídos) para carregar no editor.
 
 Entrega 2 de 2 do [tema por empresa](2026-11-15-tema-por-empresa-design.md).
 A entrega 1 criou o formato `nx-tema` v1, a validação, a gravação e a

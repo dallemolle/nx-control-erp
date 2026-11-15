@@ -9,6 +9,9 @@ sidebar + logo) virou **tema por empresa**: arquivo `nx-tema` com cores claro
 e escuro, fontes do Google e raio, validado (formato e contraste) e aplicado
 em todo o painel; logo para fundo escuro e favicon por upload. Detalhes em
 [`docs/temas/README.md`](../temas/README.md).
+Entrega 2 (2026-11-15): **editor visual do tema** na tela Tema e marca, com
+seletores por papel, selos de contraste e prévia ao vivo
+([spec](../superpowers/specs/2026-11-15-editor-visual-tema-design.md)).
 
 ## Escopo desta fase
 
