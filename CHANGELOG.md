@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.24](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.23...nx-control-erp-v0.1.24) (2026-11-15)
+
+
+### Correções
+
+* fonte padrão volta a ser a Geist ([75f840e](https://github.com/dallemolle/nx-control-erp/commit/75f840ec8a56519a6877777d94cee97d0e8f7a9d))
+
 ## [0.1.23](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.22...nx-control-erp-v0.1.23) (2026-11-15)
 
 
