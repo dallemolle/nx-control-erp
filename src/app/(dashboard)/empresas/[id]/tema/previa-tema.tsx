@@ -1,19 +1,25 @@
 import type { CSSProperties } from "react";
 import { corDeTextoContrastante } from "@/lib/corContraste";
-import type { PreviaTema } from "./actions";
+
+export type PreviaTema = {
+  variaveis: Record<string, string>;
+  raio: string | null;
+  fonteTexto: string | null;
+  fonteTitulos: string | null;
+};
 
 /** Amostra de um modo do tema, com as variáveis aplicadas só neste bloco. */
-function AmostraModo({
-  titulo,
-  variaveis,
+export function PreviaDoTema({
   previa,
   logoUrl,
+  logoEscuroUrl,
 }: {
-  titulo: string;
-  variaveis: Record<string, string>;
   previa: PreviaTema;
   logoUrl: string | null;
+  logoEscuroUrl: string | null;
 }) {
+  const { variaveis } = previa;
+  const logo = corDeTextoContrastante(variaveis["--sidebar"]) === "#ffffff" ? (logoEscuroUrl ?? logoUrl) : logoUrl;
   const estilo = {
     ...variaveis,
     ...(previa.raio ? { "--radius": previa.raio } : {}),
@@ -25,24 +31,28 @@ function AmostraModo({
 
   return (
     <div style={estilo} className="overflow-hidden rounded-lg border border-[var(--border)]">
+      <div
+        className="flex items-center justify-between px-4 py-2 text-sm"
+        style={{ background: "var(--app-header-background)", color: "var(--app-header-foreground)" }}
+      >
+        <span className="font-medium">Cabeçalho</span>
+        <span className="text-xs opacity-80">Usuário</span>
+      </div>
       <div className="flex min-h-48 flex-col sm:flex-row">
         <div
           className="flex items-center gap-2 p-3 text-sm sm:w-36 sm:flex-col sm:items-start"
           style={{ background: "var(--sidebar)", color: "var(--sidebar-foreground)" }}
         >
-          {logoUrl ? (
+          {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoUrl} alt="" className="size-6 rounded object-contain" />
+            <img src={logo} alt="" className="size-6 rounded object-contain" />
           ) : null}
           <span className="font-semibold">Menu</span>
           <span className="rounded px-2 py-1" style={{ background: "var(--sidebar-accent)" }}>
             Item ativo
           </span>
         </div>
-        <div className="flex-1 space-y-3 p-4">
-          <p className="text-xs font-semibold tracking-wide uppercase" style={{ color: "var(--muted-foreground)" }}>
-            {titulo}
-          </p>
+        <div className="min-w-0 flex-1 space-y-3 p-4">
           <p className="text-lg font-semibold" style={{ fontFamily: previa.fonteTitulos ?? undefined }}>
             Título com a fonte da marca
           </p>
@@ -55,15 +65,21 @@ function AmostraModo({
             <div className="flex flex-wrap gap-2">
               <span
                 className="px-3 py-1.5 text-sm font-medium"
-                style={{ ...raio, background: "var(--primary)", color: "var(--primary-foreground)" }}
+                style={{ ...raio, background: "var(--primary)", color: "var(--primary-foreground)", outline: "2px solid var(--ring)", outlineOffset: 2 }}
               >
-                Botão primário
+                Botão primário (com foco)
               </span>
               <span
                 className="px-3 py-1.5 text-sm"
                 style={{ ...raio, background: "var(--secondary)", color: "var(--secondary-foreground)" }}
               >
                 Secundário
+              </span>
+              <span
+                className="px-3 py-1.5 text-sm"
+                style={{ ...raio, background: "var(--accent)", color: "var(--accent-foreground)" }}
+              >
+                Destaque
               </span>
               <span className="px-3 py-1.5 text-sm" style={{ color: "var(--destructive)" }}>
                 Erro
@@ -76,29 +92,6 @@ function AmostraModo({
             ))}
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-/** Prévia do tema importado, no claro e (se houver) no escuro. */
-export function PreviaDoTema({ previa, logoUrl, logoEscuroUrl }: {
-  previa: PreviaTema;
-  logoUrl: string | null;
-  logoEscuroUrl: string | null;
-}) {
-  const logo = (variaveis: Record<string, string>) =>
-    corDeTextoContrastante(variaveis["--sidebar"]) === "#ffffff" ? (logoEscuroUrl ?? logoUrl) : logoUrl;
-  return (
-    <div className="space-y-3">
-      {previa.urlFontes ? <link rel="stylesheet" href={previa.urlFontes} /> : null}
-      <div className="grid gap-3 lg:grid-cols-2">
-        <AmostraModo titulo="Claro" variaveis={previa.claro} previa={previa} logoUrl={logo(previa.claro)} />
-        {previa.escuro ? (
-          <AmostraModo titulo="Escuro" variaveis={previa.escuro} previa={previa} logoUrl={logo(previa.escuro)} />
-        ) : (
-          <p className="text-sm text-muted-foreground">Sem modo escuro: a empresa fica só no claro.</p>
-        )}
       </div>
     </div>
   );
