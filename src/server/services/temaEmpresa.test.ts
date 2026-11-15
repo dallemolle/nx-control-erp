@@ -119,6 +119,20 @@ describe("tema por empresa", () => {
     aviso.mockRestore();
   });
 
+  test("marca: logo para fundo claro e escuro gravam as URLs", async () => {
+    const png = (nome: string) => new File([new Uint8Array([1])], nome, { type: "image/png" });
+    await atualizarMarca(sessao, empresaId, {
+      logo: png("logo.png"),
+      logoEscuro: png("logo-escuro.png"),
+      favicon: null,
+      removerLogoEscuro: false,
+      removerFavicon: false,
+    });
+    const empresa = await ler();
+    expect(empresa.logoUrl).toMatch(/\/logo-\d+$/);
+    expect(empresa.logoEscuroUrl).toMatch(/\/logo-escuro-\d+$/);
+  });
+
   test("marca: favicon PNG grava a URL; formato errado é recusado", async () => {
     const png = new File([new Uint8Array([1, 2, 3])], "favicon.png", { type: "image/png" });
     await atualizarMarca(sessao, empresaId, {
@@ -128,7 +142,7 @@ describe("tema por empresa", () => {
       removerFavicon: false,
     });
     expect((await ler()).faviconUrl).toMatch(/^https:\/\/blob\.test\/empresas\/.+\/favicon-/);
-    expect(await auditorias("ATUALIZAR_MARCA")).toBe(1);
+    expect(await auditorias("ATUALIZAR_MARCA")).toBe(2);
 
     const texto = new File(["x"], "favicon.txt", { type: "text/plain" });
     await expect(

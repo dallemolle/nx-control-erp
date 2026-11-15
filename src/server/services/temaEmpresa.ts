@@ -67,13 +67,27 @@ export async function restaurarTemaPadrao(sessao: SessaoAtiva, empresaId: string
   await auditar(sessao, empresaId, "RESTAURAR_TEMA", { tema: empresa.tema }, { tema: null });
 }
 
-/** Uploads do logo para fundo escuro e do favicon (o logo de fundo claro segue na edição da empresa). */
+/** Uploads do logo (fundo claro), do logo para fundo escuro e do favicon. */
 export async function atualizarMarca(
   sessao: SessaoAtiva,
   empresaId: string,
-  arquivos: { logoEscuro: File | null; favicon: File | null; removerLogoEscuro: boolean; removerFavicon: boolean },
+  arquivos: {
+    logo?: File | null;
+    removerLogo?: boolean;
+    logoEscuro: File | null;
+    favicon: File | null;
+    removerLogoEscuro: boolean;
+    removerFavicon: boolean;
+  },
 ): Promise<void> {
   const empresa = await empresaGerenciavel(sessao, empresaId);
+  const logoUrl = await processarImagemEmpresa(
+    empresaId,
+    empresa.logoUrl,
+    arquivos.logo ?? null,
+    arquivos.removerLogo ?? false,
+    "logo",
+  );
   const logoEscuroUrl = await processarImagemEmpresa(
     empresaId,
     empresa.logoEscuroUrl,
@@ -89,6 +103,7 @@ export async function atualizarMarca(
     "favicon",
   );
   const data = {
+    ...(logoUrl !== undefined ? { logoUrl } : {}),
     ...(logoEscuroUrl !== undefined ? { logoEscuroUrl } : {}),
     ...(faviconUrl !== undefined ? { faviconUrl } : {}),
   };
@@ -99,7 +114,7 @@ export async function atualizarMarca(
     sessao,
     empresaId,
     "ATUALIZAR_MARCA",
-    { logoEscuroUrl: empresa.logoEscuroUrl, faviconUrl: empresa.faviconUrl },
+    { logoUrl: empresa.logoUrl, logoEscuroUrl: empresa.logoEscuroUrl, faviconUrl: empresa.faviconUrl },
     data,
   );
 }
