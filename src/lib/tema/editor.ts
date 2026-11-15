@@ -54,7 +54,7 @@ export const HERANCA: Partial<Record<PapelCor, string>> = {
   foco: "Primária",
   erro: "padrão do sistema",
   cabecalho: "Fundo",
-  textoCabecalho: "Texto",
+  textoCabecalho: "Texto (ou cor legível sobre o Cabeçalho personalizado)",
 };
 
 const VARIAVEL: Record<PapelCor, string> = {
@@ -111,19 +111,56 @@ function semChave<T extends object>(objeto: T, chave: string): T {
   return copia as T;
 }
 
-export function graficosEfetivos(tema: Tema, modo: Modo): string[] {
-  const variaveis = variaveisDoTema(tema)[modo] ?? variaveisDoTema(tema).claro;
-  return [1, 2, 3, 4, 5].map((n) => {
-    const valor = variaveis[`--chart-${n}`];
-    return HEX.test(valor) ? valor : CINZA;
+/** oklch acromático dos padrões do sistema e o #RRGGBB equivalente. */
+const OKLCH_ACROMATICO: Record<string, string> = {
+  "oklch(0.556 0 0)": "#737373",
+  "oklch(0.922 0 0)": "#e5e5e5",
+  "oklch(0.145 0 0)": "#0a0a0a",
+  "oklch(1 0 0)": "#ffffff",
+  "oklch(0.97 0 0)": "#f5f5f5",
+};
+const HEX_ALFA = /^#([0-9a-f]{6})([0-9a-f]{2})$/;
+
+/** Mistura `#RRGGBBAA` sobre o fundo `#RRGGBB`: `round(c*a + fundo*(1-a))` por canal. */
+export function misturarSobre(corComAlfa: string, fundo: string): string {
+  const m = HEX_ALFA.exec(corComAlfa);
+  if (!m || !HEX.test(fundo)) return CINZA;
+  const alfa = parseInt(m[2], 16) / 255;
+  const canais = [0, 2, 4].map((i) => {
+    const c = parseInt(m[1].slice(i, i + 2), 16);
+    const f = parseInt(fundo.slice(1 + i, 3 + i), 16);
+    return Math.round(c * alfa + f * (1 - alfa))
+      .toString(16)
+      .padStart(2, "0");
   });
+  return `#${canais.join("")}`;
 }
 
-/** Cor em uso para o papel (com herança); cinza quando o padrão não é #RRGGBB (oklch ou transparência). */
+/** #RRGGBB do valor de uma variável CSS; cinza só em último caso (oklch saturado). */
+function paraHex(valor: string, fundo: string): string {
+  const texto = valor.trim().toLowerCase();
+  if (HEX.test(texto)) return texto;
+  if (OKLCH_ACROMATICO[texto]) return OKLCH_ACROMATICO[texto];
+  if (HEX_ALFA.test(texto)) return misturarSobre(texto, fundo);
+  return CINZA;
+}
+
+function variaveisDoModo(tema: Tema, modo: Modo) {
+  const todas = variaveisDoTema(tema);
+  return todas[modo] ?? todas.claro;
+}
+
+export function graficosEfetivos(tema: Tema, modo: Modo): string[] {
+  const variaveis = variaveisDoModo(tema, modo);
+  const fundo = paraHex(variaveis["--background"], "#ffffff");
+  return [1, 2, 3, 4, 5].map((n) => paraHex(variaveis[`--chart-${n}`], fundo));
+}
+
+/** Cor em uso para o papel (com herança); cinza só quando o padrão é oklch saturado. */
 export function valorEfetivo(tema: Tema, modo: Modo, papel: PapelCor): string {
-  const variaveis = variaveisDoTema(tema)[modo] ?? variaveisDoTema(tema).claro;
-  const valor = variaveis[VARIAVEL[papel]];
-  return HEX.test(valor) ? valor : CINZA;
+  const variaveis = variaveisDoModo(tema, modo);
+  const fundo = paraHex(variaveis["--background"], "#ffffff");
+  return paraHex(variaveis[VARIAVEL[papel]], fundo);
 }
 
 function comTema(estado: EstadoEditor, novo: Tema): EstadoEditor {

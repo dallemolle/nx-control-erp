@@ -37,6 +37,7 @@ export function CampoCor({
   onChange: (valor: string | undefined) => void;
 }) {
   const id = useId();
+  const dicaId = `${id}-dica`;
   const automatico = valor === undefined;
   const atual = valor ?? efetivo;
   const [texto, setTexto] = useState(atual);
@@ -68,6 +69,7 @@ export function CampoCor({
           value={texto}
           disabled={automatico}
           aria-invalid={!textoValido}
+          aria-describedby={!automatico && !textoValido ? dicaId : undefined}
           spellCheck={false}
           className="h-8 w-24 font-mono text-xs"
           onChange={(e) => {
@@ -76,7 +78,7 @@ export function CampoCor({
           }}
         />
       </div>
-      {!automatico && !textoValido ? <p className="text-xs text-destructive">Use #RRGGBB</p> : null}
+      {!automatico && !textoValido ? <p id={dicaId} className="text-xs text-destructive">Use #RRGGBB</p> : null}
       {opcional ? (
         <label className="flex items-center gap-2 text-xs text-muted-foreground">
           <input type="checkbox" checked={automatico} onChange={(e) => onChange(e.target.checked ? undefined : efetivo)} />

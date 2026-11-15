@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   diagnostico,
   estadoInicial,
+  misturarSobre,
   nomeArquivoTema,
   pilhaDaFonte,
   reduzirEditor,
@@ -143,6 +144,21 @@ describe("auxiliares", () => {
     const tema = { ...hortitex(), cores: { ...hortitex().cores, claro } };
     expect(valorEfetivo(tema, "claro", "cartao")).toBe(claro.fundo);
     expect(valorEfetivo(tema, "claro", "borda")).toMatch(/^#[0-9a-f]{6}$/);
+  });
+
+  test("valorEfetivo converte os padrões acromáticos e mistura o alfa sobre o fundo", () => {
+    expect(valorEfetivo(TEMA_PADRAO, "claro", "textoApagado")).toBe("#737373");
+    expect(valorEfetivo(TEMA_PADRAO, "claro", "borda")).toBe("#e5e5e5");
+    // #ffffff1a sobre o fundo escuro #10151d: round(255*26/255 + c*(1-26/255)) = #282d34
+    expect(valorEfetivo(TEMA_PADRAO, "escuro", "borda")).toBe("#282d34");
+    expect(valorEfetivo(TEMA_PADRAO, "claro", "erro")).toBe("#808080");
+  });
+
+  test("misturarSobre", () => {
+    expect(misturarSobre("#ffffff1a", "#10151d")).toBe("#282d34");
+    expect(misturarSobre("#ff000080", "#000000")).toBe("#800000");
+    expect(misturarSobre("#ffffff00", "#123456")).toBe("#123456");
+    expect(misturarSobre("#abcdefff", "#000000")).toBe("#abcdef");
   });
 
   test("diagnostico: erros e avisos ao mesmo tempo", () => {

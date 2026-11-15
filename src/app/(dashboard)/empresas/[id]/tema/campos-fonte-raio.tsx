@@ -41,6 +41,14 @@ export function CamposFonte({
   const erroGoogle = erroDoCampo(fonte, "google");
   const erroPilha = erroDoCampo(fonte, "pilha");
 
+  // Painel da pilha avançada: abre sozinho quando surge um erro e nunca fecha sob o cursor.
+  const [pilhaAberta, setPilhaAberta] = useState(false);
+  const [havia, setHavia] = useState(erroPilha !== null);
+  if ((erroPilha !== null) !== havia) {
+    setHavia(erroPilha !== null);
+    if (erroPilha !== null) setPilhaAberta(true);
+  }
+
   const mudarNome = (texto: string) => {
     setRascunho(texto);
     const nome = texto.trim();
@@ -78,12 +86,20 @@ export function CamposFonte({
           <option value="serif">Com serifa</option>
         </select>
       </div>
-      {erroGoogle ? <p className="text-xs text-destructive">{erroGoogle}</p> : null}
+      {erroGoogle ? (
+        <p className="text-xs text-destructive" data-problema="essencial">
+          {erroGoogle}
+        </p>
+      ) : null}
       <p className="text-xs text-muted-foreground">
         Se o nome não existir no Google Fonts, vale a fonte alternativa da pilha.
       </p>
       {fonte ? (
-        <details open={erroPilha !== null || undefined}>
+        <details
+          open={pilhaAberta || erroPilha !== null}
+          onToggle={(e) => setPilhaAberta(e.currentTarget.open)}
+          data-problema={erroPilha ? "essencial" : undefined}
+        >
           <summary className="cursor-pointer text-xs text-muted-foreground">Pilha avançada</summary>
           <Input
             aria-label={`${ROTULO[grupo]}: pilha completa`}

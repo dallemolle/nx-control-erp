@@ -3,8 +3,8 @@ import type { Tema } from "./schema";
 /**
  * Padrão do sistema (globals.css, `.theme-a` e `.theme-a-dark`) no formato `nx-tema`, ponto de partida do
  * editor. oklch acromático convertido: oklch(1 0 0) = #ffffff, oklch(0.145 0 0) = #0a0a0a,
- * oklch(0.97 0 0) = #f5f5f5. Borda, texto apagado e erro com oklch saturado ou transparência ficam de fora
- * (no editor: "Automático", que é o padrão do sistema).
+ * oklch(0.97 0 0) = #f5f5f5. Borda, erro e texto apagado (claro) ficam de fora por escolha: no editor
+ * ficam "Automático" (padrão do sistema).
  */
 export const TEMA_PADRAO: Tema = {
   formato: "nx-tema",

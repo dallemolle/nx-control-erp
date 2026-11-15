@@ -18,6 +18,7 @@ import {
   temasIguais,
   urlFontesDaPrevia,
   valorEfetivo,
+  type AcaoEditor,
   type Modo,
 } from "@/lib/tema/editor";
 import type { Tema } from "@/lib/tema/schema";
@@ -67,10 +68,15 @@ export function EditorTema({
   logoUrl: string | null;
   logoEscuroUrl: string | null;
 }) {
-  const [estado, despachar] = useReducer(reduzirEditor, temaInicial, estadoInicial);
+  const [estado, despacharBruto] = useReducer(reduzirEditor, temaInicial, estadoInicial);
   const { tema, modo } = estado;
   const [gravado, setGravado] = useState(temTemaGravado);
   const [mensagem, setMensagem] = useState<{ tipo: "erro" | "ok"; texto: string } | null>(null);
+  // Uma edição apaga a confirmação de sucesso (erros ficam até a próxima tentativa de salvar).
+  const despachar = (acao: AcaoEditor) => {
+    if (acao.tipo !== "modo") setMensagem((m) => (m?.tipo === "ok" ? null : m));
+    despacharBruto(acao);
+  };
   const [importando, setImportando] = useState(false);
   const [errosImportacao, setErrosImportacao] = useState<string[]>([]);
   const [salvando, iniciar] = useTransition();
@@ -176,11 +182,22 @@ export function EditorTema({
   }
 
   function irParaProblema() {
-    const alvo = document.querySelector<HTMLElement>("[data-problema='essencial'], [data-problema='secundario']");
-    if (!alvo) return;
-    const detalhes = alvo.closest("details");
-    if (detalhes) detalhes.open = true;
-    alvo.scrollIntoView({ behavior: "smooth", block: "center" });
+    const seletor = "[data-problema='essencial'], [data-problema='secundario']";
+    const rolar = () => {
+      const alvo = document.querySelector<HTMLElement>(seletor);
+      if (!alvo) return false;
+      for (let d = alvo.closest("details"); d; d = d.parentElement?.closest("details") ?? null) d.open = true;
+      alvo.scrollIntoView({ behavior: "smooth", block: "center" });
+      return true;
+    };
+    if (rolar()) return;
+    // Sem problema no modo visível: vai para o outro modo se o diagnóstico aponta para ele.
+    const outro: Modo = modo === "claro" ? "escuro" : "claro";
+    if (outro === "escuro" && !tema.cores.escuro) return;
+    if ([...erros, ...avisos].some((texto) => texto.includes(`cores.${outro}`))) {
+      despachar({ tipo: "modo", modo: outro });
+      setTimeout(rolar, 50);
+    }
   }
 
   return (
@@ -198,6 +215,8 @@ export function EditorTema({
             id="nome-tema"
             value={tema.nome}
             maxLength={60}
+            aria-invalid={tema.nome.trim() === ""}
+            data-problema={tema.nome.trim() === "" ? "essencial" : undefined}
             onChange={(e) => despachar({ tipo: "nome", nome: e.target.value })}
           />
         </div>
@@ -377,7 +396,15 @@ export function EditorTema({
                 onChange={async (e) => {
                   const arquivo = e.target.files?.[0];
                   e.target.value = "";
-                  if (arquivo) importar(await arquivo.text());
+                  if (!arquivo) return;
+                  let texto: string;
+                  try {
+                    texto = await arquivo.text();
+                  } catch {
+                    setErrosImportacao(["Não foi possível ler o arquivo."]);
+                    return;
+                  }
+                  importar(texto);
                 }}
               />
             </div>
