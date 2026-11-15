@@ -50,7 +50,7 @@ describe("painel de produção", () => {
       recepcaoSchema.parse({ data: "2026-11-10", localId: cat.localRecepcaoId, unidade: "KG", descarte: "0", ...extra }),
     );
   const consumir = (opId: string, loteId: string, kg: number) =>
-    adicionarConsumo(adm(), opId, consumoSchema.parse({ loteId, quantidadeKg: kg, motivoLiberacaoVencido: "" }));
+    adicionarConsumo(adm(), opId, consumoSchema.parse({ loteId, quantidadeKg: kg }));
   const produzir = (opId: string, produtoId: string, kg: number) =>
     adicionarProducao(adm(), opId, producaoSchema.parse({ produtoId, quantidadeKg: kg, localId: cat.localCamaraId }));
   const processo = (opId: string, dados: Record<string, string>) =>

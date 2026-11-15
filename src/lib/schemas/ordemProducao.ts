@@ -34,7 +34,6 @@ export type ProcessoOPValues = z.infer<typeof processoOPSchema>;
 export const consumoSchema = z.object({
   loteId: z.string().trim().min(1, "Selecione o lote"),
   quantidadeKg: kg("Informe a quantidade"),
-  motivoLiberacaoVencido: textoOpcional,
 });
 
 export type ConsumoValues = z.infer<typeof consumoSchema>;

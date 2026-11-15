@@ -57,28 +57,22 @@ export type LoteConsumoOpcao = {
   saldoKg: number;
   validade: string;
   vencido: boolean;
+  /** Último dia da liberação do lote vencido (D-35), em `AAAA-MM-DD`; já considera a data da OP. */
+  liberadoAte: string | null;
 };
 
-export function FormConsumo({
-  opId,
-  lotes,
-  podeLiberarVencido,
-}: {
-  opId: string;
-  lotes: LoteConsumoOpcao[];
-  podeLiberarVencido: boolean;
-}) {
+export function FormConsumo({ opId, lotes }: { opId: string; lotes: LoteConsumoOpcao[] }) {
   const { chave, state, formAction, pendente } = useAcaoQueLimpa(adicionarConsumoAction);
   return (
     <form action={formAction} className="rounded-lg border p-3">
       <input type="hidden" name="opId" value={opId} />
-      <CamposConsumo key={chave} lotes={lotes} podeLiberarVencido={podeLiberarVencido} />
+      <CamposConsumo key={chave} lotes={lotes} />
       <Rodape state={state} pendente={pendente} rotulo="Lançar consumo" />
     </form>
   );
 }
 
-function CamposConsumo({ lotes, podeLiberarVencido }: { lotes: LoteConsumoOpcao[]; podeLiberarVencido: boolean }) {
+function CamposConsumo({ lotes }: { lotes: LoteConsumoOpcao[] }) {
   const [loteId, setLoteId] = useState("");
   const [kg, setKg] = useState("");
   const lote = lotes.find((l) => l.id === loteId);
@@ -94,7 +88,9 @@ function CamposConsumo({ lotes, podeLiberarVencido }: { lotes: LoteConsumoOpcao[
           <SelectContent>
             {lotes.map((l) => (
               <SelectItem key={l.id} value={l.id}>
-                {`${l.codigo} · ${KG.format(l.saldoKg)} kg · vence ${formatarData(l.validade)}${l.vencido ? " · VENCIDO" : ""}`}
+                {`${l.codigo} · ${KG.format(l.saldoKg)} kg · vence ${formatarData(l.validade)}${
+                  l.vencido ? (l.liberadoAte ? ` · VENCIDO, liberado até ${formatarData(l.liberadoAte)}` : " · VENCIDO") : ""
+                }`}
               </SelectItem>
             ))}
           </SelectContent>
@@ -117,15 +113,13 @@ function CamposConsumo({ lotes, podeLiberarVencido }: { lotes: LoteConsumoOpcao[
         ) : null}
       </Campo>
       {lote?.vencido ? (
-        podeLiberarVencido ? (
-          <div className="sm:col-span-full">
-            <Campo id="consumo-motivo" rotulo="Motivo da liberação do lote vencido">
-              <Input id="consumo-motivo" name="motivoLiberacaoVencido" required minLength={3} />
-            </Campo>
-          </div>
+        lote.liberadoAte ? (
+          <p className="text-sm text-muted-foreground sm:col-span-full">
+            Liberado até {formatarData(lote.liberadoAte)}
+          </p>
         ) : (
           <p className="text-sm text-destructive sm:col-span-full">
-            Lote vencido: só gestor ou administrador libera.
+            Lote vencido: peça a liberação ao gestor na tela de Estoque.
           </p>
         )
       ) : null}

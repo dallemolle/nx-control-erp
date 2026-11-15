@@ -33,6 +33,14 @@ describe("produtoSchema", () => {
     expect(sem.fatorUnidadeKg).toBeUndefined();
   });
 
+  test("dias de liberação após vencimento: opcional, inteiro de 1 a 365", () => {
+    expect(produtoSchema.parse({ ...base, diasLiberacaoVencido: "" }).diasLiberacaoVencido).toBeUndefined();
+    expect(produtoSchema.parse({ ...base, diasLiberacaoVencido: "5" }).diasLiberacaoVencido).toBe(5);
+    for (const invalido of ["0", "366", "2.5"]) {
+      expect(produtoSchema.safeParse({ ...base, diasLiberacaoVencido: invalido }).success).toBe(false);
+    }
+  });
+
   test("preço de referência opcional e não negativo", () => {
     expect(produtoSchema.parse({ ...base, precoReferenciaKg: "" }).precoReferenciaKg).toBeUndefined();
     expect(produtoSchema.safeParse({ ...base, precoReferenciaKg: "-1" }).success).toBe(false);

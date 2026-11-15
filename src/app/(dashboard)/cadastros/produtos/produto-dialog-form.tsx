@@ -28,6 +28,7 @@ type Produto = {
   unidadeComercial: string | null;
   fatorUnidadeKg: number | null;
   textoEtiqueta: string | null;
+  diasLiberacaoVencido: number | null;
 };
 
 type FrutaOpcao = { id: string; nome: string };
@@ -149,6 +150,22 @@ export function ProdutoDialogForm({ produto, frutas }: { produto?: Produto; frut
                 defaultValue={produto?.armazenamento ?? ""}
               />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="diasLiberacaoVencido">Dias de liberação após vencimento (opcional)</Label>
+            <Input
+              id="diasLiberacaoVencido"
+              name="diasLiberacaoVencido"
+              type="number"
+              min="1"
+              max="365"
+              step="1"
+              className="sm:w-40"
+              defaultValue={produto?.diasLiberacaoVencido ?? ""}
+            />
+            <p className="text-xs text-muted-foreground">
+              Tolerância máxima após a validade. Vazio = o produto não pode ser liberado.
+            </p>
           </div>
 
           <Separator />

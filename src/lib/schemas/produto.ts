@@ -19,6 +19,9 @@ export const produtoSchema = z
     unidadeComercial: textoOpcional,
     fatorUnidadeKg: numeroOpcional(z.number().positive("O fator deve ser maior que zero")),
     textoEtiqueta: textoOpcional,
+    diasLiberacaoVencido: numeroOpcional(
+      z.number().int("Use dias inteiros").min(1, "Mínimo de 1 dia").max(365, "Máximo de 365 dias"),
+    ),
   })
   .superRefine((dados, ctx) => {
     const temUnidade = dados.unidadeComercial != null;

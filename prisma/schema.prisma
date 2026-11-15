@@ -190,6 +190,7 @@ model Usuario {
   recepcoesFruto            RecepcaoFruto[]
   pedidosVenda              PedidoVenda[]
   ordensProducao            OrdemProducao[]
+  lotesLiberados            Lote[]                   @relation("LoteLiberadoPor")
 
   @@map("usuarios")
 }
@@ -857,23 +858,25 @@ model Fruta {
 }
 
 model Produto {
-  id                String           @id @default(uuid())
-  empresaId         String
-  codigo            String
-  descricao         String
-  categoria         CategoriaProduto
-  frutaId           String
-  conservacao       Conservacao
-  validadeDias      Int
-  precoReferenciaKg Decimal?         @db.Decimal(18, 4)
-  armazenamento     String?
-  unidadeComercial  String?
-  fatorUnidadeKg    Decimal?         @db.Decimal(18, 3)
+  id                   String           @id @default(uuid())
+  empresaId            String
+  codigo               String
+  descricao            String
+  categoria            CategoriaProduto
+  frutaId              String
+  conservacao          Conservacao
+  validadeDias         Int
+  precoReferenciaKg    Decimal?         @db.Decimal(18, 4)
+  armazenamento        String?
+  unidadeComercial     String?
+  fatorUnidadeKg       Decimal?         @db.Decimal(18, 3)
   /// Dizeres livres da etiqueta (ingredientes, conservação) — D-10.
-  textoEtiqueta     String?
-  ativo             Boolean          @default(true)
-  criadoEm          DateTime         @default(now())
-  atualizadoEm      DateTime         @updatedAt
+  textoEtiqueta        String?
+  /// Tolerância após a validade para liberar lote vencido (D-35); vazio = não libera.
+  diasLiberacaoVencido Int?
+  ativo                Boolean          @default(true)
+  criadoEm             DateTime         @default(now())
+  atualizadoEm         DateTime         @updatedAt
 
   empresa     Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   fruta       Fruta           @relation(fields: [frutaId], references: [id], onDelete: Restrict)
@@ -1030,11 +1033,17 @@ model Lote {
   quantidadeInicialKg Decimal    @db.Decimal(18, 3)
   saldoKg             Decimal    @db.Decimal(18, 3)
   custoKg             Decimal    @db.Decimal(18, 4)
+  /// Liberação do vencido (D-35): último dia em que o lote pode sair, inclusive.
+  liberadoAte         DateTime?
+  liberadoEm          DateTime?
+  liberadoPorId       String?
+  motivoLiberacao     String?
   criadoEm            DateTime   @default(now())
   atualizadoEm        DateTime   @updatedAt
 
   filial           Filial             @relation(fields: [filialId], references: [id], onDelete: Cascade)
   produto          Produto            @relation(fields: [produtoId], references: [id], onDelete: Restrict)
+  liberadoPor      Usuario?           @relation("LoteLiberadoPor", fields: [liberadoPorId], references: [id], onDelete: SetNull)
   local            LocalArmazenamento @relation(fields: [localId], references: [id], onDelete: Restrict)
   movimentos       MovimentoEstoque[]
   ajustes          AjusteEstoque[]
