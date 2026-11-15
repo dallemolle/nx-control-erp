@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { atualizarMarcaAction, restaurarTemaAction, type FormState } from "./actions";
+import { atualizarMarcaAction, type FormState } from "./actions";
 
 function CampoImagem({
   nome,
@@ -91,24 +91,6 @@ export function MarcaForm({
       <Button type="submit" disabled={pendente}>
         {pendente ? "Salvando..." : "Salvar marca"}
       </Button>
-    </form>
-  );
-}
-
-export function RestaurarTemaForm({ empresaId }: { empresaId: string }) {
-  const [estado, acao, pendente] = useActionState<FormState, FormData>(restaurarTemaAction, {});
-  return (
-    <form
-      action={acao}
-      onSubmit={(evento) => {
-        if (!window.confirm("Voltar ao visual padrão do sistema? Os logos continuam.")) evento.preventDefault();
-      }}
-    >
-      <input type="hidden" name="empresaId" value={empresaId} />
-      <Button type="submit" variant="outline" size="sm" disabled={pendente}>
-        {pendente ? "Restaurando..." : "Restaurar padrão"}
-      </Button>
-      {estado.erro ? <p className="mt-1 text-sm text-destructive">{estado.erro}</p> : null}
     </form>
   );
 }

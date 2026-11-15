@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
-import { validarTema } from "./validar";
+import { analisarTexto, paresDeContraste, validarTema } from "./validar";
 
 const hortitex = () => JSON.parse(readFileSync("public/temas/hortitex.json", "utf8"));
 
@@ -70,5 +70,39 @@ describe("validarTema", () => {
   test("normaliza cores para minúsculas", () => {
     const r = validarTema(com((t) => (t.cores.claro.fundo = "#F7F1E3")));
     expect(r.ok && r.tema.cores.claro.fundo).toBe("#f7f1e3");
+  });
+});
+
+describe("paresDeContraste", () => {
+  test("lista essenciais e secundários com razão e situação", () => {
+    const pares = paresDeContraste({ ...hortitex().cores.claro, texto: "#777777", fundo: "#888888" });
+    const textoFundo = pares.find((p) => p.texto === "texto" && p.fundo === "fundo");
+    expect(textoFundo).toMatchObject({ nivel: "essencial", ok: false });
+    expect(textoFundo!.razao).toBeLessThan(4.5);
+    expect(pares.find((p) => p.texto === "textoApagado")).toMatchObject({ nivel: "secundario" });
+  });
+
+  test("cabeçalho ausente herda fundo e texto", () => {
+    const cores = hortitex().cores.claro;
+    delete cores.cabecalho;
+    delete cores.textoCabecalho;
+    const par = paresDeContraste(cores).find((p) => p.texto === "textoCabecalho");
+    expect(par).toMatchObject({ fundo: "cabecalho", ok: true });
+  });
+
+  test("concorda com validarTema: essencial ruim vira erro, secundário ruim vira aviso", () => {
+    const ruim = com((t) => (t.cores.claro.textoSobrePrimaria = t.cores.claro.primaria));
+    const r = validarTema(ruim);
+    expect(r.ok).toBe(false);
+    const falhas = paresDeContraste(ruim.cores.claro).filter((p) => p.nivel === "essencial" && !p.ok);
+    expect(falhas.map((p) => p.texto)).toEqual(["textoSobrePrimaria"]);
+  });
+});
+
+describe("analisarTexto", () => {
+  test("texto que não é JSON vira erro, não exceção", () => {
+    const r = analisarTexto("{ não é json");
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.erros[0]).toContain("JSON inválido");
   });
 });

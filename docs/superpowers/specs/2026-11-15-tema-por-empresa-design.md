@@ -15,8 +15,9 @@ gera a partir do manual de marca e o sistema importa e valida. O primeiro
 tema de exemplo é o da Hortitex.
 
 Evolui a [identidade visual por empresa](2026-09-18-identidade-visual-por-empresa-design.md)
-(cor da sidebar + logo). Entrega 1 de 2; a entrega 2 é o editor visual
-(seletores de cor por papel, prévia ao vivo editável), em sessão própria.
+(cor da sidebar + logo). Entrega 1 de 2; a entrega 2, o editor visual
+(seletores de cor por papel, prévia ao vivo editável), foi feita em
+2026-11-15: [2026-11-15-editor-visual-tema-design.md](2026-11-15-editor-visual-tema-design.md).
 
 ## Decisões deste desenho
 

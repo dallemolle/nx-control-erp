@@ -11,9 +11,30 @@ Spec: [2026-11-15-tema-por-empresa-design.md](../superpowers/specs/2026-11-15-te
 ## Onde importar
 
 Administração → Empresas → **Tema e marca** na linha da empresa (só o
-Administrador). A tela valida o arquivo, mostra erros, avisos de contraste e
-uma prévia antes de aplicar. **Exportar** baixa o tema atual; **Restaurar
-padrão** volta ao visual do sistema.
+Administrador). A tela é um [editor visual](#editor-visual); **Exportar**
+baixa o tema do editor e **Restaurar padrão** volta ao visual do sistema.
+
+## Editor visual
+
+Spec: [2026-11-15-editor-visual-tema-design.md](../superpowers/specs/2026-11-15-editor-visual-tema-design.md).
+É o caminho principal para criar e ajustar o tema, sem depender da IA.
+
+- Começa do tema salvo da empresa; sem tema, do padrão do sistema
+  (`TEMA_PADRAO`, com o nome da empresa).
+- Cores em grupos recolhíveis (essenciais, superfícies e apoio, cabeçalho/foco/
+  borda/erro, gráficos). Nos papéis opcionais, **Automático** herda de outro
+  papel. Cada cor de texto tem um selo de contraste (ok, aviso, erro) e a
+  prévia muda na hora.
+- Abas **Claro** / **Escuro** definem qual modo os controles editam; **Ter modo
+  escuro** liga e desliga o modo escuro.
+- **Fontes e raio:** nome no Google Fonts + sans/serif (ou pilha avançada) e
+  raio de 0 a 32px.
+- **Salvar** fica bloqueado enquanto houver erro de contraste essencial; avisos
+  pedem confirmação. **Descartar alterações** volta ao último estado salvo.
+- **Importar JSON** (arquivo ou texto colado, ex.: gerado por IA) carrega o tema
+  no editor para ajustar antes de salvar. O tema importado precisa passar na
+  validação (erros de contraste essenciais incluídos) para ser carregado.
+- **Exportar** gera o JSON no navegador a partir do estado do editor.
 
 ## Gerar um tema com IA
 
