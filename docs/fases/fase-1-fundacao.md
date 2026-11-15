@@ -4,6 +4,12 @@ Status: 🟢 **Concluída.** Arquitetura, autenticação, RBAC, auditoria,
 empresas, usuários, o nível de filial e os 9 cadastros básicos previstos
 estão completos e testados.
 
+Evolução posterior (2026-11-15): a identidade visual por empresa (cor da
+sidebar + logo) virou **tema por empresa**: arquivo `nx-tema` com cores claro
+e escuro, fontes do Google e raio, validado (formato e contraste) e aplicado
+em todo o painel; logo para fundo escuro e favicon por upload. Detalhes em
+[`docs/temas/README.md`](../temas/README.md).
+
 ## Escopo desta fase
 
 Arquitetura, banco de dados, autenticação, empresas, usuários, permissões e

@@ -22,7 +22,11 @@ const PALETAS = [
   { id: "theme-c", label: "C — Header navy" },
 ] as const;
 
-export function ThemeToggle() {
+/**
+ * `livre`: as 3 paletas × claro/escuro. Empresa com tema: `claro-escuro` mostra
+ * só Claro/Escuro (o tema da empresa define as cores); `so-claro` esconde o botão.
+ */
+export function ThemeToggle({ modo = "livre" }: { modo?: "livre" | "claro-escuro" | "so-claro" }) {
   const { theme, setTheme } = useTheme();
   // false no SSR e na hidratação, true depois: o tema salvo só existe no navegador.
   const montado = useSyncExternalStore(
@@ -33,7 +37,10 @@ export function ThemeToggle() {
 
   const temaAtivo = montado ? theme : undefined;
   const escuro = temaAtivo?.endsWith("-dark") ?? false;
-  const paletaAtiva = temaAtivo ? temaAtivo.replace("-dark", "") : "theme-a";
+  // Com tema da empresa a paleta pessoal não aparece: claro/escuro usa a variação A.
+  const paletaAtiva = modo !== "livre" ? "theme-a" : temaAtivo ? temaAtivo.replace("-dark", "") : "theme-a";
+
+  if (modo === "so-claro") return null;
 
   function selecionarPaleta(paletaId: string) {
     setTheme(escuro ? `${paletaId}-dark` : paletaId);
@@ -58,21 +65,25 @@ export function ThemeToggle() {
         <Palette className="size-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Paleta</DropdownMenuLabel>
-          {PALETAS.map((paleta) => (
-            <DropdownMenuItem
-              key={paleta.id}
-              onClick={() => selecionarPaleta(paleta.id)}
-            >
-              {paleta.label}
-              {montado && paletaAtiva === paleta.id && (
-                <Check className="ml-auto" />
-              )}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
+        {modo === "livre" ? (
+          <>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Paleta</DropdownMenuLabel>
+              {PALETAS.map((paleta) => (
+                <DropdownMenuItem
+                  key={paleta.id}
+                  onClick={() => selecionarPaleta(paleta.id)}
+                >
+                  {paleta.label}
+                  {montado && paletaAtiva === paleta.id && (
+                    <Check className="ml-auto" />
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+          </>
+        ) : null}
         <DropdownMenuGroup>
           <DropdownMenuLabel>Aparência</DropdownMenuLabel>
           <DropdownMenuItem onClick={() => selecionarModo("claro")}>

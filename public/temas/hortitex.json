@@ -1,0 +1,42 @@
+{
+  "formato": "nx-tema",
+  "versao": 1,
+  "nome": "Hortitex",
+  "cores": {
+    "claro": {
+      "fundo": "#f7f1e3",
+      "texto": "#3a281c",
+      "primaria": "#1f4d2e",
+      "textoSobrePrimaria": "#f7f1e3",
+      "sidebar": "#1f4d2e",
+      "textoSobreSidebar": "#f7f1e3",
+      "cartao": "#fbf7ee",
+      "apoio": "#ebe0c8",
+      "textoApagado": "#6b5645",
+      "destaque": "#ebe0c8",
+      "erro": "#b83a24",
+      "cabecalho": "#f7f1e3",
+      "graficos": ["#1f4d2e", "#4f8a3c", "#b83a24", "#e8a93a", "#6b5645"]
+    },
+    "escuro": {
+      "fundo": "#16221a",
+      "texto": "#f5eedd",
+      "primaria": "#6fae5e",
+      "textoSobrePrimaria": "#16221a",
+      "sidebar": "#25362b",
+      "textoSobreSidebar": "#f5eedd",
+      "cartao": "#1d2b21",
+      "apoio": "#25362b",
+      "textoApagado": "#b9b29e",
+      "destaque": "#25362b",
+      "erro": "#e5694f",
+      "cabecalho": "#16221a",
+      "graficos": ["#6fae5e", "#9bcb7f", "#e5694f", "#f0b84f", "#b9b29e"]
+    }
+  },
+  "fontes": {
+    "texto": { "pilha": "\"Calibri\", Carlito, system-ui, sans-serif", "google": ["Carlito"] },
+    "titulos": { "pilha": "\"Cambria\", Caladea, Georgia, serif", "google": ["Caladea"] }
+  },
+  "raio": "12px"
+}
