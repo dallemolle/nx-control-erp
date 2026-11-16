@@ -1,6 +1,11 @@
 # Rateio do custo da OP pelo preço de referência
 
-Data: 2026-11-16 · Status: aprovada
+Data: 2026-11-16 · Status: implementada (2026-11-16)
+
+Ajustes na implementação: `ratearCustoOP` recebe o `CustoOP` e devolve sempre
+`{ custoKgPorProduto, semPreco }` (com o médio em todos quando falta preço);
+a auditoria passou a gravar listas como lista (`src/server/audit/diff.ts`
+transformava arrays em texto), necessário para o `rateio` do `ENCERRAR`.
 
 Último item do backlog da Fase 7 (D-06). Hoje todas as polpas de uma OP
 recebem o mesmo custo/kg (RN-13), igual à planilha. Como o grosso usa mais
