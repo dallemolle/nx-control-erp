@@ -132,7 +132,7 @@ pedido já cancela todas as parcelas do título.
   mais previsível (decisão 7).
 - Alterar parcelas depois de salvo pelo pedido — **descartado:** o
   financeiro já altera vencimento e renegocia parcela no título.
-- Cartão de crédito parcelado (operadora repassa em várias datas) —
-  **descartado:** a venda no cartão entra hoje como recebida na conta, e o
-  tratamento de repasse de operadora não existe em nenhum lugar do sistema;
-  é outro assunto, não o parcelamento combinado com o cliente.
+- Cartão parcelado e recebimento por operadora (prazo de repasse e taxa) —
+  **→ backlog** (decisão do usuário, 2026-11-16: precisa ser tratado, sem
+  urgência). Não é o parcelamento combinado com o cliente: o título seria
+  contra a operadora, com cadastro de taxa e prazo e efeito na conciliação.
