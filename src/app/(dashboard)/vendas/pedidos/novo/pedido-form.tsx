@@ -13,8 +13,15 @@ import {
   ROTULOS_FORMA_PAGAMENTO_VENDA,
   SEM_VALOR,
 } from "@/lib/schemas/enums";
-import { calcularItem, calcularPedido } from "@/lib/producao/venda";
+import {
+  calcularItem,
+  calcularPedido,
+  gerarParcelasPorPrazos,
+  interpretarPrazos,
+  validarParcelasVenda,
+} from "@/lib/producao/venda";
 import { paraKg } from "@/lib/producao/unidade";
+import { paraDataIso } from "@/lib/producao/periodo";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
 import type { LoteParaVenda } from "@/server/services/pedidoVenda";
 import { criarPedidoAction, type FormState } from "../actions";
@@ -46,6 +53,11 @@ type ItemForm = {
   quantidade: string;
   precoKg: string;
 };
+
+/** Parcela a prazo como está nos campos: `AAAA-MM-DD` e valor digitado. */
+type ParcelaForm = { dataVencimento: string; valor: string };
+
+const dataDeCalendario = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
 
 const ESTADO_INICIAL: FormState = {};
 const KG = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 3 });
@@ -80,7 +92,9 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
   const [canal, setCanal] = useState<string>(SEM_VALOR);
   const [forma, setForma] = useState<FormaPagamento>("PIX");
   const [contaId, setContaId] = useState(opcoes.contaRecebimentoPadraoId ?? "");
-  const [vencimento, setVencimento] = useState("");
+  const [prazos, setPrazos] = useState("");
+  // Ajuste manual das parcelas: vale só enquanto prazos, data e total forem os de quando foi feito.
+  const [ajuste, setAjuste] = useState<{ chave: string; linhas: ParcelaForm[] } | null>(null);
   const [classificacao, setClassificacao] = useState<Classificacao>("GERENCIAL");
   const [retira, setRetira] = useState(true);
   const [endereco, setEndereco] = useState("");
@@ -141,6 +155,30 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
   const totais = calcularPedido(
     completas.map((l) => ({ quantidadeKg: l.quantidadeKg, precoKg: l.precoKg, custoKg: l.lote!.custoKg })),
   );
+  const leituraPrazos = interpretarPrazos(prazos);
+  const chaveParcelas = `${prazos}|${data}|${totais.valor}`;
+  const geradas: ParcelaForm[] =
+    !aVista && leituraPrazos.ok && totais.valor > 0 && data
+      ? gerarParcelasPorPrazos(dataDeCalendario(data), totais.valor, leituraPrazos.prazos).map((p) => ({
+          dataVencimento: paraDataIso(p.dataVencimento),
+          valor: p.valor.toFixed(2),
+        }))
+      : [];
+  const parcelas = ajuste?.chave === chaveParcelas ? ajuste.linhas : geradas;
+  const somaParcelas = parcelas.reduce((acc, p) => acc + Math.round((numero(p.valor) || 0) * 100), 0) / 100;
+  const erroParcelas =
+    aVista || parcelas.length === 0
+      ? null
+      : validarParcelasVenda(
+          dataDeCalendario(data),
+          totais.valor,
+          parcelas.map((p) => ({ dataVencimento: dataDeCalendario(p.dataVencimento), valor: numero(p.valor) })),
+        );
+
+  function mudarParcela(indice: number, mudanca: Partial<ParcelaForm>) {
+    setAjuste({ chave: chaveParcelas, linhas: parcelas.map((p, i) => (i === indice ? { ...p, ...mudanca } : p)) });
+  }
+
   const itensJson = JSON.stringify(
     linhas
       .filter((l) => l.item.loteId)
@@ -156,6 +194,13 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
       <input type="hidden" name="itens" value={itensJson} />
       <input type="hidden" name="retiraNaPropriedade" value={retira ? "true" : "false"} />
       <input type="hidden" name="formaPagamento" value={forma} />
+      {!aVista ? (
+        <input
+          type="hidden"
+          name="parcelas"
+          value={JSON.stringify(parcelas.map((p) => ({ dataVencimento: p.dataVencimento, valor: numero(p.valor) })))}
+        />
+      ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2">
         <Campo id="data" rotulo="Data">
@@ -220,16 +265,25 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
             </Select>
           </Campo>
         ) : (
-          <Campo id="vencimento" rotulo="Vencimento">
+          <Campo id="prazos" rotulo="Prazos (dias)">
             <Input
-              id="vencimento"
-              name="vencimento"
-              type="date"
-              value={vencimento}
-              min={data}
-              onChange={(e) => setVencimento(e.target.value)}
+              id="prazos"
+              value={prazos}
+              placeholder="28/56"
+              inputMode="numeric"
+              onChange={(e) => setPrazos(e.target.value)}
+              aria-describedby="prazos-ajuda"
               required
             />
+            {prazos.trim() !== "" && !leituraPrazos.ok ? (
+              <p id="prazos-ajuda" className="text-xs text-destructive">
+                {leituraPrazos.erro}
+              </p>
+            ) : (
+              <p id="prazos-ajuda" className="text-xs text-muted-foreground">
+                Dias desde a data do pedido, separados por barra. 0 = no dia.
+              </p>
+            )}
           </Campo>
         )}
         <Campo id="classificacaoFiscal" rotulo="Classificação">
@@ -398,6 +452,37 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
         </Button>
       </section>
 
+      {!aVista && parcelas.length > 0 ? (
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold">Parcelas</h2>
+          {parcelas.map((parcela, indice) => (
+            <div key={indice} className="grid grid-cols-[2rem_1fr_1fr] items-center gap-2">
+              <span className="text-sm text-muted-foreground tabular-nums">{indice + 1}</span>
+              <Input
+                type="date"
+                aria-label={`Vencimento da parcela ${indice + 1}`}
+                value={parcela.dataVencimento}
+                min={data}
+                onChange={(e) => mudarParcela(indice, { dataVencimento: e.target.value })}
+              />
+              <Input
+                type="number"
+                inputMode="decimal"
+                min="0.01"
+                step="0.01"
+                aria-label={`Valor da parcela ${indice + 1}`}
+                value={parcela.valor}
+                onChange={(e) => mudarParcela(indice, { valor: e.target.value })}
+              />
+            </div>
+          ))}
+          <p className={`text-sm tabular-nums ${erroParcelas ? "text-destructive" : "text-muted-foreground"}`}>
+            Soma {formatarMoeda(somaParcelas)} de {formatarMoeda(totais.valor)}
+            {erroParcelas ? ` · ${erroParcelas}` : ""}
+          </p>
+        </section>
+      ) : null}
+
       <section className="rounded-lg border bg-muted/40 p-3">
         <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
           <div>
@@ -420,7 +505,11 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
       </section>
 
       {state.erro ? <p className="text-sm text-destructive">{state.erro}</p> : null}
-      <Button type="submit" className="w-full sm:w-auto" disabled={pendente}>
+      <Button
+        type="submit"
+        className="w-full sm:w-auto"
+        disabled={pendente || (!aVista && (parcelas.length === 0 || erroParcelas !== null))}
+      >
         {pendente ? "Salvando..." : "Salvar pedido"}
       </Button>
     </form>
