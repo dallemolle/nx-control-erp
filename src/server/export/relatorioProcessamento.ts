@@ -69,7 +69,7 @@ export const COLUNAS_PROCESSAMENTO: ColunaExport<LinhaProcessamentoExport>[] = [
   { rotulo: "Custo fruto (R$)", valor: (l) => num(l.custoFruto) },
   { rotulo: "Custo insumos (R$)", valor: (l) => num(l.custoInsumos) },
   { rotulo: "Custo total (R$)", valor: (l) => num(l.custoTotal) },
-  { rotulo: "Custo/kg (R$)", valor: (l) => num(l.custoKg) },
+  { rotulo: "Custo médio/kg (R$)", valor: (l) => num(l.custoKg) },
 ];
 
 type LinhaPdf = LinhaProcessamento & { fruta: string };
@@ -119,7 +119,7 @@ export function secoesDeProcessamento(r: RelatorioProcessamento): SecaoPdf<unkno
         { rotulo: "Insumos (R$)", valor: (l) => l.custo.custoInsumos },
         { rotulo: "Total (R$)", valor: (l) => l.custo.custoTotal },
         { rotulo: "Polpa (kg)", valor: (l) => l.custo.polpaKg },
-        { rotulo: "Custo/kg (R$)", valor: (l) => num(l.custo.custoKg) },
+        { rotulo: "Custo médio/kg (R$)", valor: (l) => num(l.custo.custoKg) },
       ],
     }),
   ];

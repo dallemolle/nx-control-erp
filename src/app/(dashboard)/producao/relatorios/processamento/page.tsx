@@ -156,7 +156,7 @@ export default async function RelatorioProcessamentoPage({ searchParams }: { sea
           n("Insumos", "R$"),
           n("Total", "R$"),
           n("Polpa", "kg"),
-          n("Custo", "R$/kg"),
+          n("Custo médio", "R$/kg"),
         ]}
         linhas={comEncerradas.map((l) => ({
           chave: l.frutaId,

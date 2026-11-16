@@ -84,4 +84,19 @@ describe("buildAuditDiff", () => {
       valorNovo: { saldoInicial: "2000" },
     });
   });
+
+  test("lista continua lista (não vira texto) quando muda", () => {
+    const diff = buildAuditDiff({ status: "ABERTA" }, { status: "ENCERRADA", rateio: [{ produto: "A", kg: 1 }] });
+
+    expect(diff).toEqual({
+      valorAnterior: { status: "ABERTA", rateio: undefined },
+      valorNovo: { status: "ENCERRADA", rateio: [{ produto: "A", kg: 1 }] },
+    });
+  });
+
+  test("lista com o mesmo conteúdo não aparece como alterada", () => {
+    const diff = buildAuditDiff({ itens: ["a", "b"] }, { itens: ["a", "b"] });
+
+    expect(diff).toEqual({ valorAnterior: {}, valorNovo: {} });
+  });
 });

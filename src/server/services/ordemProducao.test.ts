@@ -588,6 +588,109 @@ describe("ordem de produção", () => {
       expect(detalhe?.situacaoDesfazer).toEqual({ pode: true });
       expect(await obterOP(fx.filialBId, op.numero)).toBeNull();
     });
+
+    describe("rateio do custo pelo preço de referência (D-06)", () => {
+      const polpa = (codigo: string, descricao: string, precoReferenciaKg: number | null) =>
+        prisma.produto.create({
+          data: {
+            empresaId: fx.empresaId,
+            codigo,
+            descricao,
+            categoria: "POLPA",
+            frutaId: cat.frutaId,
+            conservacao: "CONGELADO",
+            validadeDias: 365,
+            precoReferenciaKg,
+          },
+        });
+
+      /** 100 kg de fruto a 1,5 + 60 embalagens a 0,5 = R$ 180; as polpas dadas. */
+      async function opCom(linhas: [produtoId: string, kg: number][]) {
+        const op = await nova({ data: "2026-11-13" });
+        const lote = await fruto(100, { data: d("2026-11-13"), validade: d("2026-11-14") });
+        await adicionarConsumo(adm(), op.id, consumo(lote.id, 100));
+        const lotes: string[] = [];
+        for (const [produtoId, quantidadeKg] of linhas) {
+          const linha = await adicionarProducao(
+            adm(),
+            op.id,
+            producaoSchema.parse({ produtoId, quantidadeKg, localId: cat.localCamaraId }),
+          );
+          lotes.push(linha.loteId);
+        }
+        await adicionarInsumo(adm(), op.id, insumoOPSchema.parse({ insumoId: cat.insumoId, quantidade: 60 }));
+        await atualizarProcessoOP(adm(), op.id, processoOPSchema.parse(PROCESSO_OK));
+        return { op, lotes };
+      }
+
+      const custoDo = async (loteId: string) =>
+        Number((await prisma.lote.findUniqueOrThrow({ where: { id: loteId } })).custoKg);
+
+      test("provisório e encerramento rateiam; a OP guarda o médio e a auditoria o rateio", async () => {
+        const g = await polpa("RGR", "Rateio grosso", 30);
+        const m = await polpa("RMD", "Rateio médio", 20);
+        const f = await polpa("RFN", "Rateio fino", 10);
+        const { op, lotes } = await opCom([
+          [g.id, 20],
+          [m.id, 30],
+          [f.id, 10],
+        ]);
+        // valor = 600 + 600 + 100 = 1300 → 180×30/1300, 180×20/1300, 180×10/1300
+        expect(await Promise.all(lotes.map(custoDo))).toEqual([4.1538, 2.7692, 1.3846]);
+
+        await encerrarOP(adm(), op.id, { confirmarVerificar: true });
+        expect(await Promise.all(lotes.map(custoDo))).toEqual([4.1538, 2.7692, 1.3846]);
+        const encerrada = await prisma.ordemProducao.findUniqueOrThrow({ where: { id: op.id } });
+        expect(Number(encerrada.custoKgPolpa)).toBe(3);
+        const auditoria = await prisma.auditLog.findFirstOrThrow({ where: { entidadeId: op.id, acao: "ENCERRAR" } });
+        expect(auditoria.valorNovo).toMatchObject({
+          rateio: [
+            { produto: "Rateio grosso", kg: 20, precoKg: 30, custoKg: 4.1538 },
+            { produto: "Rateio médio", kg: 30, precoKg: 20, custoKg: 2.7692 },
+            { produto: "Rateio fino", kg: 10, precoKg: 10, custoKg: 1.3846 },
+          ],
+        });
+      });
+
+      test("sem preço: provisório no médio, aviso no obterOP e encerramento recusado até cadastrar", async () => {
+        const g = await polpa("SGR", "Sem preço grosso", 30);
+        const x = await polpa("SXX", "Polpa sem preço", null);
+        const { op, lotes } = await opCom([
+          [g.id, 40],
+          [x.id, 20],
+        ]);
+        expect(await Promise.all(lotes.map(custoDo))).toEqual([3, 3]);
+        expect((await obterOP(fx.filialAId, op.numero))!.semPrecoReferencia).toEqual(["Polpa sem preço"]);
+
+        await expect(encerrarOP(adm(), op.id, { confirmarVerificar: true })).rejects.toThrow(
+          "Cadastre o preço de referência de: Polpa sem preço",
+        );
+        expect((await prisma.ordemProducao.findUniqueOrThrow({ where: { id: op.id } })).status).toBe("ABERTA");
+
+        await prisma.produto.update({ where: { id: x.id }, data: { precoReferenciaKg: 15 } });
+        await encerrarOP(adm(), op.id, { confirmarVerificar: true });
+        // valor = 40×30 + 20×15 = 1500 → 180×30/1500 = 3,6; 180×15/1500 = 1,8
+        expect(await Promise.all(lotes.map(custoDo))).toEqual([3.6, 1.8]);
+        expect((await obterOP(fx.filialAId, op.numero))!.semPrecoReferencia).toEqual([]);
+      });
+
+      test("reabrir, mudar o preço e encerrar de novo recalcula com o preço atual", async () => {
+        const a = await polpa("RA1", "Reabre A", 10);
+        const b = await polpa("RB1", "Reabre B", 10);
+        const { op, lotes } = await opCom([
+          [a.id, 30],
+          [b.id, 30],
+        ]);
+        await encerrarOP(adm(), op.id, { confirmarVerificar: true });
+        expect(await Promise.all(lotes.map(custoDo))).toEqual([3, 3]);
+
+        await reabrirOP(adm(), op.id, "Preço do fino mudou");
+        await prisma.produto.update({ where: { id: b.id }, data: { precoReferenciaKg: 20 } });
+        await encerrarOP(adm(), op.id, { confirmarVerificar: true });
+        // valor = 300 + 600 = 900 → 180×10/900 = 2; 180×20/900 = 4
+        expect(await Promise.all(lotes.map(custoDo))).toEqual([2, 4]);
+      });
+    });
   });
 
   describe("bloqueio da polpa até encerrar (D-07)", () => {

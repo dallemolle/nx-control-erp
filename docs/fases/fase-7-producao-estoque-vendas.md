@@ -1,6 +1,6 @@
 # Fase 7 — Produção, estoque e vendas
 
-Status: 🟡 **Em desenvolvimento.** 7a (fundação) concluída em 2026-11-08:
+Status: ✅ **Concluída** (2026-11-16). 7a (fundação) concluída em 2026-11-08:
 perfis Produção e Vendas, permissões, menu por permissão, cadastros de
 fruta, produto, insumo, talhão e local, configuração de produção e cliente
 sem CPF/CNPJ. 7b (recepção e estoque) concluída em 2026-11-09: recepção de
@@ -42,7 +42,11 @@ está concluída. Liberação de lote vencido no lote concluída em 2026-11-14
 (D-35): o Gestor libera na tela de Estoque até validade + N dias do
 produto, e pedido e OP aceitam o lote liberado sem depender do perfil de
 quem lança; substitui a liberação por item da 7c e da 7e. A etiqueta
-(D-10) ficou fechada com os campos configuráveis.
+(D-10) ficou fechada com os campos configuráveis. Rateio do custo da OP
+concluído em 2026-11-16 (D-06): o custo de cada polpa é proporcional ao
+preço de referência do produto, e a OP não encerra sem preço. Implantação
+(D-17) fechada: a filial da Hortitex é criada pelo Administrador e
+implantada do zero, sem importação.
 
 ## Escopo
 

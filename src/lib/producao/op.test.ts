@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { balancoMassa, custoOP, prefixoDaOP, rendimento, resumirOP, statusBranqueamento } from "./op";
+import { balancoMassa, custoOP, prefixoDaOP, ratearCustoOP, rendimento, resumirOP, statusBranqueamento } from "./op";
 import { proximoCodigoDeLote } from "./lote";
 
 const MIN = { temperaturaMinC: 80, tempoMinS: 10 };
@@ -68,6 +68,55 @@ describe("custoOP (RN-13)", () => {
   });
   test("sem polpa: custo/kg 0", () => {
     expect(custoOP({ consumos: [{ quantidadeKg: 10, custoKg: 1 }], insumos: [], polpaKg: 0 }).custoKgPolpa).toBe(0);
+  });
+});
+
+describe("ratearCustoOP (RN-13, D-06)", () => {
+  const p = (produtoId: string, quantidadeKg: number, precoKg: number | null, descricao = `Polpa ${produtoId}`) => ({
+    produtoId,
+    descricao,
+    quantidadeKg,
+    precoKg,
+  });
+
+  test("exemplo da spec: custo/kg proporcional ao preço e soma ≈ total", () => {
+    const r = ratearCustoOP({ custoTotal: 1200, custoKgPolpa: 4 }, [p("g", 100, 30), p("m", 150, 20), p("f", 50, 10)]);
+    expect(r.semPreco).toEqual([]);
+    expect(Object.fromEntries(r.custoKgPorProduto)).toEqual({ g: 5.5385, m: 3.6923, f: 1.8462 });
+    expect(100 * 5.5385 + 150 * 3.6923 + 50 * 1.8462).toBeCloseTo(1200, 1);
+  });
+
+  test("duas linhas do mesmo produto somam no peso", () => {
+    const r = ratearCustoOP({ custoTotal: 180, custoKgPolpa: 3 }, [p("g", 20, 30), p("f", 20, 10), p("g", 20, 30)]);
+    // valor = 40×30 + 20×10 = 1400 → g = 180×30/1400, f = 180×10/1400
+    expect(Object.fromEntries(r.custoKgPorProduto)).toEqual({ g: 3.8571, f: 1.2857 });
+  });
+
+  test("produto único: médio, mesmo sem preço", () => {
+    const r = ratearCustoOP({ custoTotal: 180, custoKgPolpa: 3 }, [p("g", 40, null), p("g", 20, null)]);
+    expect(r.semPreco).toEqual([]);
+    expect(Object.fromEntries(r.custoKgPorProduto)).toEqual({ g: 3 });
+  });
+
+  test("mesmo preço em todos: igual ao médio", () => {
+    const r = ratearCustoOP({ custoTotal: 180, custoKgPolpa: 3 }, [p("g", 40, 10), p("f", 20, 10)]);
+    expect(Object.fromEntries(r.custoKgPorProduto)).toEqual({ g: 3, f: 3 });
+  });
+
+  test("preço faltando ou zero: semPreco sem repetir, na ordem, e médio em todos", () => {
+    const r = ratearCustoOP({ custoTotal: 180, custoKgPolpa: 3 }, [
+      p("g", 20, 30),
+      p("x", 20, null, "Polpa X"),
+      p("y", 10, 0, "Polpa Y"),
+      p("x", 10, null, "Polpa X"),
+    ]);
+    expect(r.semPreco).toEqual(["Polpa X", "Polpa Y"]);
+    expect(Object.fromEntries(r.custoKgPorProduto)).toEqual({ g: 3, x: 3, y: 3 });
+  });
+
+  test("sem produção: mapa vazio", () => {
+    const r = ratearCustoOP({ custoTotal: 180, custoKgPolpa: 0 }, []);
+    expect(r).toEqual({ custoKgPorProduto: new Map(), semPreco: [] });
   });
 });
 

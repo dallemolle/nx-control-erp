@@ -91,11 +91,16 @@ cadastro da fruta, não fixa em código (D-08).
 
 **RN-13 — Custo da OP e da polpa.** *(PROCESSAMENTO!R–U, ESTOQUE_LOTES!T)*
 `custo total = custo do fruto consumido + custo dos insumos`;
-`custo/kg da polpa = custo total ÷ polpa produzida`. **Todos os lotes de
-polpa da OP recebem o mesmo custo/kg**, seja grosso, médio ou fino (D-06).
-**Mudança:** o custo é calculado e gravado quando a OP é encerrada, e o
-custo dos insumos usa o preço do insumo **naquele momento** (a planilha
-busca o preço atual do cadastro e reescreve o passado: D-05).
+`custo médio/kg = custo total ÷ polpa produzida`. **Mudança (D-06):** o custo
+é dividido entre as polpas pelo **preço de referência/kg** do produto:
+`custo/kg do produto = custo total × preço ÷ Σ(kg × preço)`. Uma OP com um só
+produto, ou com o mesmo preço em todos, fica no médio. Faltando preço em
+algum produto (de uma OP com mais de um), a OP **não encerra**; enquanto
+aberta, o custo provisório é o médio. **Mudança:** o custo é calculado e
+gravado quando a OP é encerrada, e o custo dos insumos usa o preço do insumo
+**naquele momento** (a planilha busca o preço atual do cadastro e reescreve
+o passado: D-05); o preço de referência usado no rateio também é o do
+momento do encerramento.
 
 **RN-14 — Fruta coerente.** *(PROC_CONSUMO!J, PROC_PRODUCAO!N)*
 Os lotes consumidos e as polpas produzidas precisam ser da mesma fruta da
