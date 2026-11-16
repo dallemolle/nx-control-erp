@@ -6,6 +6,7 @@ import { entregaSchema } from "@/lib/schemas/entrega";
 import { hojeDeCalendario } from "@/lib/producao/periodo";
 import {
   configurarVendas,
+  parcelaUnicaAPrazo,
   criarCadastrosDeVenda,
   criarCatalogoDeTeste,
   criarFixtureProducao,
@@ -33,7 +34,7 @@ describe("entregas", () => {
         data,
         clienteId: cad.clienteId,
         formaPagamento: "A_PRAZO",
-        vencimento: "2026-12-10",
+        parcelas: parcelaUnicaAPrazo([{ quantidadeKg: 1, precoKg: 5 }]),
         retiraNaPropriedade: "false",
         itens: JSON.stringify([{ loteId, quantidadeKg: 1, precoKg: 5 }]),
       }),

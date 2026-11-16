@@ -301,16 +301,18 @@ Antes do primeiro pedido, em Administração → Configuração de produção (s
 Em Vendas → Pedidos → **Novo pedido**, informe:
 
 - data e **cliente** — ao escolher o cliente, o canal de venda, a classificação (Fiscal ou Gerencial), o "retira na propriedade" e o endereço de entrega vêm do cadastro dele e podem ser mudados no pedido;
-- **forma de pagamento**: dinheiro, Pix, transferência, cartão ou a prazo. À vista, escolha a conta onde o dinheiro entrou (a padrão já vem marcada); a prazo, informe o vencimento;
+- **forma de pagamento**: dinheiro, Pix, transferência, cartão ou a prazo. À vista, escolha a conta onde o dinheiro entrou (a padrão já vem marcada); a prazo, informe os **prazos em dias** desde a data do pedido, separados por barra (ex.: `28/56` = duas parcelas; 0 = no dia; até 60 parcelas);
 - nº da nota fiscal, se a venda for Fiscal e tiver nota;
 - os **itens**: para cada um, o lote (a lista vem em ordem de validade, com o saldo de cada lote), a quantidade em kg ou na unidade comercial do produto (rasa, por exemplo) e o preço por kg (sugerido pelo preço de referência do produto).
 
 Cada item mostra o valor, o custo (o custo do lote) e a margem; o rodapé mostra os totais e a margem %. Um mesmo lote não pode aparecer duas vezes no pedido, e a quantidade não pode passar do saldo do lote.
 
+**Parcelas a prazo:** ao digitar os prazos, o pedido mostra as parcelas com o valor dividido igualmente (os centavos que sobram vão para a última). O vencimento e o valor de cada parcela podem ser ajustados antes de salvar, mas a soma tem que ser igual ao total do pedido: se não bater, a diferença aparece em vermelho e o pedido não salva. Mudar os prazos, a data ou os itens gera as parcelas de novo e desfaz os ajustes. O pedido guarda a condição pelos dias de cada vencimento (se você mudou 56 para 60, fica "28/60") e mostra as parcelas no detalhe e no recibo.
+
 Ao salvar, o pedido recebe um **número** sequencial da filial e o sistema:
 
 - tira a quantidade de cada lote do estoque;
-- cria a **conta a receber** do cliente (documento = nº da nota, ou PV-número do pedido sem nota), com uma parcela;
+- cria a **conta a receber** do cliente (documento = nº da nota, ou PV-número do pedido sem nota), com uma parcela à vista ou uma parcela por prazo a prazo;
 - se a venda for **à vista**, já registra o recebimento aprovado na conta escolhida: a parcela fica paga e o valor entra no fluxo de caixa. Em dinheiro, entra na conta Caixa e não precisa de conciliação;
 - se o cliente **não retira na propriedade**, cria uma entrega pendente (seção 6.3).
 

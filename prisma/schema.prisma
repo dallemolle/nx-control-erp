@@ -1183,8 +1183,8 @@ model PedidoVenda {
   clienteId             String
   canal                 CanalVenda?
   formaPagamento        FormaPagamentoVenda
-  /// Só A_PRAZO.
-  vencimento            DateTime?
+  /// Só A_PRAZO: dias de cada vencimento desde a data do pedido ("28/56"), no momento da venda.
+  condicaoPagamento     String?
   /// Conta da baixa automática (à vista).
   contaBancariaId       String?
   retiraNaPropriedade   Boolean             @default(false)

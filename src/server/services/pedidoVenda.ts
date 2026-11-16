@@ -8,8 +8,10 @@ import { ROTULOS_FORMA_PAGAMENTO_VENDA } from "@/lib/schemas/enums";
 import {
   calcularItem,
   calcularPedido,
+  condicaoDasParcelas,
   loteVencidoNaData,
   situacaoPagamento,
+  validarParcelasVenda,
   type SituacaoPagamento,
 } from "@/lib/producao/venda";
 import { obterConfiguracaoProducao } from "./configuracaoProducao";
@@ -101,6 +103,16 @@ export async function criarPedido(sessao: SessaoAtiva, dados: PedidoVendaFormVal
   });
   const totais = calcularPedido(itens);
 
+  // A prazo: as parcelas vêm prontas do formulário (o vendedor pode ter ajustado).
+  const parcelasAPrazo = aVista ? [] : dados.parcelas;
+  if (!aVista) {
+    const erroParcelas = validarParcelasVenda(dados.data, totais.valor, parcelasAPrazo);
+    if (erroParcelas) throw new Error(erroParcelas);
+  }
+  const condicaoPagamento = aVista
+    ? null
+    : condicaoDasParcelas(dados.data, parcelasAPrazo.map((p) => p.dataVencimento));
+
   // Sem classificação no pedido nem no cliente: com número de nota é fiscal;
   // sem, é venda gerencial com recibo.
   const classificacao: ClassificacaoFiscal =
@@ -124,7 +136,7 @@ export async function criarPedido(sessao: SessaoAtiva, dados: PedidoVendaFormVal
             clienteId: cliente.id,
             canal: dados.canal ?? cliente.canalVenda,
             formaPagamento: dados.formaPagamento,
-            vencimento: aVista ? null : (dados.vencimento ?? null),
+            condicaoPagamento,
             contaBancariaId: contaId,
             retiraNaPropriedade: dados.retiraNaPropriedade,
             numeroDocumentoFiscal: numeroNota,
@@ -169,13 +181,13 @@ export async function criarPedido(sessao: SessaoAtiva, dados: PedidoVendaFormVal
             classificacaoFiscal: classificacao,
             tipoComprovante: classificacao === "FISCAL" ? "NFE" : "RECIBO",
             numeroDocumentoFiscal: numeroNota ?? "",
-            parcelas: [
-              {
-                numero: 1,
-                dataVencimento: aVista ? dados.data : dados.vencimento!,
-                valorOriginal: totais.valor,
-              },
-            ],
+            parcelas: aVista
+              ? [{ numero: 1, dataVencimento: dados.data, valorOriginal: totais.valor }]
+              : parcelasAPrazo.map((parcela, i) => ({
+                  numero: i + 1,
+                  dataVencimento: parcela.dataVencimento,
+                  valorOriginal: parcela.valor,
+                })),
           },
           tx,
         );
@@ -221,6 +233,10 @@ export async function criarPedido(sessao: SessaoAtiva, dados: PedidoVendaFormVal
               numero,
               clienteId: cliente.id,
               formaPagamento: dados.formaPagamento,
+              condicaoPagamento,
+              parcelas: aVista
+                ? undefined
+                : parcelasAPrazo.map((p) => ({ dataVencimento: p.dataVencimento, valor: p.valor })),
               valor: totais.valor,
               itens: itens.map((item) => ({
                 lote: item.lote.codigo,

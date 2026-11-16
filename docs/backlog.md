@@ -196,6 +196,22 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   schema (tabela de vínculo linha↔lançamento com valor) e ajuste do
   `processarLinhasPendentes`.
 
+- **Recebimento por cartão: prazo de repasse, parcelas e taxa da operadora**
+  (spec da venda a prazo em parcelas, 2026-11-16; não urgente, mas precisa
+  ser tratado). Hoje a venda no cartão (`formaPagamento` `CARTAO` do pedido)
+  é baixada na hora, pelo valor cheio, na conta de recebimento. Na prática a
+  operadora paga depois (crédito 1x em ~30 dias; parcelado mês a mês) e
+  desconta a taxa (MDR). Efeitos: saldo e fluxo realizado mostram dinheiro
+  que ainda não entrou, a projeção não vê os repasses futuros, a conciliação
+  dá divergência de valor em toda venda no cartão (o extrato traz o líquido)
+  e a taxa nunca vira despesa, inflando a margem. Caminho: cadastro de
+  condições da operadora (taxa e prazo por modalidade: débito, crédito 1x,
+  parcelado em N), venda no cartão gera título a receber contra a operadora
+  com as parcelas do repasse (valor líquido) e lança a taxa como despesa;
+  depósito que junta várias vendas encosta no item de conciliação N:1 acima.
+  Antes de priorizar, confirmar com a Hortitex quanto do faturamento passa
+  pelo cartão.
+
 ## API REST — robustez
 
 - **Paginação, rate limiting e expiração de chave** (spec da API v1;
@@ -215,15 +231,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   saída/entrada, que quebram a rastreabilidade do lote e a ocupação por
   local. Caminho: dividir o lote em um filho com o mesmo número/origem
   (rastreável na 7f) no novo local.
-
-- **Venda a prazo em parcelas** (7c; varredura de 2026-11-16). O pedido
-  `A_PRAZO` gera um título com uma parcela e um vencimento só. Uma venda
-  combinada em várias datas (ex.: 28/56 dias) fica registrada com data
-  errada, o que distorce o contas a receber, o aging do dashboard e a
-  projeção. O título já aceita várias parcelas (`criarTituloInterno`) e o
-  cancelamento do pedido já cancela todas as parcelas do título: falta a
-  condição de pagamento no pedido (datas e valores) e as telas/relatórios
-  de venda que mostram um vencimento só.
 
 ## Produção — custo da OP
 
