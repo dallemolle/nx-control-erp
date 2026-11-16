@@ -35,7 +35,7 @@ classificação fiscal e auditoria ficam num só lugar.
 | dataEmissao / dataCompetencia | data do pedido |
 | categoriaFinanceiraId | categoria de venda configurada na filial (ver abaixo) |
 | safraId | opcional: safra informada no pedido ou herdada dos lotes de fruto |
-| parcelas | à vista: 1 parcela, vencimento = data do pedido. A prazo: 1 parcela, vencimento informado (parcelamento: D-12). |
+| parcelas | à vista: 1 parcela, vencimento = data do pedido. A prazo: uma parcela por prazo informado (ex.: 28/56 dias), até 60, valor dividido igual com os centavos na última; datas e valores podem ser ajustados no pedido, e a soma tem que bater com o total (D-12). |
 | valor | soma dos itens (`kg × preço`) |
 | classificação fiscal | padrão do cliente (`classificacaoFiscalPadrao`, já existe); o pedido pode sobrescrever. Venda de balcão sem nota → **GERENCIAL / Recibo**; polpa para varejo com NF-e → **FISCAL / NF-e** + nº. |
 

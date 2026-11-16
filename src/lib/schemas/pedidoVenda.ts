@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { CANAL_VENDA, CLASSIFICACAO_FISCAL, FORMA_PAGAMENTO_VENDA, SEM_VALOR } from "./enums";
 import { checkboxSchema, textoOpcional } from "./campos";
+import { MAX_PARCELAS_VENDA } from "@/lib/producao/venda";
 
 /** `<input type="date">` vazio vira `undefined`. */
 const dataOpcional = z.preprocess((v) => (v === "" || v === null ? undefined : v), z.coerce.date().optional());
@@ -37,13 +38,32 @@ const itensDoFormulario = z.preprocess(
   z.array(itemPedidoSchema).min(1, "Inclua ao menos um item"),
 );
 
+/** Parcelas da venda a prazo, em JSON num campo escondido (como os itens). */
+const parcelasDoFormulario = z.preprocess(
+  (v) => {
+    if (v === undefined || v === null || v === "") return [];
+    if (typeof v !== "string") return v;
+    try {
+      return JSON.parse(v);
+    } catch {
+      return [];
+    }
+  },
+  z.array(
+    z.object({
+      dataVencimento: z.coerce.date({ message: "Informe o vencimento de cada parcela" }),
+      valor: z.coerce.number({ message: "Informe o valor de cada parcela" }),
+    }),
+  ),
+);
+
 export const pedidoVendaSchema = z
   .object({
     data: z.coerce.date({ message: "Informe a data" }),
     clienteId: z.string().trim().min(1, "Selecione o cliente"),
     canal: enumOpcional(CANAL_VENDA),
     formaPagamento: z.enum(FORMA_PAGAMENTO_VENDA, { message: "Selecione a forma de pagamento" }),
-    vencimento: dataOpcional,
+    parcelas: parcelasDoFormulario,
     contaBancariaId: idOpcional,
     retiraNaPropriedade: checkboxSchema.transform((v) => v ?? false),
     classificacaoFiscal: enumOpcional(CLASSIFICACAO_FISCAL),
@@ -54,8 +74,11 @@ export const pedidoVendaSchema = z
     itens: itensDoFormulario,
   })
   .superRefine((dados, ctx) => {
-    if (dados.formaPagamento === "A_PRAZO" && !dados.vencimento) {
-      ctx.addIssue({ code: "custom", path: ["vencimento"], message: "Informe o vencimento" });
+    if (dados.formaPagamento !== "A_PRAZO") return;
+    if (dados.parcelas.length === 0) {
+      ctx.addIssue({ code: "custom", path: ["parcelas"], message: "Informe os prazos" });
+    } else if (dados.parcelas.length > MAX_PARCELAS_VENDA) {
+      ctx.addIssue({ code: "custom", path: ["parcelas"], message: `No máximo ${MAX_PARCELAS_VENDA} parcelas` });
     }
   });
 

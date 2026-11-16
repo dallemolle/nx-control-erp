@@ -30,6 +30,16 @@ export const STATUS_PARCELA = [
   "RENEGOCIADO",
 ] as const;
 
+export const ROTULOS_STATUS_PARCELA: Record<(typeof STATUS_PARCELA)[number], string> = {
+  EM_ABERTO: "Em aberto",
+  A_VENCER: "A vencer",
+  VENCIDO: "Vencida",
+  PARCIALMENTE_PAGO: "Parcialmente paga",
+  PAGO: "Paga",
+  CANCELADO: "Cancelada",
+  RENEGOCIADO: "Renegociada",
+};
+
 export const STATUS_APROVACAO_BAIXA = ["PENDENTE", "APROVADO", "REJEITADO"] as const;
 
 export const MEIO_PAGAMENTO = ["PIX", "DEPOSITO_BANCARIO"] as const;
