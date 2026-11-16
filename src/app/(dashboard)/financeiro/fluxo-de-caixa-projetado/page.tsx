@@ -36,7 +36,7 @@ export default async function FluxoDeCaixaProjetadoPage({
   );
   const rotuloSaldo = classificacao ? "Acumulado" : "Saldo";
 
-  const periodos = await listarFluxoDeCaixaProjetado(sessao, modo, dataReferencia, { classificacao });
+  const { periodos } = await listarFluxoDeCaixaProjetado(sessao, modo, dataReferencia, { classificacao });
 
   return (
     <div className="space-y-6">

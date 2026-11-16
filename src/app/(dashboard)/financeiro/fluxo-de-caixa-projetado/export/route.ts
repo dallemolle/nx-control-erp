@@ -50,7 +50,7 @@ export async function GET(request: Request) {
   const dataReferencia = dataValida(url.searchParams.get("data") ?? undefined);
   const classificacao = classificacaoDaUrl(url.searchParams.get("classificacao") ?? undefined);
 
-  const periodos = await listarFluxoDeCaixaProjetado(sessao, modo, dataReferencia, { classificacao });
+  const { periodos } = await listarFluxoDeCaixaProjetado(sessao, modo, dataReferencia, { classificacao });
   const linhas: LinhaExport[] = periodos.map((periodo) => ({
     mes: formatarRotuloPeriodo("MES", periodo.inicio, periodo.fim),
     saldoInicial: periodo.saldoInicial,
