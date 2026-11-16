@@ -87,6 +87,14 @@ function arquivoOfx(conteudo: string, nome = "extrato.ofx"): File {
   return new File([conteudo], nome, { type: "application/x-ofx" });
 }
 
+async function lancamentosDoGrupoDaLinha(linhaId: string): Promise<string[]> {
+  const linha = await prisma.linhaExtrato.findUniqueOrThrow({
+    where: { id: linhaId },
+    include: { grupoConciliacao: { include: { lancamentos: { select: { id: true } } } } },
+  });
+  return linha.grupoConciliacao?.lancamentos.map((l) => l.id) ?? [];
+}
+
 describe("importarExtratoOfx", () => {
   let fixture: FixtureFinanceiro;
   let fixtureOutraFilial: FixtureFinanceiro;
@@ -196,7 +204,7 @@ describe("conciliarAutomaticamente", () => {
       where: { extratoImportadoId: extrato.id, identificadorBancario: "AUTO-A-1" },
     });
     expect(linhaConciliada?.status).toBe("CONCILIADO");
-    expect(linhaConciliada?.lancamentoBancarioId).toBe(lancamento.id);
+    expect(await lancamentosDoGrupoDaLinha(linhaConciliada!.id)).toEqual([lancamento.id]);
 
     const lancamentoAtualizado = await prisma.lancamentoBancario.findUniqueOrThrow({
       where: { id: lancamento.id },
@@ -255,7 +263,7 @@ describe("conciliarAutomaticamente", () => {
       where: { extratoImportadoId: extrato.id, identificadorBancario: "AUTO-C-1" },
     });
     expect(linha?.status).toBe("SUGESTAO");
-    expect(linha?.lancamentoBancarioId).toBeNull();
+    expect(linha?.grupoConciliacaoId).toBeNull();
 
     const candidatos = await buscarCandidatosDaLinha(fixture.sessao, linha!.id);
     expect(candidatos.length).toBeGreaterThanOrEqual(2);
@@ -305,7 +313,7 @@ describe("reconciliarPendentes", () => {
 
     const linhaDepois = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linhaAntes.id } });
     expect(linhaDepois.status).toBe("CONCILIADO");
-    expect(linhaDepois.lancamentoBancarioId).toBe(lancamento.id);
+    expect(await lancamentosDoGrupoDaLinha(linhaDepois.id)).toEqual([lancamento.id]);
   });
 
   test("perfil sem conciliacao:escrever não consegue reconciliar pendentes", async () => {
@@ -423,7 +431,7 @@ describe("confirmarConciliacaoManual / desconciliar", () => {
 
     const linhaAtualizada = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } });
     expect(linhaAtualizada.status).toBe("CONCILIADO");
-    expect(linhaAtualizada.lancamentoBancarioId).toBe(lancamento.id);
+    expect(await lancamentosDoGrupoDaLinha(linhaAtualizada.id)).toEqual([lancamento.id]);
 
     const lancamentoAtualizado = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lancamento.id } });
     expect(lancamentoAtualizado.conciliado).toBe(true);
@@ -484,10 +492,11 @@ describe("confirmarConciliacaoManual / desconciliar", () => {
 
     const linhaFinal = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } });
     expect(linhaFinal.status).toBe("NAO_CONCILIADO");
-    expect(linhaFinal.lancamentoBancarioId).toBeNull();
+    expect(linhaFinal.grupoConciliacaoId).toBeNull();
 
     const lancamentoFinal = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lancamento.id } });
     expect(lancamentoFinal.conciliado).toBe(false);
+    expect(lancamentoFinal.grupoConciliacaoId).toBeNull();
   });
 
   test("não deixa reconciliar uma linha que já está vinculada a outro lançamento", async () => {
@@ -531,7 +540,7 @@ describe("confirmarConciliacaoManual / desconciliar", () => {
     );
 
     const linhaFinal = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } });
-    expect(linhaFinal.lancamentoBancarioId).toBe(lancamentoA.id);
+    expect(await lancamentosDoGrupoDaLinha(linhaFinal.id)).toEqual([lancamentoA.id]);
     expect(linhaFinal.status).toBe("CONCILIADO");
 
     const lancamentoAFinal = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lancamentoA.id } });
@@ -581,7 +590,7 @@ describe("criarLancamentoDaLinha", () => {
 
     const linhaAtualizada = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } });
     expect(linhaAtualizada.status).toBe("CONCILIADO");
-    expect(linhaAtualizada.lancamentoBancarioId).toBe(lancamento.id);
+    expect(await lancamentosDoGrupoDaLinha(linhaAtualizada.id)).toEqual([lancamento.id]);
   });
 
   test("grava a classificação e o comprovante informados", async () => {

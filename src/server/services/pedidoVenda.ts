@@ -268,7 +268,7 @@ export type SituacaoCancelamentoPedido = { pode: true } | { pode: false; motivo:
  * O pedido só é cancelado se o recebimento for todo da própria venda: nenhuma
  * baixa do financeiro (pendente ou aprovada) e a baixa automática fora de
  * qualquer extrato. O lançamento da conta Caixa nasce `conciliado`, mas sem
- * linha de extrato — por isso a checagem é pela linha, não pela flag.
+ * linha de extrato — por isso a checagem é pelo grupo de conciliação, não pela flag.
  */
 export async function situacaoParaCancelar(
   pedido: { status: StatusPedidoVenda; tituloId: string | null; baixaAutomaticaId: string | null },
@@ -286,8 +286,8 @@ export async function situacaoParaCancelar(
     if (outras > 0) return { pode: false, motivo: "O financeiro registrou um recebimento neste pedido" };
   }
   if (pedido.baixaAutomaticaId) {
-    const conciliadas = await db.linhaExtrato.count({
-      where: { lancamentoBancario: { baixaId: pedido.baixaAutomaticaId } },
+    const conciliadas = await db.lancamentoBancario.count({
+      where: { baixaId: pedido.baixaAutomaticaId, grupoConciliacaoId: { not: null } },
     });
     if (conciliadas > 0) {
       return {

@@ -14,7 +14,7 @@ const PRECISA_CANDIDATOS = ["NAO_CONCILIADO", "SUGESTAO", "DIVERGENCIA_VALOR", "
 export function LinhaExtratoActions({
   linhaExtratoId,
   status,
-  lancamentoVinculadoDescricao,
+  grupo,
   podeEscrever,
   categorias,
   centrosCusto,
@@ -24,7 +24,7 @@ export function LinhaExtratoActions({
 }: {
   linhaExtratoId: string;
   status: string;
-  lancamentoVinculadoDescricao: string | null;
+  grupo: { linhas: number; lancamentos: string[] } | null;
   podeEscrever: boolean;
   categorias: { id: string; nome: string }[];
   centrosCusto: { id: string; nome: string }[];
@@ -51,7 +51,20 @@ export function LinhaExtratoActions({
     });
   }
 
+  const grupoMaior = grupo !== null && (grupo.linhas > 1 || grupo.lancamentos.length > 1);
+
   function desconciliar() {
+    if (
+      grupo &&
+      grupoMaior &&
+      !window.confirm(
+        `Desfaz o grupo inteiro: ${grupo.linhas} ${grupo.linhas === 1 ? "linha" : "linhas"} e ` +
+          `${grupo.lancamentos.length} ${grupo.lancamentos.length === 1 ? "lançamento" : "lançamentos"} ` +
+          "voltam a pendentes.",
+      )
+    ) {
+      return;
+    }
     iniciarTransicao(async () => {
       const resultado = await desconciliarAction(linhaExtratoId);
       if (resultado.erro) setErro(resultado.erro);
@@ -61,8 +74,20 @@ export function LinhaExtratoActions({
   if (status === "CONCILIADO") {
     return (
       <div className="flex flex-col items-end gap-1">
-        {lancamentoVinculadoDescricao ? (
-          <span className="text-sm text-muted-foreground">{lancamentoVinculadoDescricao}</span>
+        {grupo && grupoMaior ? (
+          <div className="text-right text-sm text-muted-foreground">
+            <p>
+              Grupo: {grupo.linhas} {grupo.linhas === 1 ? "linha" : "linhas"} · {grupo.lancamentos.length}{" "}
+              {grupo.lancamentos.length === 1 ? "lançamento" : "lançamentos"}
+            </p>
+            <ul>
+              {grupo.lancamentos.map((descricao, indice) => (
+                <li key={indice}>{descricao}</li>
+              ))}
+            </ul>
+          </div>
+        ) : grupo?.lancamentos[0] ? (
+          <span className="text-sm text-muted-foreground">{grupo.lancamentos[0]}</span>
         ) : null}
         {podeEscrever && (
           <Button type="button" variant="outline" size="sm" disabled={pendente} onClick={desconciliar}>
