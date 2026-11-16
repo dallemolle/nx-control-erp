@@ -120,7 +120,8 @@ para aquele usuário.
 ## Fora de escopo
 
 - Unificar Cliente/Fornecedor com granularidade por filial (decisão
-  explícita: ficam por empresa).
+  explícita: ficam por empresa). — **descartado:** decisão de desenho.
 - Substituir o sistema de 6 perfis fixos por permissões totalmente
   granulares — o toggle leitura/alteração por filial é um refinamento
-  sobre o perfil existente, não uma reescrita do RBAC.
+  sobre o perfil existente, não uma reescrita do RBAC. — **descartado:**
+  perfis + permissões por ação (Fase 7a) atendem.

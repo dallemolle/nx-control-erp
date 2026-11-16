@@ -16,3 +16,8 @@ export function formatarRotuloPeriodo(granularidade: Granularidade, inicio: Date
   }
   return String(inicio.getUTCFullYear());
 }
+
+/** Rótulo da linha de parcelas vencidas antes da janela no fluxo projetado. */
+export function rotuloEmAtraso(venceuAte: Date): string {
+  return `Em atraso (venc. até ${dataCurta(venceuAte)})`;
+}

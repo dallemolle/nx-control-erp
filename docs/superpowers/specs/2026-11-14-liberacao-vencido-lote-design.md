@@ -172,6 +172,10 @@ Os detalhes do pedido e da OP continuam mostrando o motivo gravado no item.
 ## Fora do escopo
 
 - Prazo escolhido pelo gestor menor que validade + N (a data é sempre a
-  calculada).
-- Filtro "liberado" no Estoque e no relatório de estoque.
-- Aviso automático quando a liberação expira.
+  calculada). — **descartado:** o gestor pode desfazer a liberação a
+  qualquer momento.
+- Filtro "liberado" no Estoque e no relatório de estoque. —
+  **descartado:** o lote liberado já aparece marcado na lista de
+  vencidos.
+- Aviso automático quando a liberação expira. — **descartado:** ao
+  expirar, o lote volta a bloquear; nada sai vencido sem liberação.

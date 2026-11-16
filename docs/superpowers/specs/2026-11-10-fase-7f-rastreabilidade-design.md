@@ -246,7 +246,11 @@ entrega.
 
 ## 8. Fora da 7f
 
-- Consulta entre filiais.
-- Rateio proporcional de kg do fruto por cliente (D-22).
-- Busca por período, produto ou cliente (relatórios da 7g).
-- D-10 (dizeres da etiqueta).
+- Consulta entre filiais. — **descartado:** lote não passa de uma filial
+  para outra; a consolidação por empresa já está no backlog.
+- Rateio proporcional de kg do fruto por cliente (D-22). —
+  **descartado:** D-33, recall sem rateio.
+- Busca por período, produto ou cliente (relatórios da 7g). — **feito**
+  (7g2).
+- D-10 (dizeres da etiqueta). — **feito** (D-10 fechada, etiqueta
+  configurável).

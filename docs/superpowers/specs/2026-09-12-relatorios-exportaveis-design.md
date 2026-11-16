@@ -31,7 +31,8 @@ mecanismo — trabalho futuro, não deste documento.
 1. Formatos nesta versão: **CSV e Excel**. PDF fica fora — é o formato
    mais caro (layout de página, cabeçalho/rodapé, paginação) e nenhum dos
    dois formatos escolhidos precisa dele para os casos de uso reais
-   (abrir na planilha, reprocessar dados).
+   (abrir na planilha, reprocessar dados). — PDF **feito** depois
+   (2026-11-05).
 2. "Necessidade de capital de giro" fica fora do escopo — mesmo motivo já
    registrado para o Dashboard executivo: não existe modelo de dados para
    esse conceito no sistema hoje (sem cadastro de

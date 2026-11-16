@@ -47,7 +47,9 @@ depender da IA.
    **Sem mudança de banco, formato ou serviço.**
 6. Fora: aplicar o tema ao vivo no painel inteiro durante a edição; trava
    contra edição simultânea (prevalece o último a salvar, a auditoria
-   registra os dois); verificação de que a fonte existe no Google.
+   registra os dois); verificação de que a fonte existe no Google. — os
+   três **descartados:** a prévia mostra o resultado; a edição de tema é
+   rara e auditada; fonte inexistente cai nas alternativas da pilha.
 
 ## Tema padrão em `nx-tema`
 

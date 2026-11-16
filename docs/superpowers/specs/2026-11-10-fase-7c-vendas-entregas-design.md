@@ -276,9 +276,17 @@ e baixa automática sem `titulo:escrever` nem `titulo:aprovar`.
 
 ## 6. Fora da 7c
 
-Relatórios de venda e painel (7g); parcelamento; edição de itens;
-emissão de NF-e; venda parcial de entrega; importação das vendas da
-planilha (7d); rastreabilidade (7f).
+- Relatórios de venda e painel (7g). — **feito** (7g1/7g2a).
+- Parcelamento. — **→ backlog** (venda a prazo em parcelas).
+- Edição de itens. — **descartado:** cancelar e lançar de novo mantém a
+  auditoria limpa.
+- Emissão de NF-e. — **descartado:** o sistema é de gestão; a emissão
+  fica com o emissor fiscal (e o documento fiscal já é registrado no
+  título).
+- Venda parcial de entrega. — **descartado:** a entrega pode ser
+  dividida em pedidos.
+- Importação das vendas da planilha (7d). — **descartado:** 7d cancelada.
+- Rastreabilidade (7f). — **feito** (7f).
 
 ## 7. Testes
 

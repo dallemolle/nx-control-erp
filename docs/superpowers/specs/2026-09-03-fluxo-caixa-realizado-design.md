@@ -171,12 +171,16 @@ Nova entrada de nav "Fluxo de caixa" → `/financeiro/fluxo-de-caixa` (sem
 ## Fora de escopo (explicitamente adiado)
 
 - Fluxo de caixa projetado e estratégico — sub-projetos próprios, ainda
-  não desenhados.
+  não desenhados. — **feito** (Fase 4).
 - Alertas (saldo negativo, insuficiência de caixa, concentração de
-  vencimentos) — só aparecem no bloco "projetado" no escopo original.
+  vencimentos) — só aparecem no bloco "projetado" no escopo original. —
+  saldo negativo **feito** (projetado); concentração **→ backlog** (já
+  registrado).
 - Quebra por centro de custo, centro de lucro, safra ou projeto — Fase 5
-  ("Comparativos por dimensão").
-- Consolidação por empresa (soma de filiais) — Fase 5.
+  ("Comparativos por dimensão"). — **feito** (fluxo por dimensão).
+- Consolidação por empresa (soma de filiais) — Fase 5. — **→ backlog**
+  (já registrado em Filtros globais).
 - Intervalo de datas livre (o usuário só navega período-a-período dentro
-  da granularidade escolhida, sem escolher um range arbitrário).
-- Exportação (CSV/Excel/PDF) do relatório.
+  da granularidade escolhida, sem escolher um range arbitrário). —
+  **descartado:** a navegação por período atende.
+- Exportação (CSV/Excel/PDF) do relatório. — **feito** (Fase 6b).

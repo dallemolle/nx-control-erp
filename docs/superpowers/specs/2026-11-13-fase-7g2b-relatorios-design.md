@@ -203,5 +203,6 @@ auditoria nova.
 
 ## 9. Fora da 7g2b
 
-- Comparação com período anterior; consulta entre filiais.
-- Gráficos no PDF.
+- Comparação com período anterior; consulta entre filiais. —
+  **descartado** (ver spec da 7g1).
+- Gráficos no PDF. — **descartado** (ver spec da 7g2a).

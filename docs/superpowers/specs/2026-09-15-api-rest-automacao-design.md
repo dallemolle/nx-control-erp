@@ -407,9 +407,12 @@ export async function listarChaves(usuarioId: string): Promise<{ id: string; nom
 
 ## Fora do escopo desta v1 (registrado)
 
-- Idempotência de escrita (`docs/backlog.md`).
-- Paginação nas listagens.
-- Rate limiting.
-- Expiração automática de chave (só revogação manual).
+- Idempotência de escrita (`docs/backlog.md`). — **feito** (header
+  `Idempotency-Key`); o que sobrou está no backlog.
+- Paginação nas listagens. — **→ backlog.**
+- Rate limiting. — **→ backlog.**
+- Expiração automática de chave (só revogação manual). — **→ backlog.**
 - Qualquer criação automática de cadastro de apoio quando o
-  identificador natural não resolve.
+  identificador natural não resolve. — **descartado:** criaria cadastro
+  errado ou duplicado sem ninguém ver; o erro `422` é o comportamento
+  certo.

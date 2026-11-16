@@ -246,6 +246,9 @@ Nenhuma escrita, então nenhuma auditoria nova.
 ## 11. Fora da 7g1
 
 - Relatórios mensal, de vendas, de origem e de processamento, e todos os
-  gráficos (7g2).
-- Comparação com período anterior, metas e consulta entre filiais.
-- Rateio do custo por qualidade (D-06, backlog).
+  gráficos (7g2). — **feito** (7g2a/7g2b).
+- Comparação com período anterior, metas e consulta entre filiais. —
+  **descartado:** os relatórios aceitam qualquer período e exportam para
+  comparar; uma filial de produção hoje.
+- Rateio do custo por qualidade (D-06, backlog). — **feito**
+  (2026-11-16).

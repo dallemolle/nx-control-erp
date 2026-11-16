@@ -185,6 +185,58 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   `recalcularEPersistirStatusParcela`, que também não audita por ser
   derivado, não uma ação de usuário.
 
+## Financeiro — controles e conciliação
+
+- **Segregação de funções na baixa** (Fase 2, spec de títulos; varredura
+  de 2026-11-16). Hoje o mesmo usuário pode registrar e aprovar a própria
+  baixa, e a aprovação já cria o `LancamentoBancario`: uma pessoa sozinha
+  tira dinheiro do caixa no sistema sem segundo olhar. A regra "quem
+  registrou não aprova" é um controle interno básico, e auditoria externa
+  costuma cobrá-lo. O dado já existe (`Baixa.usuarioId` x a sessão que
+  aprova em `aprovarBaixa`); falta só a checagem. Atenção: numa filial com
+  um único usuário com permissão de aprovação, a regra trava o fluxo.
+  Prever uma configuração por empresa ou uma exceção para `ADMINISTRADOR`,
+  registrada na auditoria. A baixa automática da venda à vista
+  (`efetivarBaixa` direto) fica fora da regra.
+
+- **Conciliação N:1 / 1:N** (Fase 3; varredura de 2026-11-16). O
+  `@unique` entre linha do extrato e lançamento só permite 1:1. Um PIX que
+  quita duas parcelas, ou duas transferências que pagam uma parcela, não
+  conciliam com o que existe. A saída que sobra hoje é criar um lançamento
+  a partir da linha (`criarLancamentoDaLinha`), que duplica o valor já
+  lançado pelas baixas e distorce saldo e fluxo realizado. Exige mudança de
+  schema (tabela de vínculo linha↔lançamento com valor) e ajuste do
+  `processarLinhasPendentes`.
+
+## API REST — robustez
+
+- **Paginação, rate limiting e expiração de chave** (spec da API v1;
+  varredura de 2026-11-16). Os `GET` de `/api/v1/titulos` e
+  `/api/v1/lancamentos-bancarios` devolvem a lista inteira da filial, o
+  que cresce sem limite com o uso (resposta lenta e risco de timeout para o
+  agente). Não há limite de requisições por chave: uma chave vazada ou um
+  agente em laço não têm freio. As chaves também não expiram (só revogação
+  manual). Fazer como um pacote só: paginação por cursor, limite por chave
+  com `429` e validade opcional na criação da chave.
+
+## Produção e vendas
+
+- **Transferência parcial de lote entre locais** (7b; varredura de
+  2026-11-16). `moverLote` move o lote inteiro. Quando só parte vai para
+  outra câmara, ou o local fica errado ou o usuário recorre a ajustes de
+  saída/entrada, que quebram a rastreabilidade do lote e a ocupação por
+  local. Caminho: dividir o lote em um filho com o mesmo número/origem
+  (rastreável na 7f) no novo local.
+
+- **Venda a prazo em parcelas** (7c; varredura de 2026-11-16). O pedido
+  `A_PRAZO` gera um título com uma parcela e um vencimento só. Uma venda
+  combinada em várias datas (ex.: 28/56 dias) fica registrada com data
+  errada, o que distorce o contas a receber, o aging do dashboard e a
+  projeção. O título já aceita várias parcelas (`criarTituloInterno`) e o
+  cancelamento do pedido já cancela todas as parcelas do título: falta a
+  condição de pagamento no pedido (datas e valores) e as telas/relatórios
+  de venda que mostram um vencimento só.
+
 ## Produção — custo da OP
 
 - **Histórico do preço de referência do produto** (rateio do custo da OP,

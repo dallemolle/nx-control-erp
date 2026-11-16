@@ -348,10 +348,15 @@ bloqueia toda escrita.
 ## 6. Fora da 7b
 
 - "Baixar vencidos" em lote (atalho no painel, 7g); por ora, um ajuste
-  por lote.
-- Número manual de lote para lotes antigos (importação, 7d).
-- Pagamento automático da compra de fruto (com a conta Caixa).
-- Transferência parcial de lote entre locais.
+  por lote. — **descartado:** o painel já leva à lista de vencidos e a
+  liberação (D-35) cobre o caso comum; ajuste por lote mantém o motivo
+  de cada perda.
+- Número manual de lote para lotes antigos (importação, 7d). —
+  **descartado:** 7d cancelada (D-17, implantação do zero).
+- Pagamento automático da compra de fruto (com a conta Caixa). —
+  **descartado:** a compra gera o título a pagar; a baixa segue o fluxo
+  normal com aprovação.
+- Transferência parcial de lote entre locais. — **→ backlog.**
 
 ## 7. Testes
 

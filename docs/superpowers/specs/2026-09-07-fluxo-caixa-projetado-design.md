@@ -87,7 +87,9 @@ sob demanda a partir de dados já existentes.
   avisa que a projeção é calculada a partir do "saldo em caixa
   conciliado" e dos títulos "com vencimento dentro do período exibido"
   para deixar isso explícito. Trazer parcelas vencidas de antes da janela
-  para o primeiro mês exibido fica para uma iteração futura.
+  para o primeiro mês exibido fica para uma iteração futura. — **feito**
+  (2026-11-16, spec `2026-11-16-projecao-parcelas-vencidas`): linha "Em
+  atraso" antes do primeiro mês quando a janela contém hoje.
 - **Alerta**: `alerta: boolean` calculado dentro da função pura de
   agregação (`saldoFinal < 0`, checagem estrita — zero não alerta), não
   em componente de UI, para ficar testável sem banco. É o único alerta
@@ -226,14 +228,20 @@ Estrutura espelha `financeiro/fluxo-de-caixa/`:
 
 - Contratos recorrentes, financiamentos, parcelamentos além de
   `Parcela`, e orçamento (Fase 5) como insumos da projeção — nenhum
-  desses conceitos existe no schema hoje.
+  desses conceitos existe no schema hoje. — **descartado:** despesa
+  recorrente entra como título; financiamento depende de um modelo de
+  empréstimo que não existe.
 - Alertas de concentração de vencimentos e de necessidade potencial de
-  capital — só o alerta de saldo final negativo entra nesta versão.
+  capital — só o alerta de saldo final negativo entra nesta versão. —
+  **→ backlog** (já registrado).
 - Reconstrução da cadeia de saldo através de meses "invisíveis" quando a
   janela pedida (modo `ANO_CIVIL`) não cobre o mês corrente — a projeção
-  sempre parte do saldo de hoje, com aviso textual na tela.
-- Consolidação por empresa (soma de filiais) — Fase 5.
-- Exportação (CSV/Excel/PDF) do relatório.
+  sempre parte do saldo de hoje, com aviso textual na tela. — **→
+  backlog** (já registrado).
+- Consolidação por empresa (soma de filiais) — Fase 5. — **→ backlog**
+  (já registrado em Filtros globais).
+- Exportação (CSV/Excel/PDF) do relatório. — **feito** (Fase 6b).
 - Parcelas em aberto com `dataVencimento` anterior ao início da janela
   exibida não entram na projeção (nem no saldo, nem em nenhum mês) — ver
-  "Limitação aceita conscientemente" no modelo de cálculo.
+  "Limitação aceita conscientemente" no modelo de cálculo. — **feito**
+  (2026-11-16, spec `2026-11-16-projecao-parcelas-vencidas`).

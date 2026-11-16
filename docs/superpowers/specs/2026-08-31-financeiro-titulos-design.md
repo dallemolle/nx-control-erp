@@ -356,13 +356,17 @@ Vitest com Postgres real, sem mock — mesmo padrão de
 
 - **Tesouraria/lançamentos bancários reais** (saldo contábil vs bancário vs
   disponível) — sub-projeto 2, spec própria futura. A `Baixa` referencia
-  `contaBancariaId` mas não cria nenhuma movimentação de fato.
+  `contaBancariaId` mas não cria nenhuma movimentação de fato. —
+  **feito** (tesouraria, Fase 2).
 - Cálculo automático de juros/multa por fórmula (fica manual, ver acima).
+  — **descartado:** o valor manual na baixa atende; a fórmula varia por
+  contrato.
 - Conciliação bancária — já é Fase 3 separada no roadmap
-  (`docs/fases/README.md`).
+  (`docs/fases/README.md`). — **feito** (Fase 3).
 - Regra de segregação "quem registrou a baixa não pode aprová-la" — não
-  modelada neste MVP.
+  modelada neste MVP. — **→ backlog.**
 - Multi-moeda por título — `Titulo`/`Parcela` não têm campo de moeda
   próprio; assumem a moeda da `ContaBancaria` vinculada (que já tem
   `moeda`, default `"BRL"`, desde a Fase 1). Título sem `contaBancariaId`
-  definida assume a moeda padrão da empresa (`Empresa.moedaPadrao`).
+  definida assume a moeda padrão da empresa (`Empresa.moedaPadrao`). —
+  **descartado:** a operação é toda em real.

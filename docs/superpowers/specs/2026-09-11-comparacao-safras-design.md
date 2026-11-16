@@ -245,7 +245,8 @@ Notas:
 - `listarComparativoSafras` faz uma consulta por safra (não em lote) —
   aceitável porque o número de safras por filial é tipicamente pequeno
   (unidades, não centenas); se isso mudar, otimizar fica para uma
-  iteração futura.
+  iteração futura. — **descartado** (varredura de 2026-11-16): poucas
+  safras por filial.
 
 ## Seção 3 — Permissões
 
