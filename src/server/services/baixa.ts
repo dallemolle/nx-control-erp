@@ -26,6 +26,21 @@ function garantirBaixaPendente(statusAtual: StatusAprovacaoBaixa): void {
   }
 }
 
+/** Segregação de funções: com a opção da empresa ligada, quem registrou a baixa não a aprova. */
+export async function exigeAprovacaoPorOutro(empresaId: string): Promise<boolean> {
+  const empresa = await prisma.empresa.findUniqueOrThrow({
+    where: { id: empresaId },
+    select: { exigirAprovacaoPorOutro: true },
+  });
+  return empresa.exigirAprovacaoPorOutro;
+}
+
+async function garantirAprovacaoPorOutraPessoa(sessao: SessaoAtiva, registradaPor: string): Promise<void> {
+  if (registradaPor === sessao.usuarioId && (await exigeAprovacaoPorOutro(sessao.empresaId))) {
+    throw new Error("Quem registrou a baixa não pode aprová-la. Peça a outra pessoa com permissão de aprovação.");
+  }
+}
+
 export async function listarBaixasPendentes(filialId: string) {
   return prisma.baixa.findMany({
     where: { statusAprovacao: "PENDENTE", parcela: { titulo: { filialId } } },
@@ -87,6 +102,7 @@ export async function aprovarBaixa(sessao: SessaoAtiva, baixaId: string) {
 
   const anterior = await buscarBaixaDaFilial(sessao.filialId, baixaId);
   garantirBaixaPendente(anterior.statusAprovacao);
+  await garantirAprovacaoPorOutraPessoa(sessao, anterior.usuarioId);
 
   const { baixa } = await prisma.$transaction((tx) => efetivarBaixa(tx, sessao, baixaId));
   return baixa;

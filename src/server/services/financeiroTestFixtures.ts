@@ -35,6 +35,8 @@ export async function criarFixtureFinanceiro(
       razaoSocial: `Teste Financeiro ${sufixo} Ltda`,
       nomeFantasia: `Teste Financeiro ${sufixo}`,
       cnpjCpf: `11.111.${digitosUnicos}/0001-11`,
+      // Os testes registram e aprovam com o mesmo usuário; a regra é testada à parte em baixa.test.ts.
+      exigirAprovacaoPorOutro: false,
     },
   });
 

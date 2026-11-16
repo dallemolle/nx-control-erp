@@ -364,7 +364,8 @@ Vitest com Postgres real, sem mock — mesmo padrão de
 - Conciliação bancária — já é Fase 3 separada no roadmap
   (`docs/fases/README.md`). — **feito** (Fase 3).
 - Regra de segregação "quem registrou a baixa não pode aprová-la" — não
-  modelada neste MVP. — **→ backlog.**
+  modelada neste MVP. — **feito** (2026-11-16, spec
+  `2026-11-16-segregacao-baixa`): opção por empresa, ligada por padrão.
 - Multi-moeda por título — `Titulo`/`Parcela` não têm campo de moeda
   próprio; assumem a moeda da `ContaBancaria` vinculada (que já tem
   `moeda`, default `"BRL"`, desde a Fase 1). Título sem `contaBancariaId`

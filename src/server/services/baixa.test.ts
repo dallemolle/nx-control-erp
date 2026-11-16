@@ -312,3 +312,79 @@ describe("baixa (fluxo de aprovação)", () => {
     );
   });
 });
+
+describe("segregação na aprovação", () => {
+  const MENSAGEM = "Quem registrou a baixa não pode aprová-la. Peça a outra pessoa com permissão de aprovação.";
+  let fx: FixtureFinanceiro; // perfil TESOURARIA: registra e aprova
+
+  beforeAll(async () => {
+    fx = await criarFixtureFinanceiro("BXS", "TESOURARIA");
+    await prisma.empresa.update({ where: { id: fx.empresaId }, data: { exigirAprovacaoPorOutro: true } });
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fx);
+  });
+
+  async function registrar(sessao: FixtureFinanceiro["sessao"]) {
+    const titulo = await criarTitulo(fx.sessaoAdmin, "PAGAR", {
+      contraparteId: fx.fornecedorId,
+      documento: `SEG-${Date.now()}-${Math.random()}`,
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fx.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: fx.contaBancariaId,
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: new Date(), valorOriginal: 100 }],
+    });
+    return registrarBaixa(sessao, titulo.parcelas[0].id, {
+      data: new Date(),
+      valorPago: 100,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fx.contaBancariaId,
+    });
+  }
+
+  test("quem registrou não aprova: erro, baixa segue PENDENTE e sem lançamento", async () => {
+    const baixa = await registrar(fx.sessao);
+    await expect(aprovarBaixa(fx.sessao, baixa.id)).rejects.toThrow(MENSAGEM);
+
+    const depois = await prisma.baixa.findUniqueOrThrow({ where: { id: baixa.id } });
+    expect(depois.statusAprovacao).toBe("PENDENTE");
+    expect(await prisma.lancamentoBancario.count({ where: { baixaId: baixa.id } })).toBe(0);
+  });
+
+  test("outra pessoa aprova", async () => {
+    const baixa = await registrar(fx.sessao);
+    const aprovada = await aprovarBaixa(fx.sessaoAdmin, baixa.id);
+    expect(aprovada.statusAprovacao).toBe("APROVADO");
+  });
+
+  test("vale também para o Administrador", async () => {
+    const baixa = await registrar(fx.sessaoAdmin);
+    await expect(aprovarBaixa(fx.sessaoAdmin, baixa.id)).rejects.toThrow(MENSAGEM);
+  });
+
+  test("com a regra desligada, a mesma pessoa aprova", async () => {
+    await prisma.empresa.update({ where: { id: fx.empresaId }, data: { exigirAprovacaoPorOutro: false } });
+    try {
+      const baixa = await registrar(fx.sessao);
+      const aprovada = await aprovarBaixa(fx.sessao, baixa.id);
+      expect(aprovada.statusAprovacao).toBe("APROVADO");
+    } finally {
+      await prisma.empresa.update({ where: { id: fx.empresaId }, data: { exigirAprovacaoPorOutro: true } });
+    }
+  });
+
+  test("rejeitar a própria baixa é permitido", async () => {
+    const baixa = await registrar(fx.sessao);
+    const rejeitada = await rejeitarBaixa(fx.sessao, baixa.id, "desisti");
+    expect(rejeitada.statusAprovacao).toBe("REJEITADO");
+  });
+});
