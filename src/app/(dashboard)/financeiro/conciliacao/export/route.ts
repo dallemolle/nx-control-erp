@@ -25,7 +25,10 @@ const COLUNAS: ColunaExport<LinhaExtrato>[] = [
   { rotulo: "Histórico", valor: (l) => l.historico },
   { rotulo: "Valor", valor: (l) => Number(l.valor) },
   { rotulo: "Status", valor: (l) => STATUS_LABEL[l.status] ?? l.status },
-  { rotulo: "Lançamento vinculado", valor: (l) => l.lancamentoBancario?.descricao ?? "" },
+  {
+    rotulo: "Lançamento vinculado",
+    valor: (l) => l.grupoConciliacao?.lancamentos.map((lancamento) => lancamento.descricao).join("; ") ?? "",
+  },
 ];
 
 export async function GET(request: Request) {

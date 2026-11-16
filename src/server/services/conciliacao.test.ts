@@ -87,6 +87,14 @@ function arquivoOfx(conteudo: string, nome = "extrato.ofx"): File {
   return new File([conteudo], nome, { type: "application/x-ofx" });
 }
 
+async function lancamentosDoGrupoDaLinha(linhaId: string): Promise<string[]> {
+  const linha = await prisma.linhaExtrato.findUniqueOrThrow({
+    where: { id: linhaId },
+    include: { grupoConciliacao: { include: { lancamentos: { select: { id: true } } } } },
+  });
+  return linha.grupoConciliacao?.lancamentos.map((l) => l.id) ?? [];
+}
+
 describe("importarExtratoOfx", () => {
   let fixture: FixtureFinanceiro;
   let fixtureOutraFilial: FixtureFinanceiro;
@@ -196,7 +204,7 @@ describe("conciliarAutomaticamente", () => {
       where: { extratoImportadoId: extrato.id, identificadorBancario: "AUTO-A-1" },
     });
     expect(linhaConciliada?.status).toBe("CONCILIADO");
-    expect(linhaConciliada?.lancamentoBancarioId).toBe(lancamento.id);
+    expect(await lancamentosDoGrupoDaLinha(linhaConciliada!.id)).toEqual([lancamento.id]);
 
     const lancamentoAtualizado = await prisma.lancamentoBancario.findUniqueOrThrow({
       where: { id: lancamento.id },
@@ -255,7 +263,7 @@ describe("conciliarAutomaticamente", () => {
       where: { extratoImportadoId: extrato.id, identificadorBancario: "AUTO-C-1" },
     });
     expect(linha?.status).toBe("SUGESTAO");
-    expect(linha?.lancamentoBancarioId).toBeNull();
+    expect(linha?.grupoConciliacaoId).toBeNull();
 
     const candidatos = await buscarCandidatosDaLinha(fixture.sessao, linha!.id);
     expect(candidatos.length).toBeGreaterThanOrEqual(2);
@@ -305,7 +313,7 @@ describe("reconciliarPendentes", () => {
 
     const linhaDepois = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linhaAntes.id } });
     expect(linhaDepois.status).toBe("CONCILIADO");
-    expect(linhaDepois.lancamentoBancarioId).toBe(lancamento.id);
+    expect(await lancamentosDoGrupoDaLinha(linhaDepois.id)).toEqual([lancamento.id]);
   });
 
   test("perfil sem conciliacao:escrever não consegue reconciliar pendentes", async () => {
@@ -423,7 +431,7 @@ describe("confirmarConciliacaoManual / desconciliar", () => {
 
     const linhaAtualizada = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } });
     expect(linhaAtualizada.status).toBe("CONCILIADO");
-    expect(linhaAtualizada.lancamentoBancarioId).toBe(lancamento.id);
+    expect(await lancamentosDoGrupoDaLinha(linhaAtualizada.id)).toEqual([lancamento.id]);
 
     const lancamentoAtualizado = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lancamento.id } });
     expect(lancamentoAtualizado.conciliado).toBe(true);
@@ -484,10 +492,11 @@ describe("confirmarConciliacaoManual / desconciliar", () => {
 
     const linhaFinal = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } });
     expect(linhaFinal.status).toBe("NAO_CONCILIADO");
-    expect(linhaFinal.lancamentoBancarioId).toBeNull();
+    expect(linhaFinal.grupoConciliacaoId).toBeNull();
 
     const lancamentoFinal = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lancamento.id } });
     expect(lancamentoFinal.conciliado).toBe(false);
+    expect(lancamentoFinal.grupoConciliacaoId).toBeNull();
   });
 
   test("não deixa reconciliar uma linha que já está vinculada a outro lançamento", async () => {
@@ -531,7 +540,7 @@ describe("confirmarConciliacaoManual / desconciliar", () => {
     );
 
     const linhaFinal = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } });
-    expect(linhaFinal.lancamentoBancarioId).toBe(lancamentoA.id);
+    expect(await lancamentosDoGrupoDaLinha(linhaFinal.id)).toEqual([lancamentoA.id]);
     expect(linhaFinal.status).toBe("CONCILIADO");
 
     const lancamentoAFinal = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lancamentoA.id } });
@@ -581,7 +590,7 @@ describe("criarLancamentoDaLinha", () => {
 
     const linhaAtualizada = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } });
     expect(linhaAtualizada.status).toBe("CONCILIADO");
-    expect(linhaAtualizada.lancamentoBancarioId).toBe(lancamento.id);
+    expect(await lancamentosDoGrupoDaLinha(linhaAtualizada.id)).toEqual([lancamento.id]);
   });
 
   test("grava a classificação e o comprovante informados", async () => {
@@ -677,5 +686,330 @@ describe("criarLancamentoDaLinha", () => {
     } finally {
       await limparFixtureFinanceiro(fixtureFinanceiro);
     }
+  });
+});
+
+import { conciliarEmGrupo, buscarCandidatosParaGrupo } from "./conciliacao";
+
+type TransacaoOfx = { fitid: string; data: string; valor: string; nome: string };
+
+/** OFX com transações arbitrárias; `valor` com sinal ("-150.00" = débito). */
+function ofxCom(transacoes: TransacaoOfx[]): File {
+  const blocos = transacoes
+    .map(
+      (t) => `<STMTTRN>
+<TRNTYPE>${t.valor.startsWith("-") ? "DEBIT" : "CREDIT"}
+<DTPOSTED>${t.data}120000
+<TRNAMT>${t.valor}
+<FITID>${t.fitid}
+<NAME>${t.nome}
+</STMTTRN>`,
+    )
+    .join("\n");
+  return arquivoOfx(`<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><BANKTRANLIST>
+${blocos}
+</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`);
+}
+
+describe("conciliarEmGrupo", () => {
+  let fixture: FixtureFinanceiro;
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("CBG", "TESOURARIA");
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fixture);
+    await prisma.$disconnect();
+  });
+
+  async function lancamento(valor: number, tipo: "ENTRADA" | "SAIDA", descricao: string, data = "2026-09-10") {
+    return prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: new Date(`${data}T00:00:00Z`),
+        tipo,
+        valor,
+        descricao,
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+      },
+    });
+  }
+
+  async function linhas(transacoes: TransacaoOfx[]) {
+    const extrato = await importarExtratoOfx(fixture.sessao, fixture.contaBancariaId, ofxCom(transacoes));
+    const criadas = await prisma.linhaExtrato.findMany({ where: { extratoImportadoId: extrato.id } });
+    return transacoes.map((t) => criadas.find((l) => l.identificadorBancario === t.fitid)!);
+  }
+
+  const SEM_DIMENSOES = {
+    categoriaFinanceiraId: null,
+    centroCustoId: null,
+    centroLucroId: null,
+    safraId: null,
+    projetoId: null,
+  };
+
+  test("N:1 — um PIX quita duas parcelas", async () => {
+    const [pix] = await linhas([{ fitid: "GRP-A-1", data: "20260910", valor: "1000.00", nome: "PIX" }]);
+    const p1 = await lancamento(600, "ENTRADA", "Parcela 1");
+    const p2 = await lancamento(400, "ENTRADA", "Parcela 2");
+
+    const { grupoConciliacaoId } = await conciliarEmGrupo(fixture.sessao, {
+      linhaIds: [pix.id],
+      lancamentoIds: [p1.id, p2.id],
+    });
+
+    const linha = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: pix.id } });
+    expect(linha.status).toBe("CONCILIADO");
+    expect(linha.grupoConciliacaoId).toBe(grupoConciliacaoId);
+    const lancs = await prisma.lancamentoBancario.findMany({ where: { id: { in: [p1.id, p2.id] } } });
+    expect(lancs.every((l) => l.conciliado && l.grupoConciliacaoId === grupoConciliacaoId)).toBe(true);
+  });
+
+  test("1:N — duas transferências pagam uma parcela", async () => {
+    const [t1, t2] = await linhas([
+      { fitid: "GRP-B-1", data: "20260910", valor: "300.00", nome: "TED 1" },
+      { fitid: "GRP-B-2", data: "20260911", valor: "700.00", nome: "TED 2" },
+    ]);
+    const parcela = await lancamento(1000, "ENTRADA", "Parcela única");
+
+    const { grupoConciliacaoId } = await conciliarEmGrupo(fixture.sessao, {
+      linhaIds: [t1.id, t2.id],
+      lancamentoIds: [parcela.id],
+    });
+
+    const vinculadas = await prisma.linhaExtrato.findMany({ where: { grupoConciliacaoId } });
+    expect(vinculadas.map((l) => l.id).sort()).toEqual([t1.id, t2.id].sort());
+    expect(vinculadas.every((l) => l.status === "CONCILIADO")).toBe(true);
+  });
+
+  test("N:M com entrada e saída misturadas fecha pela soma com sinal", async () => {
+    const [entrada, tarifa] = await linhas([
+      { fitid: "GRP-C-1", data: "20260910", valor: "1000.00", nome: "PIX" },
+      { fitid: "GRP-C-2", data: "20260910", valor: "-50.00", nome: "TARIFA" },
+    ]);
+    const a = await lancamento(600, "ENTRADA", "A");
+    const b = await lancamento(400, "ENTRADA", "B");
+    const c = await lancamento(50, "SAIDA", "Tarifa");
+
+    const { grupoConciliacaoId } = await conciliarEmGrupo(fixture.sessao, {
+      linhaIds: [entrada.id, tarifa.id],
+      lancamentoIds: [a.id, b.id, c.id],
+    });
+
+    expect(await prisma.lancamentoBancario.count({ where: { grupoConciliacaoId } })).toBe(3);
+  });
+
+  test("soma diferente é rejeitada e nada é gravado", async () => {
+    const [pix] = await linhas([{ fitid: "GRP-D-1", data: "20260910", valor: "995.00", nome: "PIX" }]);
+    const parcela = await lancamento(1000, "ENTRADA", "Parcela");
+
+    await expect(
+      conciliarEmGrupo(fixture.sessao, { linhaIds: [pix.id], lancamentoIds: [parcela.id] }),
+    ).rejects.toThrow(/não bate/);
+
+    expect((await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: pix.id } })).grupoConciliacaoId).toBeNull();
+    expect((await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: parcela.id } })).conciliado).toBe(false);
+  });
+
+  test("lança a diferença com valor, tipo e data calculados no servidor", async () => {
+    const [pix] = await linhas([{ fitid: "GRP-E-1", data: "20260912", valor: "995.00", nome: "PIX" }]);
+    const p1 = await lancamento(500, "ENTRADA", "Parcela 1");
+    const p2 = await lancamento(500, "ENTRADA", "Parcela 2");
+
+    const { grupoConciliacaoId, lancamentoDiferencaId } = await conciliarEmGrupo(fixture.sessao, {
+      linhaIds: [pix.id],
+      lancamentoIds: [p1.id, p2.id],
+      lancamentoDiferenca: { descricao: "Tarifa PIX", ...SEM_DIMENSOES },
+    });
+
+    const diferenca = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lancamentoDiferencaId! } });
+    expect(diferenca.tipo).toBe("SAIDA");
+    expect(Number(diferenca.valor)).toBe(5);
+    expect(diferenca.data.toISOString().slice(0, 10)).toBe("2026-09-12");
+    expect(diferenca.conciliado).toBe(true);
+    expect(diferenca.grupoConciliacaoId).toBe(grupoConciliacaoId);
+    expect(diferenca.classificacaoFiscal).toBe("FISCAL");
+  });
+
+  test("rejeita lançar diferença quando a soma já fecha", async () => {
+    const [pix] = await linhas([{ fitid: "GRP-F-1", data: "20260910", valor: "100.00", nome: "PIX" }]);
+    const parcela = await lancamento(100, "ENTRADA", "Parcela");
+
+    await expect(
+      conciliarEmGrupo(fixture.sessao, {
+        linhaIds: [pix.id],
+        lancamentoIds: [parcela.id],
+        lancamentoDiferenca: { descricao: "Nada", ...SEM_DIMENSOES },
+      }),
+    ).rejects.toThrow(/Não há diferença/);
+  });
+
+  test("rejeita item já conciliado", async () => {
+    const [l1, l2] = await linhas([
+      { fitid: "GRP-G-1", data: "20260910", valor: "200.00", nome: "PIX 1" },
+      { fitid: "GRP-G-2", data: "20260910", valor: "200.00", nome: "PIX 2" },
+    ]);
+    const parcela = await lancamento(200, "ENTRADA", "Parcela");
+    await conciliarEmGrupo(fixture.sessao, { linhaIds: [l1.id], lancamentoIds: [parcela.id] });
+
+    await expect(
+      conciliarEmGrupo(fixture.sessao, { linhaIds: [l2.id], lancamentoIds: [parcela.id] }),
+    ).rejects.toThrow(/já está conciliado/);
+  });
+
+  test("rejeita lançamento de outra conta bancária", async () => {
+    const outraConta = await prisma.contaBancaria.create({
+      data: { filialId: fixture.filialId, bancoId: fixture.bancoId, agencia: "0002", conta: "CBG-2", saldoInicial: 0 },
+    });
+    const [pix] = await linhas([{ fitid: "GRP-H-1", data: "20260910", valor: "80.00", nome: "PIX" }]);
+    const deOutraConta = await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: outraConta.id,
+        data: new Date("2026-09-10T00:00:00Z"),
+        tipo: "ENTRADA",
+        valor: 80,
+        descricao: "Outra conta",
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+      },
+    });
+
+    await expect(
+      conciliarEmGrupo(fixture.sessao, { linhaIds: [pix.id], lancamentoIds: [deOutraConta.id] }),
+    ).rejects.toThrow(/mesma conta bancária/);
+  });
+
+  test("rejeita linha de outra filial", async () => {
+    const outra = await criarFixtureFinanceiro("CBG2", "TESOURARIA");
+    try {
+      const parcela = await lancamento(10, "ENTRADA", "Parcela");
+      const extrato = await importarExtratoOfx(
+        outra.sessao,
+        outra.contaBancariaId,
+        ofxCom([{ fitid: "GRP-I-1", data: "20260910", valor: "10.00", nome: "PIX" }]),
+      );
+      const linhaDeFora = await prisma.linhaExtrato.findFirstOrThrow({ where: { extratoImportadoId: extrato.id } });
+
+      await expect(
+        conciliarEmGrupo(fixture.sessao, { linhaIds: [linhaDeFora.id], lancamentoIds: [parcela.id] }),
+      ).rejects.toThrow(/não pertence à filial ativa/);
+    } finally {
+      await limparFixtureFinanceiro(outra);
+    }
+  });
+
+  test("desconciliar desfaz o grupo inteiro", async () => {
+    const [t1, t2] = await linhas([
+      { fitid: "GRP-J-1", data: "20260910", valor: "300.00", nome: "TED 1" },
+      { fitid: "GRP-J-2", data: "20260910", valor: "700.00", nome: "TED 2" },
+    ]);
+    const parcela = await lancamento(1000, "ENTRADA", "Parcela");
+    const { grupoConciliacaoId } = await conciliarEmGrupo(fixture.sessao, {
+      linhaIds: [t1.id, t2.id],
+      lancamentoIds: [parcela.id],
+    });
+
+    await desconciliar(fixture.sessao, t2.id);
+
+    const linhasDepois = await prisma.linhaExtrato.findMany({ where: { id: { in: [t1.id, t2.id] } } });
+    expect(linhasDepois.every((l) => l.status === "NAO_CONCILIADO" && l.grupoConciliacaoId === null)).toBe(true);
+    const parcelaDepois = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: parcela.id } });
+    expect(parcelaDepois.conciliado).toBe(false);
+    expect(parcelaDepois.grupoConciliacaoId).toBeNull();
+    expect(await prisma.grupoConciliacao.findUnique({ where: { id: grupoConciliacaoId } })).toBeNull();
+  });
+
+  test("perfil sem conciliacao:escrever não concilia", async () => {
+    const fixtureFinanceiro = await criarFixtureFinanceiro("CBG3");
+    try {
+      await expect(
+        conciliarEmGrupo(fixtureFinanceiro.sessao, { linhaIds: ["x"], lancamentoIds: ["y"] }),
+      ).rejects.toThrow(PermissionError);
+    } finally {
+      await limparFixtureFinanceiro(fixtureFinanceiro);
+    }
+  });
+});
+
+describe("buscarCandidatosParaGrupo", () => {
+  let fixture: FixtureFinanceiro;
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("CBK", "TESOURARIA");
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fixture);
+    await prisma.$disconnect();
+  });
+
+  test("traz outras linhas e lançamentos soltos da conta, dos dois tipos, dentro da janela", async () => {
+    const extrato = await importarExtratoOfx(
+      fixture.sessao,
+      fixture.contaBancariaId,
+      ofxCom([
+        { fitid: "CAND-1", data: "20260910", valor: "100.00", nome: "PIX" },
+        { fitid: "CAND-2", data: "20260912", valor: "-5.00", nome: "TARIFA" },
+        { fitid: "CAND-3", data: "20261201", valor: "100.00", nome: "FORA DA JANELA" },
+      ]),
+    );
+    const partida = await prisma.linhaExtrato.findFirstOrThrow({
+      where: { extratoImportadoId: extrato.id, identificadorBancario: "CAND-1" },
+    });
+    const base = {
+      filialId: fixture.filialId,
+      contaBancariaId: fixture.contaBancariaId,
+      origem: "MANUAL" as const,
+      usuarioId: fixture.usuarioId,
+    };
+    const entrada = await prisma.lancamentoBancario.create({
+      data: { ...base, data: new Date("2026-09-09T00:00:00Z"), tipo: "ENTRADA", valor: 105, descricao: "Venda" },
+    });
+    const saida = await prisma.lancamentoBancario.create({
+      data: { ...base, data: new Date("2026-09-11T00:00:00Z"), tipo: "SAIDA", valor: 5, descricao: "Tarifa" },
+    });
+    const jaConciliado = await prisma.lancamentoBancario.create({
+      data: {
+        ...base,
+        data: new Date("2026-09-10T00:00:00Z"),
+        tipo: "ENTRADA",
+        valor: 100,
+        descricao: "Já conciliado",
+        conciliado: true,
+      },
+    });
+
+    const resultado = await buscarCandidatosParaGrupo(fixture.sessao, partida.id);
+
+    expect(resultado.linhaPartida.id).toBe(partida.id);
+    expect(resultado.linhas.map((l) => l.identificadorBancario)).toEqual(["CAND-2"]);
+    const ids = resultado.lancamentos.map((l) => l.id);
+    expect(ids).toContain(entrada.id);
+    expect(ids).toContain(saida.id);
+    expect(ids).not.toContain(jaConciliado.id);
+  });
+
+  test("linha já conciliada é rejeitada", async () => {
+    const extrato = await importarExtratoOfx(
+      fixture.sessao,
+      fixture.contaBancariaId,
+      ofxCom([{ fitid: "CAND-X", data: "20260915", valor: "77.00", nome: "PIX" }]),
+    );
+    const linha = await prisma.linhaExtrato.findFirstOrThrow({ where: { extratoImportadoId: extrato.id } });
+    await criarLancamentoDaLinha(fixture.sessao, linha.id, {
+      descricao: "Criado",
+      categoriaFinanceiraId: null,
+      centroCustoId: null,
+      centroLucroId: null,
+      safraId: null,
+      projetoId: null,
+    });
+
+    await expect(buscarCandidatosParaGrupo(fixture.sessao, linha.id)).rejects.toThrow(/já está conciliada/);
   });
 });

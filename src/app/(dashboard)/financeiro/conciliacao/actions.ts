@@ -5,7 +5,11 @@ import { revalidatePath } from "next/cache";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission } from "@/server/auth/permissions";
 import * as conciliacaoService from "@/server/services/conciliacao";
-import { lancamentoDaLinhaSchema } from "@/lib/schemas/conciliacao";
+import {
+  lancamentoAvulsoSchema,
+  lancamentoDaLinhaSchema,
+  type LancamentoAvulsoFormValues,
+} from "@/lib/schemas/conciliacao";
 import { SEM_VALOR } from "@/lib/schemas/enums";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
 
@@ -22,6 +26,23 @@ export type ImportarExtratoState = FormState & { resumo?: ResumoImportacao };
 
 function mensagemErro(erro: unknown): string {
   return erro instanceof Error ? erro.message : "Ocorreu um erro inesperado";
+}
+
+function semValor(valor: string | undefined): string | null {
+  return valor && valor !== SEM_VALOR ? valor : null;
+}
+
+function dadosDoLancamentoAvulso(dados: LancamentoAvulsoFormValues): conciliacaoService.DadosLancamentoAvulso {
+  return {
+    descricao: dados.descricao,
+    categoriaFinanceiraId: semValor(dados.categoriaFinanceiraId),
+    centroCustoId: semValor(dados.centroCustoId),
+    centroLucroId: semValor(dados.centroLucroId),
+    safraId: semValor(dados.safraId),
+    projetoId: semValor(dados.projetoId),
+    classificacaoFiscal: dados.classificacaoFiscal,
+    tipoComprovante: semValor(dados.tipoComprovante) as conciliacaoService.DadosLancamentoAvulso["tipoComprovante"],
+  };
 }
 
 export async function importarExtratoAction(
@@ -114,34 +135,73 @@ export async function criarLancamentoDaLinhaAction(_prev: FormState, formData: F
   }
 
   try {
-    await conciliacaoService.criarLancamentoDaLinha(sessao, parsed.data.linhaExtratoId, {
-      descricao: parsed.data.descricao,
-      categoriaFinanceiraId:
-        parsed.data.categoriaFinanceiraId && parsed.data.categoriaFinanceiraId !== SEM_VALOR
-          ? parsed.data.categoriaFinanceiraId
-          : null,
-      centroCustoId:
-        parsed.data.centroCustoId && parsed.data.centroCustoId !== SEM_VALOR
-          ? parsed.data.centroCustoId
-          : null,
-      centroLucroId:
-        parsed.data.centroLucroId && parsed.data.centroLucroId !== SEM_VALOR
-          ? parsed.data.centroLucroId
-          : null,
-      safraId:
-        parsed.data.safraId && parsed.data.safraId !== SEM_VALOR
-          ? parsed.data.safraId
-          : null,
-      projetoId:
-        parsed.data.projetoId && parsed.data.projetoId !== SEM_VALOR
-          ? parsed.data.projetoId
-          : null,
-      classificacaoFiscal: parsed.data.classificacaoFiscal,
-      tipoComprovante:
-        parsed.data.tipoComprovante && parsed.data.tipoComprovante !== SEM_VALOR
-          ? parsed.data.tipoComprovante
-          : null,
+    await conciliacaoService.criarLancamentoDaLinha(
+      sessao,
+      parsed.data.linhaExtratoId,
+      dadosDoLancamentoAvulso(parsed.data),
+    );
+  } catch (erro) {
+    return { erro: mensagemErro(erro) };
+  }
+
+  revalidatePath("/financeiro/conciliacao");
+  return { sucesso: true };
+}
+
+export type ItemDoGrupo = { id: string; data: string; valor: number; tipo: "ENTRADA" | "SAIDA"; descricao: string };
+export type CandidatosDoGrupo = { linhaPartida: ItemDoGrupo; linhas: ItemDoGrupo[]; lancamentos: ItemDoGrupo[] };
+
+export async function buscarCandidatosParaGrupoAction(
+  linhaExtratoId: string,
+): Promise<{ erro?: string; candidatos?: CandidatosDoGrupo }> {
+  const sessao = await requireSessaoAtiva();
+  requirePermission(sessao.perfil, "conciliacao:ler");
+  try {
+    const { linhaPartida, linhas, lancamentos } = await conciliacaoService.buscarCandidatosParaGrupo(
+      sessao,
+      linhaExtratoId,
+    );
+    const daLinha = (l: (typeof linhas)[number]): ItemDoGrupo => ({
+      id: l.id,
+      data: formatarData(l.data),
+      valor: Number(l.valor),
+      tipo: l.tipo,
+      descricao: l.historico,
     });
+    return {
+      candidatos: {
+        linhaPartida: daLinha(linhaPartida),
+        linhas: linhas.map(daLinha),
+        lancamentos: lancamentos.map((l) => ({
+          id: l.id,
+          data: formatarData(l.data),
+          valor: Number(l.valor),
+          tipo: l.tipo,
+          descricao: l.descricao,
+        })),
+      },
+    };
+  } catch (erro) {
+    return { erro: mensagemErro(erro) };
+  }
+}
+
+export async function conciliarEmGrupoAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const sessao = await requireSessaoAtiva();
+  const linhaIds = formData.getAll("linhaIds").map(String);
+  const lancamentoIds = formData.getAll("lancamentoIds").map(String);
+
+  let lancamentoDiferenca: conciliacaoService.DadosLancamentoAvulso | undefined;
+  if (formData.get("lancarDiferenca") === "on") {
+    const parsed = lancamentoAvulsoSchema.safeParse(Object.fromEntries(formData));
+    if (!parsed.success) {
+      return { erro: parsed.error.issues[0]?.message ?? "Dados inválidos" };
+    }
+    lancamentoDiferenca = dadosDoLancamentoAvulso(parsed.data);
+  }
+
+  try {
+    await conciliacaoService.conciliarEmGrupo(sessao, { linhaIds, lancamentoIds, lancamentoDiferenca });
   } catch (erro) {
     return { erro: mensagemErro(erro) };
   }

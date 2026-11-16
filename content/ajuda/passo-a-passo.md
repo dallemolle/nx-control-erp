@@ -117,11 +117,15 @@ A conciliação bancária cruza o extrato real do banco com os lançamentos já 
 
 | Status | Significado |
 |---|---|
-| Conciliado | A linha já está vinculada a um lançamento bancário do sistema. |
+| Conciliado | A linha já está vinculada a um ou mais lançamentos bancários do sistema (sozinha ou em grupo com outras linhas). |
 | Sugestão | O sistema encontrou um lançamento provável, mas ainda não foi confirmado — a ação "Criar lançamento" ou a confirmação manual resolve isso. |
 | Não conciliado | Nenhum lançamento correspondente foi encontrado; normalmente precisa criar um lançamento manual para essa linha. |
 
 O botão "Reconciliar pendentes" reprocessa todas as linhas ainda não conciliadas da filial — útil quando um lançamento que faltava for cadastrado depois da importação do extrato. "Desconciliar" desfaz um vínculo já confirmado, caso tenha sido feito por engano.
+
+**Conciliar em grupo**
+
+Quando uma linha do extrato corresponde a mais de um lançamento (um PIX que quita duas parcelas) ou vários movimentos do extrato correspondem a um lançamento (duas transferências que pagam uma parcela), use "Conciliar em grupo" na linha. Marque as outras linhas e os lançamentos que fazem parte do mesmo movimento; o sistema mostra o total de cada lado e a diferença, e só concilia quando os dois totais são iguais, centavo a centavo. Se faltar pouco porque o banco descontou uma tarifa, marque "Lançar a diferença": o sistema cria o lançamento com o valor que falta (entrada ou saída) e concilia tudo junto. "Desconciliar" numa linha de grupo desfaz o grupo inteiro — todas as linhas e lançamentos voltam a pendentes. O lançamento da diferença não é apagado: ao montar o grupo de novo, marque-o na lista de lançamentos em vez de lançar a diferença outra vez.
 
 ### 3.5. Fluxo de caixa
 
