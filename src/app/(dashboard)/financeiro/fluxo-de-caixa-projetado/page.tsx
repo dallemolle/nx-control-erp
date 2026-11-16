@@ -4,7 +4,7 @@ import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission } from "@/server/auth/permissions";
 import { listarFluxoDeCaixaProjetado, type ModoJanelaProjetado } from "@/server/services/fluxoDeCaixaProjetado";
 import { SeletorModoProjetado } from "./seletor-modo";
-import { formatarRotuloPeriodo } from "../_fluxo-de-caixa/formatar-rotulo-periodo";
+import { formatarRotuloPeriodo, rotuloEmAtraso } from "../_fluxo-de-caixa/formatar-rotulo-periodo";
 import { dataValida } from "../_fluxo-de-caixa/data-valida";
 import { AvisoVisaoFiltrada } from "../_fluxo-de-caixa/aviso-visao-filtrada";
 import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
@@ -36,19 +36,27 @@ export default async function FluxoDeCaixaProjetadoPage({
   );
   const rotuloSaldo = classificacao ? "Acumulado" : "Saldo";
 
-  const { periodos } = await listarFluxoDeCaixaProjetado(sessao, modo, dataReferencia, { classificacao });
+  const { emAtraso, periodos } = await listarFluxoDeCaixaProjetado(sessao, modo, dataReferencia, { classificacao });
+  const linhas = [
+    ...(emAtraso ? [{ chave: "em-atraso", rotulo: rotuloEmAtraso(emAtraso.venceuAte), atraso: true, ...emAtraso }] : []),
+    ...periodos.map((periodo) => ({
+      chave: periodo.inicio.toISOString(),
+      rotulo: formatarRotuloPeriodo("MES", periodo.inicio, periodo.fim),
+      atraso: false,
+      ...periodo,
+    })),
+  ];
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-lg font-semibold">Fluxo de caixa projetado</h1>
         <p className="text-sm text-muted-foreground">
-          Projeção calculada a partir do saldo em caixa conciliado de hoje
-          e dos títulos a pagar/receber já em aberto com vencimento dentro
-          do período exibido — não considera contratos recorrentes,
-          financiamentos, orçamento (ainda não existem no sistema), nem
-          títulos vencidos com vencimento anterior ao início do período
-          exibido.
+          Projeção calculada a partir do saldo em caixa conciliado de hoje e
+          dos títulos a pagar/receber em aberto. Parcelas em aberto vencidas
+          antes do período entram na linha &quot;Em atraso&quot;, e o saldo dos
+          meses parte dela. Não considera contratos recorrentes,
+          financiamentos nem orçamento (ainda não existem no sistema).
         </p>
       </div>
 
@@ -78,9 +86,9 @@ export default async function FluxoDeCaixaProjetadoPage({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {periodos.map((periodo) => (
-            <TableRow key={periodo.inicio.toISOString()} className={periodo.alerta ? "bg-destructive/10" : undefined}>
-              <TableCell>{formatarRotuloPeriodo("MES", periodo.inicio, periodo.fim)}</TableCell>
+          {linhas.map((periodo) => (
+            <TableRow key={periodo.chave} className={periodo.alerta ? "bg-destructive/10" : undefined}>
+              <TableCell className={periodo.atraso ? "text-muted-foreground" : undefined}>{periodo.rotulo}</TableCell>
               <TableCell>{formatarMoeda(periodo.saldoInicial)}</TableCell>
               <TableCell>{formatarMoeda(periodo.entradasProjetadas)}</TableCell>
               <TableCell>{formatarMoeda(periodo.saidasProjetadas)}</TableCell>
