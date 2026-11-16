@@ -11,6 +11,7 @@ import {
 import { recepcaoSchema } from "@/lib/schemas/recepcao";
 import {
   configurarVendas,
+  parcelaUnicaAPrazo,
   criarCadastrosDeVenda,
   criarCatalogoDeTeste,
   criarFixtureProducao,
@@ -512,7 +513,7 @@ describe("ordem de produção", () => {
           data: "2026-11-13",
           clienteId: cad.clienteId,
           formaPagamento: "A_PRAZO",
-          vencimento: "2026-12-13",
+          parcelas: parcelaUnicaAPrazo([{ quantidadeKg: 5, precoKg: 10 }], "2026-12-13"),
           retiraNaPropriedade: "true",
           itens: JSON.stringify([{ loteId: grosso.loteId, quantidadeKg: 5, precoKg: 10 }]),
         }),
@@ -701,7 +702,7 @@ describe("ordem de produção", () => {
           data: "2026-11-14",
           clienteId: cad.clienteId,
           formaPagamento: "A_PRAZO",
-          vencimento: "2026-12-14",
+          parcelas: parcelaUnicaAPrazo([{ quantidadeKg: kg, precoKg: 10 }], "2026-12-14"),
           retiraNaPropriedade: "true",
           itens: JSON.stringify([{ loteId, quantidadeKg: kg, precoKg: 10 }]),
         }),

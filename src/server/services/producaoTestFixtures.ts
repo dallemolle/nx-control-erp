@@ -1,6 +1,7 @@
 import type { Perfil } from "@prisma/client";
 import { prisma } from "@/server/db/client";
 import type { SessaoAtiva } from "@/server/auth/sessao";
+import { calcularPedido } from "@/lib/producao/venda";
 import { registrarMovimento } from "./estoque";
 import { obterBancoCaixa } from "./banco";
 
@@ -313,4 +314,10 @@ export async function criarLoteDeTeste(
     }
     return tx.lote.findUniqueOrThrow({ where: { id: lote.id } });
   });
+}
+
+/** Campo `parcelas` do formulário para um pedido a prazo de uma parcela com o total dos itens. */
+export function parcelaUnicaAPrazo(itens: { quantidadeKg: number; precoKg: number }[], vencimento = "2026-12-10") {
+  const { valor } = calcularPedido(itens.map((item) => ({ ...item, custoKg: 0 })));
+  return JSON.stringify([{ dataVencimento: vencimento, valor }]);
 }

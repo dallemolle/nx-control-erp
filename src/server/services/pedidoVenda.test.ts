@@ -9,6 +9,7 @@ import {
   criarCatalogoDeTeste,
   criarFixtureProducao,
   criarLoteDeTeste,
+  parcelaUnicaAPrazo,
   type CadastrosDeVenda,
   type CatalogoDeTeste,
   type FixtureProducao,
@@ -52,7 +53,7 @@ describe("pedido de venda", () => {
       data: "2026-11-10",
       clienteId: cad.clienteId,
       formaPagamento: "A_PRAZO",
-      vencimento: "2026-12-10",
+      parcelas: parcelaUnicaAPrazo(itens as { quantidadeKg: number; precoKg: number }[]),
       retiraNaPropriedade: "true",
       itens: JSON.stringify(itens),
       ...extra,
@@ -106,13 +107,14 @@ describe("pedido de venda", () => {
     const gravado = await prisma.pedidoVenda.findUniqueOrThrow({ where: { id: primeiro.pedidoId } });
     expect(gravado.baixaAutomaticaId).toBeNull();
     expect(gravado.contaBancariaId).toBeNull();
+    expect(gravado.condicaoPagamento).toBe("30");
   });
 
   test("dinheiro: baixa aprovada e lançamento conciliado na conta Caixa", async () => {
     const lote = await novoLote();
     const r = await criarPedido(
       fx.sessao("VENDAS"),
-      pedido([{ loteId: lote.id, quantidadeKg: 10, precoKg: 5 }], { formaPagamento: "DINHEIRO", vencimento: "" }),
+      pedido([{ loteId: lote.id, quantidadeKg: 10, precoKg: 5 }], { formaPagamento: "DINHEIRO" }),
     );
     const gravado = await prisma.pedidoVenda.findUniqueOrThrow({ where: { id: r.pedidoId } });
     const baixa = await prisma.baixa.findUniqueOrThrow({ where: { id: gravado.baixaAutomaticaId! } });
@@ -133,9 +135,79 @@ describe("pedido de venda", () => {
     );
     const gravado = await prisma.pedidoVenda.findUniqueOrThrow({ where: { id: r.pedidoId } });
     expect(gravado.contaBancariaId).toBe(cad.contaCorrenteId);
-    expect(gravado.vencimento).toBeNull();
+    expect(gravado.condicaoPagamento).toBeNull();
     const lancamento = await prisma.lancamentoBancario.findFirstOrThrow({ where: { baixaId: gravado.baixaAutomaticaId! } });
     expect(lancamento).toMatchObject({ conciliado: false, contaBancariaId: cad.contaCorrenteId });
+  });
+
+  describe("parcelas a prazo", () => {
+    const itens = (loteId: string) => [{ loteId, quantidadeKg: 10, precoKg: 10 }]; // total 100
+    const comParcelas = (loteId: string, parcelas: { dataVencimento: string; valor: number }[]) =>
+      pedido(itens(loteId), { parcelas: JSON.stringify(parcelas) });
+
+    test("cria uma parcela por prazo e grava a condição pelas datas", async () => {
+      const lote = await novoLote();
+      const r = await criarPedido(
+        fx.sessao("VENDAS"),
+        comParcelas(lote.id, [
+          { dataVencimento: "2026-12-08", valor: 33.33 },
+          { dataVencimento: "2027-01-09", valor: 33.33 },
+          { dataVencimento: "2027-02-08", valor: 33.34 },
+        ]),
+      );
+      const titulo = await tituloDo(r.pedidoId);
+      const parcelas = [...titulo.parcelas].sort((a, b) => a.numero - b.numero);
+      expect(parcelas.map((p) => [p.numero, p.dataVencimento.toISOString().slice(0, 10), Number(p.valorOriginal)])).toEqual([
+        [1, "2026-12-08", 33.33],
+        [2, "2027-01-09", 33.33],
+        [3, "2027-02-08", 33.34],
+      ]);
+      const gravado = await prisma.pedidoVenda.findUniqueOrThrow({ where: { id: r.pedidoId } });
+      expect(gravado.condicaoPagamento).toBe("28/60/90");
+      const auditoria = await prisma.auditLog.findFirstOrThrow({
+        where: { entidade: "PedidoVenda", entidadeId: r.pedidoId, acao: "CRIAR" },
+      });
+      expect(auditoria.valorNovo).toMatchObject({ condicaoPagamento: "28/60/90" });
+    });
+
+    test("recusa soma diferente do total, data antes do pedido e datas fora de ordem", async () => {
+      const lote = await novoLote();
+      await expect(
+        criarPedido(fx.sessao("VENDAS"), comParcelas(lote.id, [{ dataVencimento: "2026-12-10", valor: 99.99 }])),
+      ).rejects.toThrow("A soma das parcelas");
+      await expect(
+        criarPedido(fx.sessao("VENDAS"), comParcelas(lote.id, [{ dataVencimento: "2026-11-09", valor: 100 }])),
+      ).rejects.toThrow("O vencimento não pode ser antes da data do pedido");
+      await expect(
+        criarPedido(
+          fx.sessao("VENDAS"),
+          comParcelas(lote.id, [
+            { dataVencimento: "2027-01-10", valor: 50 },
+            { dataVencimento: "2026-12-10", valor: 50 },
+          ]),
+        ),
+      ).rejects.toThrow("Os vencimentos devem ser crescentes");
+      expect(await saldo(lote.id)).toBe(100);
+    });
+
+    test("a prazo sem parcelas é recusado pelo schema", () => {
+      expect(() => pedido([{ loteId: "x", quantidadeKg: 1, precoKg: 1 }], { parcelas: "[]" })).toThrow(
+        "Informe os prazos",
+      );
+    });
+
+    test("cancelar cancela todas as parcelas", async () => {
+      const lote = await novoLote();
+      const r = await criarPedido(
+        fx.sessao("VENDAS"),
+        comParcelas(lote.id, [
+          { dataVencimento: "2026-12-10", valor: 50 },
+          { dataVencimento: "2027-01-10", valor: 50 },
+        ]),
+      );
+      await cancelarPedido(fx.sessao("FINANCEIRO"), r.pedidoId, "Cliente desistiu");
+      expect((await tituloDo(r.pedidoId)).parcelas.map((p) => p.status)).toEqual(["CANCELADO", "CANCELADO"]);
+    });
   });
 
   test("VENDAS cria venda à vista com baixa aprovada sem permissões de título", async () => {

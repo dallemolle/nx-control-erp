@@ -6,6 +6,7 @@ import { pedidoVendaSchema } from "@/lib/schemas/pedidoVenda";
 import { ajusteSchema } from "@/lib/schemas/ajusteEstoque";
 import {
   configurarVendas,
+  parcelaUnicaAPrazo,
   criarCadastrosDeVenda,
   criarCatalogoDeTeste,
   criarFixtureProducao,
@@ -66,7 +67,7 @@ describe("rastreabilidade", () => {
         data: "2026-11-10",
         clienteId: cad.clienteId,
         formaPagamento: "A_PRAZO",
-        vencimento: "2026-12-10",
+        parcelas: parcelaUnicaAPrazo([{ quantidadeKg: kg, precoKg: 10 }]),
         retiraNaPropriedade: "true",
         itens: JSON.stringify([{ loteId, quantidadeKg: kg, precoKg: 10 }]),
         ...extra,
