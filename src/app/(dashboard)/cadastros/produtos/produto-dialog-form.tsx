@@ -140,6 +140,9 @@ export function ProdutoDialogForm({ produto, frutas }: { produto?: Produto; frut
                 step="0.0001"
                 defaultValue={produto?.precoReferenciaKg ?? ""}
               />
+              <p className="text-xs text-muted-foreground">
+                Sugerido na venda e usado para dividir o custo da OP entre as polpas.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="armazenamento">Armazenamento (etiqueta)</Label>

@@ -35,7 +35,7 @@ const COLUNAS: ColunaExport<OPListada>[] = [
   { rotulo: "Balanço", valor: (op) => ROTULOS_STATUS_VERIFICACAO[op.resumo.balanco.status] },
   { rotulo: "Branqueamento", valor: (op) => ROTULOS_STATUS_BRANQUEAMENTO[op.resumo.branqueamento] },
   { rotulo: "Custo total", valor: (op) => op.resumo.custo.custoTotal },
-  { rotulo: "Custo/kg", valor: (op) => op.resumo.custo.custoKgPolpa },
+  { rotulo: "Custo médio/kg", valor: (op) => op.resumo.custo.custoKgPolpa },
   { rotulo: "Status", valor: (op) => ROTULOS_STATUS_ORDEM_PRODUCAO[op.status] },
 ];
 

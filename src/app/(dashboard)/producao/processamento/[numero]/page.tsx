@@ -64,6 +64,7 @@ export default async function OPPage({
   const aberta = op.status === "ABERTA";
   const podeLancar = podeAgir && aberta;
   const encerrada = op.status === "ENCERRADA";
+  const podeEditarProdutos = podeExecutar(sessao.perfil, "cadastroProducao:escrever");
 
   const configuracao = await obterConfiguracaoProducao(sessao.filialId);
   const [lotes, produtos, locais, insumos, frutas] = podeLancar
@@ -172,7 +173,7 @@ export default async function OPPage({
             </Dado>
             <Dado rotulo="Custo do fruto">{formatarMoeda(resumo.custo.custoFrutoTotal)}</Dado>
             <Dado rotulo="Custo dos insumos">{formatarMoeda(resumo.custo.custoInsumosTotal)}</Dado>
-            <Dado rotulo={encerrada ? "Custo/kg da polpa" : "Custo/kg (provisório)"}>
+            <Dado rotulo={encerrada ? "Custo médio/kg" : "Custo médio/kg (provisório)"}>
               {formatarMoeda(resumo.custo.custoKgPolpa)}
             </Dado>
           </dl>
@@ -271,6 +272,17 @@ export default async function OPPage({
               Cada linha cria um lote de polpa, bloqueado para venda e ajuste até a OP ser encerrada.
             </p>
           ) : null}
+          {aberta && op.semPrecoReferencia.length > 0 ? (
+            <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
+              Sem preço de referência: {op.semPrecoReferencia.join(", ")}. Cadastre o preço para encerrar a OP; até
+              lá o custo é o médio.{" "}
+              {podeEditarProdutos ? (
+                <Link href="/cadastros/produtos" className="underline underline-offset-4">
+                  Editar produtos
+                </Link>
+              ) : null}
+            </p>
+          ) : null}
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -279,13 +291,14 @@ export default async function OPPage({
                   <TableHead>Polpa</TableHead>
                   <TableHead className="text-right">kg</TableHead>
                   <TableHead className="text-right">Embalagens</TableHead>
+                  <TableHead className="text-right">Custo/kg</TableHead>
                   <TableHead>Local</TableHead>
                   <TableHead>Validade</TableHead>
                   <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {op.producoes.length === 0 ? <Vazio colunas={7} texto="Nenhuma polpa lançada." /> : null}
+                {op.producoes.length === 0 ? <Vazio colunas={8} texto="Nenhuma polpa lançada." /> : null}
                 {op.producoes.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium whitespace-nowrap">
@@ -294,6 +307,7 @@ export default async function OPPage({
                     <TableCell>{p.produto.descricao}</TableCell>
                     <TableCell className="text-right tabular-nums">{KG.format(Number(p.quantidadeKg))}</TableCell>
                     <TableCell className="text-right tabular-nums">{p.embalagens ?? "—"}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatarMoeda(p.lote.custoKg)}</TableCell>
                     <TableCell>{p.local.nome}</TableCell>
                     <TableCell>{formatarData(p.lote.validade)}</TableCell>
                     <TableCell>
