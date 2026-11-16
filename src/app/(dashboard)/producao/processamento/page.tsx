@@ -99,7 +99,7 @@ export default async function ProcessamentoPage({ searchParams }: { searchParams
               <TableHead className="text-right">Rendimento</TableHead>
               <TableHead>Balanço</TableHead>
               <TableHead>Branqueamento</TableHead>
-              <TableHead className="text-right">Custo/kg</TableHead>
+              <TableHead className="text-right">Custo médio/kg</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>

@@ -39,13 +39,12 @@ sub-projeto em `docs/superpowers/specs/` (mesmo ciclo das Fases 1–6).
   ao reordenar linhas, saldo que não fica negativo, custo congelado na data
   da operação, recall completo (fruto → polpa → cliente), venda gerando
   título a receber, multi-filial e auditoria.
-- **Situação (2026-11-14):** sub-projetos 7a, 7b, 7c, 7e, 7f e 7g
-  implementados, mais a liberação de lote vencido no lote (D-35); 7d
-  (importação da planilha) cancelada: os dados antigos não serão
-  importados. Todas as decisões do doc 8 estão registradas. Fica no
-  backlog o rateio do custo da OP por qualidade (D-06); a etiqueta (D-10)
-  está fechada com campos configuráveis; a empresa e a filial reais da
-  Hortitex são cadastradas na implantação (D-17).
+- **Situação (2026-11-16): Fase 7 concluída.** Sub-projetos 7a, 7b, 7c, 7e,
+  7f e 7g implementados, mais a liberação de lote vencido no lote (D-35) e o
+  rateio do custo da OP pelo preço de referência (D-06); 7d (importação da
+  planilha) cancelada. Todas as decisões do doc 8 estão fechadas: a etiqueta
+  (D-10) com campos configuráveis e a implantação da Hortitex (D-17) do
+  zero, com a filial criada pelo Administrador.
 
 ## Dados sensíveis
 

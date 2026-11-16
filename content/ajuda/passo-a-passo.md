@@ -186,11 +186,11 @@ Cada batelada de fruto processado em polpa é uma **ordem de produção (OP)**. 
 - **Insumos:** embalagens, energia, mão de obra etc. O custo unitário é o do cadastro no momento do lançamento; mudar o cadastro depois não altera a OP.
 - **Processo:** branqueamento (temperatura e tempo, só para fruta que exige, como o açaí), água, caroço/resíduo, perda e observação.
 
-O quadro de resumo mostra ao vivo o rendimento (polpa ÷ fruto), o **balanço de massa** (OK ou Verificar, pela tolerância da configuração), o **branqueamento** (OK, Verificar ou Não se aplica) e o custo: fruto + insumos, dividido igualmente por kg entre todas as polpas da OP. Enquanto a OP está aberta, o custo é provisório.
+O quadro de resumo mostra ao vivo o rendimento (polpa ÷ fruto), o **balanço de massa** (OK ou Verificar, pela tolerância da configuração), o **branqueamento** (OK, Verificar ou Não se aplica) e o custo: fruto + insumos, com o custo médio por kg de polpa. O custo de cada polpa é dividido pelo **preço de referência** do produto: a polpa que vale mais por kg recebe um custo por kg maior (a coluna Custo/kg da aba Produção mostra o de cada lote). Enquanto a OP está aberta, o custo é provisório; se algum produto estiver sem preço de referência, o custo fica no médio e a tela avisa.
 
 Errou uma linha? Use **Remover** e lance de novo: o estoque é estornado.
 
-**Encerrar OP** grava o custo e libera a polpa. Se o balanço ou o branqueamento estiver "Verificar", o sistema pede uma confirmação, que fica registrada na auditoria. Depois de encerrada:
+**Encerrar OP** grava o custo e libera a polpa. Se a OP produziu mais de um produto e algum está sem preço de referência, o encerramento é recusado até o preço ser cadastrado. Se o balanço ou o branqueamento estiver "Verificar", o sistema pede uma confirmação, que fica registrada na auditoria. Depois de encerrada:
 
 - **Reabrir** (com motivo) volta a OP para aberta, para corrigir e encerrar de novo;
 - **Cancelar** (com motivo) devolve o fruto aos lotes de origem e zera a polpa.
@@ -370,7 +370,7 @@ O tipo **Caixa (dinheiro em espécie)** é para o dinheiro guardado na empresa. 
 Base para a recepção de fruto, as vendas por lote e o processamento (este nas próximas versões). Podem ser editados pelo Administrador e pelo perfil Produção. Cadastre nesta ordem:
 
 1. **Frutas** (da empresa): nome, **custo-padrão do fruto próprio** (R$/kg, usado no custo e na margem do fruto colhido nos talhões; deixe 0 se ainda não souber) e se a fruta **exige branqueamento** no processamento (o açaí exige).
-2. **Produtos** (da empresa): código, descrição, fruta, categoria (fruto ou polpa), conservação (in natura, resfriado ou congelado), validade em dias, preço de referência, texto de armazenamento e texto livre da etiqueta (ingredientes e outros dizeres). O **código** (ex.: FA, AGC) vira o início do número de lote (FA-260927-01). A **unidade comercial** é opcional: para o açaí, "rasa = 14 kg" permite lançar quantidade e preço por rasa. **Dias de liberação após vencimento** (opcional) é a tolerância máxima para o Gestor liberar um lote vencido do produto (seção 5.3); vazio, o produto não pode ser liberado.
+2. **Produtos** (da empresa): código, descrição, fruta, categoria (fruto ou polpa), conservação (in natura, resfriado ou congelado), validade em dias, **preço de referência** (sugerido na venda e usado para dividir o custo da OP entre as polpas; obrigatório para encerrar uma OP com mais de um produto), texto de armazenamento e texto livre da etiqueta (ingredientes e outros dizeres). O **código** (ex.: FA, AGC) vira o início do número de lote (FA-260927-01). A **unidade comercial** é opcional: para o açaí, "rasa = 14 kg" permite lançar quantidade e preço por rasa. **Dias de liberação após vencimento** (opcional) é a tolerância máxima para o Gestor liberar um lote vencido do produto (seção 5.3); vazio, o produto não pode ser liberado.
 3. **Talhões** (da filial): áreas de cultivo próprias, com cultura, área (ha) e ano de plantio. São a origem do fruto colhido.
 4. **Locais de armazenamento** (da filial): câmaras, freezers e áreas de recepção, com temperatura e capacidade (opcional, usada para mostrar a ocupação no estoque).
 5. **Insumos** (da empresa): embalagens, energia e mão de obra, com unidade e custo unitário de referência.

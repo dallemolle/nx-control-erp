@@ -15,6 +15,11 @@ function normalizarValor(valor: unknown): unknown {
     return valor.toISOString();
   }
 
+  // Array tem toString próprio, mas deve ser gravado como lista (JSON), não como texto.
+  if (Array.isArray(valor)) {
+    return valor;
+  }
+
   if (
     valor !== null &&
     typeof valor === "object" &&
@@ -25,6 +30,11 @@ function normalizarValor(valor: unknown): unknown {
   }
 
   return valor;
+}
+
+function iguais(a: unknown, b: unknown): boolean {
+  if (Array.isArray(a) && Array.isArray(b)) return JSON.stringify(a) === JSON.stringify(b);
+  return a === b;
 }
 
 export function buildAuditDiff(
@@ -43,7 +53,7 @@ export function buildAuditDiff(
     const valorAnteriorNormalizado = normalizarValor(anterior[chave]);
     const valorNovoNormalizado = normalizarValor(novo[chave]);
 
-    if (valorAnteriorNormalizado !== valorNovoNormalizado) {
+    if (!iguais(valorAnteriorNormalizado, valorNovoNormalizado)) {
       valorAnterior[chave] = valorAnteriorNormalizado;
       valorNovo[chave] = valorNovoNormalizado;
     }

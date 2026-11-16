@@ -16,8 +16,10 @@ import { arredondar } from "@/lib/producao/arredondar";
 import {
   custoOP,
   prefixoDaOP,
+  ratearCustoOP,
   resumirOP,
   type ConfiguracaoResumo,
+  type ProducaoParaRateio,
   type DadosResumoOP,
   type LinhasOP,
   type ResumoOP,
@@ -111,7 +113,57 @@ export async function linhasAtivas(db: ClientePrisma, opId: string): Promise<Lin
   };
 }
 
-/** Custo provisório: o mesmo custo/kg em todos os lotes de polpa ativos da OP (D-06). */
+function producaoParaRateio(p: {
+  produtoId: string;
+  quantidadeKg: Prisma.Decimal;
+  produto: { descricao: string; precoReferenciaKg: Prisma.Decimal | null };
+}): ProducaoParaRateio {
+  return {
+    produtoId: p.produtoId,
+    descricao: p.produto.descricao,
+    quantidadeKg: Number(p.quantidadeKg),
+    precoKg: p.produto.precoReferenciaKg === null ? null : Number(p.produto.precoReferenciaKg),
+  };
+}
+
+/** Linhas de produção ativas com o preço de referência atual do produto (D-06). */
+async function producoesParaRateio(db: ClientePrisma, opId: string): Promise<ProducaoParaRateio[]> {
+  const linhas = await db.producaoOP.findMany({
+    where: { ordemProducaoId: opId, removidoEm: null },
+    select: { produtoId: true, quantidadeKg: true, produto: { select: { descricao: true, precoReferenciaKg: true } } },
+    orderBy: { criadoEm: "asc" },
+  });
+  return linhas.map(producaoParaRateio);
+}
+
+/** Para a auditoria: um item por produto, na ordem das linhas. */
+function resumoDoRateio(producoes: ProducaoParaRateio[], custoKgPorProduto: Map<string, number>) {
+  const porProduto = new Map<string, { produto: string; kg: number; precoKg: number | null; custoKg: number }>();
+  for (const p of producoes) {
+    const item = porProduto.get(p.produtoId);
+    if (item) item.kg = arredondar(item.kg + p.quantidadeKg, 3);
+    else
+      porProduto.set(p.produtoId, {
+        produto: p.descricao,
+        kg: p.quantidadeKg,
+        precoKg: p.precoKg,
+        custoKg: custoKgPorProduto.get(p.produtoId) ?? 0,
+      });
+  }
+  return [...porProduto.values()];
+}
+
+/** Grava o custo/kg de cada produto nos lotes de polpa ativos da OP. */
+async function gravarCustoDosLotes(tx: Prisma.TransactionClient, opId: string, custoKgPorProduto: Map<string, number>) {
+  for (const [produtoId, custoKg] of custoKgPorProduto) {
+    await tx.lote.updateMany({
+      where: { producaoOP: { is: { ordemProducaoId: opId, removidoEm: null, produtoId } } },
+      data: { custoKg },
+    });
+  }
+}
+
+/** Custo provisório: rateado pelo preço de referência, ou o médio enquanto faltar preço (D-06). */
 export async function recalcularCustoProvisorio(tx: Prisma.TransactionClient, opId: string) {
   const linhas = await linhasAtivas(tx, opId);
   const custo = custoOP({
@@ -119,10 +171,8 @@ export async function recalcularCustoProvisorio(tx: Prisma.TransactionClient, op
     insumos: linhas.insumos,
     polpaKg: linhas.producoes.reduce((s, p) => s + p.quantidadeKg, 0),
   });
-  await tx.lote.updateMany({
-    where: { producaoOP: { is: { ordemProducaoId: opId, removidoEm: null } } },
-    data: { custoKg: custo.custoKgPolpa },
-  });
+  const rateio = ratearCustoOP(custo, await producoesParaRateio(tx, opId));
+  await gravarCustoDosLotes(tx, opId, rateio.custoKgPorProduto);
   return custo;
 }
 
@@ -516,8 +566,9 @@ export function dadosDoResumo(
 }
 
 /**
- * Encerra a OP: grava o custo (RN-13) e o custo/kg final nos lotes de polpa,
- * que ficam liberados para venda e ajuste (D-07). Balanço ou branqueamento
+ * Encerra a OP: grava o custo total e o médio (RN-13) e o custo/kg rateado
+ * por produto nos lotes de polpa (D-06), que ficam liberados para venda e
+ * ajuste (D-07). Sem preço de referência em algum produto, recusa. Balanço ou branqueamento
  * "Verificar" exigem confirmação explícita, registrada na auditoria.
  */
 export async function encerrarOP(
@@ -535,6 +586,11 @@ export async function encerrarOP(
     if (linhas.producoes.length === 0) throw new Error("Lance ao menos uma produção de polpa");
 
     const resumo = resumirOP(dadosDoResumo(op, linhas), configuracao);
+    const producoes = await producoesParaRateio(tx, id);
+    const rateio = ratearCustoOP(resumo.custo, producoes);
+    if (rateio.semPreco.length > 0) {
+      throw new Error(`Cadastre o preço de referência de: ${rateio.semPreco.join(", ")}`);
+    }
     if (resumo.aVerificar.length > 0 && !opcoes.confirmarVerificar) {
       throw new Error(`Confirme para encerrar com itens a verificar: ${resumo.aVerificar.join(", ")}`);
     }
@@ -549,10 +605,7 @@ export async function encerrarOP(
         custoKgPolpa: resumo.custo.custoKgPolpa,
       },
     });
-    await tx.lote.updateMany({
-      where: { producaoOP: { is: { ordemProducaoId: id, removidoEm: null } } },
-      data: { custoKg: resumo.custo.custoKgPolpa },
-    });
+    await gravarCustoDosLotes(tx, id, rateio.custoKgPorProduto);
     await auditar(
       sessao,
       tx,
@@ -561,6 +614,7 @@ export async function encerrarOP(
       {
         status: "ENCERRADA",
         custo: resumo.custo,
+        rateio: resumoDoRateio(producoes, rateio.custoKgPorProduto),
         rendimento: resumo.rendimento,
         balanco: resumo.balanco,
         branqueamento: resumo.branqueamento,
@@ -763,8 +817,8 @@ export async function obterOP(filialId: string, numero: string) {
       producoes: {
         ...LINHAS_ATIVAS,
         include: {
-          lote: { select: { id: true, codigo: true, validade: true } },
-          produto: { select: { codigo: true, descricao: true } },
+          lote: { select: { id: true, codigo: true, validade: true, custoKg: true } },
+          produto: { select: { codigo: true, descricao: true, precoReferenciaKg: true } },
           local: { select: { nome: true } },
         },
         orderBy: { criadoEm: "asc" },
@@ -778,9 +832,13 @@ export async function obterOP(filialId: string, numero: string) {
   });
   if (!op) return null;
   const configuracao = await obterConfiguracaoProducao(filialId);
+  const resumo = resumoComCustoGravado(op, linhasEmNumeros(op), configuracao);
   return {
     ...op,
-    resumo: resumoComCustoGravado(op, linhasEmNumeros(op), configuracao),
+    resumo,
+    /** Produtos sem preço de referência que impedem o rateio (só OP aberta). */
+    semPrecoReferencia:
+      op.status === "ABERTA" ? ratearCustoOP(resumo.custo, op.producoes.map(producaoParaRateio)).semPreco : [],
     situacaoDesfazer: await situacaoParaDesfazer(op),
   };
 }

@@ -185,10 +185,11 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   `recalcularEPersistirStatusParcela`, que também não audita por ser
   derivado, não uma ação de usuário.
 
-## Produção — processamento (Fase 7e)
+## Produção — custo da OP
 
-- **Rateio do custo da OP por qualidade (D-06).** Hoje todas as polpas da
-  OP (grosso, médio, fino) recebem o mesmo custo/kg, igual à planilha. O
-  grosso usa mais fruto por kg e vale mais; quando a margem por qualidade
-  importar, ratear por um fator de equivalência (ex.: proporcional ao
-  preço de referência de cada produto).
+- **Histórico do preço de referência do produto** (rateio do custo da OP,
+  2026-11-16). O rateio usa o preço do cadastro no momento do encerramento e
+  o resultado fica congelado no `custoKg` do lote; o preço usado fica só na
+  auditoria `ENCERRAR` da OP. Se for preciso consultar "qual preço valia em
+  tal data" (ex.: para explicar um custo antigo sem abrir a auditoria),
+  criar um histórico de preços por produto.
