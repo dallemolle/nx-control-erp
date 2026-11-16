@@ -175,6 +175,13 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
           parcelas.map((p) => ({ dataVencimento: dataDeCalendario(p.dataVencimento), valor: numero(p.valor) })),
         );
 
+  // A soma já aparece no rodapé: para a soma errada basta dizer quanto falta ou sobra.
+  const diferencaParcelas = Math.round((totais.valor - somaParcelas) * 100) / 100;
+  const avisoParcelas =
+    erroParcelas && diferencaParcelas !== 0 && erroParcelas.startsWith("A soma")
+      ? `${diferencaParcelas > 0 ? "faltam" : "sobram"} ${formatarMoeda(Math.abs(diferencaParcelas))}`
+      : erroParcelas;
+
   function mudarParcela(indice: number, mudanca: Partial<ParcelaForm>) {
     setAjuste({ chave: chaveParcelas, linhas: parcelas.map((p, i) => (i === indice ? { ...p, ...mudanca } : p)) });
   }
@@ -478,7 +485,7 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
           ))}
           <p className={`text-sm tabular-nums ${erroParcelas ? "text-destructive" : "text-muted-foreground"}`}>
             Soma {formatarMoeda(somaParcelas)} de {formatarMoeda(totais.valor)}
-            {erroParcelas ? ` · ${erroParcelas}` : ""}
+            {avisoParcelas ? ` · ${avisoParcelas}` : ""}
           </p>
         </section>
       ) : null}

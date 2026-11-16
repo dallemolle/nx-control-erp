@@ -173,7 +173,8 @@ export default async function PedidoPage({ params }: { params: Promise<{ numero:
               <p key={parcela.id} className="text-sm tabular-nums">
                 {todas.length > 1 ? `${parcela.numero}ª · ` : ""}
                 Vence {formatarData(parcela.dataVencimento)} · {formatarMoeda(parcela.valorAtualizado)}
-                <span className="text-muted-foreground"> · {ROTULOS_STATUS_PARCELA[parcela.status]}</span>
+                {" · "}
+                <span className="whitespace-nowrap text-muted-foreground">{ROTULOS_STATUS_PARCELA[parcela.status]}</span>
               </p>
             ))}
             {podeExecutar(sessao.perfil, "titulo:ler") ? (
