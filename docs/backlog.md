@@ -187,15 +187,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
 
 ## Financeiro — controles e conciliação
 
-- **Conciliação N:1 / 1:N** (Fase 3; varredura de 2026-11-16). O
-  `@unique` entre linha do extrato e lançamento só permite 1:1. Um PIX que
-  quita duas parcelas, ou duas transferências que pagam uma parcela, não
-  conciliam com o que existe. A saída que sobra hoje é criar um lançamento
-  a partir da linha (`criarLancamentoDaLinha`), que duplica o valor já
-  lançado pelas baixas e distorce saldo e fluxo realizado. Exige mudança de
-  schema (tabela de vínculo linha↔lançamento com valor) e ajuste do
-  `processarLinhasPendentes`.
-
 - **Recebimento por cartão: prazo de repasse, parcelas e taxa da operadora**
   (spec da venda a prazo em parcelas, 2026-11-16; não urgente, mas precisa
   ser tratado). Hoje a venda no cartão (`formaPagamento` `CARTAO` do pedido)
@@ -208,7 +199,7 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   condições da operadora (taxa e prazo por modalidade: débito, crédito 1x,
   parcelado em N), venda no cartão gera título a receber contra a operadora
   com as parcelas do repasse (valor líquido) e lança a taxa como despesa;
-  depósito que junta várias vendas encosta no item de conciliação N:1 acima.
+  depósito que junta várias vendas já concilia com a conciliação em grupo.
   Antes de priorizar, confirmar com a Hortitex quanto do faturamento passa
   pelo cartão.
 
