@@ -319,6 +319,7 @@ model PedidoVenda {
   clienteId          String
   canal              CanalVenda?         // gravado do cliente (RN-21)
   formaPagamento     FormaPagamentoVenda
+  condicaoPagamento  String?             // só A_PRAZO: "28/56" (dias); vencimentos nas parcelas do título
   status             StatusPedidoVenda   @default(CONFIRMADO)
   motivoCancelamento String?
   observacao         String?
