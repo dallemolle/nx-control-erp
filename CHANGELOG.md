@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.29](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.28...nx-control-erp-v0.1.29) (2026-11-16)
+
+
+### Novidades
+
+* **vendas:** condição de pagamento no pedido no lugar do vencimento ([c6144f4](https://github.com/dallemolle/nx-control-erp/commit/c6144f41d4822cf6899b8e8fb23a2b05761f8b39))
+* **vendas:** condição e parcelas no detalhe e no recibo do pedido ([aec6d2c](https://github.com/dallemolle/nx-control-erp/commit/aec6d2c00d5f25902ca26e4540fc171b202e5627))
+* **vendas:** pedido a prazo cria uma parcela por prazo ([b71404f](https://github.com/dallemolle/nx-control-erp/commit/b71404f12d2596f28c5b00d9b51cdad0b645bc3c))
+* **vendas:** prazos em dias e parcelas ajustáveis no novo pedido ([99cc354](https://github.com/dallemolle/nx-control-erp/commit/99cc35448378c510bf3dec40bd26d19cd8553bc9))
+* **vendas:** regras puras das parcelas da venda a prazo ([ff152c7](https://github.com/dallemolle/nx-control-erp/commit/ff152c7fd65ef669e8921ed968d8c6bd242c8c9e))
+
+
+### Correções
+
+* **vendas:** rodapé das parcelas mostra quanto falta ou sobra ([b71484b](https://github.com/dallemolle/nx-control-erp/commit/b71484b47985b96de006cda31939707e9360b108))
+
 ## [0.1.28](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.27...nx-control-erp-v0.1.28) (2026-11-16)
 
 
