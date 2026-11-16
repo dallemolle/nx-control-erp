@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { cnpjCpfSchema } from "@/lib/cnpjCpf";
 import { corHexValida } from "@/lib/corContraste";
+import { checkboxSchema } from "./campos";
 
 export const empresaSchema = z.object({
   razaoSocial: z.string().trim().min(3, "Informe a razão social"),
@@ -16,6 +17,7 @@ export const empresaSchema = z.object({
     .trim()
     .transform((v) => (v === "" ? null : v))
     .refine((v) => v === null || corHexValida(v), "Cor inválida"),
+  exigirAprovacaoPorOutro: checkboxSchema,
 });
 
 export type EmpresaFormValues = z.infer<typeof empresaSchema>;

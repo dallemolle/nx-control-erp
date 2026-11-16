@@ -22,6 +22,7 @@ type Empresa = {
   moedaPadrao: string;
   corPrimaria: string | null;
   logoUrl: string | null;
+  exigirAprovacaoPorOutro: boolean;
 };
 
 const ESTADO_INICIAL: FormState = {};
@@ -116,6 +117,22 @@ export function EmpresaDialogForm({ empresa }: { empresa?: Empresa }) {
                 <Label htmlFor="removerLogo">Remover logo atual</Label>
               </div>
             ) : null}
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="exigirAprovacaoPorOutro"
+                name="exigirAprovacaoPorOutro"
+                value="true"
+                defaultChecked={empresa?.exigirAprovacaoPorOutro ?? true}
+                className="size-4"
+              />
+              <Label htmlFor="exigirAprovacaoPorOutro">Exigir que a baixa seja aprovada por outra pessoa</Label>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Quem registra uma baixa não pode aprová-la. Desmarque se a empresa tem uma pessoa só no financeiro.
+            </p>
           </div>
           {state.erro ? <p className="text-sm text-destructive">{state.erro}</p> : null}
           <Button type="submit" className="w-full" disabled={pendente}>

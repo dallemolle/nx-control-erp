@@ -193,6 +193,31 @@ describe("atualizarEmpresa — cor e logo", () => {
     expect(empresa.corPrimaria).toBe("#F5D76E");
   });
 
+  test("empresa criada sem informar a opção exige aprovação por outra pessoa", async () => {
+    const empresa = await prisma.empresa.findUniqueOrThrow({ where: { id: empresaId } });
+    expect(empresa.exigirAprovacaoPorOutro).toBe(true);
+  });
+
+  test("desligar exigirAprovacaoPorOutro grava e audita antes e depois", async () => {
+    const atual = await prisma.empresa.findUniqueOrThrow({ where: { id: empresaId } });
+    const empresa = await atualizarEmpresa(sessao, empresaId, {
+      razaoSocial: atual.razaoSocial,
+      nomeFantasia: atual.nomeFantasia,
+      cnpjCpf: atual.cnpjCpf,
+      moedaPadrao: atual.moedaPadrao,
+      corPrimaria: atual.corPrimaria,
+      exigirAprovacaoPorOutro: false,
+    });
+    expect(empresa.exigirAprovacaoPorOutro).toBe(false);
+
+    const log = await prisma.auditLog.findFirstOrThrow({
+      where: { empresaId, entidade: "Empresa", acao: "ATUALIZAR" },
+      orderBy: { criadoEm: "desc" },
+    });
+    expect(log.valorAnterior).toMatchObject({ exigirAprovacaoPorOutro: true });
+    expect(log.valorNovo).toMatchObject({ exigirAprovacaoPorOutro: false });
+  });
+
   test("faz upload de um logo novo", async () => {
     const arquivo = new File([Buffer.from("fake-png-2")], "logo2.png", { type: "image/png" });
     const dadosAtuais = await prisma.empresa.findUniqueOrThrow({ where: { id: empresaId } });
