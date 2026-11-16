@@ -43,7 +43,7 @@ export function statusBranqueamento(
   return e.temperaturaC >= minimos.temperaturaMinC && e.tempoS >= minimos.tempoMinS ? "OK" : "VERIFICAR";
 }
 
-/** RN-13: o mesmo custo/kg para todas as polpas da OP (D-06). */
+/** RN-13: custo total (fruto + insumos) e custo médio/kg da polpa. */
 export function custoOP(e: {
   consumos: { quantidadeKg: number; custoKg: number }[];
   insumos: { quantidade: number; custoUnitario: number }[];
@@ -61,6 +61,36 @@ export function custoOP(e: {
 }
 
 export type CustoOP = ReturnType<typeof custoOP>;
+
+export type ProducaoParaRateio = { produtoId: string; descricao: string; quantidadeKg: number; precoKg: number | null };
+export type RateioOP = { custoKgPorProduto: Map<string, number>; semPreco: string[] };
+
+/**
+ * RN-13/D-06: custo/kg de cada produto proporcional ao preço de referência
+ * (custo total × preço ÷ Σ kg × preço). Com um só produto, ou faltando preço,
+ * todos recebem o médio; `semPreco` lista o que impede o rateio.
+ */
+export function ratearCustoOP(
+  custo: Pick<CustoOP, "custoTotal" | "custoKgPolpa">,
+  producoes: ProducaoParaRateio[],
+): RateioOP {
+  const produtos = [...new Set(producoes.map((p) => p.produtoId))];
+  const comMedio = () => new Map(produtos.map((id) => [id, custo.custoKgPolpa]));
+  if (produtos.length <= 1) return { custoKgPorProduto: comMedio(), semPreco: [] };
+
+  const semPreco = [
+    ...new Set(producoes.filter((p) => p.precoKg === null || p.precoKg <= 0).map((p) => p.descricao)),
+  ];
+  if (semPreco.length > 0) return { custoKgPorProduto: comMedio(), semPreco };
+
+  const valor = producoes.reduce((s, p) => s + p.quantidadeKg * (p.precoKg as number), 0);
+  if (valor <= 0) return { custoKgPorProduto: comMedio(), semPreco: [] };
+  const custoKgPorProduto = new Map<string, number>();
+  for (const p of producoes) {
+    custoKgPorProduto.set(p.produtoId, arredondar((custo.custoTotal * (p.precoKg as number)) / valor, 4));
+  }
+  return { custoKgPorProduto, semPreco: [] };
+}
 
 export type LinhasOP = {
   consumos: { quantidadeKg: number; custoKg: number }[];
