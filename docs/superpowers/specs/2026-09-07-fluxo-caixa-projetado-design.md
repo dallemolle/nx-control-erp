@@ -87,7 +87,9 @@ sob demanda a partir de dados já existentes.
   avisa que a projeção é calculada a partir do "saldo em caixa
   conciliado" e dos títulos "com vencimento dentro do período exibido"
   para deixar isso explícito. Trazer parcelas vencidas de antes da janela
-  para o primeiro mês exibido fica para uma iteração futura.
+  para o primeiro mês exibido fica para uma iteração futura. — **feito**
+  (2026-11-16, spec `2026-11-16-projecao-parcelas-vencidas`): linha "Em
+  atraso" antes do primeiro mês quando a janela contém hoje.
 - **Alerta**: `alerta: boolean` calculado dentro da função pura de
   agregação (`saldoFinal < 0`, checagem estrita — zero não alerta), não
   em componente de UI, para ficar testável sem banco. É o único alerta
@@ -241,5 +243,5 @@ Estrutura espelha `financeiro/fluxo-de-caixa/`:
 - Exportação (CSV/Excel/PDF) do relatório. — **feito** (Fase 6b).
 - Parcelas em aberto com `dataVencimento` anterior ao início da janela
   exibida não entram na projeção (nem no saldo, nem em nenhum mês) — ver
-  "Limitação aceita conscientemente" no modelo de cálculo. — **→
-  backlog** (varredura de 2026-11-16: o atraso some da projeção).
+  "Limitação aceita conscientemente" no modelo de cálculo. — **feito**
+  (2026-11-16, spec `2026-11-16-projecao-parcelas-vencidas`).

@@ -1,6 +1,6 @@
 # Parcelas vencidas na projeção de caixa
 
-Data: 2026-11-16 · Status: desenho aprovado
+Data: 2026-11-16 · Status: implementada (2026-11-16)
 
 Item do [backlog](../../backlog.md) ("Parcelas vencidas em aberto somem da
 projeção"), levantado na varredura dos "fora do escopo" de 2026-11-16. Resolve
