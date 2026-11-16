@@ -207,10 +207,16 @@ adiante) → `/controladoria/orcamento`.
 ## Fora de escopo (explicitamente adiado)
 
 - Orçamento por centro de custo, centro de lucro, safra ou projeto —
-  fica pro sub-projeto 2 ou uma iteração futura deste sub-projeto.
-- Valor orçado anual dividido automaticamente — só mês a mês nesta v1.
+  fica pro sub-projeto 2 ou uma iteração futura deste sub-projeto. —
+  safra **feito** (5/2b); demais **descartado:** o orçamento por categoria
+  já cobre o controle de gasto.
+- Valor orçado anual dividido automaticamente — só mês a mês nesta v1. —
+  **descartado:** conveniência de digitação, sem efeito na qualidade.
 - Alerta de meta de receita não atingida (o inverso do estouro de
-  despesa) — fora de escopo, "estouro" aqui é só sobre despesa.
+  despesa) — fora de escopo, "estouro" aqui é só sobre despesa. —
+  **descartado:** a coluna de variação já mostra a diferença.
 - Migration de backfill pra categorizar lançamentos históricos gerados
   por baixa — resolvido via fallback na leitura, não em dado persistido.
-- Consolidação por empresa — este sub-projeto é por filial.
+  — **descartado:** resolvido pelo fallback.
+- Consolidação por empresa — este sub-projeto é por filial. — **→
+  backlog** (já registrado em Filtros globais).

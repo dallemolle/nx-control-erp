@@ -274,10 +274,13 @@ Nova entrada de nav "Conciliação" → `/financeiro/conciliacao` (sem
 
 ## Fora de escopo (explicitamente adiado)
 
-- CSV/Excel de extrato — só OFX nesta fase.
+- CSV/Excel de extrato — só OFX nesta fase. — **descartado:** os bancos
+  exportam OFX; CSV não tem layout padrão.
 - Conciliação N:1/1:N (consolidação/split) — schema já impede via
-  `@unique`, fica pra uma fase futura se necessário.
+  `@unique`, fica pra uma fase futura se necessário. — **→ backlog.**
 - Matching por similaridade textual de histórico/nome — o algoritmo
-  usa só valor+data+conta+tipo, sem NLP/fuzzy-matching.
+  usa só valor+data+conta+tipo, sem NLP/fuzzy-matching. —
+  **descartado:** a conciliação manual cobre o que o automático não acha.
 - Alertas ou dashboard de "quanto está conciliado" — só a lista de
-  linhas com filtro por status.
+  linhas com filtro por status. — **descartado:** o filtro por status já
+  mostra o pendente.

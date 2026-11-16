@@ -222,6 +222,8 @@ auditoria nova.
 
 ## 10. Fora da 7g2a
 
-- Relatórios de origem e de processamento (7g2b).
+- Relatórios de origem e de processamento (7g2b). — **feito** (7g2b).
 - Comparação com o ano ou período anterior; metas; consulta entre filiais.
-- Gráficos no PDF.
+  — **descartado** (ver spec da 7g1).
+- Gráficos no PDF. — **descartado:** o PDF leva os números; o gráfico
+  fica na tela.
