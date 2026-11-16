@@ -5,6 +5,7 @@ import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { buscarCandidatosAction, confirmarConciliacaoAction, desconciliarAction } from "./actions";
+import { ConciliarGrupoDialog } from "./conciliar-grupo-dialog";
 import { CriarLancamentoDialogForm } from "./criar-lancamento-dialog-form";
 
 type Candidato = { id: string; data: string; valor: string; descricao: string; conciliado: boolean };
@@ -131,6 +132,14 @@ export function LinhaExtratoActions({
           </Button>
         </div>
       )}
+      <ConciliarGrupoDialog
+        linhaExtratoId={linhaExtratoId}
+        categorias={categorias}
+        centrosCusto={centrosCusto}
+        centrosLucro={centrosLucro}
+        safras={safras}
+        projetos={projetos}
+      />
       <CriarLancamentoDialogForm
         linhaExtratoId={linhaExtratoId}
         categorias={categorias}
