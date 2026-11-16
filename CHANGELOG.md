@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.26](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.25...nx-control-erp-v0.1.26) (2026-11-16)
+
+
+### Novidades
+
+* **producao:** custo/kg por polpa na OP, aviso de preço e rótulos de custo médio ([d0341a2](https://github.com/dallemolle/nx-control-erp/commit/d0341a202bac424c2b8791d74d946794359495c0))
+* **producao:** OP grava o custo rateado por produto e não encerra sem preço ([f8631b1](https://github.com/dallemolle/nx-control-erp/commit/f8631b15e48ec9fcaf0c0b41b4f1fc1ddde8a379))
+* **producao:** rateio do custo da OP pelo preço de referência ([d352fce](https://github.com/dallemolle/nx-control-erp/commit/d352fcea778e064c5d436eb7475818648a3108c8))
+
+
+### Correções
+
+* **auditoria:** listas gravadas como lista, não como texto ([523c218](https://github.com/dallemolle/nx-control-erp/commit/523c218c7d83f0426de9736c089290658b659a54))
+
 ## [0.1.25](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.24...nx-control-erp-v0.1.25) (2026-11-15)
 
 
