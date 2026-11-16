@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.27](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.26...nx-control-erp-v0.1.27) (2026-11-16)
+
+
+### Novidades
+
+* **financeiro:** linha Em atraso na tela e no export do fluxo projetado ([e2ad1e4](https://github.com/dallemolle/nx-control-erp/commit/e2ad1e4b6d4296c55742805ce800654aedf04689))
+* **financeiro:** projeção soma as parcelas vencidas antes da janela ([39f22d9](https://github.com/dallemolle/nx-control-erp/commit/39f22d93f1dc8e4e175653810e34e95e6a7c2d9b))
+
 ## [0.1.26](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.25...nx-control-erp-v0.1.26) (2026-11-16)
 
 
