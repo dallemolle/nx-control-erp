@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.28](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.27...nx-control-erp-v0.1.28) (2026-11-16)
+
+
+### Novidades
+
+* **empresas:** opção de exigir aprovação da baixa por outra pessoa ([691d1f7](https://github.com/dallemolle/nx-control-erp/commit/691d1f78b806592685f1b6e1e7b1cff37e865a30))
+* **financeiro:** quem registra a baixa não pode aprová-la ([2fb5b07](https://github.com/dallemolle/nx-control-erp/commit/2fb5b07b8c1658cadc43cc207349c3687653c18d))
+
 ## [0.1.27](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.26...nx-control-erp-v0.1.27) (2026-11-16)
 
 
