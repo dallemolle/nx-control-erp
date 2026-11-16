@@ -1,5 +1,7 @@
 import type { ClassificacaoFiscal, StatusLinhaExtrato, TipoComprovante, TipoLancamento } from "@prisma/client";
 import { Prisma } from "@prisma/client";
+import { diferencaDoGrupo } from "@/lib/conciliacaoGrupo";
+import { formatarMoeda } from "@/lib/formatacao";
 import { garantirComprovanteValido } from "@/server/services/classificacaoFiscal";
 import { prisma } from "@/server/db/client";
 import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permissions";
@@ -472,20 +474,46 @@ async function validarDimensoesDaFilial(
   }
 }
 
+/** Dados de um lançamento avulso criado na conciliação (a partir da linha ou da diferença do grupo). */
+export type DadosLancamentoAvulso = {
+  descricao: string;
+  categoriaFinanceiraId: string | null;
+  centroCustoId: string | null;
+  centroLucroId: string | null;
+  safraId: string | null;
+  projetoId: string | null;
+  /** Omitida = FISCAL (tarifas, IOF e rendimentos são documentos bancários). */
+  classificacaoFiscal?: ClassificacaoFiscal;
+  tipoComprovante?: TipoComprovante | null;
+};
+
+/** Valida dimensões e comprovante e devolve os campos prontos para o `create`. */
+async function prepararLancamentoAvulso(filialId: string, dados: DadosLancamentoAvulso) {
+  await validarDimensoesDaFilial(filialId, {
+    centroCustoId: dados.centroCustoId,
+    centroLucroId: dados.centroLucroId,
+    safraId: dados.safraId,
+    projetoId: dados.projetoId,
+  });
+  const classificacaoFiscal = dados.classificacaoFiscal ?? "FISCAL";
+  const tipoComprovante = dados.tipoComprovante ?? null;
+  garantirComprovanteValido({ classificacaoFiscal, tipoComprovante });
+  return {
+    descricao: dados.descricao,
+    categoriaFinanceiraId: dados.categoriaFinanceiraId,
+    centroCustoId: dados.centroCustoId,
+    centroLucroId: dados.centroLucroId,
+    safraId: dados.safraId,
+    projetoId: dados.projetoId,
+    classificacaoFiscal,
+    tipoComprovante,
+  };
+}
+
 export async function criarLancamentoDaLinha(
   sessao: SessaoAtiva,
   linhaExtratoId: string,
-  dados: {
-    descricao: string;
-    categoriaFinanceiraId: string | null;
-    centroCustoId: string | null;
-    centroLucroId: string | null;
-    safraId: string | null;
-    projetoId: string | null;
-    /** Omitida = FISCAL (tarifas, IOF e rendimentos são documentos bancários). */
-    classificacaoFiscal?: ClassificacaoFiscal;
-    tipoComprovante?: TipoComprovante | null;
-  },
+  dados: DadosLancamentoAvulso,
 ) {
   requirePermission(sessao.perfil, "conciliacao:escrever");
   requirePermission(sessao.perfil, "lancamento:escrever");
@@ -501,16 +529,7 @@ export async function criarLancamentoDaLinha(
     throw new Error("Esta linha já está conciliada");
   }
 
-  await validarDimensoesDaFilial(sessao.filialId, {
-    centroCustoId: dados.centroCustoId,
-    centroLucroId: dados.centroLucroId,
-    safraId: dados.safraId,
-    projetoId: dados.projetoId,
-  });
-
-  const classificacaoFiscal = dados.classificacaoFiscal ?? "FISCAL";
-  const tipoComprovante = dados.tipoComprovante ?? null;
-  garantirComprovanteValido({ classificacaoFiscal, tipoComprovante });
+  const campos = await prepararLancamentoAvulso(sessao.filialId, dados);
 
   const lancamento = await prisma.$transaction(async (tx) => {
     const criado = await tx.lancamentoBancario.create({
@@ -520,15 +539,8 @@ export async function criarLancamentoDaLinha(
         data: linha.data,
         tipo: linha.tipo,
         valor: linha.valor,
-        descricao: dados.descricao,
         origem: "MANUAL",
-        categoriaFinanceiraId: dados.categoriaFinanceiraId,
-        centroCustoId: dados.centroCustoId,
-        centroLucroId: dados.centroLucroId,
-        safraId: dados.safraId,
-        projetoId: dados.projetoId,
-        classificacaoFiscal,
-        tipoComprovante,
+        ...campos,
         usuarioId: sessao.usuarioId,
         conciliado: false,
       },
@@ -558,4 +570,159 @@ export async function criarLancamentoDaLinha(
   });
 
   return lancamento;
+}
+
+/**
+ * Concilia N linhas do extrato com M lançamentos da mesma conta, desde que as
+ * somas com sinal sejam iguais. Se não forem, o usuário pode lançar a
+ * diferença (ex.: tarifa) no próprio grupo — valor, tipo e data saem daqui.
+ */
+export async function conciliarEmGrupo(
+  sessao: SessaoAtiva,
+  entrada: { linhaIds: string[]; lancamentoIds: string[]; lancamentoDiferenca?: DadosLancamentoAvulso },
+): Promise<{ grupoConciliacaoId: string; lancamentoDiferencaId: string | null }> {
+  requirePermission(sessao.perfil, "conciliacao:escrever");
+  if (entrada.lancamentoDiferenca) {
+    requirePermission(sessao.perfil, "lancamento:escrever");
+  }
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
+
+  const linhaIds = [...new Set(entrada.linhaIds)];
+  const lancamentoIds = [...new Set(entrada.lancamentoIds)];
+  if (linhaIds.length === 0) {
+    throw new Error("Marque ao menos uma linha do extrato");
+  }
+  if (lancamentoIds.length === 0 && !entrada.lancamentoDiferenca) {
+    throw new Error("Marque ao menos um lançamento");
+  }
+
+  const linhas = await prisma.linhaExtrato.findMany({
+    where: { id: { in: linhaIds }, contaBancaria: { filialId: sessao.filialId } },
+  });
+  if (linhas.length !== linhaIds.length) {
+    throw new Error("Linha de extrato não pertence à filial ativa");
+  }
+  const contaBancariaId = linhas[0].contaBancariaId;
+  if (linhas.some((l) => l.contaBancariaId !== contaBancariaId)) {
+    throw new Error("Todas as linhas do grupo devem ser da mesma conta bancária");
+  }
+  if (linhas.some((l) => l.grupoConciliacaoId)) {
+    throw new Error("Alguma linha marcada já está conciliada");
+  }
+
+  const lancamentos = await prisma.lancamentoBancario.findMany({
+    where: { id: { in: lancamentoIds }, filialId: sessao.filialId },
+  });
+  if (lancamentos.length !== lancamentoIds.length) {
+    throw new Error("Lançamento não pertence à filial ativa");
+  }
+  if (lancamentos.some((l) => l.contaBancariaId !== contaBancariaId)) {
+    throw new Error("Os lançamentos do grupo devem ser da mesma conta bancária das linhas");
+  }
+  if (lancamentos.some((l) => l.conciliado || l.grupoConciliacaoId)) {
+    throw new Error("Algum lançamento marcado já está conciliado");
+  }
+
+  const diferenca = diferencaDoGrupo(
+    linhas.map((l) => ({ valor: Number(l.valor), tipo: l.tipo })),
+    lancamentos.map((l) => ({ valor: Number(l.valor), tipo: l.tipo })),
+  );
+
+  let camposDiferenca: Awaited<ReturnType<typeof prepararLancamentoAvulso>> | null = null;
+  if (entrada.lancamentoDiferenca) {
+    if (diferenca === 0) {
+      throw new Error("Não há diferença a lançar: as somas já batem");
+    }
+    camposDiferenca = await prepararLancamentoAvulso(sessao.filialId, entrada.lancamentoDiferenca);
+  } else if (diferenca !== 0) {
+    throw new Error(
+      `A soma das linhas e dos lançamentos não bate (diferença de ${formatarMoeda(Math.abs(diferenca) / 100)})`,
+    );
+  }
+
+  const dataDiferenca = new Date(Math.max(...linhas.map((l) => l.data.getTime())));
+
+  const resultado = await prisma.$transaction(async (tx) => {
+    let lancamentoDiferencaId: string | null = null;
+    if (camposDiferenca) {
+      const criado = await tx.lancamentoBancario.create({
+        data: {
+          ...camposDiferenca,
+          filialId: sessao.filialId,
+          contaBancariaId,
+          data: dataDiferenca,
+          tipo: diferenca > 0 ? "ENTRADA" : "SAIDA",
+          valor: new Prisma.Decimal(Math.abs(diferenca)).div(100),
+          origem: "MANUAL",
+          usuarioId: sessao.usuarioId,
+          conciliado: false,
+        },
+      });
+      lancamentoDiferencaId = criado.id;
+    }
+
+    const grupoConciliacaoId = await vincularEmGrupo(tx, {
+      filialId: sessao.filialId,
+      contaBancariaId,
+      usuarioId: sessao.usuarioId,
+      linhaIds,
+      lancamentoIds: lancamentoDiferencaId ? [...lancamentoIds, lancamentoDiferencaId] : lancamentoIds,
+    });
+    return { grupoConciliacaoId, lancamentoDiferencaId };
+  });
+
+  await registrarAuditoria({
+    empresaId: sessao.empresaId,
+    filialId: sessao.filialId,
+    usuarioId: sessao.usuarioId,
+    entidade: "GrupoConciliacao",
+    entidadeId: resultado.grupoConciliacaoId,
+    acao: "CONCILIAR_GRUPO",
+    anterior: null,
+    novo: {
+      linhaIds,
+      lancamentoIds,
+      lancamentoDiferencaId: resultado.lancamentoDiferencaId,
+      totalLinhas: linhas.reduce((t, l) => t + (l.tipo === "ENTRADA" ? 1 : -1) * Number(l.valor), 0),
+      totalLancamentos: lancamentos.reduce((t, l) => t + (l.tipo === "ENTRADA" ? 1 : -1) * Number(l.valor), 0),
+    },
+  });
+
+  return resultado;
+}
+
+/**
+ * Itens que podem entrar num grupo junto com a linha de partida: as outras
+ * linhas e os lançamentos ainda soltos da mesma conta, dos dois tipos, dentro
+ * de ±JANELA_BUSCA_DIAS. Sempre consulta ao vivo.
+ */
+export async function buscarCandidatosParaGrupo(sessao: SessaoAtiva, linhaExtratoId: string) {
+  const linhaPartida = await prisma.linhaExtrato.findFirst({
+    where: { id: linhaExtratoId, contaBancaria: { filialId: sessao.filialId } },
+  });
+  if (!linhaPartida) {
+    throw new Error("Linha de extrato não pertence à filial ativa");
+  }
+  if (linhaPartida.grupoConciliacaoId) {
+    throw new Error("Esta linha já está conciliada");
+  }
+
+  const janela = janelaDeBusca(linhaPartida.data);
+  const [linhas, lancamentos] = await Promise.all([
+    prisma.linhaExtrato.findMany({
+      where: {
+        contaBancariaId: linhaPartida.contaBancariaId,
+        grupoConciliacaoId: null,
+        id: { not: linhaPartida.id },
+        data: janela,
+      },
+      orderBy: { data: "asc" },
+    }),
+    prisma.lancamentoBancario.findMany({
+      where: { contaBancariaId: linhaPartida.contaBancariaId, grupoConciliacaoId: null, conciliado: false, data: janela },
+      orderBy: { data: "asc" },
+    }),
+  ]);
+
+  return { linhaPartida, linhas, lancamentos };
 }
