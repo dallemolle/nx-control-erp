@@ -416,7 +416,7 @@ export async function desconciliar(sessao: SessaoAtiva, linhaExtratoId: string):
       where: { grupoConciliacaoId: grupo.id },
       data: { conciliado: false, grupoConciliacaoId: null },
     }),
-    prisma.grupoConciliacao.delete({ where: { id: grupo.id } }),
+    prisma.grupoConciliacao.deleteMany({ where: { id: grupo.id } }),
   ]);
 
   await registrarAuditoria({
