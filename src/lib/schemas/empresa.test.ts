@@ -24,3 +24,12 @@ describe("empresaSchema — corPrimaria", () => {
     expect(resultado.success).toBe(false);
   });
 });
+
+describe("empresaSchema — exigirAprovacaoPorOutro", () => {
+  test("checkbox marcado é true, ausente é false", () => {
+    expect(empresaSchema.parse({ ...BASE, corPrimaria: "", exigirAprovacaoPorOutro: "true" }).exigirAprovacaoPorOutro).toBe(
+      true,
+    );
+    expect(empresaSchema.parse({ ...BASE, corPrimaria: "" }).exigirAprovacaoPorOutro).toBe(false);
+  });
+});

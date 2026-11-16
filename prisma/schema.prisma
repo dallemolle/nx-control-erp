@@ -96,6 +96,8 @@ model Empresa {
   /// Logo para fundo escuro; logoUrl é o de fundo claro.
   logoEscuroUrl String?
   faviconUrl    String?
+  /// Quem registra uma baixa não pode aprová-la (segregação de funções).
+  exigirAprovacaoPorOutro Boolean @default(true)
   ativo        Boolean  @default(true)
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt

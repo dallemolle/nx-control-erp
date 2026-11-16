@@ -148,6 +148,7 @@ export async function atualizarEmpresa(
       cnpjCpf: anterior.cnpjCpf,
       moedaPadrao: anterior.moedaPadrao,
       corPrimaria: anterior.corPrimaria,
+      exigirAprovacaoPorOutro: anterior.exigirAprovacaoPorOutro,
       logoUrl: anterior.logoUrl,
     },
     novo: { ...dados, logoUrl: novoLogoUrl !== undefined ? novoLogoUrl : anterior.logoUrl },
