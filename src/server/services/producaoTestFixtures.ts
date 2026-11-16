@@ -90,7 +90,7 @@ export type CatalogoDeTeste = {
   fornecedorId: string;
   /** Categoria DESPESA da filial A, para a compra de fruto. */
   categoriaCompraId: string;
-  /** "AFN", polpa de açaí fino (mesma fruta). */
+  /** "AFN", polpa de açaí fino (mesma fruta); AGC e AFN com preço de referência 10. */
   produtoPolpaFinoId: string;
   /** Cupuaçu: não exige branqueamento. */
   outraFrutaId: string;
@@ -130,6 +130,7 @@ export async function criarCatalogoDeTeste(fx: FixtureProducao): Promise<Catalog
       frutaId: fruta.id,
       conservacao: "CONGELADO",
       validadeDias: 365,
+      precoReferenciaKg: 10,
     },
   });
   const talhao = await prisma.talhao.create({
@@ -157,6 +158,7 @@ export async function criarCatalogoDeTeste(fx: FixtureProducao): Promise<Catalog
       frutaId: fruta.id,
       conservacao: "CONGELADO",
       validadeDias: 365,
+      precoReferenciaKg: 10,
     },
   });
   const outraFruta = await prisma.fruta.create({
