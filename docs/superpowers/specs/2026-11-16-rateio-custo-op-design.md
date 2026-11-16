@@ -139,7 +139,8 @@ entre as polpas."
 
 - Doc 03: RN-13 reescrita (rateio pelo preço; bloqueio sem preço).
 - Doc 08: D-06 e D-17 fechadas com data.
-- Backlog: sai "Rateio do custo da OP por qualidade".
+- Backlog: sai "Rateio do custo da OP por qualidade"; entra "Histórico do
+  preço de referência do produto" (ver Fora do escopo).
 - Ajuda (`content/ajuda/passo-a-passo.md`): seção da OP explica o custo por
   produto e o bloqueio; cadastro de produto cita o preço de referência.
 - `docs/fases/fase-7-producao-estoque-vendas.md` e README do módulo: Fase 7
@@ -147,6 +148,8 @@ entre as polpas."
 
 ## Fora do escopo
 
-- Recalcular OPs já encerradas.
-- Fator de equivalência separado do preço ou informado por OP.
-- Histórico de preço de referência (o preço usado fica só na auditoria).
+- Recalcular OPs já encerradas — **descartado:** só existem dados de teste.
+- Fator de equivalência separado do preço ou informado por OP —
+  **descartado:** o usuário escolheu o preço de referência.
+- Histórico de preço de referência (hoje o preço usado fica só na auditoria
+  do encerramento) — **→ backlog.**
