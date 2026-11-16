@@ -96,7 +96,7 @@ rodapé.
 - Spec de 2026-09-07: a segunda limitação e o item do "fora de escopo" ganham
   "**feito** (2026-11-16, esta spec)".
 - `docs/backlog.md`: remover o item.
-- `docs/fases/fase-4-*.md`: nota curta na seção do fluxo projetado.
+- `docs/fases/fase-4-fluxo-de-caixa.md`: nota curta na seção do fluxo projetado.
 
 ## Fora do escopo
 
