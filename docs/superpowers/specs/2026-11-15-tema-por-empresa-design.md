@@ -37,7 +37,9 @@ Evolui a [identidade visual por empresa](2026-09-18-identidade-visual-por-empres
 5. **`corPrimaria` continua** valendo para quem usa; com tema, o tema
    prevalece.
 6. Fora desta entrega: editor visual; botão "gerar com IA" chamando uma API
-   (o fluxo com IA externa + importação já resolve, sem custo).
+   (o fluxo com IA externa + importação já resolve, sem custo). — editor
+   **feito** (PR #101); botão de IA **descartado:** o fluxo externo
+   resolve sem custo.
 
 ## Formato do arquivo (`nx-tema`, versão 1)
 

@@ -183,7 +183,9 @@ overlay translúcido (`#ffffff1f`) que se adapta visualmente a qualquer
 cor de fundo por baixo; nas paletas B/C (claras), é uma cor sólida fixa,
 então o hover pode destoar levemente da cor da empresa quando o usuário
 tem uma dessas paletas selecionada. Não compromete legibilidade — é uma
-melhoria possível pra uma iteração futura, não bloqueante pra esta.
+melhoria possível pra uma iteração futura, não bloqueante pra esta. —
+**descartado** (varredura de 2026-11-16): superado pelo tema por empresa,
+que define as cores da sidebar.
 
 ## Seção 5 — UI de cadastro
 

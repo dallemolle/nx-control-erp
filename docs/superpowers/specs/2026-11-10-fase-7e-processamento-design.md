@@ -329,10 +329,15 @@ recepção.
 
 ## 6. Fora da 7e
 
-Rastreabilidade (7f); relatório de processamento e painel (7g); rateio de
-custo por qualidade (D-06, backlog); estoque de insumos (D-14); edição de
-quantidade de linha (remove e lança de novo); transferência parcial de
-lote.
+- Rastreabilidade (7f). — **feito** (7f).
+- Relatório de processamento e painel (7g). — **feito** (7g1/7g2b).
+- Rateio de custo por qualidade (D-06). — **feito** (rateio pelo preço de
+  referência, 2026-11-16).
+- Estoque de insumos (D-14). — **descartado:** D-14, insumo só como
+  custo da OP.
+- Edição de quantidade de linha. — **descartado:** remover e lançar de
+  novo atende.
+- Transferência parcial de lote. — **→ backlog.**
 
 ## 7. Testes
 

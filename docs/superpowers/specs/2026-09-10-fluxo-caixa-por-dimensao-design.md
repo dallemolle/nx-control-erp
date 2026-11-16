@@ -288,14 +288,20 @@ teste):
 
 - Orçamento por dimensão (centro de custo, centro de lucro ou safra) —
   fica pro sub-projeto 2b (só safra) ou uma iteração futura (demais
-  dimensões).
+  dimensões). — safra **feito** (2b); demais **descartado** (ver spec do
+  orçamento).
 - Comparação entre safras (atual/anteriores/orçada/realizada/projetada)
-  — sub-projeto 2b, desenho técnico separado.
+  — sub-projeto 2b, desenho técnico separado. — **feito** (2b).
 - Relatório "fluxo de caixa por Projeto" — o dado passa a ser capturado
-  nesta entrega, mas a tela de relatório fica pra quando for pedida.
-- Rollup hierárquico de centro de custo (filho somando no pai).
-- Tornar as 4 dimensões obrigatórias no cadastro de `Titulo`.
+  nesta entrega, mas a tela de relatório fica pra quando for pedida. —
+  **feito** (dimensão `PROJETO` na mesma tela).
+- Rollup hierárquico de centro de custo (filho somando no pai). — **→
+  backlog** (já registrado).
+- Tornar as 4 dimensões obrigatórias no cadastro de `Titulo`. —
+  **descartado:** obrigar trava o cadastro; a linha "Não classificado"
+  mostra o que falta.
 - Migração de backfill pra classificar lançamentos históricos sem baixa
   — resolvido por fallback na leitura pro caso via baixa; sem baixa, não
-  há dado pra recuperar.
-- Visão cruzando as 3 dimensões simultaneamente numa única tabela.
+  há dado pra recuperar. — **descartado:** não há dado a recuperar.
+- Visão cruzando as 3 dimensões simultaneamente numa única tabela. —
+  **descartado:** os filtros globais combinam as dimensões.

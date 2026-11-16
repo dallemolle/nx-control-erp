@@ -304,15 +304,23 @@ tem `planejamentoEstrategico:ler`).
 
 - Prazo médio de recebimento/pagamento (DSO/DPO) e capital de giro como
   premissas — exigem modelar descasamento de caixa no tempo, um
-  sub-projeto à parte.
+  sub-projeto à parte. — **descartado:** depende do modelo de capital de
+  giro (item do backlog do Dashboard executivo).
 - Amortização de dívida (principal pago ao longo do tempo) — v1 assume
-  juros apenas, saldo devedor só cresce.
+  juros apenas, saldo devedor só cresce. — **descartado:** não há modelo
+  de empréstimo; é uma projeção de 5 anos, não um controle de dívida.
 - Premissas variáveis por ano (5 valores por premissa em vez de 1) —
-  decisão confirmada: taxa única aplicada aos 5 anos.
+  decisão confirmada: taxa única aplicada aos 5 anos. — **descartado:**
+  decisão do usuário.
 - Cenários customizáveis além dos 3 fixos (base/otimista/pessimista) —
-  decisão confirmada: sempre esses 3, sem criar/nomear cenários novos.
-- Gráficos/visualização — só tabela nesta v1.
+  decisão confirmada: sempre esses 3, sem criar/nomear cenários novos. —
+  **descartado:** decisão do usuário.
+- Gráficos/visualização — só tabela nesta v1. — **descartado:** a tabela
+  de 5 anos atende.
 - Consolidação/comparação com o orçamento (Fase 5, ainda não desenhada).
+  — **descartado:** o orçamento é mensal por filial e não se compara a uma
+  projeção anual por empresa.
 - Reconstrução de cadeia de anos "invisíveis" fora da janela — não se
   aplica aqui (a janela é sempre os mesmos 5 anos a partir de hoje, sem
-  navegação de período, diferente dos sub-projetos 1/2).
+  navegação de período, diferente dos sub-projetos 1/2). —
+  **descartado:** não se aplica.
