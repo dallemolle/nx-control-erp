@@ -97,6 +97,8 @@ Quando alguém do perfil Financeiro registra uma baixa (pagamento ou recebimento
 
 Aprovar uma baixa efetiva o pagamento: gera automaticamente um lançamento bancário (entrada ou saída, conforme o tipo do título) na conta bancária informada, e atualiza o status da parcela. Rejeitar exige informar um motivo (por exemplo, duplicidade de nota fiscal) e devolve a parcela para o estado anterior, sem gerar lançamento nenhum.
 
+**Aprovação por outra pessoa:** se a empresa exige que a baixa seja aprovada por outra pessoa (o padrão), quem registrou a baixa vê o botão Aprovar desabilitado, com a nota *Registrada por você: outra pessoa precisa aprovar*, e precisa de alguém com permissão de aprovação. Isso vale também para o Administrador. Quem registrou pode rejeitar a própria baixa. Empresa com uma pessoa só no financeiro pode desligar a regra no cadastro da empresa (seção 8.1).
+
 > Só os perfis Administrador e Tesouraria veem e podem agir nesta tela.
 
 ### 3.3. Tesouraria
@@ -380,6 +382,8 @@ Base para a recepção de fruto, as vendas por lote e o processamento (este nas 
 ### 8.1. Empresas
 
 Cadastro das empresas atendidas pelo sistema. Ao criar uma empresa, o sistema já cria automaticamente uma filial "Matriz" e vincula quem criou como Administrador dela.
+
+**Exigir que a baixa seja aprovada por outra pessoa:** vem marcada. Com ela, quem registra uma baixa não pode aprová-la (seção 3.2). Desmarque só se a empresa tem uma pessoa só no financeiro; a mudança fica registrada na auditoria.
 
 **Tema e marca:** o botão **Tema e marca** na linha da empresa (só o Administrador) deixa o painel com a cara do cliente: cores no modo claro e no escuro, fontes, cantos arredondados, logos e o ícone da aba do navegador. Empresa sem tema usa o visual padrão do sistema.
 

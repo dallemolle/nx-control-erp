@@ -187,18 +187,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
 
 ## Financeiro — controles e conciliação
 
-- **Segregação de funções na baixa** (Fase 2, spec de títulos; varredura
-  de 2026-11-16). Hoje o mesmo usuário pode registrar e aprovar a própria
-  baixa, e a aprovação já cria o `LancamentoBancario`: uma pessoa sozinha
-  tira dinheiro do caixa no sistema sem segundo olhar. A regra "quem
-  registrou não aprova" é um controle interno básico, e auditoria externa
-  costuma cobrá-lo. O dado já existe (`Baixa.usuarioId` x a sessão que
-  aprova em `aprovarBaixa`); falta só a checagem. Atenção: numa filial com
-  um único usuário com permissão de aprovação, a regra trava o fluxo.
-  Prever uma configuração por empresa ou uma exceção para `ADMINISTRADOR`,
-  registrada na auditoria. A baixa automática da venda à vista
-  (`efetivarBaixa` direto) fica fora da regra.
-
 - **Conciliação N:1 / 1:N** (Fase 3; varredura de 2026-11-16). O
   `@unique` entre linha do extrato e lançamento só permite 1:1. Um PIX que
   quita duas parcelas, ou duas transferências que pagam uma parcela, não

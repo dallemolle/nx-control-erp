@@ -45,7 +45,9 @@ export default async function AprovacoesPage() {
                 <TableCell>
                   {baixa.usuario.nome}
                   {bloqueada && (
-                    <p className="text-xs text-muted-foreground">Registrada por você: outra pessoa precisa aprovar</p>
+                    <p className="max-w-48 whitespace-normal text-xs text-muted-foreground">
+                      Registrada por você: outra pessoa precisa aprovar
+                    </p>
                   )}
                 </TableCell>
                 <TableCell className="flex justify-end gap-2">

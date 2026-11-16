@@ -1,6 +1,6 @@
 # Segregação de funções na baixa
 
-Data: 2026-11-16 · Status: desenho aprovado
+Data: 2026-11-16 · Status: implementada (2026-11-16)
 
 Item do [backlog](../../backlog.md) ("Segregação de funções na baixa"), da
 spec de [títulos](2026-08-31-financeiro-titulos-design.md) ("quem registrou a
