@@ -15,6 +15,7 @@ import {
   criarCatalogoDeTeste,
   criarFixtureProducao,
   criarLoteDeTeste,
+  parcelaUnicaAPrazo,
   type CadastrosDeVenda,
   type CatalogoDeTeste,
   type FixtureProducao,
@@ -62,7 +63,7 @@ describe("painel de produção", () => {
         data,
         clienteId: cad.clienteId,
         formaPagamento: "A_PRAZO",
-        vencimento: "2026-12-31",
+        parcelas: parcelaUnicaAPrazo([{ quantidadeKg: kg, precoKg: preco }], "2026-12-31"),
         retiraNaPropriedade: "true",
         itens: JSON.stringify([{ loteId, quantidadeKg: kg, precoKg: preco }]),
         ...extra,
@@ -119,10 +120,9 @@ describe("painel de produção", () => {
     await cancelarOP(adm(), op4.id, "Teste");
 
     await vender("2026-11-12", agc.loteId, 10, 30, { retiraNaPropriedade: "false" });
-    await vender("2026-11-10", r1.loteId, 5, 8, { formaPagamento: "PIX", vencimento: "" });
+    await vender("2026-11-10", r1.loteId, 5, 8, { formaPagamento: "PIX" });
     await vender("2026-11-12", cpc.loteId, 6, 20, {
       formaPagamento: "PIX",
-      vencimento: "",
       retiraNaPropriedade: "false",
       entregaDataPrevista: "2026-11-25",
     });

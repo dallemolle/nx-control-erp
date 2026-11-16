@@ -43,6 +43,15 @@ export async function GET(_request: Request, ctx: { params: Promise<{ numero: st
     situacao: ROTULOS_SITUACAO_PAGAMENTO[pedido.situacao],
     cancelado: pedido.status === "CANCELADO",
     observacao: pedido.observacao,
+    condicao: pedido.condicaoPagamento,
+    parcelas:
+      pedido.formaPagamento === "A_PRAZO"
+        ? (pedido.titulo?.parcelas ?? []).map((p) => ({
+            numero: p.numero,
+            dataVencimento: p.dataVencimento,
+            valor: Number(p.valorAtualizado),
+          }))
+        : [],
   });
 
   return new Response(Buffer.from(pdf), {

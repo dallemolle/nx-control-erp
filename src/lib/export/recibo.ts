@@ -15,6 +15,10 @@ export type DadosRecibo = {
   situacao: string;
   cancelado: boolean;
   observacao: string | null;
+  /** Só a prazo: "28/56" (dias). */
+  condicao: string | null;
+  /** Só a prazo; vazio à vista. */
+  parcelas: { numero: number; dataVencimento: Date; valor: number }[];
 };
 
 const LARGURA = 595.28;
@@ -124,6 +128,21 @@ export async function gerarReciboPdf(dados: DadosRecibo): Promise<Uint8Array> {
 
   y -= 28;
   escrever(`Forma de pagamento: ${dados.formaPagamento}`, { tamanho: 10 });
+  if (dados.condicao) {
+    y -= 14;
+    escrever(`Condição: ${dados.condicao} dias`, { tamanho: 10 });
+  }
+  for (const parcela of dados.parcelas) {
+    if (y < MARGEM + 30) {
+      pagina = pdf.addPage([LARGURA, ALTURA]);
+      y = ALTURA - MARGEM;
+      escrever(`Pedido nº ${dados.numero} (continuação)`, { cor: CINZA, tamanho: 9 });
+      y -= 10;
+    }
+    y -= 13;
+    escrever(`Parcela ${parcela.numero} · vence ${formatarData(parcela.dataVencimento)}`, { tamanho: 9, x: MARGEM + 12 });
+    escrever(formatarMoeda(parcela.valor), { tamanho: 9, direita: true });
+  }
   y -= 14;
   escrever(`Situação do pagamento: ${dados.situacao}`, { tamanho: 10 });
   if (dados.observacao) {

@@ -15,6 +15,8 @@ const base: DadosRecibo = {
   situacao: "Pago",
   cancelado: false,
   observacao: null,
+  condicao: null,
+  parcelas: [],
 };
 
 describe("gerarReciboPdf", () => {
@@ -30,6 +32,16 @@ describe("gerarReciboPdf", () => {
     const itens = Array.from({ length: 80 }, (_, i) => ({ ...base.itens[0], lote: `AGC-261101-${i + 1}` }));
     const pdf = await PDFDocument.load(await gerarReciboPdf({ ...base, itens, total: 4000 }));
     expect(pdf.getPageCount()).toBeGreaterThan(1);
+  });
+
+  test("a prazo com 60 parcelas mostra condição e quebra página sem erro", async () => {
+    const parcelas = Array.from({ length: 60 }, (_, i) => ({
+      numero: i + 1,
+      dataVencimento: new Date(Date.UTC(2026, 11 + i, 10)),
+      valor: 10,
+    }));
+    const bytes = await gerarReciboPdf({ ...base, formaPagamento: "A prazo", condicao: "30/60", parcelas, total: 600 });
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBeGreaterThan(1);
   });
 
   test("acentos, travessão e cancelado não quebram", async () => {

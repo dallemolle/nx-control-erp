@@ -8,6 +8,7 @@ import {
   criarCadastrosDeVenda,
   criarCatalogoDeTeste,
   criarFixtureProducao,
+  parcelaUnicaAPrazo,
   type CadastrosDeVenda,
   type CatalogoDeTeste,
   type FixtureProducao,
@@ -56,7 +57,7 @@ describe("relatório mensal", () => {
         data,
         clienteId: cad.clienteId,
         formaPagamento: "A_PRAZO",
-        vencimento: "2026-12-31",
+        parcelas: parcelaUnicaAPrazo([{ quantidadeKg: kg, precoKg: preco }], "2026-12-31"),
         retiraNaPropriedade: "true",
         itens: JSON.stringify([{ loteId, quantidadeKg: kg, precoKg: preco }]),
         ...extra,
@@ -107,7 +108,7 @@ describe("relatório mensal", () => {
       branqueamentoTempoS: "12",
     });
     await encerrarOP(adm(), op2.id, { confirmarVerificar: false });
-    await vender("2026-10-05", rA.loteId, 5, 8, { formaPagamento: "PIX", vencimento: "" });
+    await vender("2026-10-05", rA.loteId, 5, 8, { formaPagamento: "PIX" });
     await vender("2026-10-05", cpc.loteId, 6, 20);
 
     // Novembro.

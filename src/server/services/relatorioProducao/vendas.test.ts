@@ -7,6 +7,7 @@ import {
   criarCatalogoDeTeste,
   criarFixtureProducao,
   criarLoteDeTeste,
+  parcelaUnicaAPrazo,
   type CadastrosDeVenda,
   type CatalogoDeTeste,
   type FixtureProducao,
@@ -40,13 +41,13 @@ describe("relatório de vendas", () => {
         data,
         clienteId,
         formaPagamento: "A_PRAZO",
-        vencimento: "2026-12-31",
+        parcelas: parcelaUnicaAPrazo([{ quantidadeKg: kg, precoKg: preco }], "2026-12-31"),
         retiraNaPropriedade: "true",
         itens: JSON.stringify([{ loteId, quantidadeKg: kg, precoKg: preco }]),
         ...extra,
       }),
     );
-  const avista = (forma: string) => ({ formaPagamento: forma, vencimento: "" });
+  const avista = (forma: string) => ({ formaPagamento: forma });
 
   beforeAll(async () => {
     fx = await criarFixtureProducao("vendas");

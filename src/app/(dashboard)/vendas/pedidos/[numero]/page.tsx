@@ -12,6 +12,7 @@ import {
   ROTULOS_CLASSIFICACAO_FISCAL,
   ROTULOS_FORMA_PAGAMENTO_VENDA,
   ROTULOS_STATUS_ENTREGA,
+  ROTULOS_STATUS_PARCELA,
 } from "@/lib/schemas/enums";
 import { atrasoEntregaDias } from "@/lib/producao/venda";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
@@ -92,7 +93,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ numero:
             <Dado rotulo="Canal">{pedido.canal ? ROTULOS_CANAL_VENDA[pedido.canal] : "—"}</Dado>
             <Dado rotulo="Forma de pagamento">{ROTULOS_FORMA_PAGAMENTO_VENDA[pedido.formaPagamento]}</Dado>
             {pedido.formaPagamento === "A_PRAZO" ? (
-              <Dado rotulo="Vencimento">{pedido.vencimento ? formatarData(pedido.vencimento) : "—"}</Dado>
+              <Dado rotulo="Condição">{pedido.condicaoPagamento ? `${pedido.condicaoPagamento} dias` : "—"}</Dado>
             ) : (
               <Dado rotulo="Conta">{pedido.contaBancaria ? nomeDaContaBancaria(pedido.contaBancaria) : "—"}</Dado>
             )}
@@ -168,9 +169,11 @@ export default async function PedidoPage({ params }: { params: Promise<{ numero:
                 <span className="text-sm text-muted-foreground">Conta a receber {pedido.titulo.documento}</span>
               ) : null}
             </div>
-            {pedido.titulo?.parcelas.map((parcela) => (
-              <p key={parcela.id} className="text-sm">
+            {pedido.titulo?.parcelas.map((parcela, _, todas) => (
+              <p key={parcela.id} className="text-sm tabular-nums">
+                {todas.length > 1 ? `${parcela.numero}ª · ` : ""}
                 Vence {formatarData(parcela.dataVencimento)} · {formatarMoeda(parcela.valorAtualizado)}
+                <span className="text-muted-foreground"> · {ROTULOS_STATUS_PARCELA[parcela.status]}</span>
               </p>
             ))}
             {podeExecutar(sessao.perfil, "titulo:ler") ? (
