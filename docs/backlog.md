@@ -232,15 +232,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   local. Caminho: dividir o lote em um filho com o mesmo número/origem
   (rastreável na 7f) no novo local.
 
-- **Venda a prazo em parcelas** (7c; varredura de 2026-11-16). O pedido
-  `A_PRAZO` gera um título com uma parcela e um vencimento só. Uma venda
-  combinada em várias datas (ex.: 28/56 dias) fica registrada com data
-  errada, o que distorce o contas a receber, o aging do dashboard e a
-  projeção. O título já aceita várias parcelas (`criarTituloInterno`) e o
-  cancelamento do pedido já cancela todas as parcelas do título: falta a
-  condição de pagamento no pedido (datas e valores) e as telas/relatórios
-  de venda que mostram um vencimento só.
-
 ## Produção — custo da OP
 
 - **Histórico do preço de referência do produto** (rateio do custo da OP,

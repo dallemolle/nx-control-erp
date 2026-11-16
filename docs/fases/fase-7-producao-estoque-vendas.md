@@ -44,7 +44,9 @@ produto, e pedido e OP aceitam o lote liberado sem depender do perfil de
 quem lança; substitui a liberação por item da 7c e da 7e. A etiqueta
 (D-10) ficou fechada com os campos configuráveis. Rateio do custo da OP
 concluído em 2026-11-16 (D-06): o custo de cada polpa é proporcional ao
-preço de referência do produto, e a OP não encerra sem preço. Implantação
+preço de referência do produto, e a OP não encerra sem preço. Venda a
+prazo em parcelas concluída em 2026-11-16 (D-12 revista): prazos em dias,
+até 60 parcelas ajustáveis, condição gravada no pedido. Implantação
 (D-17) fechada: a filial da Hortitex é criada pelo Administrador e
 implantada do zero, sem importação.
 

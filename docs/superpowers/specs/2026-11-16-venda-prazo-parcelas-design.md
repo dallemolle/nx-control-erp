@@ -1,6 +1,6 @@
 # Venda a prazo em parcelas
 
-Data: 2026-11-16 · Status: aprovada
+Data: 2026-11-16 · Status: implementada (2026-11-16)
 
 Item do [backlog](../../backlog.md) ("Venda a prazo em parcelas"), levantado na
 varredura dos "fora do escopo" de 2026-11-16. Revê a D-12 da 7c ("v1: uma
