@@ -1,4 +1,5 @@
 import type { StatusEntrega, StatusParcela } from "@prisma/client";
+import { formatarMoeda } from "@/lib/formatacao";
 import { arredondar } from "./arredondar";
 
 const UM_DIA_MS = 86_400_000;
@@ -70,4 +71,62 @@ export function situacaoPagamento(
 /** D-03: o lote está vencido na data da venda quando a validade é anterior a ela. */
 export function loteVencidoNaData(validade: Date, data: Date): boolean {
   return validade.getTime() < data.getTime();
+}
+
+/** Limite de parcelas da venda a prazo: só protege contra erro de digitação. */
+export const MAX_PARCELAS_VENDA = 60;
+
+export type ParcelaVenda = { dataVencimento: Date; valor: number };
+
+const centavos = (valor: number) => Math.round(valor * 100);
+
+/** `28/56` → [28, 56]: dias inteiros ≥ 0, estritamente crescentes, de 1 a 60. */
+export function interpretarPrazos(texto: string): { ok: true; prazos: number[] } | { ok: false; erro: string } {
+  if (texto.trim() === "") return { ok: false, erro: "Informe os prazos" };
+  const prazos: number[] = [];
+  for (const parte of texto.split("/").map((p) => p.trim())) {
+    if (!/^\d+$/.test(parte)) return { ok: false, erro: `Prazo inválido: ${parte || "(vazio)"}` };
+    prazos.push(Number(parte));
+  }
+  if (prazos.length > MAX_PARCELAS_VENDA) return { ok: false, erro: `No máximo ${MAX_PARCELAS_VENDA} parcelas` };
+  if (prazos.some((prazo, i) => i > 0 && prazo <= prazos[i - 1])) {
+    return { ok: false, erro: "Os prazos devem ser crescentes" };
+  }
+  return { ok: true, prazos };
+}
+
+/** Vencimento = data + dias; valor dividido igual e a última parcela leva a diferença de centavos. */
+export function gerarParcelasPorPrazos(data: Date, total: number, prazos: number[]): ParcelaVenda[] {
+  const totalCentavos = centavos(total);
+  const parte = Math.floor(totalCentavos / prazos.length);
+  return prazos.map((dias, i) => ({
+    dataVencimento: new Date(data.getTime() + dias * UM_DIA_MS),
+    valor: (i === prazos.length - 1 ? totalCentavos - parte * (prazos.length - 1) : parte) / 100,
+  }));
+}
+
+/** Condição gravada no pedido: dias de cada vencimento desde a data do pedido (`28/56`). */
+export function condicaoDasParcelas(data: Date, vencimentos: Date[]): string {
+  return vencimentos.map((vencimento) => Math.round((vencimento.getTime() - data.getTime()) / UM_DIA_MS)).join("/");
+}
+
+/** Regras das parcelas da venda a prazo; devolve a mensagem do primeiro erro ou `null`. */
+export function validarParcelasVenda(data: Date, total: number, parcelas: ParcelaVenda[]): string | null {
+  if (parcelas.length === 0) return "Informe os prazos";
+  if (parcelas.length > MAX_PARCELAS_VENDA) return `No máximo ${MAX_PARCELAS_VENDA} parcelas`;
+  if (parcelas.some((p) => !Number.isFinite(p.valor) || Number.isNaN(p.dataVencimento.getTime()))) {
+    return "Preencha vencimento e valor de cada parcela";
+  }
+  if (parcelas.some((p) => p.dataVencimento.getTime() < data.getTime())) {
+    return "O vencimento não pode ser antes da data do pedido";
+  }
+  if (parcelas.some((p, i) => i > 0 && p.dataVencimento.getTime() <= parcelas[i - 1].dataVencimento.getTime())) {
+    return "Os vencimentos devem ser crescentes";
+  }
+  if (parcelas.some((p) => centavos(p.valor) <= 0)) return "O valor de cada parcela deve ser maior que zero";
+  const soma = parcelas.reduce((acc, p) => acc + centavos(p.valor), 0);
+  if (soma !== centavos(total)) {
+    return `A soma das parcelas (${formatarMoeda(soma / 100)}) difere do total do pedido (${formatarMoeda(total)})`;
+  }
+  return null;
 }

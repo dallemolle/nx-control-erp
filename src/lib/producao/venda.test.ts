@@ -1,10 +1,15 @@
 import { describe, expect, test } from "vitest";
+import { formatarMoeda } from "@/lib/formatacao";
 import {
   atrasoEntregaDias,
   calcularItem,
   calcularPedido,
+  condicaoDasParcelas,
+  gerarParcelasPorPrazos,
+  interpretarPrazos,
   loteVencidoNaData,
   situacaoPagamento,
+  validarParcelasVenda,
 } from "./venda";
 
 const d = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
@@ -98,5 +103,97 @@ describe("loteVencidoNaData", () => {
   test("validade igual à data não está vencido; um dia antes está", () => {
     expect(loteVencidoNaData(d("2026-11-10"), d("2026-11-10"))).toBe(false);
     expect(loteVencidoNaData(d("2026-11-09"), d("2026-11-10"))).toBe(true);
+  });
+});
+
+describe("interpretarPrazos", () => {
+  test("dias separados por barra, com espaços", () => {
+    expect(interpretarPrazos(" 28 / 56 ")).toEqual({ ok: true, prazos: [28, 56] });
+  });
+  test("zero é vencimento no dia do pedido", () => {
+    expect(interpretarPrazos("0/30")).toEqual({ ok: true, prazos: [0, 30] });
+  });
+  test("vazio", () => {
+    expect(interpretarPrazos("  ")).toEqual({ ok: false, erro: "Informe os prazos" });
+  });
+  test("não numérico, negativo ou decimal", () => {
+    expect(interpretarPrazos("28/abc")).toEqual({ ok: false, erro: "Prazo inválido: abc" });
+    expect(interpretarPrazos("-5")).toEqual({ ok: false, erro: "Prazo inválido: -5" });
+    expect(interpretarPrazos("10.5")).toEqual({ ok: false, erro: "Prazo inválido: 10.5" });
+    expect(interpretarPrazos("28//56")).toEqual({ ok: false, erro: "Prazo inválido: (vazio)" });
+  });
+  test("fora de ordem ou repetido", () => {
+    expect(interpretarPrazos("56/28")).toEqual({ ok: false, erro: "Os prazos devem ser crescentes" });
+    expect(interpretarPrazos("28/28")).toEqual({ ok: false, erro: "Os prazos devem ser crescentes" });
+  });
+  test("até 60 parcelas", () => {
+    const sessenta = Array.from({ length: 60 }, (_, i) => (i + 1) * 30).join("/");
+    expect(interpretarPrazos(sessenta)).toMatchObject({ ok: true });
+    expect(interpretarPrazos(`${sessenta}/9999`)).toEqual({ ok: false, erro: "No máximo 60 parcelas" });
+  });
+});
+
+describe("gerarParcelasPorPrazos", () => {
+  test("divide igual e a última leva os centavos", () => {
+    const parcelas = gerarParcelasPorPrazos(d("2026-11-10"), 100, [30, 60, 90]);
+    expect(parcelas.map((p) => p.valor)).toEqual([33.33, 33.33, 33.34]);
+    expect(parcelas.map((p) => p.dataVencimento.toISOString().slice(0, 10))).toEqual([
+      "2026-12-10",
+      "2027-01-09",
+      "2027-02-08",
+    ]);
+  });
+  test("uma parcela leva o total; prazo 0 vence na data", () => {
+    expect(gerarParcelasPorPrazos(d("2026-11-10"), 50, [0])).toEqual([{ dataVencimento: d("2026-11-10"), valor: 50 }]);
+  });
+});
+
+describe("condicaoDasParcelas", () => {
+  test("dias desde a data do pedido", () => {
+    expect(condicaoDasParcelas(d("2026-11-10"), [d("2026-12-08"), d("2027-01-09")])).toBe("28/60");
+  });
+});
+
+describe("validarParcelasVenda", () => {
+  const p = (iso: string, valor: number) => ({ dataVencimento: d(iso), valor });
+  test("válidas", () => {
+    expect(validarParcelasVenda(d("2026-11-10"), 100, [p("2026-12-10", 33.33), p("2027-01-09", 66.67)])).toBeNull();
+  });
+  test("sem parcelas ou acima do limite", () => {
+    expect(validarParcelasVenda(d("2026-11-10"), 100, [])).toBe("Informe os prazos");
+    const muitas = Array.from({ length: 61 }, (_, i) => ({
+      dataVencimento: new Date(d("2026-11-10").getTime() + i * 86_400_000),
+      valor: 1,
+    }));
+    expect(validarParcelasVenda(d("2026-11-10"), 61, muitas)).toBe("No máximo 60 parcelas");
+  });
+  test("vencimento ou valor em branco", () => {
+    expect(validarParcelasVenda(d("2026-11-10"), 50, [p("2026-12-10", NaN)])).toBe(
+      "Preencha vencimento e valor de cada parcela",
+    );
+    expect(validarParcelasVenda(d("2026-11-10"), 50, [{ dataVencimento: new Date(NaN), valor: 50 }])).toBe(
+      "Preencha vencimento e valor de cada parcela",
+    );
+  });
+  test("vencimento antes da data do pedido", () => {
+    expect(validarParcelasVenda(d("2026-11-10"), 50, [p("2026-11-09", 50)])).toBe(
+      "O vencimento não pode ser antes da data do pedido",
+    );
+  });
+  test("datas fora de ordem ou repetidas", () => {
+    expect(validarParcelasVenda(d("2026-11-10"), 100, [p("2026-12-10", 50), p("2026-12-10", 50)])).toBe(
+      "Os vencimentos devem ser crescentes",
+    );
+  });
+  test("valor zero ou negativo", () => {
+    expect(validarParcelasVenda(d("2026-11-10"), 50, [p("2026-12-10", 50), p("2027-01-10", 0)])).toBe(
+      "O valor de cada parcela deve ser maior que zero",
+    );
+  });
+  test("soma diferente do total", () => {
+    // formatarMoeda usa espaço não separável depois do "R$": montar a mensagem com ele.
+    expect(validarParcelasVenda(d("2026-11-10"), 100, [p("2026-12-10", 50), p("2027-01-10", 49.99)])).toBe(
+      `A soma das parcelas (${formatarMoeda(99.99)}) difere do total do pedido (${formatarMoeda(100)})`,
+    );
   });
 });
