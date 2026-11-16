@@ -112,9 +112,13 @@ describe("filtro de classificação nos relatórios", () => {
   });
 
   test("fluxo projetado: Fiscal + Gerencial = Todos, filtrado parte de 0 e sem alerta", async () => {
-    const semOpcoes = await listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", hoje);
-    const fiscal = await listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", hoje, { classificacao: "FISCAL" });
-    const gerencial = await listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", hoje, { classificacao: "GERENCIAL" });
+    const { periodos: semOpcoes } = await listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", hoje);
+    const { periodos: fiscal } = await listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", hoje, {
+      classificacao: "FISCAL",
+    });
+    const { periodos: gerencial } = await listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", hoje, {
+      classificacao: "GERENCIAL",
+    });
 
     const proximo = 1; // janela MOVEL começa no mês atual
     expect(semOpcoes[proximo].entradasProjetadas).toBe(fiscal[proximo].entradasProjetadas + gerencial[proximo].entradasProjetadas);

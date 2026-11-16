@@ -129,7 +129,7 @@ O seletor **Todos / Fiscal / Gerencial** mostra só o movimento de uma classific
 
 ### 3.6. Fluxo de caixa projetado
 
-Complementa o fluxo de caixa realizado com uma projeção de 12 meses (ou por ano civil) baseada nos títulos a pagar e a receber já cadastrados e ainda em aberto — ou seja, mostra para onde o saldo em caixa tende a ir, não só onde já esteve. A projeção parte do saldo em caixa de hoje e soma/subtrai as parcelas previstas mês a mês. Um saldo final negativo em algum mês aparece destacado.
+Complementa o fluxo de caixa realizado com uma projeção de 12 meses (ou por ano civil) baseada nos títulos a pagar e a receber já cadastrados e ainda em aberto — ou seja, mostra para onde o saldo em caixa tende a ir, não só onde já esteve. A projeção parte do saldo em caixa de hoje e soma/subtrai as parcelas previstas mês a mês. As parcelas em aberto que venceram antes do primeiro mês aparecem numa linha **Em atraso** no topo; o saldo dos meses parte dela, porque esse dinheiro ainda vai entrar ou sair. Um saldo final negativo em algum mês aparece destacado.
 
 ### 3.7. Fluxo de caixa estratégico
 

@@ -101,16 +101,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
 
 ## Fluxo de caixa projetado
 
-- **Parcelas vencidas em aberto somem da projeção** (Fase 4, sub-projeto 2;
-  levantado na varredura de 2026-11-16). `buscarParcelasParaProjecao`
-  (`fluxoDeCaixaProjetado.ts`) filtra `dataVencimento >= inicio` da
-  janela, então um recebível ou uma conta atrasada que continua em aberto
-  não aparece em mês nenhum, embora o dinheiro ainda vá entrar ou sair. Na
-  janela que começa no mês atual, a projeção fica otimista ou pessimista
-  na medida do atraso acumulado. Caminho provável: somar as parcelas em
-  aberto vencidas antes da janela no primeiro mês projetado (ou numa linha
-  "Em atraso" própria), sem alterar o saldo inicial.
-
 - **Reconstrução da cadeia de saldo em janelas fora do intervalo visível**
   (Fase 4, sub-projeto 2). Quando o modo `ANO_CIVIL` mostra um ano
   totalmente passado ou totalmente futuro (sem interseção com o mês

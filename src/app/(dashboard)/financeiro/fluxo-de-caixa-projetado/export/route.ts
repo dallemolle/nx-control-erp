@@ -1,7 +1,7 @@
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { podeExecutar } from "@/server/auth/permissions";
 import { listarFluxoDeCaixaProjetado, type ModoJanelaProjetado } from "@/server/services/fluxoDeCaixaProjetado";
-import { formatarRotuloPeriodo } from "../../_fluxo-de-caixa/formatar-rotulo-periodo";
+import { formatarRotuloPeriodo, rotuloEmAtraso } from "../../_fluxo-de-caixa/formatar-rotulo-periodo";
 import { dataValida } from "../../_fluxo-de-caixa/data-valida";
 import { type ColunaExport } from "@/lib/export/csv";
 import { responderExport } from "@/lib/export/responder";
@@ -50,16 +50,20 @@ export async function GET(request: Request) {
   const dataReferencia = dataValida(url.searchParams.get("data") ?? undefined);
   const classificacao = classificacaoDaUrl(url.searchParams.get("classificacao") ?? undefined);
 
-  const periodos = await listarFluxoDeCaixaProjetado(sessao, modo, dataReferencia, { classificacao });
-  const linhas: LinhaExport[] = periodos.map((periodo) => ({
-    mes: formatarRotuloPeriodo("MES", periodo.inicio, periodo.fim),
-    saldoInicial: periodo.saldoInicial,
-    entradasProjetadas: periodo.entradasProjetadas,
-    saidasProjetadas: periodo.saidasProjetadas,
-    geracaoLiquida: periodo.geracaoLiquida,
-    saldoFinal: periodo.saldoFinal,
-    alerta: periodo.alerta,
-  }));
+  const { emAtraso, periodos } = await listarFluxoDeCaixaProjetado(sessao, modo, dataReferencia, { classificacao });
+  const paraLinha = (mes: string, l: Omit<LinhaExport, "mes">): LinhaExport => ({
+    mes,
+    saldoInicial: l.saldoInicial,
+    entradasProjetadas: l.entradasProjetadas,
+    saidasProjetadas: l.saidasProjetadas,
+    geracaoLiquida: l.geracaoLiquida,
+    saldoFinal: l.saldoFinal,
+    alerta: l.alerta,
+  });
+  const linhas: LinhaExport[] = [
+    ...(emAtraso ? [paraLinha(rotuloEmAtraso(emAtraso.venceuAte), emAtraso)] : []),
+    ...periodos.map((periodo) => paraLinha(formatarRotuloPeriodo("MES", periodo.inicio, periodo.fim), periodo)),
+  ];
 
   return responderExport(linhas, colunas(classificacao !== undefined), {
     nomeArquivo: classificacao ? `fluxo-de-caixa-projetado-${classificacao.toLowerCase()}` : "fluxo-de-caixa-projetado",

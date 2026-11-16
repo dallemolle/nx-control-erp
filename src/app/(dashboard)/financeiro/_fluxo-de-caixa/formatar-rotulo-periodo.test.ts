@@ -1,5 +1,11 @@
 import { describe, expect, test } from "vitest";
-import { formatarRotuloPeriodo } from "./formatar-rotulo-periodo";
+import { formatarRotuloPeriodo, rotuloEmAtraso } from "./formatar-rotulo-periodo";
+
+describe("rotuloEmAtraso", () => {
+  test("usa o último dia antes da janela, em UTC", () => {
+    expect(rotuloEmAtraso(new Date("2026-10-31T23:59:59.999Z"))).toBe("Em atraso (venc. até 31/10/2026)");
+  });
+});
 
 describe("formatarRotuloPeriodo", () => {
   test("DIA formata como data curta", () => {

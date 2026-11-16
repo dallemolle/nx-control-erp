@@ -37,8 +37,8 @@ tela em `/financeiro/fluxo-de-caixa-estrategico`).
 - Saldo inicial ancorado no saldo em caixa **conciliado** de hoje
   (reusa `buscarSaldoEmCaixaAte` do realizado), encadeado pelas parcelas
   em aberto (`EM_ABERTO`/`A_VENCER`/`VENCIDO`/`PARCIALMENTE_PAGO`) mês a
-  mês. Parcela vencida com vencimento anterior ao início da janela
-  exibida não aparece (limitação documentada na spec e na própria tela).
+  mês. Parcelas em aberto vencidas antes da janela entram numa linha Em
+  atraso antes do primeiro mês (2026-11-16).
 - Dois modos de janela: móvel (padrão, 12 meses a partir do mês atual) e
   ano civil (Jan-Dez de um ano escolhido, pra comparar com um orçamento
   anual futuro).
