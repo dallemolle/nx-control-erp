@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.30](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.29...nx-control-erp-v0.1.30) (2026-11-17)
+
+
+### Novidades
+
+* **conciliacao:** actions do grupo e campos do lançamento avulso compartilhados ([54bb316](https://github.com/dallemolle/nx-control-erp/commit/54bb316bff368e1cf0cd67ea834dbd823012ffe3))
+* **conciliacao:** conciliar em grupo com lançamento da diferença ([8166363](https://github.com/dallemolle/nx-control-erp/commit/81663636dd0851391a345a34839b558cbfc1f665))
+* **conciliacao:** conta da diferença do grupo em centavos ([16c30f6](https://github.com/dallemolle/nx-control-erp/commit/16c30f6924477ced338df735b7b60f1725bf4323))
+* **conciliacao:** dialog para conciliar linhas e lançamentos em grupo ([0427e95](https://github.com/dallemolle/nx-control-erp/commit/0427e958c84236446194e8cc3a0a02a228cf7837))
+* **conciliacao:** vínculo por grupo de conciliação no lugar do 1:1 ([2df2e32](https://github.com/dallemolle/nx-control-erp/commit/2df2e32179965a9d98556e395917ceb90052ba0d))
+
+
+### Correções
+
+* **conciliacao:** ajuda avisa que a diferença sobrevive ao desconciliar ([c345ab7](https://github.com/dallemolle/nx-control-erp/commit/c345ab732036a2883f20421185405db83bdf0266))
+
 ## [0.1.29](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.28...nx-control-erp-v0.1.29) (2026-11-16)
 
 
