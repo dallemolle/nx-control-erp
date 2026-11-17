@@ -43,16 +43,16 @@ implementado e mesclado em `staging`. Tela em `/financeiro/conciliacao`.
   criado depois da importação, ou de uma desconciliação ter resetado o
   status.
 - Filtro por status na listagem.
-- Conciliação é 1:1 nesta fase — consolidação/split (um lançamento do
-  banco cobrindo vários movimentos do sistema, ou vice-versa) fica fora de
-  escopo; o próprio schema impede via `@unique`.
+- Conciliação 1:1 no automático; em grupo (N:1, 1:N, N:M) na conciliação
+  manual, com soma exata e lançamento opcional da diferença — ver
+  `docs/superpowers/specs/2026-11-16-conciliacao-grupo-design.md`.
 - Toda operação de conciliação/desconciliação registrada em `AuditLog`
   (usuário, data, lançamento envolvido, ação).
 
 ## Fora de escopo (adiado)
 
 - CSV/Excel de extrato.
-- Conciliação N:1/1:N.
+- ~~Conciliação N:1/1:N.~~ — **feito** (conciliação em grupo, 2026-11-16).
 - Matching por similaridade textual de histórico/nome.
 - Processamento em lote otimizado para extratos muito grandes — o loop de
   conciliação automática processa linha a linha; extratos muito extensos

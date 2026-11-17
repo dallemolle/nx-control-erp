@@ -631,6 +631,9 @@ describe("pedido de venda", () => {
           usuarioId: fx.usuarioId,
         },
       });
+      const grupo = await prisma.grupoConciliacao.create({
+        data: { filialId: fx.filialAId, contaBancariaId: cad.contaCorrenteId, usuarioId: fx.usuarioId },
+      });
       await prisma.linhaExtrato.create({
         data: {
           extratoImportadoId: extrato.id,
@@ -641,8 +644,12 @@ describe("pedido de venda", () => {
           historico: "PIX RECEBIDO",
           identificadorBancario: `ID-${Date.now()}`,
           status: "CONCILIADO",
-          lancamentoBancarioId: lancamento.id,
+          grupoConciliacaoId: grupo.id,
         },
+      });
+      await prisma.lancamentoBancario.update({
+        where: { id: lancamento.id },
+        data: { grupoConciliacaoId: grupo.id, conciliado: true },
       });
       await expect(cancelarPedido(fx.sessao("FINANCEIRO"), r.pedidoId, "Teste")).rejects.toThrow(
         "O recebimento já foi conciliado com o extrato. Desconcilie na Conciliação antes de cancelar",

@@ -125,6 +125,7 @@ export async function limparFixtureFinanceiro(fixture: FixtureFinanceiro): Promi
   await prisma.linhaExtrato.deleteMany({ where: { contaBancaria: { filialId: fixture.filialId } } });
   await prisma.extratoImportado.deleteMany({ where: { filialId: fixture.filialId } });
   await prisma.lancamentoBancario.deleteMany({ where: { filialId: fixture.filialId } });
+  await prisma.grupoConciliacao.deleteMany({ where: { filialId: fixture.filialId } });
   await prisma.saldoBancarioInformado.deleteMany({ where: { contaBancaria: { filialId: fixture.filialId } } });
   await prisma.anexo.deleteMany({ where: { titulo: { filialId: fixture.filialId } } });
   await prisma.baixa.deleteMany({ where: { parcela: { titulo: { filialId: fixture.filialId } } } });
