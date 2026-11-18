@@ -239,7 +239,9 @@ export function CartaoParaFrente({ rastreio, incluirCancelados }: { rastreio: Ra
             <ResumoOP op={op} />
             <p className="text-sm">
               Usou <span className="font-medium tabular-nums">{KG.format(op.kgDesteLote)} kg</span>{" "}
-              {rastreio.familia.length > 1 ? `dos lotes ${op.lotesDaFamilia.join(", ")}` : "deste lote"}
+              {rastreio.familia.length === 1
+                ? "deste lote"
+                : `${op.lotesDaFamilia.length === 1 ? "do lote" : "dos lotes"} ${op.lotesDaFamilia.join(", ")}`}
               {op.consumoRemovido ? <Removido /> : null}
             </p>
             <div className="overflow-x-auto">
