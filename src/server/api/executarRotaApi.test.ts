@@ -8,8 +8,9 @@ import {
 } from "@/server/services/financeiroTestFixtures";
 import { gerarChave } from "@/server/services/apiKey";
 import { PermissionError, FilialSomenteLeituraError } from "@/server/auth/permissions";
-import { executarRotaApi, ErroValidacaoApi } from "./executarRotaApi";
+import { executarRotaApi, ErroValidacaoApi, paginacaoDaQuery } from "./executarRotaApi";
 import { ErroLimiteRequisicoes } from "./limiteRequisicoes";
+import { CursorInvalidoError } from "@/server/services/paginacao";
 
 function requisicaoAutenticada(fixture: FixtureFinanceiro, chaveCompleta: string): Request {
   return new Request("http://localhost/api/v1/teste", {
@@ -128,5 +129,38 @@ describe("executarRotaApi", () => {
     expect(resposta.status).toBe(429);
     expect(resposta.headers.get("Retry-After")).toBe("17");
     expect((await resposta.json()).erro).toBe("Limite de 60 requisições por minuto atingido. Tente de novo em 17 s.");
+  });
+
+  test("CursorInvalidoError vira 422 com campo cursor", async () => {
+    const resposta = await executarRotaApi(requisicaoAutenticada(fixture, chaveCompleta), async () => {
+      throw new CursorInvalidoError();
+    });
+
+    expect(resposta.status).toBe(422);
+    expect(await resposta.json()).toEqual({ erro: "Cursor inválido para esta listagem", campos: ["cursor"] });
+  });
+});
+
+describe("paginacaoDaQuery", () => {
+  const ler = (query: string) => paginacaoDaQuery(new URL(`http://localhost/api/v1/x${query}`));
+
+  test("padrão 100 sem cursor", () => {
+    expect(ler("")).toEqual({ limite: 100, cursor: undefined });
+    expect(ler("?limite=")).toEqual({ limite: 100, cursor: undefined });
+  });
+
+  test("lê limite e cursor", () => {
+    expect(ler("?limite=500&cursor=abc")).toEqual({ limite: 500, cursor: "abc" });
+    expect(ler("?limite=1")).toEqual({ limite: 1, cursor: undefined });
+  });
+
+  test.each(["0", "501", "abc", "1.5", "-3"])("limite %s -> ErroValidacaoApi no campo limite", (valor) => {
+    expect(() => ler(`?limite=${valor}`)).toThrow(ErroValidacaoApi);
+    try {
+      ler(`?limite=${valor}`);
+    } catch (erro) {
+      expect((erro as ErroValidacaoApi).message).toBe("Use ?limite= entre 1 e 500");
+      expect((erro as ErroValidacaoApi).campos).toEqual(["limite"]);
+    }
   });
 });

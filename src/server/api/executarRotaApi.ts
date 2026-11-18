@@ -5,6 +5,12 @@ import { ApiAuthError, requireSessaoApi } from "./sessaoApi";
 import { comIdempotencia, ErroIdempotencia } from "./idempotencia";
 import { ErroLimiteRequisicoes } from "./limiteRequisicoes";
 import { ErroClassificacaoFiscal } from "@/server/services/classificacaoFiscal";
+import {
+  CursorInvalidoError,
+  LIMITE_MAXIMO_PAGINA,
+  LIMITE_PADRAO_PAGINA,
+  type Paginacao,
+} from "@/server/services/paginacao";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { ClassificacaoFiscal } from "@prisma/client";
 
@@ -31,6 +37,20 @@ export function classificacaoDaQuery(url: URL): ClassificacaoFiscal | undefined 
   return valor;
 }
 
+/** Lê `?limite=` (1 a 500, padrão 100) e `?cursor=` das listagens paginadas. */
+export function paginacaoDaQuery(url: URL): Paginacao {
+  const limiteBruto = url.searchParams.get("limite");
+  let limite = LIMITE_PADRAO_PAGINA;
+  if (limiteBruto !== null && limiteBruto !== "") {
+    const valor = Number(limiteBruto);
+    if (!/^\d+$/.test(limiteBruto) || valor < 1 || valor > LIMITE_MAXIMO_PAGINA) {
+      throw new ErroValidacaoApi(`Use ?limite= entre 1 e ${LIMITE_MAXIMO_PAGINA}`, ["limite"]);
+    }
+    limite = valor;
+  }
+  return { limite, cursor: url.searchParams.get("cursor") || undefined };
+}
+
 export async function executarRotaApi(
   request: Request,
   handler: (sessao: SessaoAtiva) => Promise<Response>,
@@ -45,7 +65,7 @@ export async function executarRotaApi(
         { status: 429, headers: { "Retry-After": String(erro.segundosParaLiberar) } },
       );
     }
-    if (erro instanceof ApiAuthError ||erro instanceof ErroIdempotencia) {
+    if (erro instanceof ApiAuthError || erro instanceof ErroIdempotencia) {
       return Response.json({ erro: erro.message }, { status: erro.status });
     }
     if (erro instanceof PermissionError || erro instanceof FilialSomenteLeituraError) {
@@ -53,6 +73,9 @@ export async function executarRotaApi(
     }
     if (erro instanceof ErroValidacaoApi || erro instanceof ErroClassificacaoFiscal) {
       return Response.json({ erro: erro.message, campos: erro.campos }, { status: 422 });
+    }
+    if (erro instanceof CursorInvalidoError) {
+      return Response.json({ erro: erro.message, campos: ["cursor"] }, { status: 422 });
     }
     if (erro instanceof ZodError) {
       return Response.json(
