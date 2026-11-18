@@ -520,7 +520,7 @@ describe("ordem de produção", () => {
       );
       await cancelarPedido(adm(), pedido.pedidoId, "Cliente desistiu");
 
-      const mensagem = `O lote ${grosso.codigoLote} já teve venda ou ajuste`;
+      const mensagem = `O lote ${grosso.codigoLote} já teve venda, ajuste ou transferência`;
       await expect(reabrirOP(adm(), op.id, "Corrigir")).rejects.toThrow(mensagem);
       await expect(cancelarOP(adm(), op.id, "Corrigir")).rejects.toThrow(mensagem);
       expect(await situacaoParaDesfazer({ id: op.id, status: "ENCERRADA" })).toEqual({ pode: false, motivo: mensagem });

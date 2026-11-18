@@ -50,19 +50,31 @@ export async function registrarMovimento(tx: Prisma.TransactionClient, movimento
   return tx.movimentoEstoque.create({ data: movimento });
 }
 
-/** Lote que pode sair por venda ou ajuste: recepção não excluída, ou polpa de OP encerrada (D-07). */
-export const LOTE_LIBERADO: Prisma.LoteWhereInput = {
+const RECEPCAO_ATIVA_OU_SEM: Prisma.LoteWhereInput = {
+  OR: [{ recepcao: { is: null } }, { recepcao: { is: { status: "ATIVA" } } }],
+};
+
+/** Original que pode sair: recepção não excluída, ou polpa de OP encerrada (D-07). */
+const ORIGINAL_LIBERADO: Prisma.LoteWhereInput = {
   OR: [
-    { origem: "RECEPCAO", OR: [{ recepcao: { is: null } }, { recepcao: { is: { status: "ATIVA" } } }] },
+    { origem: "RECEPCAO", ...RECEPCAO_ATIVA_OU_SEM },
     { origem: "PRODUCAO", producaoOP: { is: { removidoEm: null, ordemProducao: { status: "ENCERRADA" } } } },
   ],
+};
+
+/** Lote que pode sair por venda ou ajuste; o filho segue o original (D-36). */
+export const LOTE_LIBERADO: Prisma.LoteWhereInput = {
+  OR: [{ loteOrigemId: null, ...ORIGINAL_LIBERADO }, { loteOrigem: { is: ORIGINAL_LIBERADO } }],
+};
+
+/** Fruto cuja recepção (a do original, no filho) não foi excluída. */
+export const RECEPCAO_NAO_EXCLUIDA: Prisma.LoteWhereInput = {
+  OR: [{ loteOrigemId: null, ...RECEPCAO_ATIVA_OU_SEM }, { loteOrigem: { is: RECEPCAO_ATIVA_OU_SEM } }],
 };
 
 const SELECT_PRODUCAO_DO_LOTE = {
   select: { removidoEm: true, ordemProducao: { select: { status: true } } },
 } as const;
-
-export const SELECT_BLOQUEIO_PRODUCAO = { producaoOP: SELECT_PRODUCAO_DO_LOTE } satisfies Prisma.LoteSelect;
 
 const SELECT_ORIGEM_DO_LOTE = {
   recepcao: { select: { status: true } },
@@ -121,9 +133,8 @@ export async function listarLotes(filialId: string, filtros: FiltroLotes, refere
     include: {
       produto: { select: { codigo: true, descricao: true, conservacao: true, diasLiberacaoVencido: true } },
       local: { select: { nome: true } },
-      recepcao: { select: { status: true } },
       liberadoPor: { select: { nome: true } },
-      ...SELECT_BLOQUEIO_PRODUCAO,
+      ...SELECT_SITUACAO_LOTE,
     },
     orderBy: [{ validade: "asc" }, { codigo: "asc" }],
   });
@@ -391,12 +402,11 @@ export async function liberarLoteVencido(
     where: { id: loteId, filialId: sessao.filialId },
     include: {
       produto: { select: { diasLiberacaoVencido: true } },
-      recepcao: { select: { status: true } },
-      ...SELECT_BLOQUEIO_PRODUCAO,
+      ...SELECT_SITUACAO_LOTE,
     },
   });
   if (!lote) throw new Error("Lote não encontrado");
-  if (lote.recepcao?.status === "CANCELADA") throw new Error(`O lote ${lote.codigo} é de uma recepção excluída`);
+  if (recepcaoExcluida(lote)) throw new Error(`O lote ${lote.codigo} é de uma recepção excluída`);
   const bloqueio = bloqueioDaProducao(lote);
   if (bloqueio) throw new Error(bloqueio);
   if (Number(lote.saldoKg) <= 0) throw new Error(`O lote ${lote.codigo} está zerado`);

@@ -26,7 +26,13 @@ import {
   type VerificarOP,
 } from "@/lib/producao/op";
 import { obterConfiguracaoProducao } from "./configuracaoProducao";
-import { exigirLiberacao, registrarMovimento } from "./estoque";
+import {
+  exigirLiberacao,
+  RECEPCAO_NAO_EXCLUIDA,
+  recepcaoExcluida,
+  registrarMovimento,
+  SELECT_SITUACAO_LOTE,
+} from "./estoque";
 
 const TENTATIVAS_NUMERACAO = 3;
 const ROTULO_STATUS: Record<StatusOrdemProducao, string> = {
@@ -292,13 +298,13 @@ export async function adicionarConsumo(sessao: SessaoAtiva, opId: string, dados:
       where: { id: dados.loteId, filialId: sessao.filialId },
       include: {
         produto: { select: { categoria: true, frutaId: true } },
-        recepcao: { select: { status: true } },
+        ...SELECT_SITUACAO_LOTE,
       },
     });
     if (!lote) throw new Error("Lote não encontrado");
     if (lote.produto.categoria !== "FRUTO") throw new Error(`O lote ${lote.codigo} não é de fruto`);
     if (lote.produto.frutaId !== op.frutaId) throw new Error(`O lote ${lote.codigo} é de outra fruta`);
-    if (lote.recepcao?.status === "CANCELADA") throw new Error(`O lote ${lote.codigo} é de uma recepção excluída`);
+    if (recepcaoExcluida(lote)) throw new Error(`O lote ${lote.codigo} é de uma recepção excluída`);
     const repetido = await tx.consumoOP.count({ where: { ordemProducaoId: opId, loteId: lote.id, removidoEm: null } });
     if (repetido > 0) throw new Error(`O lote ${lote.codigo} já está nesta OP`);
 
@@ -527,7 +533,10 @@ export async function removerInsumo(sessao: SessaoAtiva, insumoOpId: string): Pr
 
 export type SituacaoDesfazer = { pode: true } | { pode: false; motivo: string };
 
-/** Reabrir e cancelar só enquanto nenhum lote de polpa da OP teve venda ou ajuste (mesmo desfeitos depois). */
+/**
+ * Reabrir e cancelar só enquanto nenhum lote de polpa da OP teve venda, ajuste ou
+ * transferência (mesmo desfeitos depois).
+ */
 export async function situacaoParaDesfazer(
   op: { id: string; status: StatusOrdemProducao },
   db: ClientePrisma = prisma,
@@ -540,7 +549,9 @@ export async function situacaoParaDesfazer(
     },
     select: { lote: { select: { codigo: true } } },
   });
-  return saida ? { pode: false, motivo: `O lote ${saida.lote.codigo} já teve venda ou ajuste` } : { pode: true };
+  return saida
+    ? { pode: false, motivo: `O lote ${saida.lote.codigo} já teve venda, ajuste ou transferência` }
+    : { pode: true };
 }
 
 export function dadosDoResumo(
@@ -852,7 +863,7 @@ export async function lotesParaConsumo(filialId: string, frutaId: string, data: 
       filialId,
       saldoKg: { gt: 0 },
       produto: { categoria: "FRUTO", frutaId },
-      OR: [{ recepcao: { is: null } }, { recepcao: { is: { status: "ATIVA" } } }],
+      ...RECEPCAO_NAO_EXCLUIDA,
     },
     include: { produto: { select: { codigo: true, descricao: true } } },
     orderBy: [{ validade: "asc" }, { codigo: "asc" }],
