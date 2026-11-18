@@ -409,9 +409,9 @@ export async function listarChaves(usuarioId: string): Promise<{ id: string; nom
 
 - Idempotência de escrita (`docs/backlog.md`). — **feito** (header
   `Idempotency-Key`); o que sobrou está no backlog.
-- Paginação nas listagens. — **→ backlog.**
-- Rate limiting. — **→ backlog.**
-- Expiração automática de chave (só revogação manual). — **→ backlog.**
+- Paginação nas listagens. — **feito ([proteções da API](2026-11-17-protecoes-api-design.md)).**
+- Rate limiting. — **feito ([proteções da API](2026-11-17-protecoes-api-design.md)).**
+- Expiração automática de chave (só revogação manual). — **feito ([proteções da API](2026-11-17-protecoes-api-design.md)).**
 - Qualquer criação automática de cadastro de apoio quando o
   identificador natural não resolve. — **descartado:** criaria cadastro
   errado ou duplicado sem ninguém ver; o erro `422` é o comportamento

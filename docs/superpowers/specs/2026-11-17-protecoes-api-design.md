@@ -1,6 +1,6 @@
 # Proteções da API v1: paginação, limite de requisições e validade da chave
 
-Data: 2026-11-17 · Status: desenho aprovado
+Data: 2026-11-17 · Status: implementada (2026-11-17)
 
 Item do [backlog](../../backlog.md) ("API REST — robustez"), vindo do fora do
 escopo da spec da [API REST v1](2026-09-15-api-rest-automacao-design.md)
