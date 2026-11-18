@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.31](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.30...nx-control-erp-v0.1.31) (2026-11-18)
+
+
+### Novidades
+
+* **api:** base da paginação por cursor ([68c0335](https://github.com/dallemolle/nx-control-erp/commit/68c033520ab2513e552cbc8fe3223c9eafb4e89b))
+* **api:** escolha da validade ao gerar chave e estado na lista ([3175fe7](https://github.com/dallemolle/nx-control-erp/commit/3175fe7eacfadce41c9ad76d53949a80b2728e9d))
+* **api:** GET de títulos e lançamentos paginados por cursor ([a293558](https://github.com/dallemolle/nx-control-erp/commit/a293558bf0c3bdad177378842b6a31183510bf45))
+* **api:** limite de 60 requisições por minuto por chave ([5f6d03a](https://github.com/dallemolle/nx-control-erp/commit/5f6d03a5af9b6a4de2a0eddc6ab2dd8e0a423f78))
+* **api:** listagens paginadas de títulos e lançamentos ([6696b5f](https://github.com/dallemolle/nx-control-erp/commit/6696b5f49bf0ff5bfc0c897502aa0e2659563b5c))
+* **api:** validade opcional da chave de API ([97ad890](https://github.com/dallemolle/nx-control-erp/commit/97ad8902230bad96c23f9de376ddd84eb22c3907))
+
+
+### Correções
+
+* **api:** cursor fora do filtro da listagem é rejeitado ([3156e84](https://github.com/dallemolle/nx-control-erp/commit/3156e847b39cfc763ef308aa43131f0d12387187))
+
 ## [0.1.30](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.29...nx-control-erp-v0.1.30) (2026-11-17)
 
 
