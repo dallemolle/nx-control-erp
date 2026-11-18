@@ -13,11 +13,11 @@ import {
 import {
   liberarLoteVencido,
   listarLotes,
-  moverLote,
   registrarMovimento,
   resumoPorStatus,
   resumoProdutoLocal,
   revogarLiberacaoLote,
+  transferirLote,
 } from "./estoque";
 import { MSG_SEM_PRAZO_LIBERACAO } from "@/lib/producao/liberacaoVencido";
 import { cabecalhoOPSchema, producaoSchema } from "@/lib/schemas/ordemProducao";
@@ -162,19 +162,22 @@ describe("estoque: consultas e mudança de local", () => {
     expect(recepcao.ocupacao).toBeNull();
   });
 
-  test("moverLote muda o local e audita; recusa local de outra filial e perfil sem permissão", async () => {
+  test("transferir o saldo inteiro muda o local e audita; recusa local de outra filial e perfil sem permissão", async () => {
     const [lote] = await listarLotes(fx.filialAId, { produtoId: cat.produtoFrutoId }, HOJE);
-    await moverLote(fx.sessao("PRODUCAO"), lote.id, cat.localCamaraId);
+    const saldo = Number(lote.saldoKg);
+    await transferirLote(fx.sessao("PRODUCAO"), lote.id, cat.localCamaraId, saldo);
     expect((await prisma.lote.findUniqueOrThrow({ where: { id: lote.id } })).localId).toBe(cat.localCamaraId);
     expect(await prisma.auditLog.count({ where: { entidadeId: lote.id, acao: "MOVER" } })).toBe(1);
 
     const localB = await prisma.localArmazenamento.create({
       data: { filialId: fx.filialBId, nome: "Câmara B", tipo: "CAMARA_FRIA" },
     });
-    await expect(moverLote(fx.sessao("PRODUCAO"), lote.id, localB.id)).rejects.toThrow(
+    await expect(transferirLote(fx.sessao("PRODUCAO"), lote.id, localB.id, saldo)).rejects.toThrow(
       "Local de armazenamento não encontrado ou inativo",
     );
-    await expect(moverLote(fx.sessao("VENDAS"), lote.id, cat.localRecepcaoId)).rejects.toThrow(PermissionError);
+    await expect(transferirLote(fx.sessao("VENDAS"), lote.id, cat.localRecepcaoId, saldo)).rejects.toThrow(
+      PermissionError,
+    );
   });
 });
 
@@ -350,5 +353,137 @@ describe("liberação de lote vencido (D-35)", () => {
       `O lote ${lote.codigo} não está liberado`,
     );
     await expect(revogarLiberacaoLote(fx.sessao("VENDAS"), lote.id)).rejects.toThrow(PermissionError);
+  });
+});
+
+describe("transferência de lote (D-36)", () => {
+  let fx: FixtureProducao;
+  let cat: CatalogoDeTeste;
+  let camara2: string;
+  let camara3: string;
+  const hoje = new Date("2026-11-18T00:00:00.000Z");
+  const prod = () => fx.sessao("PRODUCAO");
+  const transferir = (loteId: string, localId: string, kg: number) => transferirLote(prod(), loteId, localId, kg, hoje);
+  const lerLote = (id: string) => prisma.lote.findUniqueOrThrow({ where: { id } });
+  const polpa = (codigo: string, kg = 100, validade = new Date("2027-06-01")) =>
+    criarLoteDeTeste(fx, { produtoId: cat.produtoPolpaId, localId: cat.localCamaraId, kg, custoKg: 12.5, validade, codigo });
+
+  beforeAll(async () => {
+    fx = await criarFixtureProducao("transferencia");
+    cat = await criarCatalogoDeTeste(fx);
+    camara2 = (
+      await prisma.localArmazenamento.create({ data: { filialId: fx.filialAId, nome: "Câmara 02", tipo: "CAMARA_FRIA" } })
+    ).id;
+    camara3 = (
+      await prisma.localArmazenamento.create({ data: { filialId: fx.filialAId, nome: "Câmara 03", tipo: "CAMARA_FRIA" } })
+    ).id;
+  });
+  afterAll(async () => {
+    await fx.limpar();
+  });
+
+  test("parcial cria o filho /1 no destino com os dados do original", async () => {
+    const original = await polpa("AGC-T1");
+    const r = await transferir(original.id, camara2, 30);
+    expect(r).toMatchObject({ codigoDestino: "AGC-T1/1", loteCriado: true });
+
+    const filho = await lerLote(r.loteDestinoId);
+    expect(filho).toMatchObject({
+      loteOrigemId: original.id,
+      localId: camara2,
+      produtoId: original.produtoId,
+      origem: original.origem,
+      validade: original.validade,
+      data: original.data,
+    });
+    expect(Number(filho.saldoKg)).toBe(30);
+    expect(Number(filho.quantidadeInicialKg)).toBe(30);
+    expect(Number(filho.custoKg)).toBe(12.5);
+    expect(Number((await lerLote(original.id)).saldoKg)).toBe(70);
+
+    const movimentos = await prisma.movimentoEstoque.findMany({
+      where: { loteId: { in: [original.id, filho.id] }, tipo: { in: ["TRANSFERENCIA_SAIDA", "TRANSFERENCIA_ENTRADA"] } },
+    });
+    expect(movimentos).toHaveLength(2);
+    expect(movimentos[0].transferenciaId).not.toBeNull();
+    expect(movimentos[0].transferenciaId).toBe(movimentos[1].transferenciaId);
+    expect(movimentos.every((m) => m.data.getTime() === hoje.getTime())).toBe(true);
+    expect(await prisma.auditLog.count({ where: { entidadeId: original.id, acao: "TRANSFERIR" } })).toBe(1);
+  });
+
+  test("numera a partir do original, inclusive quando o filho é transferido", async () => {
+    const original = await polpa("AGC-T2");
+    const a = await transferir(original.id, camara2, 10);
+    const b = await transferir(original.id, cat.localRecepcaoId, 10);
+    const c = await transferir(a.loteDestinoId, camara3, 5);
+    expect([a.codigoDestino, b.codigoDestino, c.codigoDestino]).toEqual(["AGC-T2/1", "AGC-T2/2", "AGC-T2/3"]);
+    expect((await lerLote(c.loteDestinoId)).loteOrigemId).toBe(original.id);
+  });
+
+  test("soma no lote da família que já está no destino; devolver junta no original", async () => {
+    const original = await polpa("AGC-T3");
+    const a = await transferir(original.id, camara2, 30);
+    const b = await transferir(original.id, camara2, 20);
+    expect(b).toMatchObject({ loteDestinoId: a.loteDestinoId, loteCriado: false });
+    expect(Number((await lerLote(a.loteDestinoId)).saldoKg)).toBe(50);
+    expect(await prisma.lote.count({ where: { loteOrigemId: original.id } })).toBe(1);
+
+    const volta = await transferir(a.loteDestinoId, cat.localCamaraId, 50);
+    expect(volta).toMatchObject({ loteDestinoId: original.id, loteCriado: false });
+    expect(Number((await lerLote(original.id)).saldoKg)).toBe(100);
+    expect(Number((await lerLote(a.loteDestinoId)).saldoKg)).toBe(0);
+  });
+
+  test("saldo inteiro sem família no destino só troca o local, sem movimento", async () => {
+    const original = await polpa("AGC-T4", 40);
+    const r = await transferir(original.id, camara2, 40);
+    expect(r).toMatchObject({ loteDestinoId: original.id, codigoDestino: "AGC-T4", loteCriado: false });
+    expect((await lerLote(original.id)).localId).toBe(camara2);
+    expect(await prisma.movimentoEstoque.count({ where: { loteId: original.id } })).toBe(1);
+    expect(await prisma.auditLog.count({ where: { entidadeId: original.id, acao: "MOVER" } })).toBe(1);
+  });
+
+  test("polpa de OP aberta: inteira muda de local, parcial é recusada", async () => {
+    const op = await criarOP(fx.sessao("ADMINISTRADOR"), cabecalhoOPSchema.parse({ data: "2026-11-01", frutaId: cat.frutaId }));
+    const producao = await adicionarProducao(
+      fx.sessao("ADMINISTRADOR"),
+      op.id,
+      producaoSchema.parse({ produtoId: cat.produtoPolpaId, quantidadeKg: 10, localId: cat.localCamaraId, embalagens: "" }),
+    );
+    await expect(transferir(producao.loteId, camara2, 4)).rejects.toThrow(
+      `O lote ${producao.codigoLote} está numa OP aberta`,
+    );
+    await transferir(producao.loteId, camara2, 10);
+    expect((await lerLote(producao.loteId)).localId).toBe(camara2);
+  });
+
+  test("lote vencido pode ser transferido", async () => {
+    const vencido = await polpa("AGC-T5", 10, new Date("2026-11-01"));
+    const r = await transferir(vencido.id, camara2, 4);
+    expect(r.loteCriado).toBe(true);
+  });
+
+  test("recusas", async () => {
+    const lote = await polpa("AGC-T6", 10);
+    await expect(transferir(lote.id, camara2, 0)).rejects.toThrow("Informe uma quantidade maior que zero");
+    await expect(transferir(lote.id, camara2, 10.5)).rejects.toThrow(`Saldo insuficiente no lote ${lote.codigo}`);
+    await expect(transferir(lote.id, cat.localCamaraId, 5)).rejects.toThrow("O lote já está neste local");
+
+    const inativo = await prisma.localArmazenamento.create({
+      data: { filialId: fx.filialAId, nome: "Inativo", tipo: "CAMARA_FRIA", ativo: false },
+    });
+    await expect(transferir(lote.id, inativo.id, 5)).rejects.toThrow("Local de armazenamento não encontrado ou inativo");
+    const localB = await prisma.localArmazenamento.create({
+      data: { filialId: fx.filialBId, nome: "Câmara B", tipo: "CAMARA_FRIA" },
+    });
+    await expect(transferir(lote.id, localB.id, 5)).rejects.toThrow("Local de armazenamento não encontrado ou inativo");
+    const deB = await criarLoteDeTeste(fx, { produtoId: cat.produtoPolpaId, localId: localB.id, kg: 5, filialId: fx.filialBId });
+    await expect(transferir(deB.id, camara2, 1)).rejects.toThrow("Lote não encontrado");
+
+    await expect(transferirLote(fx.sessao("VENDAS"), lote.id, camara2, 5, hoje)).rejects.toThrow(PermissionError);
+    await expect(
+      transferirLote(fx.sessao("PRODUCAO", { somenteLeitura: true }), lote.id, camara2, 5, hoje),
+    ).rejects.toThrow(FilialSomenteLeituraError);
+    expect(Number((await lerLote(lote.id)).saldoKg)).toBe(10);
   });
 });

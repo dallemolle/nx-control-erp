@@ -1,9 +1,11 @@
+import { randomUUID } from "crypto";
 import type { Prisma, StatusOrdemProducao, TipoMovimentoEstoque } from "@prisma/client";
 import { prisma } from "@/server/db/client";
 import { requireAlteracaoFilial, requirePermission } from "@/server/auth/permissions";
 import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { arredondar } from "@/lib/producao/arredondar";
+import { proximoCodigoDeFilho } from "@/lib/producao/lote";
 import { diasParaVencer, statusDoLote, type StatusLote } from "@/lib/producao/statusLote";
 import { liberacaoCobre, MSG_SEM_PRAZO_LIBERACAO, situacaoLiberacao } from "@/lib/producao/liberacaoVencido";
 import { loteVencidoNaData } from "@/lib/producao/venda";
@@ -39,6 +41,7 @@ export type NovoMovimento = {
   itemPedidoId?: string;
   consumoOpId?: string;
   producaoOpId?: string;
+  transferenciaId?: string;
 };
 
 /** Grava o movimento e atualiza o saldo do lote, na transação de quem chama. */
@@ -55,16 +58,40 @@ export const LOTE_LIBERADO: Prisma.LoteWhereInput = {
   ],
 };
 
-export const SELECT_BLOQUEIO_PRODUCAO = {
-  producaoOP: { select: { removidoEm: true, ordemProducao: { select: { status: true } } } },
+const SELECT_PRODUCAO_DO_LOTE = {
+  select: { removidoEm: true, ordemProducao: { select: { status: true } } },
+} as const;
+
+export const SELECT_BLOQUEIO_PRODUCAO = { producaoOP: SELECT_PRODUCAO_DO_LOTE } satisfies Prisma.LoteSelect;
+
+const SELECT_ORIGEM_DO_LOTE = {
+  recepcao: { select: { status: true } },
+  producaoOP: SELECT_PRODUCAO_DO_LOTE,
 } satisfies Prisma.LoteSelect;
 
-/** Mensagem do bloqueio de um lote de polpa, ou null se ele pode sair. */
+/** Recepção e OP do lote e do original da família: o filho segue a situação do original (D-36). */
+export const SELECT_SITUACAO_LOTE = {
+  ...SELECT_ORIGEM_DO_LOTE,
+  loteOrigem: { select: SELECT_ORIGEM_DO_LOTE },
+} satisfies Prisma.LoteSelect;
+
+type ProducaoDoLote = { removidoEm: Date | null; ordemProducao: { status: StatusOrdemProducao } };
+
+/** O lote excluído na recepção (o filho olha a recepção do original). */
+export function recepcaoExcluida(lote: {
+  recepcao: { status: string } | null;
+  loteOrigem?: { recepcao: { status: string } | null } | null;
+}): boolean {
+  return (lote.loteOrigem ?? lote).recepcao?.status === "CANCELADA";
+}
+
+/** Mensagem do bloqueio de um lote de polpa, ou null se ele pode sair (o filho olha a OP do original). */
 export function bloqueioDaProducao(lote: {
   codigo: string;
-  producaoOP: { removidoEm: Date | null; ordemProducao: { status: StatusOrdemProducao } } | null;
+  producaoOP: ProducaoDoLote | null;
+  loteOrigem?: { producaoOP: ProducaoDoLote | null } | null;
 }): string | null {
-  const producao = lote.producaoOP;
+  const producao = (lote.loteOrigem ?? lote).producaoOP;
   if (!producao) return null;
   if (producao.removidoEm) return `O lote ${lote.codigo} foi removido da OP`;
   if (producao.ordemProducao.status === "CANCELADA") return `O lote ${lote.codigo} é de uma OP cancelada`;
@@ -209,28 +236,127 @@ export async function resumoProdutoLocal(filialId: string) {
   };
 }
 
-/** Troca o local do lote inteiro (D-15), auditado. */
-export async function moverLote(sessao: SessaoAtiva, loteId: string, localId: string): Promise<void> {
+export type ResultadoTransferencia = { loteDestinoId: string; codigoDestino: string; loteCriado: boolean };
+
+/**
+ * Transfere kg do lote para outro local (D-15, D-36). Se a família já tem lote no
+ * destino, soma nele; se não tem e é o saldo inteiro, só troca o local; se é
+ * parcial, cria o filho `ORIGINAL/N`. As transferências da mesma família são
+ * serializadas pela trava na linha do original.
+ */
+export async function transferirLote(
+  sessao: SessaoAtiva,
+  loteId: string,
+  localId: string,
+  kg: number,
+  hoje: Date = hojeDeCalendario(),
+): Promise<ResultadoTransferencia> {
   requirePermission(sessao.perfil, "producao:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
+  const quantidade = arredondar(kg, 3);
+  if (!(quantidade > 0)) throw new Error("Informe uma quantidade maior que zero");
 
-  const lote = await prisma.lote.findFirstOrThrow({ where: { id: loteId, filialId: sessao.filialId } });
-  const local = await prisma.localArmazenamento.findFirst({
-    where: { id: localId, filialId: sessao.filialId, ativo: true },
-    select: { id: true },
-  });
-  if (!local) throw new Error("Local de armazenamento não encontrado ou inativo");
+  return prisma.$transaction(async (tx) => {
+    const alvo = await tx.lote.findFirst({
+      where: { id: loteId, filialId: sessao.filialId },
+      select: { id: true, loteOrigemId: true },
+    });
+    if (!alvo) throw new Error("Lote não encontrado");
+    const origemId = alvo.loteOrigemId ?? alvo.id;
+    await tx.$queryRaw`SELECT id FROM lotes WHERE id = ${origemId} FOR UPDATE`;
 
-  await prisma.lote.update({ where: { id: loteId }, data: { localId } });
-  await registrarAuditoria({
-    empresaId: sessao.empresaId,
-    filialId: sessao.filialId,
-    usuarioId: sessao.usuarioId,
-    entidade: "Lote",
-    entidadeId: loteId,
-    acao: "MOVER",
-    anterior: { localId: lote.localId },
-    novo: { localId },
+    const lote = await tx.lote.findUniqueOrThrow({ where: { id: loteId }, include: SELECT_SITUACAO_LOTE });
+    if (lote.localId === localId) throw new Error("O lote já está neste local");
+    const local = await tx.localArmazenamento.findFirst({
+      where: { id: localId, filialId: sessao.filialId, ativo: true },
+      select: { id: true },
+    });
+    if (!local) throw new Error("Local de armazenamento não encontrado ou inativo");
+    const saldo = Number(lote.saldoKg);
+    if (quantidade > saldo) throw new Error(`Saldo insuficiente no lote ${lote.codigo}`);
+
+    let destino = await tx.lote.findFirst({
+      where: { filialId: sessao.filialId, localId, OR: [{ id: origemId }, { loteOrigemId: origemId }] },
+      select: { id: true, codigo: true },
+    });
+
+    if (!destino && Math.abs(quantidade - saldo) < 0.0005) {
+      await tx.lote.update({ where: { id: lote.id }, data: { localId } });
+      await registrarAuditoria(
+        {
+          empresaId: sessao.empresaId,
+          filialId: sessao.filialId,
+          usuarioId: sessao.usuarioId,
+          entidade: "Lote",
+          entidadeId: lote.id,
+          acao: "MOVER",
+          anterior: { localId: lote.localId },
+          novo: { localId },
+        },
+        tx,
+      );
+      return { loteDestinoId: lote.id, codigoDestino: lote.codigo, loteCriado: false };
+    }
+
+    // Com movimento, só lote que pode sair (D-07): polpa de OP aberta ainda muda de custo.
+    if (recepcaoExcluida(lote)) throw new Error(`O lote ${lote.codigo} é de uma recepção excluída`);
+    const bloqueio = bloqueioDaProducao(lote);
+    if (bloqueio) throw new Error(bloqueio);
+
+    let loteCriado = false;
+    if (!destino) {
+      const original = await tx.lote.findUniqueOrThrow({ where: { id: origemId }, select: { codigo: true } });
+      const irmaos = await tx.lote.findMany({
+        where: { filialId: sessao.filialId, codigo: { startsWith: `${original.codigo}/` } },
+        select: { codigo: true },
+      });
+      destino = await tx.lote.create({
+        data: {
+          filialId: sessao.filialId,
+          codigo: proximoCodigoDeFilho(original.codigo, irmaos.map((l) => l.codigo)),
+          produtoId: lote.produtoId,
+          origem: lote.origem,
+          data: lote.data,
+          validade: lote.validade,
+          localId,
+          quantidadeInicialKg: quantidade,
+          saldoKg: 0,
+          custoKg: lote.custoKg,
+          liberadoAte: lote.liberadoAte,
+          liberadoEm: lote.liberadoEm,
+          liberadoPorId: lote.liberadoPorId,
+          motivoLiberacao: lote.motivoLiberacao,
+          loteOrigemId: origemId,
+        },
+        select: { id: true, codigo: true },
+      });
+      loteCriado = true;
+    }
+
+    const transferenciaId = randomUUID();
+    const movimento = { filialId: sessao.filialId, data: hoje, usuarioId: sessao.usuarioId, transferenciaId };
+    await registrarMovimento(tx, { ...movimento, loteId: lote.id, tipo: "TRANSFERENCIA_SAIDA", quantidadeKg: -quantidade });
+    await registrarMovimento(tx, {
+      ...movimento,
+      loteId: destino.id,
+      tipo: "TRANSFERENCIA_ENTRADA",
+      quantidadeKg: quantidade,
+    });
+
+    await registrarAuditoria(
+      {
+        empresaId: sessao.empresaId,
+        filialId: sessao.filialId,
+        usuarioId: sessao.usuarioId,
+        entidade: "Lote",
+        entidadeId: lote.id,
+        acao: "TRANSFERIR",
+        anterior: { localId: lote.localId, saldoKg: saldo },
+        novo: { localDestinoId: localId, kg: quantidade, loteDestino: destino.codigo, loteCriado },
+      },
+      tx,
+    );
+    return { loteDestinoId: destino.id, codigoDestino: destino.codigo, loteCriado };
   });
 }
 

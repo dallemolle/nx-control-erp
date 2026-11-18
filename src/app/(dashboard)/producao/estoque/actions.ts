@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
-import { liberarLoteVencido, moverLote, revogarLiberacaoLote } from "@/server/services/estoque";
+import { prisma } from "@/server/db/client";
+import { liberarLoteVencido, revogarLiberacaoLote, transferirLote } from "@/server/services/estoque";
 
 export type FormState = { erro?: string; sucesso?: boolean };
 
@@ -13,7 +14,9 @@ export async function moverLoteAction(_prev: FormState, formData: FormData): Pro
   if (!localId) return { erro: "Selecione o local de destino" };
 
   try {
-    await moverLote(sessao, loteId, localId);
+    const lote = await prisma.lote.findFirst({ where: { id: loteId, filialId: sessao.filialId }, select: { saldoKg: true } });
+    if (!lote) return { erro: "Lote não encontrado" };
+    await transferirLote(sessao, loteId, localId, Number(lote.saldoKg));
   } catch (erro) {
     return { erro: erro instanceof Error ? erro.message : "Ocorreu um erro inesperado" };
   }

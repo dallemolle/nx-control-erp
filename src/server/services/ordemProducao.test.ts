@@ -40,7 +40,7 @@ import {
 } from "./ordemProducao";
 import { cancelarPedido, criarPedido, lotesParaVenda } from "./pedidoVenda";
 import { criarAjuste } from "./ajusteEstoque";
-import { liberarLoteVencido, listarLotes, moverLote } from "./estoque";
+import { liberarLoteVencido, listarLotes, transferirLote } from "./estoque";
 import { pedidoVendaSchema } from "@/lib/schemas/pedidoVenda";
 import { ajusteSchema } from "@/lib/schemas/ajusteEstoque";
 import { cancelarRecepcao, criarRecepcao } from "./recepcaoFruto";
@@ -736,7 +736,8 @@ describe("ordem de produção", () => {
       await expect(vender(grosso.loteId)).rejects.toThrow(mensagem);
       await expect(ajustar(grosso.loteId)).rejects.toThrow(mensagem);
 
-      await moverLote(fx.sessao("PRODUCAO"), grosso.loteId, cat.localRecepcaoId);
+      const saldoGrosso = Number((await prisma.lote.findUniqueOrThrow({ where: { id: grosso.loteId } })).saldoKg);
+      await transferirLote(fx.sessao("PRODUCAO"), grosso.loteId, cat.localRecepcaoId, saldoGrosso);
       const listados = await listarLotes(fx.filialAId, {}, d("2026-11-14"));
       const listado = listados.find((l) => l.id === grosso.loteId)!;
       expect(listado.emProducao).toBe(true);
