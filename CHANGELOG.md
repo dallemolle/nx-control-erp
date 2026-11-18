@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.1.32](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.31...nx-control-erp-v0.1.32) (2026-11-18)
+
+
+### Novidades
+
+* **estoque:** diálogo Transferir com quantidade na tela de Estoque ([969d2fa](https://github.com/dallemolle/nx-control-erp/commit/969d2fabcf718ba905c0e485000a701c45733339))
+* **estoque:** liberação de vencido vale para a família do lote ([2eb80db](https://github.com/dallemolle/nx-control-erp/commit/2eb80db140d4bfcdbec08dfd743ba4c7ad3cfee5))
+* **estoque:** lote filho segue o original na venda, OP, ajuste e etiqueta ([d5e4484](https://github.com/dallemolle/nx-control-erp/commit/d5e44848b13a3ce63344d606f91cc27c53462aca))
+* **estoque:** modelo da transferência parcial de lote ([6797c7e](https://github.com/dallemolle/nx-control-erp/commit/6797c7eb8dd7c3127d39e421ccec0e86c59d9d3c))
+* **estoque:** transferência parcial de lote com lote filho ([0bf51d5](https://github.com/dallemolle/nx-control-erp/commit/0bf51d5d420d65171f8441e5c754fbb04c1d51fc))
+* **rastreabilidade:** consulta pela família do lote ([3f00db3](https://github.com/dallemolle/nx-control-erp/commit/3f00db3fb87577643d89a216d0d161ba49e703a6))
+* **rastreabilidade:** seção Lotes da família na tela e no PDF ([0750be9](https://github.com/dallemolle/nx-control-erp/commit/0750be9471c3647f26d3cd406629bea59662f128))
+
+
+### Correções
+
+* **financeiro:** categoria de outra filial recusada nos lançamentos avulsos ([dcad7b7](https://github.com/dallemolle/nx-control-erp/commit/dcad7b78a414e1be8b8146a7c9b2b7c0831904bd))
+* **rastreabilidade:** singular quando a OP usou um só lote da família ([97e891e](https://github.com/dallemolle/nx-control-erp/commit/97e891e3de45b4b6b50779f92648bd5655dcebf6))
+
 ## [0.1.31](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.30...nx-control-erp-v0.1.31) (2026-11-18)
 
 
