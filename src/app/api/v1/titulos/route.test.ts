@@ -172,8 +172,9 @@ describe("POST/GET /api/v1/titulos", () => {
     const resposta = await GET(request);
     expect(resposta.status).toBe(200);
     const corpo = await resposta.json();
-    expect(Array.isArray(corpo)).toBe(true);
-    expect(corpo.some((t: { documento: string }) => t.documento === "NF-API-1")).toBe(true);
+    expect(Array.isArray(corpo.itens)).toBe(true);
+    expect(corpo).toHaveProperty("proximoCursor");
+    expect(corpo.itens.some((t: { documento: string }) => t.documento === "NF-API-1")).toBe(true);
   });
 
   test("GET sem ?tipo= -> 422", async () => {
@@ -367,15 +368,52 @@ describe("POST/GET /api/v1/titulos", () => {
       const get = (query: string) =>
         GET(new Request(`http://localhost/api/v1/titulos?tipo=PAGAR${query}`, { headers: headers(chaveCompleta) }));
 
-      const gerenciais = await (await get("&classificacao=GERENCIAL")).json();
+      const gerenciais = (await (await get("&classificacao=GERENCIAL")).json()).itens;
       expect(gerenciais.length).toBeGreaterThan(0);
       expect(gerenciais.every((t: { classificacaoFiscal: string }) => t.classificacaoFiscal === "GERENCIAL")).toBe(true);
 
-      const todos = await (await get("")).json();
-      const fiscais = await (await get("&classificacao=FISCAL")).json();
+      const todos = (await (await get("")).json()).itens;
+      const fiscais = (await (await get("&classificacao=FISCAL")).json()).itens;
       expect(fiscais.length + gerenciais.length).toBe(todos.length);
 
       expect((await get("&classificacao=fiscal")).status).toBe(422);
+    });
+  });
+
+  describe("paginação do GET", () => {
+    const get = (query: string) =>
+      GET(new Request(`http://localhost/api/v1/titulos?tipo=PAGAR${query}`, { headers: headers(chaveCompleta) }));
+
+    test("percorre pelo proximoCursor e chega no mesmo resultado da página grande", async () => {
+      const tudo = (await (await get("&limite=500")).json()).itens.map((t: { id: string }) => t.id);
+      expect(tudo.length).toBeGreaterThan(3);
+
+      const percorridos: string[] = [];
+      let cursor: string | null = null;
+      do {
+        const resposta = await get(`&limite=3${cursor ? `&cursor=${cursor}` : ""}`);
+        expect(resposta.status).toBe(200);
+        const corpo = await resposta.json();
+        expect(corpo.itens.length).toBeLessThanOrEqual(3);
+        percorridos.push(...corpo.itens.map((t: { id: string }) => t.id));
+        cursor = corpo.proximoCursor;
+      } while (cursor);
+
+      expect(percorridos).toEqual(tudo);
+    });
+
+    test("limite fora de 1..500 -> 422 no campo limite", async () => {
+      for (const limite of ["0", "501", "abc"]) {
+        const resposta = await get(`&limite=${limite}`);
+        expect(resposta.status).toBe(422);
+        expect((await resposta.json()).campos).toEqual(["limite"]);
+      }
+    });
+
+    test("cursor inválido -> 422 no campo cursor", async () => {
+      const resposta = await get("&cursor=nao-existe");
+      expect(resposta.status).toBe(422);
+      expect(await resposta.json()).toEqual({ erro: "Cursor inválido para esta listagem", campos: ["cursor"] });
     });
   });
 });

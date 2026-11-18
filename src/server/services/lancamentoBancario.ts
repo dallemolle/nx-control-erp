@@ -14,7 +14,13 @@ import {
   whereLancamentoPorClassificacao,
   type FiltroClassificacao,
 } from "@/server/services/classificacaoFiscal";
-import type { TipoComprovante } from "@prisma/client";
+import {
+  argumentosDeCursor,
+  CursorInvalidoError,
+  montarPagina,
+  type Paginacao,
+} from "@/server/services/paginacao";
+import type { Prisma, TipoComprovante } from "@prisma/client";
 
 function normalizarOpcional<T extends string>(valor: T | typeof SEM_VALOR | undefined): T | null {
   return valor && valor.length > 0 && valor !== SEM_VALOR ? valor : null;
@@ -64,12 +70,43 @@ async function validarDimensoesDaFilial(
   }
 }
 
+/** `id` desempata lançamentos da mesma data — sem ele a paginação repete ou pula itens. */
+const ORDEM_LISTAGEM_LANCAMENTOS: Prisma.LancamentoBancarioOrderByWithRelationInput[] = [
+  { data: "desc" },
+  { id: "desc" },
+];
+
 export async function listarLancamentos(filialId: string, opcoes: { classificacao?: FiltroClassificacao } = {}) {
   return prisma.lancamentoBancario.findMany({
     where: { filialId, ...whereLancamentoPorClassificacao(opcoes.classificacao) },
     include: { contaBancaria: { include: { banco: true } } },
-    orderBy: { data: "desc" },
+    orderBy: ORDEM_LISTAGEM_LANCAMENTOS,
   });
+}
+
+/** Versão da API: uma página por vez, ordenada por data (mais recente primeiro). */
+export async function listarLancamentosPaginado(
+  filialId: string,
+  opcoes: { classificacao?: FiltroClassificacao },
+  paginacao: Paginacao,
+) {
+  const where = { filialId, ...whereLancamentoPorClassificacao(opcoes.classificacao) };
+  if (paginacao.cursor) {
+    // O cursor tem de estar dentro da própria listagem (filtro incluído), senão o skip: 1 pula uma linha válida.
+    const doCursor = await prisma.lancamentoBancario.findFirst({
+      where: { ...where, id: paginacao.cursor },
+      select: { id: true },
+    });
+    if (!doCursor) throw new CursorInvalidoError();
+  }
+
+  const linhas = await prisma.lancamentoBancario.findMany({
+    where,
+    include: { contaBancaria: { include: { banco: true } } },
+    orderBy: ORDEM_LISTAGEM_LANCAMENTOS,
+    ...argumentosDeCursor(paginacao),
+  });
+  return montarPagina(linhas, paginacao.limite);
 }
 
 export async function calcularSaldoContabil(contaBancariaId: string): Promise<number> {

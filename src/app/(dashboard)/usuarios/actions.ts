@@ -6,6 +6,7 @@ import { criarUsuarioSchema, verificarEmailSchema, atualizarPerfilSchema } from 
 import * as usuarioService from "@/server/services/usuario";
 import * as usuarioEmpresaFilialService from "@/server/services/usuarioEmpresaFilial";
 import * as apiKeyService from "@/server/services/apiKey";
+import { lerValidadeChave } from "@/lib/validadeChaveApi";
 
 export type FormState = { erro?: string; sucesso?: boolean };
 
@@ -114,8 +115,13 @@ export async function gerarChaveAction(_prev: GerarChaveState, formData: FormDat
     return { erro: "Informe um nome para a chave" };
   }
 
+  const validadeDias = lerValidadeChave(String(formData.get("validade") ?? ""));
+  if (validadeDias === undefined) {
+    return { erro: "Validade inválida" };
+  }
+
   try {
-    const resultado = await apiKeyService.gerarChave(sessao, usuarioId, nome);
+    const resultado = await apiKeyService.gerarChave(sessao, usuarioId, nome, validadeDias);
     return { sucesso: true, chaveCompleta: resultado.chaveCompleta };
   } catch (erro) {
     return { erro: mensagemErro(erro) };

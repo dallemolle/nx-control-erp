@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { OPCOES_VALIDADE_CHAVE } from "@/lib/validadeChaveApi";
 import {
   listarChavesAction,
   gerarChaveAction,
@@ -19,12 +20,19 @@ type Chave = {
   ultimoUsoEm: Date | null;
   revogadaEm: Date | null;
   criadoEm: Date;
+  expiraEm: Date | null;
 };
 
 const ESTADO_INICIAL: GerarChaveState = {};
 
 function formatarData(data: Date | null): string {
   return data ? new Date(data).toLocaleString("pt-BR") : "Nunca";
+}
+
+function descreverValidade(expiraEm: Date | null): string {
+  if (!expiraEm) return "Sem validade";
+  const data = new Date(expiraEm);
+  return data <= new Date() ? "Expirada" : `Expira em ${data.toLocaleDateString("pt-BR")}`;
 }
 
 export function ChavesApiDialog({ usuarioId }: { usuarioId: string }) {
@@ -87,10 +95,11 @@ export function ChavesApiDialog({ usuarioId }: { usuarioId: string }) {
                     </div>
                     <div className="text-xs text-muted-foreground">
                       Criada em {formatarData(chave.criadoEm)} — Último uso: {formatarData(chave.ultimoUsoEm)}
-                      {chave.revogadaEm ? " — Revogada" : ""}
+                      {" — "}
+                      {chave.revogadaEm ? "Revogada" : descreverValidade(chave.expiraEm)}
                     </div>
                   </div>
-                  {!chave.revogadaEm && (
+                  {!chave.revogadaEm && descreverValidade(chave.expiraEm) !== "Expirada" && (
                     <Button type="button" variant="outline" size="sm" onClick={() => revogar(chave.id)}>
                       Revogar
                     </Button>
@@ -105,6 +114,22 @@ export function ChavesApiDialog({ usuarioId }: { usuarioId: string }) {
             <div className="flex-1 space-y-2">
               <Label htmlFor="nome">Nova chave</Label>
               <Input id="nome" name="nome" placeholder="Ex.: Agente IA - lançamentos" required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="validade">Validade</Label>
+              <select
+                id="validade"
+                name="validade"
+                defaultValue=""
+                className="h-8 rounded-lg border bg-transparent px-2 text-sm"
+              >
+                <option value="">Sem validade</option>
+                {OPCOES_VALIDADE_CHAVE.map((opcao) => (
+                  <option key={opcao.dias} value={opcao.dias}>
+                    {opcao.rotulo}
+                  </option>
+                ))}
+              </select>
             </div>
             <Button type="submit" disabled={pendente}>
               {pendente ? "Gerando..." : "Gerar"}
