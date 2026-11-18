@@ -5,7 +5,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatarData } from "@/lib/formatacao";
 import { linhasDoDestino, type DestinoLote } from "@/lib/producao/destinoLote";
 import { ROTULOS_CATEGORIA_PRODUTO, ROTULOS_STATUS_ENTREGA } from "@/lib/schemas/enums";
-import { descreverOrigem, type LinhaCliente, type OpRastreio, type Rastreio } from "@/server/services/rastreabilidade";
+import {
+  descreverOrigem,
+  type LinhaCliente,
+  type LoteDaFamilia,
+  type OpRastreio,
+  type Rastreio,
+} from "@/server/services/rastreabilidade";
 import { BranqueamentoBadge, KG, PERCENTUAL, StatusOPBadge, VerificacaoBadge } from "../processamento/formatos";
 import { LinkRastreio } from "../_shared/link-rastreio";
 import { StatusLoteBadge } from "../_shared/status-lote-badge";
@@ -69,6 +75,49 @@ export function CartaoLote({ rastreio, acoes }: { rastreio: Rastreio; acoes: Rea
           <Dado rotulo="Quantidade inicial">{KG.format(lote.quantidadeInicialKg)} kg</Dado>
           <Dado rotulo="Saldo">{KG.format(lote.saldoKg)} kg</Dado>
         </dl>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function CartaoFamilia({ familia, incluirCancelados }: { familia: LoteDaFamilia[]; incluirCancelados: boolean }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Lotes da família</CardTitle>
+        <CardDescription>
+          O lote foi dividido em transferências entre locais. A origem, as OPs, os clientes e o destino abaixo somam
+          todos eles.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Lote</TableHead>
+              <TableHead>Local</TableHead>
+              <TableHead>Validade</TableHead>
+              <TableHead className="text-right">Saldo (kg)</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {familia.map((l) => (
+              <TableRow key={l.codigo} className={l.consultado ? "font-medium" : undefined}>
+                <TableCell className="whitespace-nowrap">
+                  {l.consultado ? l.codigo : <LinkRastreio codigo={l.codigo} incluirCancelados={incluirCancelados} />}
+                  {l.consultado ? (
+                    <Badge variant="outline" className="ml-2">
+                      Consultado
+                    </Badge>
+                  ) : null}
+                </TableCell>
+                <TableCell>{l.local}</TableCell>
+                <TableCell>{formatarData(l.validade)}</TableCell>
+                <TableCell className="text-right tabular-nums">{KG.format(l.saldoKg)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );
@@ -189,7 +238,10 @@ export function CartaoParaFrente({ rastreio, incluirCancelados }: { rastreio: Ra
           <section key={op.numero} className="space-y-3 border-t pt-4 first:border-t-0 first:pt-0">
             <ResumoOP op={op} />
             <p className="text-sm">
-              Usou <span className="font-medium tabular-nums">{KG.format(op.kgDesteLote)} kg</span> deste lote
+              Usou <span className="font-medium tabular-nums">{KG.format(op.kgDesteLote)} kg</span>{" "}
+              {rastreio.familia.length === 1
+                ? "deste lote"
+                : `${op.lotesDaFamilia.length === 1 ? "do lote" : "dos lotes"} ${op.lotesDaFamilia.join(", ")}`}
               {op.consumoRemovido ? <Removido /> : null}
             </p>
             <div className="overflow-x-auto">
@@ -225,12 +277,12 @@ export function CartaoParaFrente({ rastreio, incluirCancelados }: { rastreio: Ra
   );
 }
 
-export function CartaoDestino({ destino }: { destino: DestinoLote }) {
+export function CartaoDestino({ destino, familia = false }: { destino: DestinoLote; familia?: boolean }) {
   const linhas = linhasDoDestino(destino);
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Destino do lote</CardTitle>
+        <CardTitle>{familia ? "Destino da família" : "Destino do lote"}</CardTitle>
         <CardDescription>Para onde foi cada kg, pelos movimentos de estoque.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">

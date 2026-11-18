@@ -62,6 +62,8 @@ export type OpConsumidora = OpRastreio & {
   kgDesteLote: number;
   /** Todas as linhas deste lote na OP foram removidas (só aparece com cancelados). */
   consumoRemovido: boolean;
+  /** Códigos dos lotes da família consumidos nesta OP (D-36). */
+  lotesDaFamilia: string[];
   lotesPolpa: LotePolpaGerado[];
 };
 
@@ -100,8 +102,13 @@ export type LoteRastreio = {
   status: StatusLote;
 };
 
+/** Original e filhos de uma transferência parcial (D-36). */
+export type LoteDaFamilia = { codigo: string; local: string; saldoKg: number; validade: Date; consultado: boolean };
+
 export type Rastreio = {
   lote: LoteRastreio;
+  /** Original e filhos; um item só quando o lote nunca foi dividido. */
+  familia: LoteDaFamilia[];
   /** Só fruto. */
   recepcao: RecepcaoRastreio | null;
   /** Só polpa. */
@@ -141,6 +148,12 @@ function origemDoFruto(r: Prisma.RecepcaoFrutoGetPayload<{ select: typeof SELECT
   };
 }
 
+function origemOuNulo(
+  r: Prisma.RecepcaoFrutoGetPayload<{ select: typeof SELECT_ORIGEM_FRUTO }> | null,
+): OrigemDoFruto | null {
+  return r ? origemDoFruto(r) : null;
+}
+
 const SELECT_OP = {
   id: true,
   numero: true,
@@ -165,6 +178,7 @@ const SELECT_OP = {
           data: true,
           produto: { select: { descricao: true } },
           recepcao: { select: SELECT_ORIGEM_FRUTO },
+          loteOrigem: { select: { recepcao: { select: SELECT_ORIGEM_FRUTO } } },
         },
       },
     },
@@ -223,6 +237,7 @@ export async function buscarLotes(sessao: SessaoAtiva, trecho: string): Promise<
  * Rastreabilidade do lote (RN-28): para trás (recepção, ou OP e frutos), para
  * frente (OPs e polpas, só fruto), destino de cada kg e clientes que receberam
  * o lote ou a polpa derivada (D-33). Cancelados só com `incluirCancelados` (D-34).
+ * Consulta por família (D-36): original e filhos de transferência parcial.
  */
 export async function rastrearLote(
   sessao: SessaoAtiva,
@@ -239,27 +254,50 @@ export async function rastrearLote(
     include: {
       produto: { select: { descricao: true, categoria: true, conservacao: true } },
       local: { select: { nome: true } },
-      recepcao: {
-        select: {
-          data: true,
-          pesoBrutoKg: true,
-          descarteKg: true,
-          documento: true,
-          status: true,
-          ...SELECT_ORIGEM_FRUTO,
-        },
-      },
-      producaoOP: { select: { ordemProducaoId: true } },
-      consumosOP: { select: { ordemProducaoId: true } },
     },
   });
   if (!lote) return null;
 
+  // D-36: a consulta é pela família; a origem para trás vem do original.
+  const origemId = lote.loteOrigemId ?? lote.id;
+  const [original, familia] = await Promise.all([
+    prisma.lote.findUniqueOrThrow({
+      where: { id: origemId },
+      select: {
+        recepcao: {
+          select: {
+            data: true,
+            pesoBrutoKg: true,
+            descarteKg: true,
+            documento: true,
+            status: true,
+            ...SELECT_ORIGEM_FRUTO,
+          },
+        },
+        producaoOP: { select: { ordemProducaoId: true } },
+      },
+    }),
+    prisma.lote.findMany({
+      where: { filialId: sessao.filialId, OR: [{ id: origemId }, { loteOrigemId: origemId }] },
+      select: {
+        id: true,
+        codigo: true,
+        saldoKg: true,
+        validade: true,
+        local: { select: { nome: true } },
+        consumosOP: { select: { ordemProducaoId: true } },
+      },
+      orderBy: { criadoEm: "asc" },
+    }),
+  ]);
+  const idsDaFamilia = familia.map((l) => l.id);
+  const naFamilia = new Set(idsDaFamilia);
+
   const fruto = lote.produto.categoria === "FRUTO";
   const opIds = fruto
-    ? [...new Set(lote.consumosOP.map((c) => c.ordemProducaoId))]
-    : lote.producaoOP
-      ? [lote.producaoOP.ordemProducaoId]
+    ? [...new Set(familia.flatMap((l) => l.consumosOP.map((c) => c.ordemProducaoId)))]
+    : original.producaoOP
+      ? [original.producaoOP.ordemProducaoId]
       : [];
 
   const [configuracao, ops, movimentos] = await Promise.all([
@@ -272,7 +310,7 @@ export async function rastrearLote(
         })
       : Promise.resolve([] as OpCarregada[]),
     prisma.movimentoEstoque.findMany({
-      where: { loteId: lote.id },
+      where: { loteId: { in: idsDaFamilia } },
       select: { tipo: true, quantidadeKg: true, ajuste: { select: { motivo: true } } },
     }),
   ]);
@@ -288,7 +326,8 @@ export async function rastrearLote(
         produto: c.lote.produto.descricao,
         kgConsumido: Number(c.quantidadeKg),
         dataRecepcao: c.lote.data,
-        origem: c.lote.recepcao ? origemDoFruto(c.lote.recepcao) : null,
+        // Fruto filho: a origem é a da recepção do original (D-36).
+        origem: origemOuNulo(c.lote.recepcao ?? c.lote.loteOrigem?.recepcao ?? null),
         removido: c.removidoEm !== null,
       }));
   }
@@ -298,7 +337,7 @@ export async function rastrearLote(
   const opsQueConsumiram: OpConsumidora[] = !fruto
     ? []
     : ops.flatMap((op) => {
-        const ativos = op.consumos.filter((c) => c.loteId === lote.id && c.removidoEm === null);
+        const ativos = op.consumos.filter((c) => naFamilia.has(c.loteId) && c.removidoEm === null);
         const consumoRemovido = ativos.length === 0;
         if (!incluirCancelados && (op.status === "CANCELADA" || consumoRemovido)) return [];
         const producoes = op.producoes.filter((p) => incluirCancelados || p.removidoEm === null);
@@ -311,6 +350,7 @@ export async function rastrearLote(
               3,
             ),
             consumoRemovido,
+            lotesDaFamilia: [...new Set(ativos.map((c) => c.lote.codigo))],
             lotesPolpa: producoes.map((p) => ({
               codigo: p.lote.codigo,
               produto: p.lote.produto.descricao,
@@ -322,9 +362,18 @@ export async function rastrearLote(
         ];
       });
 
+  // Polpa transferida também foi vendida: os filhos herdam o nº da OP da polpa original.
+  if (opDoLotePolpa.size > 0) {
+    const filhosDasPolpas = await prisma.lote.findMany({
+      where: { filialId: sessao.filialId, loteOrigemId: { in: [...opDoLotePolpa.keys()] } },
+      select: { id: true, loteOrigemId: true },
+    });
+    for (const filho of filhosDasPolpas) opDoLotePolpa.set(filho.id, opDoLotePolpa.get(filho.loteOrigemId!)!);
+  }
+
   const itens = await prisma.itemPedidoVenda.findMany({
     where: {
-      loteId: { in: [lote.id, ...opDoLotePolpa.keys()] },
+      loteId: { in: [...idsDaFamilia, ...opDoLotePolpa.keys()] },
       pedido: { filialId: sessao.filialId, ...(incluirCancelados ? {} : { status: "CONFIRMADO" as const }) },
     },
     select: {
@@ -355,7 +404,7 @@ export async function rastrearLote(
 
   const clientes: LinhaCliente[] = itens
     .map((i) => ({
-      caminho: i.loteId === lote.id ? ("DIRETO" as const) : ("POLPA" as const),
+      caminho: naFamilia.has(i.loteId) ? ("DIRETO" as const) : ("POLPA" as const),
       loteVendido: i.lote.codigo,
       opNumero: opDoLotePolpa.get(i.loteId) ?? null,
       pedidoNumero: i.pedido.numero,
@@ -368,6 +417,7 @@ export async function rastrearLote(
     .sort((a, b) => a.pedidoData.getTime() - b.pedidoData.getTime() || a.pedidoNumero - b.pedidoNumero);
 
   const saldoKg = Number(lote.saldoKg);
+  const saldoDaFamilia = arredondar(familia.reduce((s, l) => s + Number(l.saldoKg), 0), 3);
   return {
     lote: {
       id: lote.id,
@@ -385,14 +435,21 @@ export async function rastrearLote(
         configuracao,
       ),
     },
-    recepcao: lote.recepcao
+    familia: familia.map((l) => ({
+      codigo: l.codigo,
+      local: l.local.nome,
+      saldoKg: Number(l.saldoKg),
+      validade: l.validade,
+      consultado: l.id === lote.id,
+    })),
+    recepcao: original.recepcao
       ? {
-          ...origemDoFruto(lote.recepcao),
-          data: lote.recepcao.data,
-          pesoBrutoKg: Number(lote.recepcao.pesoBrutoKg),
-          descarteKg: Number(lote.recepcao.descarteKg),
-          documento: lote.recepcao.documento,
-          cancelada: lote.recepcao.status === "CANCELADA",
+          ...origemDoFruto(original.recepcao),
+          data: original.recepcao.data,
+          pesoBrutoKg: Number(original.recepcao.pesoBrutoKg),
+          descarteKg: Number(original.recepcao.descarteKg),
+          documento: original.recepcao.documento,
+          cancelada: original.recepcao.status === "CANCELADA",
         }
       : null,
     opOrigem,
@@ -400,7 +457,7 @@ export async function rastrearLote(
     opsQueConsumiram,
     destino: destinoDoLote(
       movimentos.map((m) => ({ tipo: m.tipo, quantidadeKg: Number(m.quantidadeKg), motivo: m.ajuste?.motivo ?? null })),
-      saldoKg,
+      saldoDaFamilia,
     ),
     clientes,
   };

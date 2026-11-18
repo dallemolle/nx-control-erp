@@ -49,6 +49,7 @@ const base = (categoria: "FRUTO" | "POLPA"): Rastreio => ({
     saldoKg: 19,
     status: "OK",
   },
+  familia: [{ codigo: "FA-261110-01", local: "Recepção", saldoKg: 19, validade: d("2026-11-11"), consultado: true }],
   recepcao: null,
   opOrigem: null,
   frutosConsumidos: [],
@@ -85,6 +86,7 @@ describe("secoesDoRastreio", () => {
           ...OP,
           kgDesteLote: 60,
           consumoRemovido: false,
+          lotesDaFamilia: ["FA-261110-01"],
           lotesPolpa: [{ codigo: "AGC-261110-01", produto: "Polpa", kg: 40, saldoKg: 30, removido: false }],
         },
       ],
@@ -116,6 +118,18 @@ describe("secoesDoRastreio", () => {
       "Clientes que receberam",
     ]);
   });
+});
+
+test("PDF traz a seção Lotes da família só quando o lote foi dividido (D-36)", () => {
+  const familia = [
+    { codigo: "FA-261110-01", local: "Recepção", saldoKg: 60, validade: d("2026-11-11"), consultado: true },
+    { codigo: "FA-261110-01/1", local: "Câmara", saldoKg: 10, validade: d("2026-11-11"), consultado: false },
+  ];
+  const titulos = (r: Rastreio) => secoesDoRastreio(r).map((s) => s.titulo);
+  const dividido = titulos({ ...base("FRUTO"), familia });
+  expect(dividido).toContain("Lotes da família");
+  expect(dividido).toContain("Destino da família");
+  expect(titulos(base("FRUTO"))).not.toContain("Lotes da família");
 });
 
 describe("COLUNAS_CLIENTES", () => {

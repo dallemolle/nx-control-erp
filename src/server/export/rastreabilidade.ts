@@ -8,6 +8,7 @@ import {
   descreverOrigem,
   type FrutoConsumido,
   type LinhaCliente,
+  type LoteDaFamilia,
   type LoteRastreio,
   type OpConsumidora,
   type OpRastreio,
@@ -49,6 +50,13 @@ const COLUNAS_LOTE: ColunaExport<LoteRastreio>[] = [
   { rotulo: "Status", valor: (l) => ROTULOS_STATUS_LOTE[l.status] },
 ];
 
+const COLUNAS_FAMILIA: ColunaExport<LoteDaFamilia>[] = [
+  { rotulo: "Lote", valor: (l) => (l.consultado ? `${l.codigo} (consultado)` : l.codigo) },
+  { rotulo: "Local", valor: (l) => l.local },
+  { rotulo: "Validade", valor: (l) => l.validade },
+  { rotulo: "Saldo (kg)", valor: (l) => l.saldoKg },
+];
+
 const COLUNAS_RECEPCAO: ColunaExport<RecepcaoRastreio>[] = [
   { rotulo: "Data", valor: (r) => r.data },
   { rotulo: "Origem", valor: (r) => descreverOrigem(r) },
@@ -78,7 +86,8 @@ const COLUNAS_OP: ColunaExport<OpRastreio>[] = [
 
 const COLUNAS_OP_CONSUMIDORA: ColunaExport<OpConsumidora>[] = [
   ...COLUNAS_OP,
-  { rotulo: "kg deste lote", valor: (op) => op.kgDesteLote },
+  { rotulo: "kg consumido", valor: (op) => op.kgDesteLote },
+  { rotulo: "Lotes", valor: (op) => op.lotesDaFamilia.join(", ") },
   { rotulo: "Consumo", valor: (op) => situacao(op.consumoRemovido) },
 ];
 
@@ -110,6 +119,10 @@ const COLUNAS_DESTINO: ColunaExport<{ rotulo: string; kg: number }>[] = [
 /** Relatório completo do lote para o PDF, na ordem da tela. */
 export function secoesDoRastreio(r: Rastreio): SecaoPdf<unknown>[] {
   const secoes = [secaoPdf({ titulo: "Lote", linhas: [r.lote], colunas: COLUNAS_LOTE })];
+  const dividido = r.familia.length > 1;
+  if (dividido) {
+    secoes.push(secaoPdf({ titulo: "Lotes da família", linhas: r.familia, colunas: COLUNAS_FAMILIA }));
+  }
   if (r.recepcao) {
     secoes.push(secaoPdf({ titulo: "Origem: recepção", linhas: [r.recepcao], colunas: COLUNAS_RECEPCAO }));
   }
@@ -129,9 +142,10 @@ export function secoesDoRastreio(r: Rastreio): SecaoPdf<unknown>[] {
       }),
     );
   }
+  const tituloDestino = dividido ? "Destino da família" : "Destino do lote";
   secoes.push(
     secaoPdf({
-      titulo: r.destino.confere ? "Destino do lote" : "Destino do lote (não confere com o saldo)",
+      titulo: r.destino.confere ? tituloDestino : `${tituloDestino} (não confere com o saldo)`,
       linhas: linhasDoDestino(r.destino),
       colunas: COLUNAS_DESTINO,
     }),
