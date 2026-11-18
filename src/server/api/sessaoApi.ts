@@ -1,5 +1,6 @@
 import { prisma } from "@/server/db/client";
 import { hashChaveApi } from "@/server/services/apiKey";
+import { registrarUsoDaChave } from "./limiteRequisicoes";
 import { normalizarDocumento } from "@/server/services/resolucaoCadastros";
 import { requireVinculoAtivo, AcessoNegadoError } from "@/server/services/usuarioEmpresa";
 import { requireVinculoFilialAtivo, AcessoFilialNegadoError } from "@/server/services/usuarioEmpresaFilial";
@@ -32,11 +33,14 @@ export async function requireSessaoApi(request: Request): Promise<SessaoAtiva> {
   if (apiKey.revogadaEm) {
     throw new ApiAuthError(401, "Chave de API revogada");
   }
+  if (apiKey.expiraEm && apiKey.expiraEm <= new Date()) {
+    throw new ApiAuthError(401, "Chave de API expirada");
+  }
   if (!apiKey.usuario.ativo) {
     throw new ApiAuthError(401, "Usuário inativo");
   }
 
-  await prisma.apiKey.update({ where: { id: apiKey.id }, data: { ultimoUsoEm: new Date() } });
+  await registrarUsoDaChave(apiKey.id);
 
   const filialCnpjCpfBruto = request.headers.get("x-filial-cnpjcpf");
   if (!filialCnpjCpfBruto) {

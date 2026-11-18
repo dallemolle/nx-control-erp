@@ -212,6 +212,10 @@ model ApiKey {
   chaveHash   String    @unique
   ultimoUsoEm DateTime?
   revogadaEm  DateTime?
+  expiraEm            DateTime?
+  /// Início (truncado no minuto, UTC) da janela do limite de requisições da API.
+  janelaLimiteEm      DateTime?
+  requisicoesNaJanela Int       @default(0)
   criadoEm    DateTime  @default(now())
 
   usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)

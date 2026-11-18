@@ -10,7 +10,8 @@ Ver também: `docs/superpowers/specs/2026-09-15-api-rest-automacao-design.md` (d
 2. Vá em **Administração → Usuários**.
 3. Na linha do usuário que vai "ser" o agente (pode ser um usuário dedicado, ex. "Agente IA", ou um usuário existente), clique em **Chaves de API**.
 4. Em "Nova chave", dê um nome (ex.: `Agente IA - lançamentos`) e clique em **Gerar**.
-5. **Copie a chave agora** — ela é mostrada só essa vez (formato `sk_...`). Depois disso só o prefixo fica visível.
+5. Escolha a **Validade**: Sem validade (padrão), 30 dias, 90 dias ou 1 ano. Depois do prazo a chave para de funcionar (`401 "Chave de API expirada"`) e a lista mostra "Expirada"; gere outra para substituir.
+6. **Copie a chave agora** — ela é mostrada só essa vez (formato `sk_...`). Depois disso só o prefixo fica visível.
 
 A chave herda o perfil e os vínculos de empresa/filial do usuário escolhido — se ele só tem acesso a uma filial, a chave só funciona ali.
 
@@ -27,6 +28,7 @@ A empresa é derivada automaticamente da filial (cada filial pertence a uma úni
 |---|---|
 | `Authorization` ausente ou mal formado | 401 |
 | Chave inválida, revogada, ou usuário inativo | 401 |
+| Chave expirada | 401 |
 | `X-Filial-CnpjCpf` ausente | 400 |
 | CNPJ/CPF não corresponde a nenhuma filial, ou usuário sem vínculo com ela | 403 |
 
@@ -57,7 +59,18 @@ http://localhost:3000/api/v1
 | Perfil sem permissão pra ação | 403 |
 | Recurso referenciado não existe (ex.: `parcelaId`) | 404 |
 | `Idempotency-Key` ainda em processamento (ver abaixo) | 409 |
+| Limite de requisições atingido (ver abaixo) | 429 |
 | Erro inesperado | 500 |
+
+### Limite de requisições
+
+Cada chave pode fazer **60 requisições por minuto**, somando todas as rotas (`GET` e `POST`). A janela é o minuto do relógio: o contador zera na virada. Passou disso, a resposta é `429` com o header `Retry-After` (segundos até a próxima janela):
+
+```json
+{ "erro": "Limite de 60 requisições por minuto atingido. Tente de novo em 17 s." }
+```
+
+Espere `Retry-After` segundos e reenvie. Uma requisição bloqueada não grava nada (nem reserva a `Idempotency-Key`). A requisição conta assim que a chave é válida, inclusive quando falha depois no header da filial (`400`/`403`).
 
 ## 5. Regra geral: identificadores por CNPJ/código/nome, não por UUID interno
 
@@ -114,7 +127,7 @@ Permissão: `titulo:escrever`.
 - `cnpjCpf`: CNPJ do fornecedor (se `PAGAR`) ou CPF/CNPJ do cliente (se `RECEBER`).
 - `centroCusto`, `centroLucro`, `safra`, `projeto`, `contaBancariaAgencia`/`contaBancariaConta`, `formaPagamento`: todos opcionais.
 - `parcelas`: array, não precisa de `numero` (é atribuído automaticamente por ordem) — pode ter 1 ou várias.
-- Resposta `201` com o título criado, incluindo `parcelas[].id` (guarde esse id se for dar baixa depois).
+- Resposta `201` com o título criado, incluindo `parcelas[].id` (guarde esse id se for dar baixa depois; também vem em `GET /titulos`, em `itens[].parcelas[].id`).
 
 **Classificação fiscal × gerencial (todos opcionais).** Quem já integra sem esses campos continua funcionando: o título nasce com o padrão do fornecedor/cliente (cadastro → "Classificação padrão dos títulos") ou, sem padrão, `FISCAL`.
 
@@ -143,6 +156,14 @@ Erros `422` (com `campos`): classificação/tipo inválidos, tipo de comprovante
 ### `GET /titulos?tipo=PAGAR` (ou `RECEBER`)
 Permissão: `titulo:ler`. Sem corpo. `?tipo=` é obrigatório.
 - `?classificacao=FISCAL` ou `?classificacao=GERENCIAL` (opcional): filtra pela classificação. Sem o parâmetro, devolve todos. Valor diferente desses dois → `422`.
+- **Paginado:** `?limite=` (1 a 500, padrão 100) e `?cursor=`. A resposta é `{ "itens": [...], "proximoCursor": "<id>" | null }`, por data de criação do título (mais recente primeiro). Para a próxima página, repita a mesma URL com `&cursor=<proximoCursor>`; `null` = acabou. O `proximoCursor` é opaco: não interprete nem monte, só devolva como veio. `limite` fora da faixa ou cursor que não é desta listagem → `422` (`campos: ["limite"]` ou `["cursor"]`). Um `422` em `cursor` no meio da paginação (por exemplo, o registro foi alterado ou apagado) significa: comece de novo pela primeira página.
+
+```
+GET /titulos?tipo=PAGAR&limite=100
+→ { "itens": [ ...100 títulos... ], "proximoCursor": "8c1e..." }
+GET /titulos?tipo=PAGAR&limite=100&cursor=8c1e...
+→ { "itens": [ ...37 títulos... ], "proximoCursor": null }
+```
 - Cada título traz `classificacaoFiscal`, `tipoComprovante`, `numeroDocumentoFiscal`, `serieDocumentoFiscal`, `chaveAcesso`, `dataEmissaoDocumentoFiscal`, `motivoSemDocumento`.
 
 ### `POST /lancamentos-bancarios` — lançamento manual
@@ -171,6 +192,7 @@ Permissão: `lancamento:escrever`.
 ### `GET /lancamentos-bancarios`
 Permissão: `lancamento:ler`. Sem corpo.
 - `?classificacao=FISCAL` ou `?classificacao=GERENCIAL` (opcional). Transferências entre contas não têm classificação (`classificacaoFiscal: null`) e só aparecem sem o filtro.
+- **Paginado** igual a `GET /titulos` (`?limite=`, `?cursor=`, resposta `{ itens, proximoCursor }`), da data mais recente para a mais antiga.
 
 ### `POST /baixas` — dar baixa numa parcela (marcar como paga/recebida)
 Permissão: `titulo:baixar`.
@@ -187,7 +209,7 @@ Permissão: `titulo:baixar`.
   "contaBancariaConta": "56789-0"
 }
 ```
-- `parcelaId` é o **único** campo desta API que exige o ID interno — obtenha via `GET /titulos?tipo=...` (cada título vem com `parcelas[].id`).
+- `parcelaId` é o **único** campo desta API que exige o ID interno — obtenha via `GET /titulos?tipo=...` (cada título em `itens` vem com `parcelas[].id`).
 - `valorJuros`/`valorMulta`/`valorDesconto`: opcionais, default `0`.
 - `parcelaId` inexistente → `404`.
 

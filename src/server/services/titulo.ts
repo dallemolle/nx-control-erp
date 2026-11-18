@@ -9,7 +9,14 @@ import {
   resolverClassificacao,
 } from "@/server/services/classificacaoFiscal";
 import type { SessaoAtiva } from "@/server/auth/sessao";
-import type { ClassificacaoFiscal, StatusParcela, TipoComprovante, TipoTitulo } from "@prisma/client";
+import {
+  argumentosDeCursor,
+  CursorInvalidoError,
+  montarPagina,
+  type Pagina,
+  type Paginacao,
+} from "@/server/services/paginacao";
+import type { ClassificacaoFiscal, Prisma, StatusParcela, TipoComprovante, TipoTitulo } from "@prisma/client";
 import type { TituloFormValues, TituloHeaderFormValues } from "@/lib/schemas/titulo";
 
 export type FiltroTitulos = {
@@ -185,37 +192,54 @@ export async function validarReferenciasDoTitulo(
   return { classificacaoFiscalPadrao: contraparte.classificacaoFiscalPadrao };
 }
 
-export async function listarTitulos(filialId: string, tipo: TipoTitulo, filtros: FiltroTitulos = {}) {
-  const titulos = await prisma.titulo.findMany({
-    where: {
-      filialId,
-      tipo,
-      ...(filtros.categoriaId && { categoriaFinanceiraId: filtros.categoriaId }),
-      ...(filtros.contraparteId &&
-        (tipo === "PAGAR" ? { fornecedorId: filtros.contraparteId } : { clienteId: filtros.contraparteId })),
-      ...(filtros.centroCustoId && { centroCustoId: filtros.centroCustoId }),
-      ...(filtros.centroLucroId && { centroLucroId: filtros.centroLucroId }),
-      ...(filtros.safraId && { safraId: filtros.safraId }),
-      ...(filtros.projetoId && { projetoId: filtros.projetoId }),
-      ...(filtros.classificacao && { classificacaoFiscal: filtros.classificacao }),
-    },
-    include: {
-      _count: { select: { anexos: true } },
-      fornecedor: true,
-      cliente: true,
-      categoriaFinanceira: true,
-      centroCusto: true,
-      centroLucro: true,
-      safra: true,
-      projeto: true,
-      contaBancaria: { include: { banco: true } },
-      parcelas: { include: { baixas: true }, orderBy: { numero: "asc" } },
-    },
-    orderBy: { criadoEm: "desc" },
-  });
+/** Filtros aceitos pela API: sem os de parcela, que filtram depois da busca e encolheriam a página. */
+export type FiltroTitulosApi = Pick<
+  FiltroTitulos,
+  "categoriaId" | "contraparteId" | "centroCustoId" | "centroLucroId" | "safraId" | "projetoId" | "classificacao"
+>;
 
-  // Recalcula em memória a partir das parcelas/baixas já carregadas e persiste as
-  // divergências com um `updateMany` por status — evita 1 SELECT + 1 UPDATE por parcela.
+const INCLUDE_LISTAGEM_TITULOS = {
+  _count: { select: { anexos: true } },
+  fornecedor: true,
+  cliente: true,
+  categoriaFinanceira: true,
+  centroCusto: true,
+  centroLucro: true,
+  safra: true,
+  projeto: true,
+  contaBancaria: { include: { banco: true } },
+  parcelas: { include: { baixas: true }, orderBy: { numero: "asc" } },
+} satisfies Prisma.TituloInclude;
+
+/** `id` desempata títulos criados no mesmo instante — sem ele a paginação repete ou pula itens. */
+const ORDEM_LISTAGEM_TITULOS = [
+  { criadoEm: "desc" },
+  { id: "desc" },
+] satisfies Prisma.TituloOrderByWithRelationInput[];
+
+type TituloListado = Prisma.TituloGetPayload<{ include: typeof INCLUDE_LISTAGEM_TITULOS }>;
+
+function whereListagemTitulos(filialId: string, tipo: TipoTitulo, filtros: FiltroTitulosApi): Prisma.TituloWhereInput {
+  return {
+    filialId,
+    tipo,
+    ...(filtros.categoriaId && { categoriaFinanceiraId: filtros.categoriaId }),
+    ...(filtros.contraparteId &&
+      (tipo === "PAGAR" ? { fornecedorId: filtros.contraparteId } : { clienteId: filtros.contraparteId })),
+    ...(filtros.centroCustoId && { centroCustoId: filtros.centroCustoId }),
+    ...(filtros.centroLucroId && { centroLucroId: filtros.centroLucroId }),
+    ...(filtros.safraId && { safraId: filtros.safraId }),
+    ...(filtros.projetoId && { projetoId: filtros.projetoId }),
+    ...(filtros.classificacao && { classificacaoFiscal: filtros.classificacao }),
+  };
+}
+
+/**
+ * Recalcula em memória a partir das parcelas/baixas já carregadas e persiste as
+ * divergências com um `updateMany` por status — evita 1 SELECT + 1 UPDATE por parcela.
+ * Atualiza os objetos recebidos para ficarem coerentes com o que foi persistido.
+ */
+async function sincronizarStatusDasParcelas(titulos: TituloListado[]): Promise<void> {
   const hoje = new Date();
   const idsPorStatus = new Map<StatusParcela, string[]>();
 
@@ -237,7 +261,6 @@ export async function listarTitulos(filialId: string, tipo: TipoTitulo, filtros:
         const ids = idsPorStatus.get(statusCalculado);
         if (ids) ids.push(parcela.id);
         else idsPorStatus.set(statusCalculado, [parcela.id]);
-        // Mantém o objeto retornado coerente com o que acabou de ser persistido.
         parcela.status = statusCalculado;
       }
     }
@@ -246,12 +269,46 @@ export async function listarTitulos(filialId: string, tipo: TipoTitulo, filtros:
   for (const [status, ids] of idsPorStatus) {
     await prisma.parcela.updateMany({ where: { id: { in: ids } }, data: { status } });
   }
+}
+
+export async function listarTitulos(filialId: string, tipo: TipoTitulo, filtros: FiltroTitulos = {}) {
+  const titulos = await prisma.titulo.findMany({
+    where: whereListagemTitulos(filialId, tipo, filtros),
+    include: INCLUDE_LISTAGEM_TITULOS,
+    orderBy: ORDEM_LISTAGEM_TITULOS,
+  });
+  await sincronizarStatusDasParcelas(titulos);
 
   const temFiltroDeParcela =
     filtros.status !== undefined || filtros.vencimentoDe !== undefined || filtros.vencimentoAte !== undefined;
   if (!temFiltroDeParcela) return titulos;
 
   return titulos.filter((titulo) => titulo.parcelas.some((parcela) => parcelaBateFiltroDeParcela(parcela, filtros)));
+}
+
+/** Versão da API: uma página por vez, ordenada por criação (mais novo primeiro). */
+export async function listarTitulosPaginado(
+  filialId: string,
+  tipo: TipoTitulo,
+  filtros: FiltroTitulosApi,
+  paginacao: Paginacao,
+): Promise<Pagina<TituloListado>> {
+  const where = whereListagemTitulos(filialId, tipo, filtros);
+  if (paginacao.cursor) {
+    // O cursor tem de estar dentro da própria listagem (filtros incluídos), senão o skip: 1 pula uma linha válida.
+    const doCursor = await prisma.titulo.findFirst({ where: { ...where, id: paginacao.cursor }, select: { id: true } });
+    if (!doCursor) throw new CursorInvalidoError();
+  }
+
+  const linhas = await prisma.titulo.findMany({
+    where,
+    include: INCLUDE_LISTAGEM_TITULOS,
+    orderBy: ORDEM_LISTAGEM_TITULOS,
+    ...argumentosDeCursor(paginacao),
+  });
+  const pagina = montarPagina(linhas, paginacao.limite);
+  await sincronizarStatusDasParcelas(pagina.itens);
+  return pagina;
 }
 
 export async function criarTitulo(

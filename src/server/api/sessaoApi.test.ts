@@ -104,6 +104,19 @@ describe("requireSessaoApi", () => {
     ).rejects.toMatchObject({ status: 401 });
   });
 
+  test("chave expirada -> 401 'Chave de API expirada'; com validade futura passa", async () => {
+    const gerada = await gerarChave(fixture.sessaoAdmin, fixture.usuarioId, "Chave com validade", 30);
+    const req = () =>
+      requireSessaoApi(
+        requisicao({ authorization: `Bearer ${gerada.chaveCompleta}`, "x-filial-cnpjcpf": fixture.filialCnpjCpf }),
+      );
+
+    await expect(req()).resolves.toMatchObject({ usuarioId: fixture.usuarioId });
+
+    await prisma.apiKey.update({ where: { id: gerada.id }, data: { expiraEm: new Date(Date.now() - 1000) } });
+    await expect(req()).rejects.toMatchObject({ status: 401, message: "Chave de API expirada" });
+  });
+
   test("sem X-Filial-CnpjCpf -> 400", async () => {
     await expect(
       requireSessaoApi(requisicao({ authorization: `Bearer ${chaveCompleta}` })),

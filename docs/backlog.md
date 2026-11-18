@@ -211,17 +211,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   Antes de priorizar, confirmar com a Hortitex quanto do faturamento passa
   pelo cartão.
 
-## API REST — robustez
-
-- **Paginação, rate limiting e expiração de chave** (spec da API v1;
-  varredura de 2026-11-16). Os `GET` de `/api/v1/titulos` e
-  `/api/v1/lancamentos-bancarios` devolvem a lista inteira da filial, o
-  que cresce sem limite com o uso (resposta lenta e risco de timeout para o
-  agente). Não há limite de requisições por chave: uma chave vazada ou um
-  agente em laço não têm freio. As chaves também não expiram (só revogação
-  manual). Fazer como um pacote só: paginação por cursor, limite por chave
-  com `429` e validade opcional na criação da chave.
-
 ## Produção e vendas
 
 - **Transferência parcial de lote entre locais** (7b; varredura de
