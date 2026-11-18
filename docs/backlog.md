@@ -187,14 +187,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
 
 ## Financeiro — controles e conciliação
 
-- **Categoria financeira sem checagem de filial nos lançamentos avulsos**
-  (revisão da conciliação em grupo, 2026-11-16). `validarDimensoesDaFilial`
-  confere centro de custo, centro de lucro, safra e projeto, mas não a
-  `categoriaFinanceiraId`: um id de categoria de outra filial passa em
-  `criarLancamentoDaLinha`, no lançamento da diferença do grupo e na
-  criação manual de lançamento (`lancamentoBancario.ts`). Incluir a
-  categoria na validação dos três caminhos.
-
 - **Recebimento por cartão: prazo de repasse, parcelas e taxa da operadora**
   (spec da venda a prazo em parcelas, 2026-11-16; não urgente, mas precisa
   ser tratado). Hoje a venda no cartão (`formaPagamento` `CARTAO` do pedido)
