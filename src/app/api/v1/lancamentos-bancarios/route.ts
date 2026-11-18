@@ -1,11 +1,11 @@
-import { executarRotaApi, ErroValidacaoApi, classificacaoDaQuery } from "@/server/api/executarRotaApi";
+import { executarRotaApi, ErroValidacaoApi, classificacaoDaQuery, paginacaoDaQuery } from "@/server/api/executarRotaApi";
 import {
   carregarCadastrosParaResolucao,
   resolverCodigoOpcional,
   resolverContaBancariaOpcional,
 } from "@/server/services/resolucaoCadastros";
 import { lancamentoManualSchema } from "@/lib/schemas/lancamentoBancario";
-import { criarLancamentoManual, listarLancamentos } from "@/server/services/lancamentoBancario";
+import { criarLancamentoManual, listarLancamentosPaginado } from "@/server/services/lancamentoBancario";
 import { requirePermission } from "@/server/auth/permissions";
 
 type CorpoLancamento = {
@@ -120,8 +120,12 @@ export async function POST(request: Request): Promise<Response> {
 export async function GET(request: Request): Promise<Response> {
   return executarRotaApi(request, async (sessao) => {
     requirePermission(sessao.perfil, "lancamento:ler");
-    const classificacao = classificacaoDaQuery(new URL(request.url));
-    const lancamentos = await listarLancamentos(sessao.filialId, { classificacao });
-    return Response.json(lancamentos, { status: 200 });
+    const url = new URL(request.url);
+    const pagina = await listarLancamentosPaginado(
+      sessao.filialId,
+      { classificacao: classificacaoDaQuery(url) },
+      paginacaoDaQuery(url),
+    );
+    return Response.json(pagina, { status: 200 });
   });
 }

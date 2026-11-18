@@ -77,7 +77,8 @@ describe("POST/GET /api/v1/lancamentos-bancarios", () => {
 
     expect(resposta.status).toBe(200);
     const corpo = await resposta.json();
-    expect(corpo.some((l: { descricao: string }) => l.descricao === "Lançamento via API")).toBe(true);
+    expect(corpo.itens.some((l: { descricao: string }) => l.descricao === "Lançamento via API")).toBe(true);
+    expect(corpo.proximoCursor).toBeNull();
   });
 
   test("POST com corpo que não é JSON válido -> 422, não 500", async () => {
@@ -145,8 +146,23 @@ describe("POST/GET /api/v1/lancamentos-bancarios", () => {
     const lista = await GET(
       new Request("http://localhost/api/v1/lancamentos-bancarios?classificacao=GERENCIAL", { headers: headers() }),
     );
-    const gerenciais = await lista.json();
+    const gerenciais = (await lista.json()).itens;
     expect(gerenciais.length).toBe(1);
     expect(gerenciais[0].classificacaoFiscal).toBe("GERENCIAL");
+  });
+
+  test("GET paginado: limite=1 devolve um item e o cursor leva ao próximo", async () => {
+    const get = (query: string) =>
+      GET(new Request(`http://localhost/api/v1/lancamentos-bancarios${query}`, { headers: headers() }));
+
+    const primeira = await (await get("?limite=1")).json();
+    expect(primeira.itens).toHaveLength(1);
+    expect(primeira.proximoCursor).toBe(primeira.itens[0].id);
+
+    const segunda = await (await get(`?limite=1&cursor=${primeira.proximoCursor}`)).json();
+    expect(segunda.itens).toHaveLength(1);
+    expect(segunda.itens[0].id).not.toBe(primeira.itens[0].id);
+
+    expect((await get("?cursor=nao-existe")).status).toBe(422);
   });
 });

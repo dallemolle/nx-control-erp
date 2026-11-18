@@ -1,4 +1,4 @@
-import { executarRotaApi, ErroValidacaoApi, classificacaoDaQuery } from "@/server/api/executarRotaApi";
+import { executarRotaApi, ErroValidacaoApi, classificacaoDaQuery, paginacaoDaQuery } from "@/server/api/executarRotaApi";
 import {
   carregarCadastrosParaResolucao,
   resolverContraparte,
@@ -7,7 +7,7 @@ import {
   resolverContaBancariaOpcional,
 } from "@/server/services/resolucaoCadastros";
 import { tituloSchema } from "@/lib/schemas/titulo";
-import { criarTitulo, listarTitulos } from "@/server/services/titulo";
+import { criarTitulo, listarTitulosPaginado } from "@/server/services/titulo";
 import { requirePermission } from "@/server/auth/permissions";
 import type { TipoTitulo } from "@prisma/client";
 
@@ -148,7 +148,12 @@ export async function GET(request: Request): Promise<Response> {
       throw new ErroValidacaoApi('Informe ?tipo=PAGAR ou ?tipo=RECEBER', ["tipo"]);
     }
 
-    const titulos = await listarTitulos(sessao.filialId, tipo, { classificacao: classificacaoDaQuery(url) });
-    return Response.json(titulos, { status: 200 });
+    const pagina = await listarTitulosPaginado(
+      sessao.filialId,
+      tipo,
+      { classificacao: classificacaoDaQuery(url) },
+      paginacaoDaQuery(url),
+    );
+    return Response.json(pagina, { status: 200 });
   });
 }
