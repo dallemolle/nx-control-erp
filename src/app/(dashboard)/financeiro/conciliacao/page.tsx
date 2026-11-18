@@ -109,7 +109,14 @@ export default async function ConciliacaoPage({
                 <LinhaExtratoActions
                   linhaExtratoId={linha.id}
                   status={linha.status}
-                  lancamentoVinculadoDescricao={linha.lancamentoBancario?.descricao ?? null}
+                  grupo={
+                    linha.grupoConciliacao
+                      ? {
+                          linhas: linha.grupoConciliacao._count.linhas,
+                          lancamentos: linha.grupoConciliacao.lancamentos.map((l) => l.descricao),
+                        }
+                      : null
+                  }
                   podeEscrever={podeEscrever}
                   categorias={categorias}
                   centrosCusto={centrosCusto.filter((c) => c.ativo)}

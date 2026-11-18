@@ -156,6 +156,7 @@ model Filial {
   auditLogs               AuditLog[]
   lancamentosBancarios    LancamentoBancario[]
   extratosImportados      ExtratoImportado[]
+  gruposConciliacao       GrupoConciliacao[]
   orcamentos              Orcamento[]
   orcamentosSafra         OrcamentoSafra[]
   requisicoesIdempotentes RequisicaoIdempotente[]
@@ -190,6 +191,7 @@ model Usuario {
   lancamentosBancarios      LancamentoBancario[]
   saldosBancariosInformados SaldoBancarioInformado[]
   extratosImportados        ExtratoImportado[]
+  gruposConciliacao         GrupoConciliacao[]
   apiKeys                   ApiKey[]
   requisicoesIdempotentes   RequisicaoIdempotente[]
   movimentosEstoque         MovimentoEstoque[]
@@ -518,6 +520,7 @@ model ContaBancaria {
   saldosInformados               SaldoBancarioInformado[]
   extratosImportados             ExtratoImportado[]
   linhasExtrato                  LinhaExtrato[]
+  gruposConciliacao              GrupoConciliacao[]
   pedidosVenda                   PedidoVenda[]
   configuracoesRecebimentoPadrao ConfiguracaoProducao[]   @relation("ContaRecebimentoPadrao")
   configuracoesCaixaPadrao       ConfiguracaoProducao[]   @relation("ContaCaixaPadrao")
@@ -719,6 +722,7 @@ model LancamentoBancario {
   conciliado            Boolean          @default(false)
   baixaId               String?
   transferenciaId       String?
+  grupoConciliacaoId    String?
   categoriaFinanceiraId String?
   centroCustoId         String?
   centroLucroId         String?
@@ -742,11 +746,12 @@ model LancamentoBancario {
   safra               Safra?               @relation(fields: [safraId], references: [id])
   projeto             Projeto?             @relation(fields: [projetoId], references: [id])
   usuario             Usuario              @relation(fields: [usuarioId], references: [id])
-  linhaExtrato        LinhaExtrato?
+  grupoConciliacao    GrupoConciliacao?    @relation(fields: [grupoConciliacaoId], references: [id])
 
   @@index([filialId])
   @@index([contaBancariaId])
   @@index([baixaId])
+  @@index([grupoConciliacaoId])
   @@index([filialId, classificacaoFiscal, data])
   @@map("lancamentos_bancarios")
 }
@@ -782,18 +787,39 @@ model LinhaExtrato {
   historico             String
   identificadorBancario String
   status                StatusLinhaExtrato @default(NAO_CONCILIADO)
-  lancamentoBancarioId  String?            @unique
+  grupoConciliacaoId    String?
   criadoEm              DateTime           @default(now())
 
-  extratoImportado   ExtratoImportado    @relation(fields: [extratoImportadoId], references: [id], onDelete: Cascade)
-  contaBancaria      ContaBancaria       @relation(fields: [contaBancariaId], references: [id])
-  lancamentoBancario LancamentoBancario? @relation(fields: [lancamentoBancarioId], references: [id])
+  extratoImportado ExtratoImportado  @relation(fields: [extratoImportadoId], references: [id], onDelete: Cascade)
+  contaBancaria    ContaBancaria     @relation(fields: [contaBancariaId], references: [id])
+  grupoConciliacao GrupoConciliacao? @relation(fields: [grupoConciliacaoId], references: [id])
 
   @@unique([contaBancariaId, identificadorBancario])
   @@index([contaBancariaId])
   @@index([extratoImportadoId])
   @@index([status])
+  @@index([grupoConciliacaoId])
   @@map("linhas_extrato")
+}
+
+/// Conciliação: N linhas do extrato ↔ M lançamentos da mesma conta, com somas
+/// (ENTRADA positiva, SAIDA negativa) iguais. O 1:1 é um grupo 1+1.
+model GrupoConciliacao {
+  id              String   @id @default(uuid())
+  filialId        String
+  contaBancariaId String
+  usuarioId       String
+  criadoEm        DateTime @default(now())
+
+  filial        Filial               @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  contaBancaria ContaBancaria        @relation(fields: [contaBancariaId], references: [id])
+  usuario       Usuario              @relation(fields: [usuarioId], references: [id])
+  linhas        LinhaExtrato[]
+  lancamentos   LancamentoBancario[]
+
+  @@index([filialId])
+  @@index([contaBancariaId])
+  @@map("grupos_conciliacao")
 }
 
 model SaldoBancarioInformado {
