@@ -103,6 +103,34 @@ describe("listagens paginadas", () => {
     ).rejects.toBeInstanceOf(CursorInvalidoError);
   });
 
+  test("títulos: cursor que não bate com o filtro da listagem -> CursorInvalidoError", async () => {
+    const gerencial = await prisma.titulo.create({
+      data: {
+        filialId: fixture.filialId,
+        tipo: "PAGAR",
+        fornecedorId: fixture.fornecedorId,
+        documento: "PAG-GER",
+        dataEmissao: MESMO_INSTANTE,
+        dataCompetencia: MESMO_INSTANTE,
+        categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+        criadoEm: MESMO_INSTANTE,
+        classificacaoFiscal: "GERENCIAL",
+      },
+    });
+    try {
+      await expect(
+        listarTitulosPaginado(
+          fixture.filialId,
+          "PAGAR",
+          { classificacao: "FISCAL" },
+          { limite: 2, cursor: gerencial.id },
+        ),
+      ).rejects.toBeInstanceOf(CursorInvalidoError);
+    } finally {
+      await prisma.titulo.delete({ where: { id: gerencial.id } });
+    }
+  });
+
   test("títulos: a listagem das telas continua devolvendo o array na mesma ordem", async () => {
     const titulos = await listarTitulos(fixture.filialId, "PAGAR");
     expect(titulos.map((t) => t.id)).toEqual(desc(idsTitulosPagar));
@@ -121,6 +149,34 @@ describe("listagens paginadas", () => {
     await expect(
       listarLancamentosPaginado(fixture.filialId, {}, { limite: 2, cursor: idLancamentoOutraFilial }),
     ).rejects.toBeInstanceOf(CursorInvalidoError);
+  });
+
+  test("lançamentos: cursor que não bate com o filtro da listagem -> CursorInvalidoError", async () => {
+    const gerencial = await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: MESMO_INSTANTE,
+        tipo: "ENTRADA",
+        valor: 10,
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+        conciliado: true,
+        descricao: "L-GER",
+        classificacaoFiscal: "GERENCIAL",
+      },
+    });
+    try {
+      await expect(
+        listarLancamentosPaginado(
+          fixture.filialId,
+          { classificacao: "FISCAL" },
+          { limite: 2, cursor: gerencial.id },
+        ),
+      ).rejects.toBeInstanceOf(CursorInvalidoError);
+    } finally {
+      await prisma.lancamentoBancario.delete({ where: { id: gerencial.id } });
+    }
   });
 
   test("lançamentos: a listagem das telas continua devolvendo o array", async () => {

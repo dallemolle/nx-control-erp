@@ -90,16 +90,18 @@ export async function listarLancamentosPaginado(
   opcoes: { classificacao?: FiltroClassificacao },
   paginacao: Paginacao,
 ) {
+  const where = { filialId, ...whereLancamentoPorClassificacao(opcoes.classificacao) };
   if (paginacao.cursor) {
+    // O cursor tem de estar dentro da própria listagem (filtro incluído), senão o skip: 1 pula uma linha válida.
     const doCursor = await prisma.lancamentoBancario.findFirst({
-      where: { id: paginacao.cursor, filialId },
+      where: { ...where, id: paginacao.cursor },
       select: { id: true },
     });
     if (!doCursor) throw new CursorInvalidoError();
   }
 
   const linhas = await prisma.lancamentoBancario.findMany({
-    where: { filialId, ...whereLancamentoPorClassificacao(opcoes.classificacao) },
+    where,
     include: { contaBancaria: { include: { banco: true } } },
     orderBy: ORDEM_LISTAGEM_LANCAMENTOS,
     ...argumentosDeCursor(paginacao),

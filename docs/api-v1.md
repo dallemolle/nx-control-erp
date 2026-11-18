@@ -156,7 +156,7 @@ Erros `422` (com `campos`): classificação/tipo inválidos, tipo de comprovante
 ### `GET /titulos?tipo=PAGAR` (ou `RECEBER`)
 Permissão: `titulo:ler`. Sem corpo. `?tipo=` é obrigatório.
 - `?classificacao=FISCAL` ou `?classificacao=GERENCIAL` (opcional): filtra pela classificação. Sem o parâmetro, devolve todos. Valor diferente desses dois → `422`.
-- **Paginado:** `?limite=` (1 a 500, padrão 100) e `?cursor=`. A resposta é `{ "itens": [...], "proximoCursor": "<id>" | null }`, do mais novo para o mais antigo. Para a próxima página, repita a mesma URL com `&cursor=<proximoCursor>`; `null` = acabou. `limite` fora da faixa ou cursor que não é desta listagem → `422` (`campos: ["limite"]` ou `["cursor"]`).
+- **Paginado:** `?limite=` (1 a 500, padrão 100) e `?cursor=`. A resposta é `{ "itens": [...], "proximoCursor": "<id>" | null }`, por data de criação do título (mais recente primeiro). Para a próxima página, repita a mesma URL com `&cursor=<proximoCursor>`; `null` = acabou. O `proximoCursor` é opaco: não interprete nem monte, só devolva como veio. `limite` fora da faixa ou cursor que não é desta listagem → `422` (`campos: ["limite"]` ou `["cursor"]`). Um `422` em `cursor` no meio da paginação (por exemplo, o registro foi alterado ou apagado) significa: comece de novo pela primeira página.
 
 ```
 GET /titulos?tipo=PAGAR&limite=100

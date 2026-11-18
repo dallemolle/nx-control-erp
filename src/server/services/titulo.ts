@@ -293,16 +293,15 @@ export async function listarTitulosPaginado(
   filtros: FiltroTitulosApi,
   paginacao: Paginacao,
 ): Promise<Pagina<TituloListado>> {
+  const where = whereListagemTitulos(filialId, tipo, filtros);
   if (paginacao.cursor) {
-    const doCursor = await prisma.titulo.findFirst({
-      where: { id: paginacao.cursor, filialId, tipo },
-      select: { id: true },
-    });
+    // O cursor tem de estar dentro da própria listagem (filtros incluídos), senão o skip: 1 pula uma linha válida.
+    const doCursor = await prisma.titulo.findFirst({ where: { ...where, id: paginacao.cursor }, select: { id: true } });
     if (!doCursor) throw new CursorInvalidoError();
   }
 
   const linhas = await prisma.titulo.findMany({
-    where: whereListagemTitulos(filialId, tipo, filtros),
+    where,
     include: INCLUDE_LISTAGEM_TITULOS,
     orderBy: ORDEM_LISTAGEM_TITULOS,
     ...argumentosDeCursor(paginacao),
