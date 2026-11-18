@@ -45,9 +45,21 @@ describe("gestão de chaves de API", () => {
     for (const chave of chaves) {
       expect(chave).not.toHaveProperty("chaveHash");
       expect(Object.keys(chave).sort()).toEqual(
-        ["criadoEm", "id", "nome", "prefixo", "revogadaEm", "ultimoUsoEm"].sort(),
+        ["criadoEm", "expiraEm", "id", "nome", "prefixo", "revogadaEm", "ultimoUsoEm"].sort(),
       );
     }
+  });
+
+  test("gerarChave sem validade deixa expiraEm vazio; com validade grava agora + dias", async () => {
+    const semValidade = await gerarChave(fixture.sessaoAdmin, fixture.usuarioId, "Sem validade");
+    expect((await prisma.apiKey.findUniqueOrThrow({ where: { id: semValidade.id } })).expiraEm).toBeNull();
+
+    const antes = Date.now();
+    const comValidade = await gerarChave(fixture.sessaoAdmin, fixture.usuarioId, "Validade 30", 30);
+    const { expiraEm } = await prisma.apiKey.findUniqueOrThrow({ where: { id: comValidade.id } });
+    const trintaDias = 30 * 24 * 60 * 60 * 1000;
+    expect(expiraEm!.getTime()).toBeGreaterThanOrEqual(antes + trintaDias);
+    expect(expiraEm!.getTime()).toBeLessThanOrEqual(Date.now() + trintaDias);
   });
 
   test("revogarChave marca revogadaEm", async () => {

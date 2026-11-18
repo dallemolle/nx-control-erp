@@ -32,6 +32,9 @@ export async function requireSessaoApi(request: Request): Promise<SessaoAtiva> {
   if (apiKey.revogadaEm) {
     throw new ApiAuthError(401, "Chave de API revogada");
   }
+  if (apiKey.expiraEm && apiKey.expiraEm <= new Date()) {
+    throw new ApiAuthError(401, "Chave de API expirada");
+  }
   if (!apiKey.usuario.ativo) {
     throw new ApiAuthError(401, "Usuário inativo");
   }

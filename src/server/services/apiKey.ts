@@ -2,6 +2,7 @@ import { randomBytes, createHash } from "crypto";
 import { prisma } from "@/server/db/client";
 import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
+import type { ValidadeChaveDias } from "@/lib/validadeChaveApi";
 
 export function hashChaveApi(chave: string): string {
   return createHash("sha256").update(chave).digest("hex");
@@ -11,6 +12,7 @@ export async function gerarChave(
   sessao: SessaoAtiva,
   usuarioId: string,
   nome: string,
+  validadeDias: ValidadeChaveDias | null = null,
 ): Promise<{ id: string; chaveCompleta: string; prefixo: string }> {
   requirePermission(sessao.perfil, "usuario:gerenciar");
   // Sem este escopo, um admin da empresa A emitiria uma chave valida para um
@@ -23,8 +25,10 @@ export async function gerarChave(
   const prefixo = chaveCompleta.slice(0, 11);
   const chaveHash = hashChaveApi(chaveCompleta);
 
+  const expiraEm = validadeDias === null ? null : new Date(Date.now() + validadeDias * 24 * 60 * 60 * 1000);
+
   const apiKey = await prisma.apiKey.create({
-    data: { usuarioId, nome, prefixo, chaveHash },
+    data: { usuarioId, nome, prefixo, chaveHash, expiraEm },
   });
 
   return { id: apiKey.id, chaveCompleta, prefixo };
@@ -48,7 +52,7 @@ export async function listarChaves(sessao: SessaoAtiva, usuarioId: string) {
   });
   return prisma.apiKey.findMany({
     where: { usuarioId },
-    select: { id: true, nome: true, prefixo: true, ultimoUsoEm: true, revogadaEm: true, criadoEm: true },
+    select: { id: true, nome: true, prefixo: true, ultimoUsoEm: true, revogadaEm: true, expiraEm: true, criadoEm: true },
     orderBy: { criadoEm: "desc" },
   });
 }
