@@ -220,3 +220,15 @@ recepção, OP, venda.
 
 **RN-33 — Participação de terceiros.** *(PAINEL!C10)*
 `% terceiros = kg líquidos de terceiros ÷ kg líquidos recebidos`, por fruta.
+
+**RN-34 — Transferência entre locais.** Transferir kg de um lote para outro
+local (perfis com `producao:escrever`): a quantidade é maior que zero e não
+passa do saldo; o destino é um local ativo da filial, diferente do atual. Se
+a família do lote (o original e os filhos de transferências anteriores) já
+tem um lote no destino, os kg são somados nele; se não tem e é o saldo
+inteiro, o lote só muda de local; se é parte, nasce o lote filho
+`ORIGINAL/N` no destino, com produto, data, validade, custo e liberação do
+original. Com movimento, só lote que pode sair (recepção não excluída, polpa
+de OP encerrada); lote vencido pode ser transferido. A transferência gera
+saída e entrada ligadas, conta como movimentação (impede excluir a recepção
+e reabrir ou cancelar a OP) e é auditada (D-36).

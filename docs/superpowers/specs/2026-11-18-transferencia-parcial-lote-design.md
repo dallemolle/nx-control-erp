@@ -1,6 +1,6 @@
 # Transferência parcial de lote entre locais
 
-Data: 2026-11-18 · Status: desenho aprovado em chat
+Data: 2026-11-18 · Status: implementada (2026-11-18)
 
 Item do backlog "Transferência parcial de lote entre locais" (7b; varredura
 de 2026-11-16). Hoje `moverLote` ([estoque.ts](../../../src/server/services/estoque.ts))

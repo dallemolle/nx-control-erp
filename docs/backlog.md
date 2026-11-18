@@ -203,15 +203,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   Antes de priorizar, confirmar com a Hortitex quanto do faturamento passa
   pelo cartão.
 
-## Produção e vendas
-
-- **Transferência parcial de lote entre locais** (7b; varredura de
-  2026-11-16). `moverLote` move o lote inteiro. Quando só parte vai para
-  outra câmara, ou o local fica errado ou o usuário recorre a ajustes de
-  saída/entrada, que quebram a rastreabilidade do lote e a ocupação por
-  local. Caminho: dividir o lote em um filho com o mesmo número/origem
-  (rastreável na 7f) no novo local.
-
 ## Produção — custo da OP
 
 - **Histórico do preço de referência do produto** (rateio do custo da OP,
