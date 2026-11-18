@@ -21,3 +21,14 @@ export function proximoCodigoDeLote(prefixo: string, codigosExistentes: string[]
   }, 0);
   return `${inicio}${String(maior + 1).padStart(2, "0")}`;
 }
+
+/** Código do próximo filho da família (D-36): `ORIGINAL/N`, N = maior sufixo numérico existente + 1. */
+export function proximoCodigoDeFilho(codigoOriginal: string, codigosExistentes: string[]): string {
+  const inicio = `${codigoOriginal}/`;
+  const maior = codigosExistentes.reduce((max, codigo) => {
+    if (!codigo.startsWith(inicio)) return max;
+    const sufixo = codigo.slice(inicio.length);
+    return /^\d+$/.test(sufixo) ? Math.max(max, Number(sufixo)) : max;
+  }, 0);
+  return `${inicio}${maior + 1}`;
+}

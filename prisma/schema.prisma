@@ -1046,6 +1046,8 @@ enum TipoMovimentoEstoque {
   ESTORNO_CONSUMO_OP
   PRODUCAO_OP
   ESTORNO_PRODUCAO_OP
+  TRANSFERENCIA_SAIDA
+  TRANSFERENCIA_ENTRADA
 }
 
 enum MotivoAjusteEstoque {
@@ -1075,6 +1077,8 @@ model Lote {
   liberadoEm          DateTime?
   liberadoPorId       String?
   motivoLiberacao     String?
+  /// Transferência parcial (D-36): o lote original da família; vazio no próprio original.
+  loteOrigemId        String?
   criadoEm            DateTime   @default(now())
   atualizadoEm        DateTime   @updatedAt
 
@@ -1088,10 +1092,14 @@ model Lote {
   itensPedidoVenda ItemPedidoVenda[]
   consumosOP       ConsumoOP[]
   producaoOP       ProducaoOP?
+  // NoAction (checado no fim do comando): apagar a filial ou a fixture remove original e filhos juntos.
+  loteOrigem       Lote?              @relation("FamiliaDoLote", fields: [loteOrigemId], references: [id], onDelete: NoAction)
+  filhos           Lote[]             @relation("FamiliaDoLote")
 
   @@unique([filialId, codigo])
   @@index([filialId, produtoId])
   @@index([filialId, validade])
+  @@index([loteOrigemId])
   @@map("lotes")
 }
 
@@ -1106,6 +1114,8 @@ model MovimentoEstoque {
   itemPedidoId String?
   consumoOpId  String?
   producaoOpId String?
+  /// Liga a saída e a entrada da mesma transferência (D-36).
+  transferenciaId String?
   usuarioId    String
   criadoEm     DateTime             @default(now())
 
@@ -1121,6 +1131,7 @@ model MovimentoEstoque {
   @@index([itemPedidoId])
   @@index([consumoOpId])
   @@index([producaoOpId])
+  @@index([transferenciaId])
   @@index([filialId, data])
   @@map("movimentos_estoque")
 }
