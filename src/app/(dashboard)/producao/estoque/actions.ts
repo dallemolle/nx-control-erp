@@ -2,27 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
-import { prisma } from "@/server/db/client";
 import { liberarLoteVencido, revogarLiberacaoLote, transferirLote } from "@/server/services/estoque";
+import { transferenciaLoteSchema } from "@/lib/schemas/transferenciaLote";
 
 export type FormState = { erro?: string; sucesso?: boolean };
-
-export async function moverLoteAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const sessao = await requireSessaoAtiva();
-  const loteId = String(formData.get("loteId") ?? "");
-  const localId = String(formData.get("localId") ?? "");
-  if (!localId) return { erro: "Selecione o local de destino" };
-
-  try {
-    const lote = await prisma.lote.findFirst({ where: { id: loteId, filialId: sessao.filialId }, select: { saldoKg: true } });
-    if (!lote) return { erro: "Lote não encontrado" };
-    await transferirLote(sessao, loteId, localId, Number(lote.saldoKg));
-  } catch (erro) {
-    return { erro: erro instanceof Error ? erro.message : "Ocorreu um erro inesperado" };
-  }
-  revalidatePath("/producao/estoque");
-  return { sucesso: true };
-}
 
 async function executarNoLote(acao: () => Promise<unknown>): Promise<FormState> {
   try {
@@ -32,6 +15,17 @@ async function executarNoLote(acao: () => Promise<unknown>): Promise<FormState> 
   }
   revalidatePath("/producao/estoque");
   return { sucesso: true };
+}
+
+export async function transferirLoteAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const sessao = await requireSessaoAtiva();
+  const dados = transferenciaLoteSchema.safeParse({
+    loteId: formData.get("loteId") ?? "",
+    localId: formData.get("localId") ?? "",
+    quantidadeKg: formData.get("quantidadeKg") ?? "",
+  });
+  if (!dados.success) return { erro: dados.error.issues[0].message };
+  return executarNoLote(() => transferirLote(sessao, dados.data.loteId, dados.data.localId, dados.data.quantidadeKg));
 }
 
 export async function liberarLoteAction(_prev: FormState, formData: FormData): Promise<FormState> {
