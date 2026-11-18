@@ -33,7 +33,9 @@ Atualização de decisão existente, na mesma branch:
 
 Uma migration:
 
-- `Lote.loteOrigemId String?` → `Lote` (`onDelete: Restrict`), relação
+- `Lote.loteOrigemId String?` → `Lote` (`onDelete: NoAction`, checado no fim
+  do comando: o `deleteMany` da limpeza dos testes e o cascade da filial
+  apagam original e filhos juntos; com `Restrict` o original falharia), relação
   `"FamiliaDoLote"` (`loteOrigem` / `filhos`), `@@index([loteOrigemId])`.
   Vazio no lote original; nos filhos aponta **sempre para o original**, nunca
   para um filho intermediário.
@@ -46,8 +48,13 @@ Uma migration:
 
 O filho é criado com `origem`, `produtoId`, `data`, `validade`, `custoKg` e os
 quatro campos de liberação copiados do original; `codigoManual = false`;
-`quantidadeInicialKg = 0` e `saldoKg = 0` — o saldo entra pelo movimento
-`TRANSFERENCIA_ENTRADA`, pelo caminho único `registrarMovimento`.
+`quantidadeInicialKg` = kg da transferência que o criou e `saldoKg = 0` — o
+saldo entra pelo movimento `TRANSFERENCIA_ENTRADA`, pelo caminho único
+`registrarMovimento` (mesmo padrão do lote da recepção).
+
+A numeração da recepção e da OP (`proximoCodigoDeLote`) só considera
+sequências numéricas depois do prefixo, então `FA-261110-01/1` não interfere
+nela.
 
 ## Regras da transferência
 
@@ -138,7 +145,8 @@ mostra a família inteira (no recall o que importa é a origem).
   `kgDesteLote` vira o kg da família, e cada OP lista quais lotes da família
   consumiu.
 - **Clientes:** itens de pedido de qualquer lote da família (caminho
-  `DIRETO`) e das polpas derivadas (`POLPA`); `loteVendido` já mostra qual.
+  `DIRETO`) e das polpas derivadas **e dos filhos delas** (`POLPA`, com o nº
+  da OP da polpa original); `loteVendido` já mostra qual.
 - **Destino de cada kg:** `destinoDoLote` recebe os movimentos e o saldo da
   família. `TRANSFERENCIA_*` não entra em nenhuma linha e se anula na soma,
   então `confere` continua valendo.
@@ -150,6 +158,14 @@ mostra a família inteira (no recall o que importa é a origem).
 
 Relatórios mensal, origem, processamento e painel leem `RecepcaoFruto` e
 `ProducaoOP`, não lotes: não mudam.
+
+### Etiqueta
+
+A etiqueta do filho usa o bloqueio da OP do original (polpa só depois de
+encerrada) e, se o original foi lançado com embalagens, o **peso por
+embalagem do original** em uma cópia (as caixas transferidas já têm etiqueta;
+a do filho é para reimpressão). Sem embalagens, o peso é a
+`quantidadeInicialKg` do filho. O nome do arquivo troca `/` por `-`.
 
 ### Tela de Estoque
 
