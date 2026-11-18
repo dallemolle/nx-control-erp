@@ -20,6 +20,7 @@ import {
   montarPagina,
   type Paginacao,
 } from "@/server/services/paginacao";
+import { validarReferenciasDoLancamento } from "@/server/services/referenciasDoLancamento";
 import type { Prisma, TipoComprovante } from "@prisma/client";
 
 function normalizarOpcional<T extends string>(valor: T | typeof SEM_VALOR | undefined): T | null {
@@ -36,38 +37,6 @@ async function buscarContaDaFilial(filialId: string, contaBancariaId: string) {
     throw new Error("Conta bancária não pertence à filial ativa");
   }
   return conta;
-}
-
-async function validarDimensoesDaFilial(
-  filialId: string,
-  dimensoes: {
-    centroCustoId: string | null;
-    centroLucroId: string | null;
-    safraId: string | null;
-    projetoId: string | null;
-  },
-): Promise<void> {
-  const referencias: [string, string | null, () => Promise<unknown>][] = [
-    ["Centro de custo", dimensoes.centroCustoId, () =>
-      prisma.centroCusto.findFirst({ where: { id: dimensoes.centroCustoId ?? "", filialId } }),
-    ],
-    ["Centro de lucro", dimensoes.centroLucroId, () =>
-      prisma.centroLucro.findFirst({ where: { id: dimensoes.centroLucroId ?? "", filialId } }),
-    ],
-    ["Safra", dimensoes.safraId, () =>
-      prisma.safra.findFirst({ where: { id: dimensoes.safraId ?? "", filialId } }),
-    ],
-    ["Projeto", dimensoes.projetoId, () =>
-      prisma.projeto.findFirst({ where: { id: dimensoes.projetoId ?? "", filialId } }),
-    ],
-  ];
-
-  for (const [rotulo, valor, buscar] of referencias) {
-    if (valor === null) continue;
-    if (!(await buscar())) {
-      throw new Error(`${rotulo} não pertence à filial ativa`);
-    }
-  }
 }
 
 /** `id` desempata lançamentos da mesma data — sem ele a paginação repete ou pula itens. */
@@ -153,11 +122,18 @@ export async function criarLancamentoManual(sessao: SessaoAtiva, dados: Lancamen
 
   const conta = await buscarContaDaFilial(sessao.filialId, dados.contaBancariaId);
 
+  const categoriaFinanceiraId = normalizarOpcional(dados.categoriaFinanceiraId);
   const centroCustoId = normalizarOpcional(dados.centroCustoId);
   const centroLucroId = normalizarOpcional(dados.centroLucroId);
   const safraId = normalizarOpcional(dados.safraId);
   const projetoId = normalizarOpcional(dados.projetoId);
-  await validarDimensoesDaFilial(sessao.filialId, { centroCustoId, centroLucroId, safraId, projetoId });
+  await validarReferenciasDoLancamento(sessao.filialId, {
+    categoriaFinanceiraId,
+    centroCustoId,
+    centroLucroId,
+    safraId,
+    projetoId,
+  });
 
   const classificacaoFiscal = dados.classificacaoFiscal ?? "FISCAL";
   const tipoComprovante = normalizarOpcional(dados.tipoComprovante) as TipoComprovante | null;
@@ -171,7 +147,7 @@ export async function criarLancamentoManual(sessao: SessaoAtiva, dados: Lancamen
     valor: dados.valor,
     descricao: dados.descricao,
     origem: "MANUAL" as const,
-    categoriaFinanceiraId: normalizarOpcional(dados.categoriaFinanceiraId),
+    categoriaFinanceiraId,
     centroCustoId,
     centroLucroId,
     safraId,

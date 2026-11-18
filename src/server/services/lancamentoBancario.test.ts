@@ -233,6 +233,37 @@ describe("dimensões analíticas em criarLancamentoManual", () => {
       await limparFixtureFinanceiro(outraFixture);
     }
   });
+
+  test("recusa categoria financeira que não pertence à filial ativa", async () => {
+    const outraFixture = await criarFixtureFinanceiro("LBD3", "TESOURARIA");
+    try {
+      await expect(
+        criarLancamentoManual(fixture.sessao, {
+          contaBancariaId: fixture.contaBancariaId,
+          data: new Date(),
+          tipo: "SAIDA",
+          valor: 10,
+          descricao: "Categoria de outra filial",
+          categoriaFinanceiraId: outraFixture.categoriaFinanceiraId,
+        }),
+      ).rejects.toThrow(/Categoria financeira não pertence à filial ativa/);
+    } finally {
+      await limparFixtureFinanceiro(outraFixture);
+    }
+  });
+
+  test("grava a categoria financeira da própria filial", async () => {
+    const lancamento = await criarLancamentoManual(fixture.sessao, {
+      contaBancariaId: fixture.contaBancariaId,
+      data: new Date(),
+      tipo: "SAIDA",
+      valor: 15,
+      descricao: "Com categoria",
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+    });
+
+    expect(lancamento.categoriaFinanceiraId).toBe(fixture.categoriaFinanceiraId);
+  });
 });
 
 describe("classificação fiscal × gerencial em lançamentos", () => {

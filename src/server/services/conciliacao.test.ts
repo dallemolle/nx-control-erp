@@ -661,6 +661,36 @@ describe("criarLancamentoDaLinha", () => {
     expect(lancamento.projetoId).toBe(projeto.id);
   });
 
+  test("recusa categoria financeira de outra filial e não concilia a linha", async () => {
+    const outra = await criarFixtureFinanceiro("CBC2", "TESOURARIA");
+    try {
+      const extrato = await importarExtratoOfx(
+        fixture.sessao,
+        fixture.contaBancariaId,
+        arquivoOfx(OFX_DUAS_TRANSACOES("CRIA-CAT-1", "CRIA-CAT-2")),
+      );
+      const linha = await prisma.linhaExtrato.findFirstOrThrow({
+        where: { extratoImportadoId: extrato.id, identificadorBancario: "CRIA-CAT-1" },
+      });
+
+      await expect(
+        criarLancamentoDaLinha(fixture.sessao, linha.id, {
+          descricao: "Categoria de outra filial",
+          categoriaFinanceiraId: outra.categoriaFinanceiraId,
+          centroCustoId: null,
+          centroLucroId: null,
+          safraId: null,
+          projetoId: null,
+        }),
+      ).rejects.toThrow(/Categoria financeira não pertence à filial ativa/);
+
+      const linhaDepois = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } });
+      expect(linhaDepois.grupoConciliacaoId).toBeNull();
+    } finally {
+      await limparFixtureFinanceiro(outra);
+    }
+  });
+
   test("perfil sem lancamento:escrever não consegue criar lançamento da linha", async () => {
     const fixtureFinanceiro = await criarFixtureFinanceiro("CBF2");
     try {
@@ -846,6 +876,31 @@ describe("conciliarEmGrupo", () => {
         lancamentoDiferenca: { descricao: "Nada", ...SEM_DIMENSOES },
       }),
     ).rejects.toThrow(/Não há diferença/);
+  });
+
+  test("rejeita lançar a diferença com categoria de outra filial e nada é gravado", async () => {
+    const outra = await criarFixtureFinanceiro("CBG4", "TESOURARIA");
+    try {
+      const [pix] = await linhas([{ fitid: "GRP-K-1", data: "20260912", valor: "995.00", nome: "PIX" }]);
+      const parcela = await lancamento(1000, "ENTRADA", "Parcela");
+
+      await expect(
+        conciliarEmGrupo(fixture.sessao, {
+          linhaIds: [pix.id],
+          lancamentoIds: [parcela.id],
+          lancamentoDiferenca: {
+            descricao: "Tarifa PIX",
+            ...SEM_DIMENSOES,
+            categoriaFinanceiraId: outra.categoriaFinanceiraId,
+          },
+        }),
+      ).rejects.toThrow(/Categoria financeira não pertence à filial ativa/);
+
+      expect((await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: pix.id } })).grupoConciliacaoId).toBeNull();
+      expect((await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: parcela.id } })).conciliado).toBe(false);
+    } finally {
+      await limparFixtureFinanceiro(outra);
+    }
   });
 
   test("rejeita item já conciliado", async () => {
