@@ -381,6 +381,16 @@ export function exigirLiberacao(lote: { codigo: string; validade: Date; liberado
   throw new Error(lote.liberadoAte ? `${venceu}; a liberação vale até ${formatarData(lote.liberadoAte)}` : venceu);
 }
 
+/** Ids e códigos do original e de todos os filhos (D-36). */
+async function familiaDoLote(filialId: string, lote: { id: string; loteOrigemId: string | null }) {
+  const origemId = lote.loteOrigemId ?? lote.id;
+  return prisma.lote.findMany({
+    where: { filialId, OR: [{ id: origemId }, { loteOrigemId: origemId }] },
+    select: { id: true, codigo: true, saldoKg: true },
+    orderBy: { criadoEm: "asc" },
+  });
+}
+
 function autorizarLiberacao(sessao: SessaoAtiva) {
   requirePermission(sessao.perfil, "estoque:liberarVencido");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
@@ -409,7 +419,8 @@ export async function liberarLoteVencido(
   if (recepcaoExcluida(lote)) throw new Error(`O lote ${lote.codigo} é de uma recepção excluída`);
   const bloqueio = bloqueioDaProducao(lote);
   if (bloqueio) throw new Error(bloqueio);
-  if (Number(lote.saldoKg) <= 0) throw new Error(`O lote ${lote.codigo} está zerado`);
+  const familia = await familiaDoLote(sessao.filialId, lote);
+  if (familia.every((l) => Number(l.saldoKg) <= 0)) throw new Error(`O lote ${lote.codigo} está zerado`);
   if (!loteVencidoNaData(lote.validade, hoje)) throw new Error(`O lote ${lote.codigo} ainda não venceu`);
 
   const situacao = situacaoLiberacao(lote.validade, lote.produto.diasLiberacaoVencido, hoje);
@@ -420,8 +431,8 @@ export async function liberarLoteVencido(
   const motivoLimpo = motivo.trim();
   if (!motivoLimpo) throw new Error("Informe o motivo da liberação");
 
-  await prisma.lote.update({
-    where: { id: lote.id },
+  await prisma.lote.updateMany({
+    where: { id: { in: familia.map((l) => l.id) } },
     data: {
       liberadoAte: situacao.liberadoAte,
       liberadoEm: new Date(),
@@ -437,7 +448,7 @@ export async function liberarLoteVencido(
     entidadeId: lote.id,
     acao: "LIBERAR_VENCIDO",
     anterior: lote.liberadoAte ? { liberadoAte: lote.liberadoAte, motivo: lote.motivoLiberacao } : null,
-    novo: { liberadoAte: situacao.liberadoAte, motivo: motivoLimpo },
+    novo: { liberadoAte: situacao.liberadoAte, motivo: motivoLimpo, familia: familia.map((l) => l.codigo) },
   });
   return { liberadoAte: situacao.liberadoAte };
 }
@@ -448,9 +459,10 @@ export async function revogarLiberacaoLote(sessao: SessaoAtiva, loteId: string):
   const lote = await prisma.lote.findFirst({ where: { id: loteId, filialId: sessao.filialId } });
   if (!lote) throw new Error("Lote não encontrado");
   if (!lote.liberadoAte) throw new Error(`O lote ${lote.codigo} não está liberado`);
+  const familia = await familiaDoLote(sessao.filialId, lote);
 
-  await prisma.lote.update({
-    where: { id: lote.id },
+  await prisma.lote.updateMany({
+    where: { id: { in: familia.map((l) => l.id) } },
     data: { liberadoAte: null, liberadoEm: null, liberadoPorId: null, motivoLiberacao: null },
   });
   await registrarAuditoria({
@@ -461,6 +473,6 @@ export async function revogarLiberacaoLote(sessao: SessaoAtiva, loteId: string):
     entidadeId: lote.id,
     acao: "REVOGAR_LIBERACAO",
     anterior: { liberadoAte: lote.liberadoAte, motivo: lote.motivoLiberacao },
-    novo: null,
+    novo: { familia: familia.map((l) => l.codigo) },
   });
 }

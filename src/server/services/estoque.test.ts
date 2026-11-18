@@ -354,6 +354,35 @@ describe("liberação de lote vencido (D-35)", () => {
     );
     await expect(revogarLiberacaoLote(fx.sessao("VENDAS"), lote.id)).rejects.toThrow(PermissionError);
   });
+
+  test("liberar e revogar valem para a família inteira (D-36)", async () => {
+    const camara2 = await prisma.localArmazenamento.create({
+      data: { filialId: fx.filialAId, nome: "Câmara 02", tipo: "CAMARA_FRIA" },
+    });
+    const original = await polpa("2026-11-12", 10);
+    const filho = await transferirLote(fx.sessao("PRODUCAO"), original.id, camara2.id, 6, hoje);
+    // O resto também vai para o filho: o original fica zerado e a família ainda tem saldo.
+    await transferirLote(fx.sessao("PRODUCAO"), original.id, camara2.id, 4, hoje);
+    expect(Number((await lerLote(original.id)).saldoKg)).toBe(0);
+
+    await liberar(original.id);
+    expect((await lerLote(filho.loteDestinoId)).liberadoAte).toEqual(d("2026-11-17"));
+    expect((await lerLote(filho.loteDestinoId)).motivoLiberacao).toBe("Uso imediato");
+
+    await revogarLiberacaoLote(fx.sessao("GESTOR"), filho.loteDestinoId);
+    expect((await lerLote(original.id)).liberadoAte).toBeNull();
+    expect((await lerLote(filho.loteDestinoId)).liberadoAte).toBeNull();
+  });
+
+  test("filho criado depois da liberação nasce liberado", async () => {
+    const camara3 = await prisma.localArmazenamento.create({
+      data: { filialId: fx.filialAId, nome: "Câmara 03", tipo: "CAMARA_FRIA" },
+    });
+    const original = await polpa("2026-11-12", 10);
+    await liberar(original.id);
+    const filho = await transferirLote(fx.sessao("PRODUCAO"), original.id, camara3.id, 3, hoje);
+    expect((await lerLote(filho.loteDestinoId)).liberadoAte).toEqual(d("2026-11-17"));
+  });
 });
 
 describe("transferência de lote (D-36)", () => {
