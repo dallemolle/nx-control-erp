@@ -3,6 +3,10 @@ import { Prisma } from "@prisma/client";
 import { diferencaDoGrupo } from "@/lib/conciliacaoGrupo";
 import { formatarMoeda } from "@/lib/formatacao";
 import { garantirComprovanteValido } from "@/server/services/classificacaoFiscal";
+import {
+  validarReferenciasDoLancamento,
+  type ReferenciasDoLancamento,
+} from "@/server/services/referenciasDoLancamento";
 import { prisma } from "@/server/db/client";
 import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permissions";
 import { registrarAuditoria } from "@/server/audit/registrar";
@@ -436,60 +440,18 @@ export async function desconciliar(sessao: SessaoAtiva, linhaExtratoId: string):
   });
 }
 
-/**
- * Repetido de `lancamentoBancario.ts` — `conciliacao.ts` e
- * `lancamentoBancario.ts` não compartilham um módulo de validação hoje;
- * extrair um helper comum é uma limpeza futura fora do escopo desta
- * entrega.
- */
-async function validarDimensoesDaFilial(
-  filialId: string,
-  dimensoes: {
-    centroCustoId: string | null;
-    centroLucroId: string | null;
-    safraId: string | null;
-    projetoId: string | null;
-  },
-): Promise<void> {
-  const referencias: [string, string | null, () => Promise<unknown>][] = [
-    ["Centro de custo", dimensoes.centroCustoId, () =>
-      prisma.centroCusto.findFirst({ where: { id: dimensoes.centroCustoId ?? "", filialId } }),
-    ],
-    ["Centro de lucro", dimensoes.centroLucroId, () =>
-      prisma.centroLucro.findFirst({ where: { id: dimensoes.centroLucroId ?? "", filialId } }),
-    ],
-    ["Safra", dimensoes.safraId, () =>
-      prisma.safra.findFirst({ where: { id: dimensoes.safraId ?? "", filialId } }),
-    ],
-    ["Projeto", dimensoes.projetoId, () =>
-      prisma.projeto.findFirst({ where: { id: dimensoes.projetoId ?? "", filialId } }),
-    ],
-  ];
-
-  for (const [rotulo, valor, buscar] of referencias) {
-    if (valor === null) continue;
-    if (!(await buscar())) {
-      throw new Error(`${rotulo} não pertence à filial ativa`);
-    }
-  }
-}
-
 /** Dados de um lançamento avulso criado na conciliação (a partir da linha ou da diferença do grupo). */
-export type DadosLancamentoAvulso = {
+export type DadosLancamentoAvulso = ReferenciasDoLancamento & {
   descricao: string;
-  categoriaFinanceiraId: string | null;
-  centroCustoId: string | null;
-  centroLucroId: string | null;
-  safraId: string | null;
-  projetoId: string | null;
   /** Omitida = FISCAL (tarifas, IOF e rendimentos são documentos bancários). */
   classificacaoFiscal?: ClassificacaoFiscal;
   tipoComprovante?: TipoComprovante | null;
 };
 
-/** Valida dimensões e comprovante e devolve os campos prontos para o `create`. */
+/** Valida categoria, dimensões e comprovante e devolve os campos prontos para o `create`. */
 async function prepararLancamentoAvulso(filialId: string, dados: DadosLancamentoAvulso) {
-  await validarDimensoesDaFilial(filialId, {
+  await validarReferenciasDoLancamento(filialId, {
+    categoriaFinanceiraId: dados.categoriaFinanceiraId,
     centroCustoId: dados.centroCustoId,
     centroLucroId: dados.centroLucroId,
     safraId: dados.safraId,

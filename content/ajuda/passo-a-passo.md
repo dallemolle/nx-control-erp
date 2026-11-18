@@ -216,11 +216,13 @@ Mostra os lotes com saldo, em ordem de validade (o que vence primeiro aparece pr
 | Vencido | Passou da validade. |
 | Zerado | Sem saldo. |
 
-Filtre por produto, local e status, ou mude a **data de referência** para ver como estava (ou estará) o estoque em outro dia. A aba **Por produto e local** soma o saldo e o valor a custo, e mostra a ocupação de cada local que tem capacidade cadastrada. O botão **Mover** troca o local do lote inteiro.
+Filtre por produto, local e status, ou mude a **data de referência** para ver como estava (ou estará) o estoque em outro dia. A aba **Por produto e local** soma o saldo e o valor a custo, e mostra a ocupação de cada local que tem capacidade cadastrada.
+
+O botão **Transferir** leva o lote, ou parte dele, para outro local: escolha o local e a quantidade em kg (já vem com o saldo inteiro). Com o saldo inteiro, o lote só muda de local. Com parte dele, a parte vira um lote novo no destino com o mesmo código e uma barra no fim (`FA-261110-01/1`, `/2`…), com a mesma validade, custo e origem; se já existe um lote dessa família no destino, a quantidade é somada nele (devolver para o local de origem junta de volta). Polpa de OP aberta só pode mudar de local inteira.
 
 No topo, três cartões contam os lotes com saldo e os kg em cada situação (OK, Vencendo, Vencido) na data de referência. Clique num cartão para ver só esses lotes; clique de novo para limpar. O PDF traz esse resumo e a aba que estiver aberta (a lista de lotes, ou o saldo por produto e local com a ocupação).
 
-**Liberar lote vencido:** lote vencido não sai em pedido nem em OP. Quando ele ainda pode ser aproveitado, o Gestor (ou o Administrador) clica em **Liberar** no lote e informa o motivo. A liberação vale até a validade mais os **dias de liberação após vencimento** do produto (cadastro do produto, seção 7.6): com 5 dias, um lote que venceu em 10/11 pode sair até 15/11. Se o produto não tiver esse prazo, a tela pede para configurá-lo; se o prazo já passou, o lote não pode mais ser liberado. Enquanto valer, o lote mostra "Movimentação liberada até dd/mm/aaaa" (passe o mouse para ver quem liberou e o motivo), e qualquer pessoa que lança pedido ou OP pode usá-lo; o motivo é copiado para o item. **Revogar** desfaz a liberação. As duas ações ficam na auditoria.
+**Liberar lote vencido:** lote vencido não sai em pedido nem em OP. Quando ele ainda pode ser aproveitado, o Gestor (ou o Administrador) clica em **Liberar** no lote e informa o motivo. A liberação vale até a validade mais os **dias de liberação após vencimento** do produto (cadastro do produto, seção 7.6): com 5 dias, um lote que venceu em 10/11 pode sair até 15/11. Se o produto não tiver esse prazo, a tela pede para configurá-lo; se o prazo já passou, o lote não pode mais ser liberado. Enquanto valer, o lote mostra "Movimentação liberada até dd/mm/aaaa" (passe o mouse para ver quem liberou e o motivo), e qualquer pessoa que lança pedido ou OP pode usá-lo; o motivo é copiado para o item. **Revogar** desfaz a liberação. As duas ações ficam na auditoria. Num lote dividido por transferência, liberar ou revogar vale para todos os lotes da família.
 
 ### 5.4. Ajustes de estoque
 
@@ -230,7 +232,7 @@ Use para tudo que sai ou entra no estoque sem ser recepção ou venda: lote venc
 
 Em PDF de 100 × 70 mm, pronta para imprimir: empresa e CNPJ da filial, endereço, produto, lote, data de recepção ou fabricação, validade, peso líquido, conservação, o texto do produto e o registro ADEPARA da filial. Abre pelo botão **Etiqueta** na recepção, no estoque e na aba Produção da OP encerrada.
 
-Quando a polpa foi lançada com o nº de embalagens, sai **uma etiqueta por embalagem**, cada uma com o peso da embalagem (kg do lote ÷ embalagens).
+Quando a polpa foi lançada com o nº de embalagens, sai **uma etiqueta por embalagem**, cada uma com o peso da embalagem (kg do lote ÷ embalagens). A etiqueta de um lote criado por transferência sai com uma cópia, com o peso de uma embalagem do lote original.
 
 O endereço é configurado em Administração → Configuração de produção. O texto do produto (ingredientes, "manter congelado a −18 °C" e outros dizeres obrigatórios) fica no cadastro de cada produto.
 
@@ -241,6 +243,7 @@ Em **Produção → Rastreabilidade**, digite o código do lote e clique em **Ra
 - **Lote de polpa:** mostra a OP que o produziu (branqueamento, rendimento, balanço), os lotes de fruto usados, com a origem de cada um, e os clientes que compraram a polpa.
 - **Lote de fruto:** mostra a recepção (talhão ou produtor), as OPs que o usaram, os lotes de polpa gerados e **todos os clientes** que compraram o fruto ou qualquer polpa dessas OPs. Num recall, essa é a lista de quem avisar.
 - **Destino do lote:** quanto entrou, quanto foi vendido, usado em OP ou ajustado (amostra, avaria, vencido…) e o saldo.
+- **Lote dividido por transferência:** digitar o código original ou qualquer `/N` mostra a família inteira: a seção **Lotes da família** lista cada lote com local e saldo, e a origem, as OPs, os clientes e o destino somam todos eles.
 
 Pedidos e OPs cancelados e linhas removidas ficam ocultos. Use **Mostrar cancelados** para vê-los. O **PDF** traz o relatório completo para a fiscalização; **CSV** e **Excel** trazem a lista de clientes com contato.
 

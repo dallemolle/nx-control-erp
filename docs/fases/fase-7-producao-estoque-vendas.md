@@ -48,7 +48,9 @@ preço de referência do produto, e a OP não encerra sem preço. Venda a
 prazo em parcelas concluída em 2026-11-16 (D-12 revista): prazos em dias,
 até 60 parcelas ajustáveis, condição gravada no pedido. Implantação
 (D-17) fechada: a filial da Hortitex é criada pelo Administrador e
-implantada do zero, sem importação.
+implantada do zero, sem importação. Transferência parcial de lote concluída em
+2026-11-18 (D-36): parte do lote vai para outro local como lote filho
+`ORIGINAL/N`, que segue o original na venda, OP, liberação e rastreabilidade.
 
 ## Escopo
 

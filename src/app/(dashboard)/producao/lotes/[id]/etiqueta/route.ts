@@ -27,20 +27,34 @@ export async function GET(_request: Request, ctx: { params: Promise<{ id: string
           ordemProducao: { select: { status: true } },
         },
       },
+      loteOrigem: {
+        select: {
+          producaoOP: {
+            select: {
+              embalagens: true,
+              quantidadeKg: true,
+              removidoEm: true,
+              ordemProducao: { select: { status: true } },
+            },
+          },
+        },
+      },
     },
   });
   if (!lote) return new Response("Lote não encontrado", { status: 404 });
 
+  // Filho (D-36): a OP e as embalagens são as do original.
+  const producao = lote.loteOrigem ? lote.loteOrigem.producaoOP : lote.producaoOP;
   // Polpa só ganha etiqueta depois de a OP ser encerrada (D-07).
-  const bloqueio = bloqueioDaProducao({ codigo: lote.codigo, producaoOP: lote.producaoOP });
+  const bloqueio = bloqueioDaProducao({ codigo: lote.codigo, producaoOP: producao });
   if (bloqueio) {
-    const aberta = lote.producaoOP?.ordemProducao.status === "ABERTA" && !lote.producaoOP.removidoEm;
+    const aberta = producao?.ordemProducao.status === "ABERTA" && !producao.removidoEm;
     return new Response(aberta ? "Encerre a OP antes de imprimir a etiqueta" : bloqueio, { status: 409 });
   }
 
-  const embalagens = lote.producaoOP?.embalagens ?? null;
+  const embalagens = producao?.embalagens ?? null;
   const pesoLiquidoKg = embalagens
-    ? arredondar(Number(lote.producaoOP!.quantidadeKg) / embalagens, 3)
+    ? arredondar(Number(producao!.quantidadeKg) / embalagens, 3)
     : Number(lote.quantidadeInicialKg);
 
   const configuracao = await obterConfiguracaoProducao(sessao.filialId);
@@ -57,13 +71,14 @@ export async function GET(_request: Request, ctx: { params: Promise<{ id: string
     cnpj: lote.filial.cnpjCpf,
     endereco: configuracao.enderecoEtiqueta,
     texto: lote.produto.textoEtiqueta,
-    copias: embalagens ?? 1,
+    // As caixas transferidas já têm etiqueta; a do filho é reimpressão.
+    copias: lote.loteOrigem ? 1 : (embalagens ?? 1),
   });
 
   return new Response(Buffer.from(pdf), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="etiqueta-${lote.codigo}.pdf"`,
+      "Content-Disposition": `inline; filename="etiqueta-${lote.codigo.replaceAll("/", "-")}.pdf"`,
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
     },

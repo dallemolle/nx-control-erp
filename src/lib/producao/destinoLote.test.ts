@@ -75,3 +75,12 @@ describe("linhasDoDestino", () => {
     expect(Object.is(linhas.find((l) => l.rotulo === "Vendido")!.kg, 0)).toBe(true);
   });
 });
+
+test("transferências entre lotes da família se anulam e não viram linha (D-36)", () => {
+  const destino = destinoDoLote(
+    [mov("ENTRADA", 100), mov("TRANSFERENCIA_SAIDA", -40), mov("TRANSFERENCIA_ENTRADA", 40), mov("VENDA", -10)],
+    90,
+  );
+  expect(destino).toMatchObject({ entradaKg: 100, vendidoKg: 10, consumidoOpKg: 0, saldoKg: 90, confere: true });
+  expect(linhasDoDestino(destino).map((l) => l.rotulo)).toEqual(["Entrada", "Vendido", "Consumido em OP", "Saldo"]);
+});

@@ -16,7 +16,7 @@ import { ExportarLinks } from "../../_shared/exportar-links";
 import { BarraDeFiltros } from "../_shared/barra-de-filtros";
 import { LinkRastreio } from "../_shared/link-rastreio";
 import { StatusLoteBadge } from "../_shared/status-lote-badge";
-import { MoverLoteDialog } from "./mover-lote-dialog";
+import { TransferirLoteDialog } from "./transferir-lote-dialog";
 import { LiberarLoteDialog, RevogarLiberacaoDialog } from "./liberar-lote-dialog";
 import { filtrosDoEstoque, type ParametrosEstoque } from "./filtros";
 import { ResumoStatusEstoque } from "./resumo-status";
@@ -27,9 +27,9 @@ const PERCENTUAL = new Intl.NumberFormat("pt-BR", { style: "percent", maximumFra
 export default async function EstoquePage({ searchParams }: { searchParams: Promise<ParametrosEstoque> }) {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "producao:ler");
-  const podeMover = podeExecutar(sessao.perfil, "producao:escrever") && sessao.podeAlterarFilial;
+  const podeTransferir = podeExecutar(sessao.perfil, "producao:escrever") && sessao.podeAlterarFilial;
   const permissoesLote = {
-    podeMover,
+    podeTransferir,
     podeLiberar: podeExecutar(sessao.perfil, "estoque:liberarVencido") && sessao.podeAlterarFilial,
     podeEditarProduto: podeEscreverCadastroProducao(sessao.perfil, sessao.podeAlterarFilial),
   };
@@ -133,9 +133,9 @@ async function VisaoLotes({
   query: string;
   produtos: { id: string; codigo: string; descricao: string }[];
   locais: { id: string; nome: string }[];
-  permissoes: { podeMover: boolean; podeLiberar: boolean; podeEditarProduto: boolean };
+  permissoes: { podeTransferir: boolean; podeLiberar: boolean; podeEditarProduto: boolean };
 }) {
-  const { podeMover, podeLiberar, podeEditarProduto } = permissoes;
+  const { podeTransferir, podeLiberar, podeEditarProduto } = permissoes;
   // Liberação usa o dia de hoje, não a data de referência da consulta (D-35).
   const hoje = hojeDeCalendario();
   const lotes = await listarLotes(filialId, filtros, referencia);
@@ -247,8 +247,11 @@ async function VisaoLotes({
                         Etiqueta
                       </Button>
                     )}
-                    {podeMover && Number(lote.saldoKg) > 0 ? (
-                      <MoverLoteDialog lote={{ id: lote.id, codigo: lote.codigo, localId: lote.localId }} locais={locais} />
+                    {podeTransferir && Number(lote.saldoKg) > 0 ? (
+                      <TransferirLoteDialog
+                        lote={{ id: lote.id, codigo: lote.codigo, localId: lote.localId, saldoKg: Number(lote.saldoKg) }}
+                        locais={locais}
+                      />
                     ) : null}
                     {liberavel && liberado && lote.liberadoAte ? (
                       <RevogarLiberacaoDialog lote={{ id: lote.id, codigo: lote.codigo }} liberadoAte={lote.liberadoAte} />

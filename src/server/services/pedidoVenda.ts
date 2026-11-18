@@ -19,8 +19,9 @@ import {
   bloqueioDaProducao,
   exigirLiberacao,
   LOTE_LIBERADO,
+  recepcaoExcluida,
   registrarMovimento,
-  SELECT_BLOQUEIO_PRODUCAO,
+  SELECT_SITUACAO_LOTE,
 } from "./estoque";
 import { criarTituloInterno } from "./titulo";
 import { efetivarBaixa } from "./baixa";
@@ -69,7 +70,7 @@ export async function criarPedido(sessao: SessaoAtiva, dados: PedidoVendaFormVal
   const loteIds = dados.itens.map((item) => item.loteId);
   const lotes = await prisma.lote.findMany({
     where: { id: { in: loteIds }, filialId: sessao.filialId },
-    include: { recepcao: { select: { status: true } }, ...SELECT_BLOQUEIO_PRODUCAO },
+    include: SELECT_SITUACAO_LOTE,
   });
   const lotesPorId = new Map(lotes.map((lote) => [lote.id, lote]));
 
@@ -80,7 +81,7 @@ export async function criarPedido(sessao: SessaoAtiva, dados: PedidoVendaFormVal
     if (!lote) throw new Error("Lote não encontrado");
     if (vistos.has(lote.id)) throw new Error(`O lote ${lote.codigo} aparece mais de uma vez no pedido`);
     vistos.add(lote.id);
-    if (lote.recepcao?.status === "CANCELADA") throw new Error(`O lote ${lote.codigo} é de uma recepção excluída`);
+    if (recepcaoExcluida(lote)) throw new Error(`O lote ${lote.codigo} é de uma recepção excluída`);
     const bloqueio = bloqueioDaProducao(lote);
     if (bloqueio) throw new Error(bloqueio);
     if (loteVencidoNaData(lote.validade, dados.data)) {

@@ -27,6 +27,7 @@ import {
 import { cancelarPedido, criarPedido } from "./pedidoVenda";
 import { criarAjuste } from "./ajusteEstoque";
 import { buscarLotes, descreverOrigem, rastrearLote } from "./rastreabilidade";
+import { transferirLote } from "./estoque";
 
 /**
  * Cenário: fruto próprio (100 kg), de terceiro (50 kg) e extra (30 kg).
@@ -277,5 +278,127 @@ describe("rastreabilidade", () => {
     expect(codigos).not.toContain(lotes.grosso);
     expect(await buscarLotes(fx.sessao("ADMINISTRADOR", { filial: "B" }), "FA-261110")).toEqual([]);
     expect(await buscarLotes(adm(), "  ")).toEqual([]);
+  });
+});
+
+/**
+ * Família: fruto 100 kg; 40 kg para a câmara (/1); OP consome 30 do /1 e produz 20 de polpa;
+ * 5 kg da polpa vão para a recepção (polpa /1). Vendas: 10 do fruto /1 e 5 da polpa /1.
+ */
+describe("rastreabilidade por família (D-36)", () => {
+  let fx: FixtureProducao;
+  let cat: CatalogoDeTeste;
+  let cad: CadastrosDeVenda;
+  const adm = () => fx.sessao("ADMINISTRADOR");
+  const hoje = new Date("2026-11-10T00:00:00.000Z");
+  const cod = { fruto: "", frutoFilho: "", polpa: "", polpaFilho: "", op: "" };
+
+  beforeAll(async () => {
+    fx = await criarFixtureProducao("rastreio-familia");
+    cat = await criarCatalogoDeTeste(fx);
+    cad = await criarCadastrosDeVenda(fx);
+    await configurarVendas(fx, cad);
+    await prisma.configuracaoProducao.update({
+      where: { filialId: fx.filialAId },
+      data: { categoriaCompraFrutoId: cat.categoriaCompraId, prazoPagamentoProdutorDias: 7 },
+    });
+    const recepcao = await criarRecepcao(
+      adm(),
+      recepcaoSchema.parse({
+        data: "2026-11-10",
+        produtoId: cat.produtoFrutoId,
+        localId: cat.localRecepcaoId,
+        unidade: "KG",
+        descarte: "0",
+        origem: "PROPRIA",
+        talhaoId: cat.talhaoId,
+        pesoBruto: "100",
+      }),
+    );
+    cod.fruto = recepcao.codigoLote;
+    const frutoFilho = await transferirLote(adm(), recepcao.loteId, cat.localCamaraId, 40, hoje);
+    cod.frutoFilho = frutoFilho.codigoDestino;
+
+    const op = await criarOP(adm(), cabecalhoOPSchema.parse({ data: "2026-11-10", frutaId: cat.frutaId }));
+    await adicionarConsumo(adm(), op.id, consumoSchema.parse({ loteId: frutoFilho.loteDestinoId, quantidadeKg: 30 }));
+    const polpa = await adicionarProducao(
+      adm(),
+      op.id,
+      producaoSchema.parse({ produtoId: cat.produtoPolpaId, quantidadeKg: 20, localId: cat.localCamaraId }),
+    );
+    await atualizarProcessoOP(
+      adm(),
+      op.id,
+      processoOPSchema.parse({
+        branqueamentoTemperaturaC: "85",
+        branqueamentoTempoS: "12",
+        aguaLitros: "0",
+        carocoResiduoKg: "9",
+        perdaKg: "1",
+      }),
+    );
+    await encerrarOP(adm(), op.id, { confirmarVerificar: true });
+    cod.polpa = polpa.codigoLote;
+    cod.op = op.numero;
+    const polpaFilho = await transferirLote(adm(), polpa.loteId, cat.localRecepcaoId, 5, hoje);
+    cod.polpaFilho = polpaFilho.codigoDestino;
+
+    const vender = (loteId: string, kg: number) =>
+      criarPedido(
+        adm(),
+        pedidoVendaSchema.parse({
+          data: "2026-11-10",
+          clienteId: cad.clienteId,
+          formaPagamento: "A_PRAZO",
+          parcelas: parcelaUnicaAPrazo([{ quantidadeKg: kg, precoKg: 10 }]),
+          retiraNaPropriedade: "true",
+          itens: JSON.stringify([{ loteId, quantidadeKg: kg, precoKg: 10 }]),
+        }),
+      );
+    await vender(frutoFilho.loteDestinoId, 10);
+    await vender(polpaFilho.loteDestinoId, 5);
+  });
+  afterAll(async () => {
+    await fx.limpar();
+  });
+
+  test("consultar o filho de fruto mostra a família inteira com a origem do original", async () => {
+    const r = (await rastrearLote(adm(), cod.frutoFilho, { incluirCancelados: false }))!;
+    expect(r.lote.codigo).toBe(cod.frutoFilho);
+    expect(r.recepcao).not.toBeNull();
+    expect(r.familia.map((l) => [l.codigo, l.consultado])).toEqual([
+      [cod.fruto, false],
+      [cod.frutoFilho, true],
+    ]);
+    expect(r.opsQueConsumiram).toHaveLength(1);
+    expect(r.opsQueConsumiram[0]).toMatchObject({ kgDesteLote: 30, lotesDaFamilia: [cod.frutoFilho] });
+    expect(r.clientes.map((c) => [c.caminho, c.loteVendido, c.kg, c.opNumero])).toEqual(
+      expect.arrayContaining([
+        ["DIRETO", cod.frutoFilho, 10, null],
+        ["POLPA", cod.polpaFilho, 5, cod.op],
+      ]),
+    );
+    expect(r.destino).toMatchObject({ entradaKg: 100, consumidoOpKg: 30, vendidoKg: 10, saldoKg: 60, confere: true });
+  });
+
+  test("consultar o original traz os mesmos clientes", async () => {
+    const r = (await rastrearLote(adm(), cod.fruto, { incluirCancelados: false }))!;
+    expect(r.clientes).toHaveLength(2);
+    expect(r.familia.find((l) => l.consultado)?.codigo).toBe(cod.fruto);
+  });
+
+  test("filho de polpa: OP de origem e origem do fruto filho vêm dos originais", async () => {
+    const r = (await rastrearLote(adm(), cod.polpaFilho, { incluirCancelados: false }))!;
+    expect(r.opOrigem?.numero).toBe(cod.op);
+    expect(r.frutosConsumidos).toHaveLength(1);
+    expect(r.frutosConsumidos[0].codigo).toBe(cod.frutoFilho);
+    expect(descreverOrigem(r.frutosConsumidos[0].origem)).toContain("Talhão 1");
+    expect(r.familia).toHaveLength(2);
+    expect(r.destino).toMatchObject({ entradaKg: 20, vendidoKg: 5, saldoKg: 15, confere: true });
+  });
+
+  test("busca pelo código do original encontra também os filhos", async () => {
+    const encontrados = await buscarLotes(adm(), cod.fruto);
+    expect(encontrados.map((l) => l.codigo)).toEqual(expect.arrayContaining([cod.fruto, cod.frutoFilho]));
   });
 });
