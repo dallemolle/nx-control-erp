@@ -9,6 +9,7 @@ import {
 import { gerarChave } from "@/server/services/apiKey";
 import { PermissionError, FilialSomenteLeituraError } from "@/server/auth/permissions";
 import { executarRotaApi, ErroValidacaoApi } from "./executarRotaApi";
+import { ErroLimiteRequisicoes } from "./limiteRequisicoes";
 
 function requisicaoAutenticada(fixture: FixtureFinanceiro, chaveCompleta: string): Request {
   return new Request("http://localhost/api/v1/teste", {
@@ -117,5 +118,15 @@ describe("executarRotaApi", () => {
     const corpo = await resposta.json();
     expect(corpo.erro).toBe("Erro interno");
     expect(corpo.erro).not.toContain("sensível");
+  });
+
+  test("ErroLimiteRequisicoes vira 429 com Retry-After", async () => {
+    const resposta = await executarRotaApi(requisicaoAutenticada(fixture, chaveCompleta), async () => {
+      throw new ErroLimiteRequisicoes(17);
+    });
+
+    expect(resposta.status).toBe(429);
+    expect(resposta.headers.get("Retry-After")).toBe("17");
+    expect((await resposta.json()).erro).toBe("Limite de 60 requisições por minuto atingido. Tente de novo em 17 s.");
   });
 });

@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { PermissionError, FilialSomenteLeituraError } from "@/server/auth/permissions";
 import { ApiAuthError, requireSessaoApi } from "./sessaoApi";
 import { comIdempotencia, ErroIdempotencia } from "./idempotencia";
+import { ErroLimiteRequisicoes } from "./limiteRequisicoes";
 import { ErroClassificacaoFiscal } from "@/server/services/classificacaoFiscal";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { ClassificacaoFiscal } from "@prisma/client";
@@ -38,7 +39,13 @@ export async function executarRotaApi(
     const sessao = await requireSessaoApi(request);
     return await comIdempotencia(request, sessao, () => handler(sessao));
   } catch (erro) {
-    if (erro instanceof ApiAuthError || erro instanceof ErroIdempotencia) {
+    if (erro instanceof ErroLimiteRequisicoes) {
+      return Response.json(
+        { erro: erro.message },
+        { status: 429, headers: { "Retry-After": String(erro.segundosParaLiberar) } },
+      );
+    }
+    if (erro instanceof ApiAuthError ||erro instanceof ErroIdempotencia) {
       return Response.json({ erro: erro.message }, { status: erro.status });
     }
     if (erro instanceof PermissionError || erro instanceof FilialSomenteLeituraError) {
