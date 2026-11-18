@@ -11,7 +11,14 @@ import { formatarData } from "@/lib/formatacao";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { KG } from "../processamento/formatos";
 import { hrefRastreio, LinkRastreio } from "../_shared/link-rastreio";
-import { CartaoClientes, CartaoDestino, CartaoLote, CartaoOrigem, CartaoParaFrente } from "./cartoes";
+import {
+  CartaoClientes,
+  CartaoDestino,
+  CartaoFamilia,
+  CartaoLote,
+  CartaoOrigem,
+  CartaoParaFrente,
+} from "./cartoes";
 
 const LIMITE_BUSCA = 20;
 
@@ -119,11 +126,14 @@ export default async function RastreabilidadePage({
               ...(incluirCancelados ? { cancelados: "1" } : {}),
             }).toString()}
           />
+          {rastreio.familia.length > 1 ? (
+            <CartaoFamilia familia={rastreio.familia} incluirCancelados={incluirCancelados} />
+          ) : null}
           <CartaoOrigem rastreio={rastreio} incluirCancelados={incluirCancelados} />
           {rastreio.lote.categoria === "FRUTO" ? (
             <CartaoParaFrente rastreio={rastreio} incluirCancelados={incluirCancelados} />
           ) : null}
-          <CartaoDestino destino={rastreio.destino} />
+          <CartaoDestino destino={rastreio.destino} familia={rastreio.familia.length > 1} />
           <CartaoClientes clientes={rastreio.clientes} incluirCancelados={incluirCancelados} />
         </>
       ) : null}

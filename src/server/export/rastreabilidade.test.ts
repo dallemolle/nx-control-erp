@@ -120,6 +120,18 @@ describe("secoesDoRastreio", () => {
   });
 });
 
+test("PDF traz a seção Lotes da família só quando o lote foi dividido (D-36)", () => {
+  const familia = [
+    { codigo: "FA-261110-01", local: "Recepção", saldoKg: 60, validade: d("2026-11-11"), consultado: true },
+    { codigo: "FA-261110-01/1", local: "Câmara", saldoKg: 10, validade: d("2026-11-11"), consultado: false },
+  ];
+  const titulos = (r: Rastreio) => secoesDoRastreio(r).map((s) => s.titulo);
+  const dividido = titulos({ ...base("FRUTO"), familia });
+  expect(dividido).toContain("Lotes da família");
+  expect(dividido).toContain("Destino da família");
+  expect(titulos(base("FRUTO"))).not.toContain("Lotes da família");
+});
+
 describe("COLUNAS_CLIENTES", () => {
   test("retira, cancelado e caminho", () => {
     const valor = (rotulo: string) => COLUNAS_CLIENTES.find((c) => c.rotulo === rotulo)!.valor(CLIENTE);
