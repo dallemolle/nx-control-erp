@@ -1,5 +1,269 @@
 # Changelog
 
+## [0.1.31](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.30...nx-control-erp-v0.1.31) (2026-11-18)
+
+
+### Novidades
+
+* **api:** base da paginação por cursor ([68c0335](https://github.com/dallemolle/nx-control-erp/commit/68c033520ab2513e552cbc8fe3223c9eafb4e89b))
+* **api:** escolha da validade ao gerar chave e estado na lista ([3175fe7](https://github.com/dallemolle/nx-control-erp/commit/3175fe7eacfadce41c9ad76d53949a80b2728e9d))
+* **api:** GET de títulos e lançamentos paginados por cursor ([a293558](https://github.com/dallemolle/nx-control-erp/commit/a293558bf0c3bdad177378842b6a31183510bf45))
+* **api:** limite de 60 requisições por minuto por chave ([5f6d03a](https://github.com/dallemolle/nx-control-erp/commit/5f6d03a5af9b6a4de2a0eddc6ab2dd8e0a423f78))
+* **api:** listagens paginadas de títulos e lançamentos ([6696b5f](https://github.com/dallemolle/nx-control-erp/commit/6696b5f49bf0ff5bfc0c897502aa0e2659563b5c))
+* **api:** validade opcional da chave de API ([97ad890](https://github.com/dallemolle/nx-control-erp/commit/97ad8902230bad96c23f9de376ddd84eb22c3907))
+
+
+### Correções
+
+* **api:** cursor fora do filtro da listagem é rejeitado ([3156e84](https://github.com/dallemolle/nx-control-erp/commit/3156e847b39cfc763ef308aa43131f0d12387187))
+
+## [0.1.30](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.29...nx-control-erp-v0.1.30) (2026-11-17)
+
+
+### Novidades
+
+* **conciliacao:** actions do grupo e campos do lançamento avulso compartilhados ([54bb316](https://github.com/dallemolle/nx-control-erp/commit/54bb316bff368e1cf0cd67ea834dbd823012ffe3))
+* **conciliacao:** conciliar em grupo com lançamento da diferença ([8166363](https://github.com/dallemolle/nx-control-erp/commit/81663636dd0851391a345a34839b558cbfc1f665))
+* **conciliacao:** conta da diferença do grupo em centavos ([16c30f6](https://github.com/dallemolle/nx-control-erp/commit/16c30f6924477ced338df735b7b60f1725bf4323))
+* **conciliacao:** dialog para conciliar linhas e lançamentos em grupo ([0427e95](https://github.com/dallemolle/nx-control-erp/commit/0427e958c84236446194e8cc3a0a02a228cf7837))
+* **conciliacao:** vínculo por grupo de conciliação no lugar do 1:1 ([2df2e32](https://github.com/dallemolle/nx-control-erp/commit/2df2e32179965a9d98556e395917ceb90052ba0d))
+
+
+### Correções
+
+* **conciliacao:** ajuda avisa que a diferença sobrevive ao desconciliar ([c345ab7](https://github.com/dallemolle/nx-control-erp/commit/c345ab732036a2883f20421185405db83bdf0266))
+
+## [0.1.29](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.28...nx-control-erp-v0.1.29) (2026-11-16)
+
+
+### Novidades
+
+* **vendas:** condição de pagamento no pedido no lugar do vencimento ([c6144f4](https://github.com/dallemolle/nx-control-erp/commit/c6144f41d4822cf6899b8e8fb23a2b05761f8b39))
+* **vendas:** condição e parcelas no detalhe e no recibo do pedido ([aec6d2c](https://github.com/dallemolle/nx-control-erp/commit/aec6d2c00d5f25902ca26e4540fc171b202e5627))
+* **vendas:** pedido a prazo cria uma parcela por prazo ([b71404f](https://github.com/dallemolle/nx-control-erp/commit/b71404f12d2596f28c5b00d9b51cdad0b645bc3c))
+* **vendas:** prazos em dias e parcelas ajustáveis no novo pedido ([99cc354](https://github.com/dallemolle/nx-control-erp/commit/99cc35448378c510bf3dec40bd26d19cd8553bc9))
+* **vendas:** regras puras das parcelas da venda a prazo ([ff152c7](https://github.com/dallemolle/nx-control-erp/commit/ff152c7fd65ef669e8921ed968d8c6bd242c8c9e))
+
+
+### Correções
+
+* **vendas:** rodapé das parcelas mostra quanto falta ou sobra ([b71484b](https://github.com/dallemolle/nx-control-erp/commit/b71484b47985b96de006cda31939707e9360b108))
+
+## [0.1.28](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.27...nx-control-erp-v0.1.28) (2026-11-16)
+
+
+### Novidades
+
+* **empresas:** opção de exigir aprovação da baixa por outra pessoa ([691d1f7](https://github.com/dallemolle/nx-control-erp/commit/691d1f78b806592685f1b6e1e7b1cff37e865a30))
+* **financeiro:** quem registra a baixa não pode aprová-la ([2fb5b07](https://github.com/dallemolle/nx-control-erp/commit/2fb5b07b8c1658cadc43cc207349c3687653c18d))
+
+## [0.1.27](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.26...nx-control-erp-v0.1.27) (2026-11-16)
+
+
+### Novidades
+
+* **financeiro:** linha Em atraso na tela e no export do fluxo projetado ([e2ad1e4](https://github.com/dallemolle/nx-control-erp/commit/e2ad1e4b6d4296c55742805ce800654aedf04689))
+* **financeiro:** projeção soma as parcelas vencidas antes da janela ([39f22d9](https://github.com/dallemolle/nx-control-erp/commit/39f22d93f1dc8e4e175653810e34e95e6a7c2d9b))
+
+## [0.1.26](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.25...nx-control-erp-v0.1.26) (2026-11-16)
+
+
+### Novidades
+
+* **producao:** custo/kg por polpa na OP, aviso de preço e rótulos de custo médio ([d0341a2](https://github.com/dallemolle/nx-control-erp/commit/d0341a202bac424c2b8791d74d946794359495c0))
+* **producao:** OP grava o custo rateado por produto e não encerra sem preço ([f8631b1](https://github.com/dallemolle/nx-control-erp/commit/f8631b15e48ec9fcaf0c0b41b4f1fc1ddde8a379))
+* **producao:** rateio do custo da OP pelo preço de referência ([d352fce](https://github.com/dallemolle/nx-control-erp/commit/d352fcea778e064c5d436eb7475818648a3108c8))
+
+
+### Correções
+
+* **auditoria:** listas gravadas como lista, não como texto ([523c218](https://github.com/dallemolle/nx-control-erp/commit/523c218c7d83f0426de9736c089290658b659a54))
+
+## [0.1.25](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.24...nx-control-erp-v0.1.25) (2026-11-15)
+
+
+### Novidades
+
+* **tema:** campos de cor, fonte e raio e prévia por modo ([3c12018](https://github.com/dallemolle/nx-control-erp/commit/3c12018b0e32c5a1174358b0197e14f6b83b54e8))
+* **tema:** editor visual com prévia ao vivo na tela de tema ([b27caf0](https://github.com/dallemolle/nx-control-erp/commit/b27caf0f43e66a778f652fe41d35ad4d3bc94e73))
+* **tema:** estado do editor visual (reducer e auxiliares) ([7c9babf](https://github.com/dallemolle/nx-control-erp/commit/7c9babfdd8c6c206954d49773d8079d363ca2f6f))
+* **tema:** tema padrão do sistema no formato nx-tema ([e468dd1](https://github.com/dallemolle/nx-control-erp/commit/e468dd1473056f392f3e18603ae6d233de951844))
+
+
+### Correções
+
+* **tema:** ajustes finais do editor visual ([dfa2ef1](https://github.com/dallemolle/nx-control-erp/commit/dfa2ef134274ec108c2f5cd42829d30889022abb))
+* **tema:** rascunho do nome da fonte, validação inline e hex inválido persistente ([64b37a7](https://github.com/dallemolle/nx-control-erp/commit/64b37a7e67d7f072b0b1eb51f333f1bc72100822))
+* **tema:** salvo grava o tema enviado, tratamento de falha no envio e ajustes do editor ([e5351c7](https://github.com/dallemolle/nx-control-erp/commit/e5351c7629937e046ea47755d48b3cf11da0978d))
+
+## [0.1.24](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.23...nx-control-erp-v0.1.24) (2026-11-15)
+
+
+### Correções
+
+* fonte padrão volta a ser a Geist ([75f840e](https://github.com/dallemolle/nx-control-erp/commit/75f840ec8a56519a6877777d94cee97d0e8f7a9d))
+
+## [0.1.23](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.22...nx-control-erp-v0.1.23) (2026-11-15)
+
+
+### Novidades
+
+* **tema:** formato nx-tema, validação e contraste ([d1cffe5](https://github.com/dallemolle/nx-control-erp/commit/d1cffe5857f49049abc2385b33796be3b10b8a8f))
+* **tema:** tela de tema e marca da empresa ([20aac0d](https://github.com/dallemolle/nx-control-erp/commit/20aac0d89dc8e7152ef317ad31cc105e24ed7fb1))
+* **tema:** tema da empresa aplicado no painel ([e073665](https://github.com/dallemolle/nx-control-erp/commit/e073665b80effe4262f3bb38eb8dd4aebbfb823d))
+* **tema:** tema e marca gravados na empresa ([a5a2a10](https://github.com/dallemolle/nx-control-erp/commit/a5a2a1069bf6dca701a44f582ebc1809585eb0e5))
+* **tema:** variáveis CSS e fontes do tema ([4fd4ca5](https://github.com/dallemolle/nx-control-erp/commit/4fd4ca59806e6a2fbbc2e9f995ee7374cac90321))
+
+
+### Correções
+
+* **tema:** CSS do tema sai do documento ao restaurar ou trocar de empresa ([69e6681](https://github.com/dallemolle/nx-control-erp/commit/69e6681945978b3a968b54cf8679e739a9836377))
+
+## [0.1.22](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.21...nx-control-erp-v0.1.22) (2026-11-15)
+
+
+### Novidades
+
+* **producao:** liberar e revogar lote vencido no lote ([1b1ab04](https://github.com/dallemolle/nx-control-erp/commit/1b1ab0449afcdd32c34aa6ed5c005f40a7bf15b8))
+* **producao:** OP aceita fruto vencido liberado no lote ([1bb1f20](https://github.com/dallemolle/nx-control-erp/commit/1bb1f208ca31c37ebb3d4ac24cccc8ab5e043713))
+* **producao:** prazo de liberação no produto e ação na tela de Estoque ([831d598](https://github.com/dallemolle/nx-control-erp/commit/831d5987f591c30fe486552e400cddb6cbfc813b))
+* **producao:** regras puras da liberação de lote vencido ([994440e](https://github.com/dallemolle/nx-control-erp/commit/994440eaebab96d139110bfee145c5e621b9c962))
+* **vendas:** pedido aceita lote vencido liberado no lote ([5837040](https://github.com/dallemolle/nx-control-erp/commit/5837040d05e52a4e0c2fdcea69bf410e06207526))
+
+## [0.1.21](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.20...nx-control-erp-v0.1.21) (2026-11-14)
+
+
+### Novidades
+
+* **producao:** contas do relatório de origem ([c1d704a](https://github.com/dallemolle/nx-control-erp/commit/c1d704a2dbd348bc29c063b4899cac9a36149d74))
+* **producao:** contas do relatório de processamento ([d25449c](https://github.com/dallemolle/nx-control-erp/commit/d25449cb4d17ee34108b5f848382981bbd795223))
+* **producao:** exportação do relatório de origem ([45cbf00](https://github.com/dallemolle/nx-control-erp/commit/45cbf00da904c70c88327d91442623f9f8aff18d))
+* **producao:** exportação do relatório de processamento ([fae000d](https://github.com/dallemolle/nx-control-erp/commit/fae000d3c35ce44e4334dd5fc05fa2111d680ea8))
+* **producao:** relatórios de origem e processamento no menu ([c2ce2d6](https://github.com/dallemolle/nx-control-erp/commit/c2ce2d6e5f2531eb6c5db3554180c49959a3bf5a))
+* **producao:** serviço do relatório de origem ([ab80007](https://github.com/dallemolle/nx-control-erp/commit/ab80007e568f464fba04fafe6c546a65ca358818))
+* **producao:** serviço do relatório de processamento ([6eda145](https://github.com/dallemolle/nx-control-erp/commit/6eda1455b20dcd6706ed9c8fa96c1b45bc8f8b2a))
+* **producao:** tela do relatório de origem ([1c80928](https://github.com/dallemolle/nx-control-erp/commit/1c809285012c93f4cbfa0629fba3784ac5b45af2))
+* **producao:** tela do relatório de processamento ([2e8b14c](https://github.com/dallemolle/nx-control-erp/commit/2e8b14cd49e3b3c24e8493ca6b84b370ec1ef60b))
+
+## [0.1.20](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.19...nx-control-erp-v0.1.20) (2026-11-13)
+
+
+### Novidades
+
+* **producao:** cálculo do relatório de vendas ([1f8e76d](https://github.com/dallemolle/nx-control-erp/commit/1f8e76d41d37b1d022174d377bbdaf65d946c8fd))
+* **producao:** cálculo do relatório mensal ([9a0fdac](https://github.com/dallemolle/nx-control-erp/commit/9a0fdac11b5a23d960340537cbaa151b03c311af))
+* **producao:** exportação dos relatórios mensal e de vendas ([e32aac2](https://github.com/dallemolle/nx-control-erp/commit/e32aac29c04164d5c7ba539c1908398606031e8e))
+* **producao:** serviço do relatório de vendas ([c072466](https://github.com/dallemolle/nx-control-erp/commit/c072466a0c1f3d29019f41bf3b76f6d01b684871))
+* **producao:** serviço do relatório mensal ([f0bd6c5](https://github.com/dallemolle/nx-control-erp/commit/f0bd6c50471bc43125556a44c59cf1bf072b256e))
+* **producao:** tela do relatório de vendas ([e4d45b4](https://github.com/dallemolle/nx-control-erp/commit/e4d45b476704ec45dd10598b158c801a253f4e76))
+* **producao:** tela do relatório mensal ([6611749](https://github.com/dallemolle/nx-control-erp/commit/661174900f54726016fd4783e07e7a97bec7bcf6))
+
+
+### Correções
+
+* **producao:** ajustes da conferência dos relatórios no navegador ([3d04895](https://github.com/dallemolle/nx-control-erp/commit/3d04895877b880a776b4fc060afae12a5bb95b0f))
+
+## [0.1.19](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.18...nx-control-erp-v0.1.19) (2026-11-12)
+
+
+### Novidades
+
+* **producao:** contas do painel de produção ([e851a91](https://github.com/dallemolle/nx-control-erp/commit/e851a91d94fa8c37ccd89a0fdece8884036edd30))
+* **producao:** exportação do painel em PDF, CSV e Excel ([88798a3](https://github.com/dallemolle/nx-control-erp/commit/88798a3a2cdf052eeba686bfc68d8fc64c631720))
+* **producao:** filtro de OPs a verificar ([c9d7d93](https://github.com/dallemolle/nx-control-erp/commit/c9d7d935cffc85d8a83aa514c8b8a2e315ca80c2))
+* **producao:** indicadores do painel de produção ([8c88b9c](https://github.com/dallemolle/nx-control-erp/commit/8c88b9c19b73ef21b87a4eb12d3bb2dba5632a8b))
+* **producao:** resumo por status de validade no estoque ([b6990b6](https://github.com/dallemolle/nx-control-erp/commit/b6990b637318d1ef339344b54395273ec3df246a))
+* **producao:** tela do painel de produção ([2513537](https://github.com/dallemolle/nx-control-erp/commit/25135374caf57c540331bca1fde2fbf1efe0122b))
+* **vendas:** filtro de entregas atrasadas ([8f163b6](https://github.com/dallemolle/nx-control-erp/commit/8f163b6c8a4504cd7b1ec8f678dd5fa2e97a828e))
+
+## [0.1.18](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.17...nx-control-erp-v0.1.18) (2026-11-11)
+
+
+### Novidades
+
+* **export:** PDF com várias seções ([cb0273f](https://github.com/dallemolle/nx-control-erp/commit/cb0273fe5d81f858b088b6f3f2bdce5b32b8c2bc))
+* **producao:** cálculos de rendimento, balanço, branqueamento e custo da OP ([867ccdc](https://github.com/dallemolle/nx-control-erp/commit/867ccdc6d8f227887a522998e2d750bd367817f5))
+* **producao:** código do lote abre a rastreabilidade ([1487937](https://github.com/dallemolle/nx-control-erp/commit/148793782cdfd3b969c30c8a1287af7a081fc6b9))
+* **producao:** destino do lote a partir do ledger ([9c90597](https://github.com/dallemolle/nx-control-erp/commit/9c90597704eb1dc8a68f08eeb1e23c8094473177))
+* **producao:** detalhe da OP com consumo, produção, insumos e processo ([297340f](https://github.com/dallemolle/nx-control-erp/commit/297340fe35122ed833ced3336b953f6c80fb7689))
+* **producao:** encerramento, reabertura e cancelamento da OP ([cae48e8](https://github.com/dallemolle/nx-control-erp/commit/cae48e87a999a4515a27b308acddef85158f7192))
+* **producao:** etiqueta com CNPJ, endereço e texto do produto, uma por embalagem ([541ecb1](https://github.com/dallemolle/nx-control-erp/commit/541ecb155bb19659e9c497ad1a4ef2ba06c50c76))
+* **producao:** exportação da rastreabilidade em PDF, CSV e Excel ([e5dc6a3](https://github.com/dallemolle/nx-control-erp/commit/e5dc6a3bc2b0a9f091441da58365c93f524040eb))
+* **producao:** lista de ordens de produção ([af7b40e](https://github.com/dallemolle/nx-control-erp/commit/af7b40e3c1d4ce68770c71ab666759de657a3e7e))
+* **producao:** modelo da ordem de produção e permissão de liberar fruto vencido ([b3285ed](https://github.com/dallemolle/nx-control-erp/commit/b3285ed0658add90188a49922d66827899a3d959))
+* **producao:** ordem de produção com consumo de fruto ([2d847cc](https://github.com/dallemolle/nx-control-erp/commit/2d847ccbc94ae099a8d9e99cd01a9ef98c917593))
+* **producao:** polpa bloqueada para venda e ajuste até encerrar a OP ([3ead21a](https://github.com/dallemolle/nx-control-erp/commit/3ead21a9c39227c762503256417939205cee2c5b))
+* **producao:** produção de lotes de polpa e insumos com custo provisório ([fa9c290](https://github.com/dallemolle/nx-control-erp/commit/fa9c290791f8def3060a3ddb1a997cc62f0fa2a9))
+* **producao:** serviço de rastreabilidade por lote ([091fd72](https://github.com/dallemolle/nx-control-erp/commit/091fd72862ce0e20812c8681f6a16cadc62cbdfc))
+* **producao:** tela de rastreabilidade por lote ([0ddfa7b](https://github.com/dallemolle/nx-control-erp/commit/0ddfa7b40b5bbb6eb8673db48203e033b0984293))
+
+
+### Correções
+
+* **producao:** formulário de processo sem aviso de valor padrão alterado e texto da lista de lotes ([699acc0](https://github.com/dallemolle/nx-control-erp/commit/699acc0ea2d71033f99364d54216129b32b39bb4))
+
+## [0.1.17](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.16...nx-control-erp-v0.1.17) (2026-11-10)
+
+
+### Novidades
+
+* **vendas:** cálculos de margem, atraso de entrega e situação de pagamento ([f881594](https://github.com/dallemolle/nx-control-erp/commit/f881594572832458f48ec3c3c8f620af67ac04eb))
+* **vendas:** cancelamento do pedido com estorno de estoque e recebimento ([d1c44c4](https://github.com/dallemolle/nx-control-erp/commit/d1c44c4588be2be14cc041d8c2947e9f3ba92066))
+* **vendas:** detalhe do pedido, cancelamento e recibo em PDF ([fd3809f](https://github.com/dallemolle/nx-control-erp/commit/fd3809fb52cccfd5954ddb524586f04321bf77b8))
+* **vendas:** entregas com status e atraso ([219e530](https://github.com/dallemolle/nx-control-erp/commit/219e5308b93b30549babd906cd29ba1f8b495d05))
+* **vendas:** menu de vendas e lista de pedidos ([858d874](https://github.com/dallemolle/nx-control-erp/commit/858d87482b75aabc05a99bccdff74a58f54b7331))
+* **vendas:** modelo de pedido, itens e entrega; configuração de vendas ([f1d5c15](https://github.com/dallemolle/nx-control-erp/commit/f1d5c15d6b91cc4c0d257c661353e9a19417b9d4))
+* **vendas:** pedido de venda com baixa de estoque e conta a receber ([7387407](https://github.com/dallemolle/nx-control-erp/commit/7387407af7ae128c9f706a221c3d4c7dea76e477))
+* **vendas:** tela de entregas ([aabc840](https://github.com/dallemolle/nx-control-erp/commit/aabc8401421a355bc88cb984917d3ef1941797d7))
+* **vendas:** tela de novo pedido ([9c79689](https://github.com/dallemolle/nx-control-erp/commit/9c796898af8e6949eea59c983b84255caaae7560))
+
+
+### Correções
+
+* **producao:** descarte (%) da exportação de recepções saía como fração ([3ded754](https://github.com/dallemolle/nx-control-erp/commit/3ded754097d3a6057c93fce139bcd61f25935444))
+* **vendas:** chave da primeira linha de item igual no servidor e no navegador ([11c7dea](https://github.com/dallemolle/nx-control-erp/commit/11c7deaa1cd54a706b2dc13ee6ff92255c7b2692))
+
+## [0.1.16](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.15...nx-control-erp-v0.1.16) (2026-11-10)
+
+
+### Novidades
+
+* **financeiro:** conta Caixa para dinheiro em espécie (Fase B fiscal) ([6289316](https://github.com/dallemolle/nx-control-erp/commit/628931635558242265d54d4599724062e14d529e))
+
+## [0.1.15](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.14...nx-control-erp-v0.1.15) (2026-11-09)
+
+
+### Novidades
+
+* **cadastros:** cliente sem CPF/CNPJ, dados de venda e permissão própria ([d2c5d0a](https://github.com/dallemolle/nx-control-erp/commit/d2c5d0a444e48d464b0c56ef60d32b1a31c0f402))
+* **menu:** itens do menu filtrados pela permissão que a página exige ([7f6b6da](https://github.com/dallemolle/nx-control-erp/commit/7f6b6dae274a99025611bba52245e82655747945))
+* **producao:** ajustes de estoque ([e09dbf6](https://github.com/dallemolle/nx-control-erp/commit/e09dbf605f52ffb6880c2d94318a9f3ca4294b81))
+* **producao:** cadastro de frutas ([6c1cf76](https://github.com/dallemolle/nx-control-erp/commit/6c1cf767b5153ddc7b2ac6af07328822e2fbb2a8))
+* **producao:** cadastro de insumos ([9bf5d2d](https://github.com/dallemolle/nx-control-erp/commit/9bf5d2db7ab60edec01029767e2e72ac4f655495))
+* **producao:** cadastro de locais de armazenamento ([b0e18b0](https://github.com/dallemolle/nx-control-erp/commit/b0e18b0a315682e55c04f7d14f2164c42a290c23))
+* **producao:** cadastro de produtos com unidade comercial (rasa) ([7fbd4e9](https://github.com/dallemolle/nx-control-erp/commit/7fbd4e93d982bc84d6890f4731a108d464f9965b))
+* **producao:** cadastro de talhões ([5c18287](https://github.com/dallemolle/nx-control-erp/commit/5c18287d3f30a9a50a97cb857dd8bc96e41936a2))
+* **producao:** cálculos de recepção, validade, número de lote e status ([668b03a](https://github.com/dallemolle/nx-control-erp/commit/668b03a2471a33aeb721f346f0b2944b14b7d2a4))
+* **producao:** catálogo de exemplo no seed e ajuda dos cadastros ([1cb29fb](https://github.com/dallemolle/nx-control-erp/commit/1cb29fb110412c3ac704ae8f55b6a34e39e9781d))
+* **producao:** configuração de produção por filial ([2ce5c66](https://github.com/dallemolle/nx-control-erp/commit/2ce5c66136f64f950b251ff7e45fc35bf1a7840e))
+* **producao:** etiqueta do lote em PDF ([67ea026](https://github.com/dallemolle/nx-control-erp/commit/67ea0268f75a11b43e6dd8bb37fb04a0b3c49700))
+* **producao:** modelo de lote, movimentos e recepção; configuração da compra de fruto ([c8a9d49](https://github.com/dallemolle/nx-control-erp/commit/c8a9d4946b734ad47200e716efa9b1e1e47dc240))
+* **producao:** perfis Produção e Vendas e permissões da Fase 7 ([057fa1e](https://github.com/dallemolle/nx-control-erp/commit/057fa1e777a05071207e2121757dee2b28af55ed))
+* **producao:** recepção de fruto com lote, estoque e conta a pagar ([dcd595f](https://github.com/dallemolle/nx-control-erp/commit/dcd595f6b0ebf2c9a0eb08f06b5a72cb8ce3ea93))
+* **producao:** saldo por movimentos, consulta de lotes e mudança de local ([cf1d351](https://github.com/dallemolle/nx-control-erp/commit/cf1d35158cc4002eb53361cb0efd2922f13337b8))
+* **producao:** schema da Fase 7a (cadastros de produção e cliente sem documento) ([16d0cdb](https://github.com/dallemolle/nx-control-erp/commit/16d0cdb000d2f243544cd93c9a48ba73145d54f5))
+* **producao:** tela de recepção de fruto ([7defa25](https://github.com/dallemolle/nx-control-erp/commit/7defa257bf744b73f8b3b72e6af8dfbb0d698a79))
+* **producao:** telas de estoque e de ajustes ([3f760a0](https://github.com/dallemolle/nx-control-erp/commit/3f760a0a3953b978192f44fe4bbc7bea8278ef3b))
+* **producao:** utilitários de formulário, duplicidade e fixture de testes ([69dfc90](https://github.com/dallemolle/nx-control-erp/commit/69dfc901e741d478b03ccb20c04262fafb7072ed))
+
+
+### Correções
+
+* **cadastros:** diálogos de cliente e fornecedor rolam quando passam da altura da tela ([ce95f91](https://github.com/dallemolle/nx-control-erp/commit/ce95f9132201d1321345b7fb9b37543c2df39a24))
+* **producao:** aspas escapadas na configuração de produção ([95c3281](https://github.com/dallemolle/nx-control-erp/commit/95c3281b1945c0de36bbb7b43deda60509cedfa4))
+* **producao:** lote de recepção excluída não recebe ajuste de estoque ([0639ff6](https://github.com/dallemolle/nx-control-erp/commit/0639ff6f4e4dee8d727cceb2ad4ca5d7ab16c0c2))
+* **producao:** talhão e local da recepção não se perdem ao redesenhar o formulário ([09007c3](https://github.com/dallemolle/nx-control-erp/commit/09007c31dfc0cda22f58d1b55b64b2d9f34e23d5))
+
 ## [0.1.14](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.13...nx-control-erp-v0.1.14) (2026-11-08)
 
 
