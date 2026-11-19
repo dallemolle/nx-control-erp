@@ -11,6 +11,7 @@ import { OperadoraDialogForm } from "./operadora-dialog-form";
 import { alternarAtivoOperadoraAction } from "./actions";
 
 const TAXA = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 4 });
+const dias = (n: number) => `${n} ${n === 1 ? "dia" : "dias"}`;
 
 export default async function OperadorasCartaoPage() {
   const sessao = await requireSessaoAtiva();
@@ -69,7 +70,7 @@ export default async function OperadorasCartaoPage() {
                         {ROTULOS_MODALIDADE_CARTAO[c.modalidade]}
                         {c.modalidade === "CREDITO_PARCELADO" ? ` ${c.parcelasDe}–${c.parcelasAte}x` : ""} ·{" "}
                         {TAXA.format(c.taxaPercentual)}% ·{" "}
-                        {c.antecipado ? `antecipado em ${c.prazoDias} dias` : `${c.prazoDias} dias`}
+                        {c.antecipado ? `antecipado em ${dias(c.prazoDias)}` : dias(c.prazoDias)}
                       </p>
                     ))}
                   </TableCell>
