@@ -20,7 +20,7 @@ export type PeriodoFluxoDeCaixaProjetado = SubPeriodo & {
 
 /** Parcelas em aberto vencidas antes da janela, numa linha própria antes do primeiro mês. */
 export type LinhaEmAtraso = {
-  /** Último instante antes da janela — para o rótulo "venc. até". */
+  /** Último instante do atraso (véspera do corte) — para o rótulo "venc. até". */
   venceuAte: Date;
   saldoInicial: number;
   entradasProjetadas: number;
@@ -30,7 +30,23 @@ export type LinhaEmAtraso = {
   alerta: boolean;
 };
 
-export type FluxoDeCaixaProjetado = { emAtraso: LinhaEmAtraso | null; periodos: PeriodoFluxoDeCaixaProjetado[] };
+/** Parcelas em aberto que vencem entre hoje e a véspera de uma janela futura. */
+export type LinhaAVencerAntes = Omit<LinhaEmAtraso, "venceuAte"> & {
+  /** Véspera da janela, para o rótulo "A vencer até". */
+  venceAte: Date;
+};
+
+export type FluxoDeCaixaProjetado = {
+  emAtraso: LinhaEmAtraso | null;
+  aVencerAntes: LinhaAVencerAntes | null;
+  periodos: PeriodoFluxoDeCaixaProjetado[];
+};
+
+/** Parcelas que vencem antes da janela, cada grupo na sua linha (presente = linha existe, mesmo vazia). */
+export type ParcelasAntesDaJanela = {
+  atrasadas?: { parcelas: ParcelaParaProjecao[]; venceuAte: Date };
+  aVencerAntes?: ParcelaParaProjecao[];
+};
 
 /**
  * Recorta a janela de 12 meses do modo escolhido. MOVEL desliza a partir do
@@ -79,20 +95,26 @@ function agregar(parcelas: ParcelaParaProjecao[], saldoInicial: number) {
  * `calcularPeriodosFluxoDeCaixa` no fluxo realizado, mas agrupando por
  * `tipo` de título (RECEBER/PAGAR) em vez de tipo de lançamento.
  *
- * Com `atrasadas` (parcelas vencidas antes da janela, mesmo vazia), monta
- * antes a linha "Em atraso" e os meses partem do saldo final dela; sem
- * `atrasadas`, `emAtraso` é `null`.
+ * Antes dos meses, na ordem: a linha "Em atraso" (se `anteriores.atrasadas`
+ * vier) e a linha "A vencer até" (se `anteriores.aVencerAntes` vier). Cada
+ * uma parte do saldo final da anterior, e os meses partem da última.
  */
 export function calcularPeriodosFluxoDeCaixaProjetado(
   periodos: SubPeriodo[],
   parcelas: ParcelaParaProjecao[],
   saldoInicialAbsoluto: number,
-  atrasadas?: ParcelaParaProjecao[],
+  anteriores: ParcelasAntesDaJanela = {},
 ): FluxoDeCaixaProjetado {
-  const emAtraso = atrasadas
-    ? { venceuAte: new Date(periodos[0].inicio.getTime() - 1), ...agregar(atrasadas, saldoInicialAbsoluto) }
+  const emAtraso = anteriores.atrasadas
+    ? { venceuAte: anteriores.atrasadas.venceuAte, ...agregar(anteriores.atrasadas.parcelas, saldoInicialAbsoluto) }
     : null;
-  let saldoCorrente = emAtraso ? emAtraso.saldoFinal : saldoInicialAbsoluto;
+  const aVencerAntes = anteriores.aVencerAntes
+    ? {
+        venceAte: new Date(periodos[0].inicio.getTime() - 1),
+        ...agregar(anteriores.aVencerAntes, emAtraso ? emAtraso.saldoFinal : saldoInicialAbsoluto),
+      }
+    : null;
+  let saldoCorrente = aVencerAntes?.saldoFinal ?? emAtraso?.saldoFinal ?? saldoInicialAbsoluto;
 
   const meses = periodos.map(({ inicio, fim }) => {
     const doPeriodo = parcelas.filter((p) => p.dataVencimento >= inicio && p.dataVencimento <= fim);
@@ -101,7 +123,7 @@ export function calcularPeriodosFluxoDeCaixaProjetado(
     return { inicio, fim, ...linha };
   });
 
-  return { emAtraso, periodos: meses };
+  return { emAtraso, aVencerAntes, periodos: meses };
 }
 
 const STATUS_EM_ABERTO = ["EM_ABERTO", "A_VENCER", "VENCIDO", "PARCIALMENTE_PAGO"] as const;
@@ -151,14 +173,26 @@ export function buscarParcelasEmAbertoVencidasAntes(
   return buscarParcelasEmAberto(filialId, { lt: inicio }, classificacao);
 }
 
+/** Parcelas em aberto com vencimento em `[de, ate)` — a linha "A vencer até" de uma janela futura. */
+export function buscarParcelasEmAbertoVencendoEntre(
+  filialId: string,
+  de: Date,
+  ate: Date,
+  classificacao?: FiltroClassificacao,
+): Promise<ParcelaParaProjecao[]> {
+  return buscarParcelasEmAberto(filialId, { gte: de, lt: ate }, classificacao);
+}
+
 /**
  * Com `opcoes.classificacao`: só parcelas de títulos daquela classificação,
  * partindo de 0 (acumulado — o saldo bancário não se divide) e sem alerta de
  * saldo negativo, que não faz sentido sobre um acumulado parcial.
  *
- * A linha "Em atraso" só existe quando a janela contém hoje: numa janela
- * inteira no futuro ou no passado, "antes da janela" misturaria parcelas que
- * ainda nem venceram.
+ * Tudo parte do saldo em caixa de hoje. O corte do atraso é o menor entre o
+ * início da janela e o início de hoje: "Em atraso" (sempre presente) soma as
+ * parcelas em aberto vencidas antes dele. Numa janela que começa depois de
+ * hoje, "A vencer até" soma as que vencem de hoje até a véspera da janela.
+ * Os três intervalos (atraso, a vencer, meses) não se sobrepõem.
  */
 export async function listarFluxoDeCaixaProjetado(
   sessao: SessaoAtiva,
@@ -172,20 +206,27 @@ export async function listarFluxoDeCaixaProjetado(
   const inicioDaJanela = periodos[0].inicio;
   const fimDaJanela = periodos[periodos.length - 1].fim;
   const agora = new Date();
-  const contemHoje = inicioDaJanela <= agora && agora <= fimDaJanela;
+  const inicioDeHoje = new Date(Date.UTC(agora.getUTCFullYear(), agora.getUTCMonth(), agora.getUTCDate()));
+  const corte = inicioDaJanela < inicioDeHoje ? inicioDaJanela : inicioDeHoje;
+  const janelaFutura = inicioDaJanela > inicioDeHoje;
 
-  const [saldoInicialAbsoluto, parcelas, atrasadas] = await Promise.all([
+  const [saldoInicialAbsoluto, parcelas, atrasadas, aVencerAntes] = await Promise.all([
     opcoes.classificacao ? Promise.resolve(0) : buscarSaldoEmCaixaAte(sessao.filialId, agora),
     buscarParcelasEmAbertoNoPeriodo(sessao.filialId, inicioDaJanela, fimDaJanela, opcoes.classificacao),
-    contemHoje
-      ? buscarParcelasEmAbertoVencidasAntes(sessao.filialId, inicioDaJanela, opcoes.classificacao)
+    buscarParcelasEmAbertoVencidasAntes(sessao.filialId, corte, opcoes.classificacao),
+    janelaFutura
+      ? buscarParcelasEmAbertoVencendoEntre(sessao.filialId, inicioDeHoje, inicioDaJanela, opcoes.classificacao)
       : Promise.resolve(undefined),
   ]);
 
-  const resultado = calcularPeriodosFluxoDeCaixaProjetado(periodos, parcelas, saldoInicialAbsoluto, atrasadas);
+  const resultado = calcularPeriodosFluxoDeCaixaProjetado(periodos, parcelas, saldoInicialAbsoluto, {
+    atrasadas: { parcelas: atrasadas, venceuAte: new Date(corte.getTime() - 1) },
+    aVencerAntes,
+  });
   if (!opcoes.classificacao) return resultado;
   return {
     emAtraso: resultado.emAtraso && { ...resultado.emAtraso, alerta: false },
+    aVencerAntes: resultado.aVencerAntes && { ...resultado.aVencerAntes, alerta: false },
     periodos: resultado.periodos.map((periodo) => ({ ...periodo, alerta: false })),
   };
 }

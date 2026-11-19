@@ -61,18 +61,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   comparar contra saídas, não contra o saldo líquido) ou resultado líquido
   esperado (permitir negativo no schema usado por esta tela).
 
-## Fluxo de caixa projetado
-
-- **Reconstrução da cadeia de saldo em janelas fora do intervalo visível**
-  (Fase 4, sub-projeto 2). Quando o modo `ANO_CIVIL` mostra um ano
-  totalmente passado ou totalmente futuro (sem interseção com o mês
-  atual), a projeção ainda parte do saldo em caixa de **hoje**, mas não
-  reconstrói o que aconteceria nos meses "invisíveis" entre hoje e o
-  início da janela pedida — o usuário vê um aviso na tela, mas o número
-  do saldo inicial da janela pode não refletir a realidade de um ano
-  distante. Reconstruir a cadeia completa através de anos não exibidos
-  ficou para uma iteração futura.
-
 ## API REST de automação (lançamentos via agente)
 
 - **Idempotência é opt-in.** Resolvido em 2026-11-03 com o header

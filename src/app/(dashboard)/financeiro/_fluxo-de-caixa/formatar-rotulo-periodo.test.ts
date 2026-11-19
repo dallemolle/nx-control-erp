@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { formatarRotuloPeriodo, rotuloEmAtraso } from "./formatar-rotulo-periodo";
+import { formatarRotuloPeriodo, rotuloAVencerAntes, rotuloEmAtraso } from "./formatar-rotulo-periodo";
 
 describe("rotuloEmAtraso", () => {
   test("usa o último dia antes da janela, em UTC", () => {
@@ -31,5 +31,11 @@ describe("formatarRotuloPeriodo", () => {
   test("ANO formata como o ano", () => {
     const rotulo = formatarRotuloPeriodo("ANO", new Date(Date.UTC(2026, 0, 1)), new Date(Date.UTC(2026, 11, 31, 23, 59, 59, 999)));
     expect(rotulo).toBe("2026");
+  });
+});
+
+describe("rotuloAVencerAntes", () => {
+  test("mostra a véspera da janela", () => {
+    expect(rotuloAVencerAntes(new Date("2026-12-31T23:59:59.999Z"))).toBe("A vencer até 31/12/2026");
   });
 });

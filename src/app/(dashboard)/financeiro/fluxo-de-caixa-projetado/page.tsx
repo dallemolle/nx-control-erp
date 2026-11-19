@@ -4,7 +4,7 @@ import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission } from "@/server/auth/permissions";
 import { listarFluxoDeCaixaProjetado, type ModoJanelaProjetado } from "@/server/services/fluxoDeCaixaProjetado";
 import { SeletorModoProjetado } from "./seletor-modo";
-import { formatarRotuloPeriodo, rotuloEmAtraso } from "../_fluxo-de-caixa/formatar-rotulo-periodo";
+import { formatarRotuloPeriodo, rotuloAVencerAntes, rotuloEmAtraso } from "../_fluxo-de-caixa/formatar-rotulo-periodo";
 import { dataValida } from "../_fluxo-de-caixa/data-valida";
 import { AvisoVisaoFiltrada } from "../_fluxo-de-caixa/aviso-visao-filtrada";
 import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
@@ -36,9 +36,14 @@ export default async function FluxoDeCaixaProjetadoPage({
   );
   const rotuloSaldo = classificacao ? "Acumulado" : "Saldo";
 
-  const { emAtraso, periodos } = await listarFluxoDeCaixaProjetado(sessao, modo, dataReferencia, { classificacao });
+  const { emAtraso, aVencerAntes, periodos } = await listarFluxoDeCaixaProjetado(sessao, modo, dataReferencia, {
+    classificacao,
+  });
   const linhas = [
     ...(emAtraso ? [{ chave: "em-atraso", rotulo: rotuloEmAtraso(emAtraso.venceuAte), atraso: true, ...emAtraso }] : []),
+    ...(aVencerAntes
+      ? [{ chave: "a-vencer-antes", rotulo: rotuloAVencerAntes(aVencerAntes.venceAte), atraso: true, ...aVencerAntes }]
+      : []),
     ...periodos.map((periodo) => ({
       chave: periodo.inicio.toISOString(),
       rotulo: formatarRotuloPeriodo("MES", periodo.inicio, periodo.fim),
@@ -54,9 +59,12 @@ export default async function FluxoDeCaixaProjetadoPage({
         <p className="text-sm text-muted-foreground">
           Projeção calculada a partir do saldo em caixa conciliado de hoje e
           dos títulos a pagar/receber em aberto. Parcelas em aberto vencidas
-          antes do período entram na linha &quot;Em atraso&quot;, e o saldo dos
-          meses parte dela. Não considera contratos recorrentes,
-          financiamentos nem orçamento (ainda não existem no sistema).
+          antes do período (ou antes de hoje, num período futuro) entram na
+          linha &quot;Em atraso&quot;; num período futuro, o que vence de hoje
+          até o início dele entra na linha &quot;A vencer até&quot;. O saldo
+          dos meses parte da última dessas linhas. Não considera contratos
+          recorrentes, financiamentos nem orçamento (ainda não existem no
+          sistema).
         </p>
       </div>
 
