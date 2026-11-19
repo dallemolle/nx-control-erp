@@ -8,9 +8,17 @@ import {
   gerarParcelasPorPrazos,
   interpretarPrazos,
   loteVencidoNaData,
+  rotuloSituacaoPagamento,
   situacaoPagamento,
   validarParcelasVenda,
 } from "./venda";
+
+test("rotuloSituacaoPagamento troca o texto só na maquininha", () => {
+  expect(rotuloSituacaoPagamento("EM_ABERTO", true)).toBe("Aguardando repasse");
+  expect(rotuloSituacaoPagamento("VENCIDO", true)).toBe("Repasse atrasado");
+  expect(rotuloSituacaoPagamento("PAGO", true)).toBe("Pago");
+  expect(rotuloSituacaoPagamento("EM_ABERTO", false)).toBe("Em aberto");
+});
 
 const d = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
 

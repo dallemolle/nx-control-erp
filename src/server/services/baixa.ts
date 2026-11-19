@@ -26,6 +26,25 @@ function garantirBaixaPendente(statusAtual: StatusAprovacaoBaixa): void {
   }
 }
 
+export const MSG_BAIXA_MAQUININHA =
+  "Este título é de venda na maquininha: confirme o recebimento em Repasses de cartão";
+
+/** Títulos da maquininha (repasses e taxa) só são baixados pela confirmação do repasse (D-37). */
+async function garantirForaDaMaquininha(parcelaId: string) {
+  const daMaquininha = await prisma.parcela.count({
+    where: {
+      id: parcelaId,
+      titulo: {
+        OR: [
+          { pedidoVenda: { is: { operadoraCartaoId: { not: null } } } },
+          { pedidoVendaTaxa: { isNot: null } },
+        ],
+      },
+    },
+  });
+  if (daMaquininha > 0) throw new Error(MSG_BAIXA_MAQUININHA);
+}
+
 /** Segregação de funções: com a opção da empresa ligada, quem registrou a baixa não a aprova. */
 export async function exigeAprovacaoPorOutro(empresaId: string): Promise<boolean> {
   const empresa = await prisma.empresa.findUniqueOrThrow({
@@ -58,6 +77,7 @@ export async function registrarBaixa(sessao: SessaoAtiva, parcelaId: string, dad
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   await buscarParcelaDaFilial(sessao.filialId, parcelaId);
+  await garantirForaDaMaquininha(parcelaId);
 
   // A FK só prova que a conta existe em alguma filial — sem este escopo uma baixa
   // poderia ser lançada contra a conta bancária de outro tenant.

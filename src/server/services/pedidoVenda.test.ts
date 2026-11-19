@@ -214,7 +214,7 @@ describe("pedido de venda", () => {
     const lote = await novoLote();
     const r = await criarPedido(
       fx.sessao("VENDAS"),
-      pedido([{ loteId: lote.id, quantidadeKg: 1, precoKg: 5 }], { formaPagamento: "CARTAO" }),
+      pedido([{ loteId: lote.id, quantidadeKg: 1, precoKg: 5 }], { formaPagamento: "TRANSFERENCIA" }),
     );
     const gravado = await prisma.pedidoVenda.findUniqueOrThrow({ where: { id: r.pedidoId } });
     expect((await prisma.baixa.findUniqueOrThrow({ where: { id: gravado.baixaAutomaticaId! } })).statusAprovacao).toBe(
@@ -254,7 +254,7 @@ describe("pedido de venda", () => {
     ).rejects.toThrow("Venda em dinheiro entra numa conta Caixa");
     await expect(
       criarPedido(fx.sessao("VENDAS"), pedido(itens, { formaPagamento: "PIX", contaBancariaId: cad.contaCaixaId })),
-    ).rejects.toThrow("Pix, transferência e cartão não entram na conta Caixa");
+    ).rejects.toThrow("Pix e transferência não entram na conta Caixa");
   });
 
   test("falha no segundo item não grava nada", async () => {

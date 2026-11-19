@@ -232,3 +232,18 @@ original. Com movimento, só lote que pode sair (recepção não excluída, polp
 de OP encerrada); lote vencido pode ser transferido. A transferência gera
 saída e entrada ligadas, conta como movimentação (impede excluir a recepção
 e reabrir ou cancelar a OP) e é auditada (D-36).
+
+**RN-35 — Venda na maquininha.** Forma "Maquininha (cartão ou Pix)" com
+operadora, modalidade (débito, crédito à vista, crédito parcelado de 2 a 12
+vezes, Pix na maquininha) e parcelas. A condição da operadora para a
+modalidade e as parcelas define a taxa e o prazo (dias corridos); sem
+condição, o pedido é recusado. Repasses: um só (débito, crédito à vista, Pix,
+parcelado antecipado) ou um por parcela, de 30 em 30 dias; o bruto é dividido
+igual e a taxa total, arredondada, na mesma proporção, com as sobras de
+centavos na última. A venda cria o título a receber em nome da operadora e o
+título a pagar da taxa (sem taxa, sem título), sem baixa; a taxa usada fica
+gravada no pedido. A confirmação em Repasses de cartão baixa o bruto e a taxa
+na conta da operadora, sem passar pela aprovação, e pode ser desfeita
+enquanto não conciliada. Esses títulos não aceitam baixa manual. Pedido com
+repasse confirmado só é cancelado depois de desfazer a confirmação (D-37 a
+D-39).

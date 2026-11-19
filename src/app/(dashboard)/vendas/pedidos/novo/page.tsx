@@ -4,6 +4,7 @@ import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { podeExecutar, requirePermission } from "@/server/auth/permissions";
 import { obterConfiguracaoProducao } from "@/server/services/configuracaoProducao";
 import { lotesParaVenda, MSG_SEM_CATEGORIA_VENDA } from "@/server/services/pedidoVenda";
+import { condicoesDaOperadora, listarOperadoras } from "@/server/services/operadoraCartao";
 import { hojeDeCalendario, paraDataIso } from "@/lib/producao/periodo";
 import { nomeDaContaBancaria } from "@/lib/contaBancaria";
 import { PedidoForm, type OpcoesPedido } from "./pedido-form";
@@ -22,7 +23,7 @@ export default async function NovoPedidoPage() {
   }
 
   const hoje = hojeDeCalendario();
-  const [clientes, contas, lotes, configuracao] = await Promise.all([
+  const [clientes, contas, lotes, configuracao, operadoras] = await Promise.all([
     prisma.cliente.findMany({
       where: { empresaId: sessao.empresaId, ativo: true },
       select: {
@@ -42,6 +43,7 @@ export default async function NovoPedidoPage() {
     }),
     lotesParaVenda(sessao.filialId, hoje),
     obterConfiguracaoProducao(sessao.filialId),
+    listarOperadoras(sessao.filialId),
   ]);
 
   const opcoes: OpcoesPedido = {
@@ -55,6 +57,9 @@ export default async function NovoPedidoPage() {
     })),
     contaCaixaPadraoId: configuracao.contaCaixaPadraoId,
     contaRecebimentoPadraoId: configuracao.contaRecebimentoPadraoId,
+    operadoras: operadoras
+      .filter((o) => o.ativo)
+      .map((o) => ({ id: o.id, nome: o.nome, condicoes: condicoesDaOperadora(o) })),
   };
 
   return (

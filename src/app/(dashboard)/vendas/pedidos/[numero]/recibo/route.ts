@@ -4,7 +4,8 @@ import { prisma } from "@/server/db/client";
 import { obterPedido } from "@/server/services/pedidoVenda";
 import { gerarReciboPdf } from "@/lib/export/recibo";
 import { ROTULOS_FORMA_PAGAMENTO_VENDA } from "@/lib/schemas/enums";
-import { ROTULOS_SITUACAO_PAGAMENTO } from "@/lib/producao/venda";
+import { rotuloSituacaoPagamento } from "@/lib/producao/venda";
+import { descricaoPagamentoCartao } from "@/lib/producao/cartao";
 import { hojeDeCalendario } from "@/lib/producao/periodo";
 
 /** Recibo do pedido em PDF (A4), aberto no navegador para imprimir. */
@@ -39,8 +40,10 @@ export async function GET(_request: Request, ctx: { params: Promise<{ numero: st
       valor: item.valor,
     })),
     total: pedido.totais.valor,
-    formaPagamento: ROTULOS_FORMA_PAGAMENTO_VENDA[pedido.formaPagamento],
-    situacao: ROTULOS_SITUACAO_PAGAMENTO[pedido.situacao],
+    formaPagamento: pedido.modalidadeCartao
+      ? descricaoPagamentoCartao(pedido.modalidadeCartao, pedido.parcelasCartao)
+      : ROTULOS_FORMA_PAGAMENTO_VENDA[pedido.formaPagamento],
+    situacao: rotuloSituacaoPagamento(pedido.situacao, pedido.operadoraCartaoId !== null),
     cancelado: pedido.status === "CANCELADO",
     observacao: pedido.observacao,
     condicao: pedido.condicaoPagamento,

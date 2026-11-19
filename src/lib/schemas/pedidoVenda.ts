@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { CANAL_VENDA, CLASSIFICACAO_FISCAL, FORMA_PAGAMENTO_VENDA, SEM_VALOR } from "./enums";
+import { CANAL_VENDA, CLASSIFICACAO_FISCAL, FORMA_PAGAMENTO_VENDA, MODALIDADE_CARTAO, SEM_VALOR } from "./enums";
 import { checkboxSchema, textoOpcional } from "./campos";
 import { MAX_PARCELAS_VENDA } from "@/lib/producao/venda";
+import { MAX_PARCELAS_CARTAO } from "@/lib/producao/cartao";
 
 /** `<input type="date">` vazio vira `undefined`. */
 const dataOpcional = z.preprocess((v) => (v === "" || v === null ? undefined : v), z.coerce.date().optional());
@@ -65,6 +66,12 @@ export const pedidoVendaSchema = z
     formaPagamento: z.enum(FORMA_PAGAMENTO_VENDA, { message: "Selecione a forma de pagamento" }),
     parcelas: parcelasDoFormulario,
     contaBancariaId: idOpcional,
+    operadoraCartaoId: idOpcional,
+    modalidadeCartao: enumOpcional(MODALIDADE_CARTAO),
+    parcelasCartao: z.preprocess(
+      (v) => (v === "" || v === null || v === undefined ? undefined : v),
+      z.coerce.number().int().optional(),
+    ),
     retiraNaPropriedade: checkboxSchema.transform((v) => v ?? false),
     classificacaoFiscal: enumOpcional(CLASSIFICACAO_FISCAL),
     numeroDocumentoFiscal: textoOpcional,
@@ -74,6 +81,20 @@ export const pedidoVendaSchema = z
     itens: itensDoFormulario,
   })
   .superRefine((dados, ctx) => {
+    if (dados.formaPagamento === "CARTAO") {
+      if (!dados.operadoraCartaoId) {
+        ctx.addIssue({ code: "custom", path: ["operadoraCartaoId"], message: "Selecione a operadora" });
+      }
+      if (!dados.modalidadeCartao) {
+        ctx.addIssue({ code: "custom", path: ["modalidadeCartao"], message: "Selecione a modalidade" });
+      } else if (
+        dados.modalidadeCartao === "CREDITO_PARCELADO" &&
+        !(dados.parcelasCartao && dados.parcelasCartao >= 2 && dados.parcelasCartao <= MAX_PARCELAS_CARTAO)
+      ) {
+        ctx.addIssue({ code: "custom", path: ["parcelasCartao"], message: "Informe as parcelas (2 a 12)" });
+      }
+      return;
+    }
     if (dados.formaPagamento !== "A_PRAZO") return;
     if (dados.parcelas.length === 0) {
       ctx.addIssue({ code: "custom", path: ["parcelas"], message: "Informe os prazos" });

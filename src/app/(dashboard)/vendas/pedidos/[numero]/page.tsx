@@ -15,6 +15,7 @@ import {
   ROTULOS_STATUS_PARCELA,
 } from "@/lib/schemas/enums";
 import { atrasoEntregaDias } from "@/lib/producao/venda";
+import { descricaoPagamentoCartao } from "@/lib/producao/cartao";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
 import { hojeDeCalendario, paraDataIso } from "@/lib/producao/periodo";
 import { nomeDaContaBancaria } from "@/lib/contaBancaria";
@@ -48,6 +49,11 @@ export default async function PedidoPage({ params }: { params: Promise<{ numero:
   const situacaoCancelamento = podeCancelar ? await situacaoParaCancelar(pedido) : null;
   const cancelado = pedido.status === "CANCELADO";
   const atraso = pedido.entrega ? atrasoEntregaDias(pedido.entrega, hoje) : null;
+  const naMaquininha = pedido.operadoraCartaoId !== null;
+  const taxaDoRepasse = (numero: number) => {
+    const parcela = pedido.tituloTaxa?.parcelas.find((t) => t.numero === numero && t.status !== "CANCELADO");
+    return parcela ? Number(parcela.valorAtualizado) : 0;
+  };
 
   return (
     <div className="max-w-5xl space-y-6">
@@ -91,7 +97,11 @@ export default async function PedidoPage({ params }: { params: Promise<{ numero:
         <CardContent>
           <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <Dado rotulo="Canal">{pedido.canal ? ROTULOS_CANAL_VENDA[pedido.canal] : "—"}</Dado>
-            <Dado rotulo="Forma de pagamento">{ROTULOS_FORMA_PAGAMENTO_VENDA[pedido.formaPagamento]}</Dado>
+            <Dado rotulo="Forma de pagamento">
+              {pedido.modalidadeCartao
+                ? descricaoPagamentoCartao(pedido.modalidadeCartao, pedido.parcelasCartao, pedido.operadoraCartao?.nome)
+                : ROTULOS_FORMA_PAGAMENTO_VENDA[pedido.formaPagamento]}
+            </Dado>
             {pedido.formaPagamento === "A_PRAZO" ? (
               <Dado rotulo="Condição">{pedido.condicaoPagamento ? `${pedido.condicaoPagamento} dias` : "—"}</Dado>
             ) : (
@@ -164,20 +174,46 @@ export default async function PedidoPage({ params }: { params: Promise<{ numero:
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center gap-2">
-              <SituacaoPagamentoBadge situacao={pedido.situacao} />
+              <SituacaoPagamentoBadge situacao={pedido.situacao} naMaquininha={naMaquininha} />
               {pedido.titulo ? (
                 <span className="text-sm text-muted-foreground">Conta a receber {pedido.titulo.documento}</span>
               ) : null}
             </div>
-            {pedido.titulo?.parcelas.map((parcela, _, todas) => (
-              <p key={parcela.id} className="text-sm tabular-nums">
-                {todas.length > 1 ? `${parcela.numero}ª · ` : ""}
-                Vence {formatarData(parcela.dataVencimento)} · {formatarMoeda(parcela.valorAtualizado)}
-                {" · "}
-                <span className="whitespace-nowrap text-muted-foreground">{ROTULOS_STATUS_PARCELA[parcela.status]}</span>
-              </p>
-            ))}
-            {podeExecutar(sessao.perfil, "titulo:ler") ? (
+            {naMaquininha
+              ? pedido.titulo?.parcelas.map((parcela, _, todas) => {
+                  const taxa = taxaDoRepasse(parcela.numero);
+                  return (
+                    <p key={parcela.id} className="text-sm tabular-nums">
+                      {todas.length > 1 ? `${parcela.numero}º repasse` : "Repasse"} · previsto{" "}
+                      {formatarData(parcela.dataVencimento)} · bruto {formatarMoeda(parcela.valorAtualizado)} · taxa{" "}
+                      {formatarMoeda(taxa)} · líquido {formatarMoeda(Number(parcela.valorAtualizado) - taxa)}
+                      {" · "}
+                      <span className="whitespace-nowrap text-muted-foreground">
+                        {parcela.repasseCartao
+                          ? `recebido em ${formatarData(parcela.repasseCartao.data)}`
+                          : ROTULOS_STATUS_PARCELA[parcela.status]}
+                      </span>
+                    </p>
+                  );
+                })
+              : pedido.titulo?.parcelas.map((parcela, _, todas) => (
+                  <p key={parcela.id} className="text-sm tabular-nums">
+                    {todas.length > 1 ? `${parcela.numero}ª · ` : ""}
+                    Vence {formatarData(parcela.dataVencimento)} · {formatarMoeda(parcela.valorAtualizado)}
+                    {" · "}
+                    <span className="whitespace-nowrap text-muted-foreground">
+                      {ROTULOS_STATUS_PARCELA[parcela.status]}
+                    </span>
+                  </p>
+                ))}
+            {naMaquininha && podeExecutar(sessao.perfil, "titulo:baixar") ? (
+              <Link
+                href="/financeiro/repasses-cartao"
+                className="text-sm text-primary underline-offset-4 hover:underline"
+              >
+                Ver em Repasses de cartão
+              </Link>
+            ) : !naMaquininha && podeExecutar(sessao.perfil, "titulo:ler") ? (
               <Link
                 href={`/financeiro/contas-a-receber?contraparte=${pedido.clienteId}`}
                 className="text-sm text-primary underline-offset-4 hover:underline"

@@ -4,7 +4,14 @@ import { requireAlteracaoFilial, requirePermission } from "@/server/auth/permiss
 import { registrarAuditoria, type ClientePrisma } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { DadosEditaveisPedido, PedidoVendaFormValues } from "@/lib/schemas/pedidoVenda";
-import { ROTULOS_FORMA_PAGAMENTO_VENDA } from "@/lib/schemas/enums";
+import { ROTULOS_FORMA_PAGAMENTO_VENDA, ROTULOS_MODALIDADE_CARTAO } from "@/lib/schemas/enums";
+import {
+  calcularRepasses,
+  condicaoParaVenda,
+  descricaoPagamentoCartao,
+  type CondicaoCartao,
+  type ModalidadeCartaoValor,
+} from "@/lib/producao/cartao";
 import {
   calcularItem,
   calcularPedido,
@@ -25,6 +32,22 @@ import {
 } from "./estoque";
 import { criarTituloInterno } from "./titulo";
 import { efetivarBaixa } from "./baixa";
+import { condicoesDaOperadora } from "./operadoraCartao";
+
+/** Venda na maquininha (D-37): operadora, modalidade, parcelas e condição usadas no pedido. */
+type VendaNaMaquininha = {
+  operadora: {
+    id: string;
+    nome: string;
+    clienteId: string;
+    fornecedorId: string;
+    categoriaTaxaId: string;
+    contaBancariaId: string;
+  };
+  modalidade: ModalidadeCartaoValor;
+  parcelas: number;
+  condicao: CondicaoCartao;
+};
 
 export const MSG_SEM_CATEGORIA_VENDA =
   "Configure a categoria de venda em Administração → Configuração de produção";
@@ -51,7 +74,9 @@ export async function criarPedido(sessao: SessaoAtiva, dados: PedidoVendaFormVal
   const configuracao = await obterConfiguracaoProducao(sessao.filialId);
   if (!configuracao.categoriaVendaId) throw new Error(MSG_SEM_CATEGORIA_VENDA);
 
-  const aVista = dados.formaPagamento !== "A_PRAZO";
+  const naMaquininha = dados.formaPagamento === "CARTAO";
+  const aPrazo = dados.formaPagamento === "A_PRAZO";
+  const aVista = !aPrazo && !naMaquininha;
   const emDinheiro = dados.formaPagamento === "DINHEIRO";
   let contaId: string | null = null;
   if (aVista) {
@@ -64,7 +89,26 @@ export async function criarPedido(sessao: SessaoAtiva, dados: PedidoVendaFormVal
     });
     if (!conta) throw new Error("Conta não encontrada ou inativa");
     if (emDinheiro && conta.tipo !== "CAIXA") throw new Error("Venda em dinheiro entra numa conta Caixa");
-    if (!emDinheiro && conta.tipo === "CAIXA") throw new Error("Pix, transferência e cartão não entram na conta Caixa");
+    if (!emDinheiro && conta.tipo === "CAIXA") throw new Error("Pix e transferência não entram na conta Caixa");
+  }
+
+  let maquininha: VendaNaMaquininha | null = null;
+  if (naMaquininha) {
+    const operadora = await prisma.operadoraCartao.findFirst({
+      where: { id: dados.operadoraCartaoId, filialId: sessao.filialId, ativo: true },
+      include: { condicoes: true, contaBancaria: { select: { ativo: true } } },
+    });
+    if (!operadora) throw new Error("Operadora não encontrada ou inativa");
+    if (!operadora.contaBancaria.ativo) throw new Error("A conta de depósito da operadora está inativa");
+    const modalidade = dados.modalidadeCartao!;
+    const parcelas = modalidade === "CREDITO_PARCELADO" ? dados.parcelasCartao! : 1;
+    const condicao = condicaoParaVenda(condicoesDaOperadora(operadora), modalidade, parcelas);
+    if (!condicao) {
+      const emParcelas = modalidade === "CREDITO_PARCELADO" ? ` em ${parcelas}x` : "";
+      throw new Error(`A ${operadora.nome} não tem condição para ${ROTULOS_MODALIDADE_CARTAO[modalidade]}${emParcelas}`);
+    }
+    contaId = operadora.contaBancariaId;
+    maquininha = { operadora, modalidade, parcelas, condicao };
   }
 
   const loteIds = dados.itens.map((item) => item.loteId);
@@ -103,16 +147,17 @@ export async function criarPedido(sessao: SessaoAtiva, dados: PedidoVendaFormVal
     };
   });
   const totais = calcularPedido(itens);
+  const repasses = maquininha ? calcularRepasses(dados.data, totais.valor, maquininha.condicao, maquininha.parcelas) : [];
 
   // A prazo: as parcelas vêm prontas do formulário (o vendedor pode ter ajustado).
-  const parcelasAPrazo = aVista ? [] : dados.parcelas;
-  if (!aVista) {
+  const parcelasAPrazo = aPrazo ? dados.parcelas : [];
+  if (aPrazo) {
     const erroParcelas = validarParcelasVenda(dados.data, totais.valor, parcelasAPrazo);
     if (erroParcelas) throw new Error(erroParcelas);
   }
-  const condicaoPagamento = aVista
-    ? null
-    : condicaoDasParcelas(dados.data, parcelasAPrazo.map((p) => p.dataVencimento));
+  const condicaoPagamento = aPrazo
+    ? condicaoDasParcelas(dados.data, parcelasAPrazo.map((p) => p.dataVencimento))
+    : null;
 
   // Sem classificação no pedido nem no cliente: com número de nota é fiscal;
   // sem, é venda gerencial com recibo.
@@ -139,6 +184,10 @@ export async function criarPedido(sessao: SessaoAtiva, dados: PedidoVendaFormVal
             formaPagamento: dados.formaPagamento,
             condicaoPagamento,
             contaBancariaId: contaId,
+            operadoraCartaoId: maquininha?.operadora.id ?? null,
+            modalidadeCartao: maquininha?.modalidade ?? null,
+            parcelasCartao: maquininha?.parcelas ?? null,
+            taxaCartaoPercentual: maquininha?.condicao.taxaPercentual ?? null,
             retiraNaPropriedade: dados.retiraNaPropriedade,
             numeroDocumentoFiscal: numeroNota,
             observacao: dados.observacao ?? null,
@@ -172,26 +221,56 @@ export async function criarPedido(sessao: SessaoAtiva, dados: PedidoVendaFormVal
           sessao,
           "RECEBER",
           {
-            contraparteId: cliente.id,
+            contraparteId: maquininha ? maquininha.operadora.clienteId : cliente.id,
             documento: numeroNota ?? `PV-${numero}`,
             dataEmissao: dados.data,
             dataCompetencia: dados.data,
             categoriaFinanceiraId: configuracao.categoriaVendaId!,
             contaBancariaId: contaId ?? "",
-            formaPagamento: ROTULOS_FORMA_PAGAMENTO_VENDA[dados.formaPagamento],
+            formaPagamento: maquininha
+              ? descricaoPagamentoCartao(maquininha.modalidade, maquininha.parcelas, maquininha.operadora.nome)
+              : ROTULOS_FORMA_PAGAMENTO_VENDA[dados.formaPagamento],
             classificacaoFiscal: classificacao,
             tipoComprovante: classificacao === "FISCAL" ? "NFE" : "RECIBO",
             numeroDocumentoFiscal: numeroNota ?? "",
-            parcelas: aVista
-              ? [{ numero: 1, dataVencimento: dados.data, valorOriginal: totais.valor }]
-              : parcelasAPrazo.map((parcela, i) => ({
-                  numero: i + 1,
-                  dataVencimento: parcela.dataVencimento,
-                  valorOriginal: parcela.valor,
-                })),
+            parcelas: maquininha
+              ? repasses.map((r) => ({ numero: r.numero, dataVencimento: r.data, valorOriginal: r.bruto }))
+              : aVista
+                ? [{ numero: 1, dataVencimento: dados.data, valorOriginal: totais.valor }]
+                : parcelasAPrazo.map((parcela, i) => ({
+                    numero: i + 1,
+                    dataVencimento: parcela.dataVencimento,
+                    valorOriginal: parcela.valor,
+                  })),
           },
           tx,
         );
+
+        // D-37: a taxa da operadora vira despesa, com as parcelas nas datas dos repasses.
+        let tituloTaxaId: string | null = null;
+        const parcelasTaxa = repasses.filter((r) => r.taxa > 0);
+        if (maquininha && parcelasTaxa.length > 0) {
+          const tituloTaxa = await criarTituloInterno(
+            sessao,
+            "PAGAR",
+            {
+              contraparteId: maquininha.operadora.fornecedorId,
+              documento: `Taxa PV-${numero}`,
+              dataEmissao: dados.data,
+              dataCompetencia: dados.data,
+              categoriaFinanceiraId: maquininha.operadora.categoriaTaxaId,
+              contaBancariaId: maquininha.operadora.contaBancariaId,
+              formaPagamento: "Taxa da operadora",
+              classificacaoFiscal: "GERENCIAL",
+              tipoComprovante: "SEM_COMPROVANTE",
+              numeroDocumentoFiscal: "",
+              motivoSemDocumento: "Taxa da operadora descontada no repasse",
+              parcelas: parcelasTaxa.map((r) => ({ numero: r.numero, dataVencimento: r.data, valorOriginal: r.taxa })),
+            },
+            tx,
+          );
+          tituloTaxaId = tituloTaxa.id;
+        }
 
         let baixaAutomaticaId: string | null = null;
         if (aVista) {
@@ -209,7 +288,10 @@ export async function criarPedido(sessao: SessaoAtiva, dados: PedidoVendaFormVal
           baixaAutomaticaId = baixa.id;
         }
 
-        await tx.pedidoVenda.update({ where: { id: pedido.id }, data: { tituloId: titulo.id, baixaAutomaticaId } });
+        await tx.pedidoVenda.update({
+          where: { id: pedido.id },
+          data: { tituloId: titulo.id, tituloTaxaId, baixaAutomaticaId },
+        });
 
         if (!dados.retiraNaPropriedade) {
           await tx.entrega.create({
@@ -235,9 +317,19 @@ export async function criarPedido(sessao: SessaoAtiva, dados: PedidoVendaFormVal
               clienteId: cliente.id,
               formaPagamento: dados.formaPagamento,
               condicaoPagamento,
-              parcelas: aVista
-                ? undefined
-                : parcelasAPrazo.map((p) => ({ dataVencimento: p.dataVencimento, valor: p.valor })),
+              parcelas: aPrazo
+                ? parcelasAPrazo.map((p) => ({ dataVencimento: p.dataVencimento, valor: p.valor }))
+                : undefined,
+              cartao: maquininha
+                ? {
+                    operadora: maquininha.operadora.nome,
+                    modalidade: maquininha.modalidade,
+                    parcelas: maquininha.parcelas,
+                    taxaPercentual: maquininha.condicao.taxaPercentual,
+                    repasses,
+                  }
+                : undefined,
+              tituloTaxaId,
               valor: totais.valor,
               itens: itens.map((item) => ({
                 lote: item.lote.codigo,
@@ -276,6 +368,11 @@ export async function situacaoParaCancelar(
   db: ClientePrisma = prisma,
 ): Promise<SituacaoCancelamentoPedido> {
   if (pedido.status === "CANCELADO") return { pode: false, motivo: "O pedido já está cancelado" };
+  if (pedido.tituloId) {
+    // Maquininha: o repasse confirmado é desfeito na tela de repasses antes do cancelamento.
+    const confirmados = await db.repasseCartaoConfirmado.count({ where: { parcela: { tituloId: pedido.tituloId } } });
+    if (confirmados > 0) return { pode: false, motivo: "Desfaça a confirmação dos repasses antes de cancelar" };
+  }
   if (pedido.tituloId) {
     const outras = await db.baixa.count({
       where: {
@@ -328,6 +425,9 @@ export async function cancelarPedido(sessao: SessaoAtiva, id: string, motivo: st
     }
     if (pedido.tituloId) {
       await tx.parcela.updateMany({ where: { tituloId: pedido.tituloId }, data: { status: "CANCELADO" } });
+    }
+    if (pedido.tituloTaxaId) {
+      await tx.parcela.updateMany({ where: { tituloId: pedido.tituloTaxaId }, data: { status: "CANCELADO" } });
     }
     for (const item of pedido.itens) {
       await registrarMovimento(tx, {
@@ -488,9 +588,11 @@ export async function obterPedido(filialId: string, numero: number, hoje: Date) 
           id: true,
           documento: true,
           classificacaoFiscal: true,
-          parcelas: { orderBy: { numero: "asc" } },
+          parcelas: { orderBy: { numero: "asc" }, include: { repasseCartao: { select: { data: true } } } },
         },
       },
+      operadoraCartao: { select: { nome: true } },
+      tituloTaxa: { select: { parcelas: { select: { numero: true, valorAtualizado: true, status: true } } } },
       entrega: true,
       usuario: { select: { nome: true } },
     },
