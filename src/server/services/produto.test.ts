@@ -17,6 +17,7 @@ describe("produto (por empresa)", () => {
     validadeDias: 1,
     precoReferenciaKg: undefined,
     armazenamento: null,
+    textoEtiqueta: null,
     unidadeComercial: "rasa",
     fatorUnidadeKg: 14,
     ...sobrescrever,

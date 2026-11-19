@@ -7,18 +7,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
 
 ## Segurança — dependências
 
-- **`mysql2`/`deepmerge-ts` vulneráveis via `@prisma/config` (dependência
-  do CLI `prisma`, dev-only).** `npm audit` (checado em 2026-09-12) marca
-  como alta severidade. Este projeto usa só Postgres — `mysql2` só existe
-  porque o CLI do Prisma dá suporte genérico a múltiplos bancos. Checado
-  contra a versão mais recente do Prisma disponível na época (`7.10.0`):
-  ainda depende da mesma `deepmerge-ts@7.1.5` vulnerável — não é algo que
-  uma atualização da nossa dependência resolva hoje, é um fix pendente do
-  próprio Prisma. O único caminho que `npm audit fix --force` oferece é
-  fazer downgrade do `prisma` para `6.19.3` (versão major anterior à que
-  o projeto usa — rejeitado, risco real de regressão). Reavaliar quando o
-  Prisma lançar uma versão que já traga `deepmerge-ts >= 8.0.0`.
-
 - **`uuid` vulnerável via `exceljs`** (severidade moderada,
   `GHSA-w5hq-g745-h8pq` — falta de checagem de limites de buffer em
   `v3`/`v5`/`v6` quando um buffer é fornecido pelo chamador). `exceljs`
