@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.33](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.32...nx-control-erp-v0.1.33) (2026-11-19)
+
+
+### Correções
+
+* **deps:** atualiza next, zod e prisma por falhas de segurança ([f8163ed](https://github.com/dallemolle/nx-control-erp/commit/f8163ed2d390e267fc4159ab586989941097d9c1))
+* **deps:** remove o shadcn duplicado em dependencies ([5e793d0](https://github.com/dallemolle/nx-control-erp/commit/5e793d0c5a93847695c5365bcf2296cc3f611ef1))
+* **schemas:** checkbox desmarcado e texto ausente voltam a ser gravados ([3950752](https://github.com/dallemolle/nx-control-erp/commit/395075269f5a6de5a604fc54630370b6e2c9091a))
+
 ## [0.1.32](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.31...nx-control-erp-v0.1.32) (2026-11-18)
 
 
