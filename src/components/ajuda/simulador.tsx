@@ -53,8 +53,9 @@ export function Simulador({
         setIndice((atual) => limitarIndice(roteiro, atual - 1));
       }
     }
-    document.addEventListener("keydown", aoTeclar);
-    return () => document.removeEventListener("keydown", aoTeclar);
+    // Fase de captura: o diálogo (Base UI) interrompe a propagação do keydown antes de chegar ao document.
+    document.addEventListener("keydown", aoTeclar, true);
+    return () => document.removeEventListener("keydown", aoTeclar, true);
   }, [roteiro]);
 
   return (

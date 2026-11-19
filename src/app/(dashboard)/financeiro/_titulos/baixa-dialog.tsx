@@ -1,4 +1,5 @@
 "use client";
+// Espelhado na ajuda (src/ajuda/contas-a-pagar/cenas.tsx): mudou rótulo, campo ou botão? Ajuste a ajuda junto.
 
 import { useActionState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";

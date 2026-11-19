@@ -2,6 +2,8 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { valoresAte } from "@/ajuda/roteiro";
+import { chaveAcessoValida, normalizarChaveAcesso } from "@/lib/classificacaoFiscal";
+import { EXEMPLO } from "./exemplo";
 import { construtorDeRoteiros } from "@/ajuda/tipos";
 import type { ALVOS } from "./alvos";
 import { ajudaContasAPagar } from "./index";
@@ -18,6 +20,10 @@ describe("roteiros de Contas a pagar", () => {
       "cancelar-parcela",
       "encontrar-exportar",
     ]);
+  });
+
+  test("a chave de acesso do exemplo passa na validação da tela real", () => {
+    expect(chaveAcessoValida(normalizarChaveAcesso(EXEMPLO.chave))).toBe(true);
   });
 
   test.each(roteiros.map((r) => [r.id, r] as const))("%s tem conteúdo completo", (_id, roteiro) => {

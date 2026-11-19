@@ -1,6 +1,6 @@
 # Ajuda contextual com simulação da tela (piloto: Contas a pagar)
 
-Data: 2026-11-19 · Status: desenho aprovado, aguardando plano
+Data: 2026-11-19 · Status: implementada (2026-11-19)
 
 Hoje a ajuda do sistema é um único manual em markdown
 ([passo-a-passo.md](../../../content/ajuda/passo-a-passo.md), ~500 linhas),
@@ -103,8 +103,9 @@ ou o roteiro não existirem no registro, o link aparece como texto comum.
 ### O exemplo
 
 > A fazenda comprou **adubo** da **Agro Insumos Ltda**: nota fiscal
-> **NF-e 1234**, série 1, emitida em **10/03/2026**, total de **R$ 3.000,00**,
-> em **3 parcelas de R$ 1.000,00** (vencimentos 10/04, 10/05 e 10/06/2026).
+> **NF-e 1234**, série 1, emitida em **10/09/2026**, total de **R$ 3.000,00**,
+> em **3 parcelas de R$ 1.000,00** (vencimentos 10/10, 10/11 e 10/12/2026;
+> as parcelas 1 e 2 aparecem vencidas e a 3, a vencer).
 > Categoria **Insumos Agrícolas**, centro de custo **Lavoura**, safra
 > **2025/26**, pagamento por **boleto** pela conta **Banco do Brasil — CC
 > 12345-6**.
@@ -120,7 +121,7 @@ não lê dado nenhum da empresa.
 | 2 | Pagar uma parcela (baixa) | Lista com parcelas → Registrar baixa | Achar o título e expandir; botão "Baixar" na parcela 1; data do pagamento; valor pago; juros, multa e desconto (exemplo com R$ 12,00 de juros por atraso); conta bancária de onde saiu o dinheiro; "Registrar baixa". **E depois?** A baixa fica pendente em Aprovações pendentes; se a empresa exige, outra pessoa aprova; aprovada, gera a saída na conta e a parcela fica paga. |
 | 3 | Mudar o vencimento | Lista com parcelas | Expandir; campo de data na parcela; nova data; "Alterar". Só parcela em aberto. |
 | 4 | Renegociar uma parcela vencida | Lista → Renegociar parcela | Botão "Renegociar"; novas parcelas (exemplo: a parcela 2 vira duas de R$ 500,00); "Adicionar parcela"; confirmar. Aviso: operação final, a parcela original não aceita baixa nem nova renegociação. |
-| 5 | Cancelar uma parcela | Lista com parcelas | Quando usar (não vai mais ser paga); botão "Cancelar"; confirmação. Aviso: operação final. |
+| 5 | Cancelar uma parcela | Lista com parcelas | Quando usar (não vai mais ser paga); botão "Cancelar". Na tela real não há confirmação: o passo avisa que o clique já cancela. Aviso: operação final. |
 | 6 | Encontrar e exportar | Barra de filtros → Lista | Filtros combináveis (exemplo: fornecedor Agro Insumos + status Vencida); "Limpar filtros"; Exportar CSV/Excel/PDF respeita os filtros; para que serve cada formato. |
 
 A **importação por CSV** entra só como texto no índice do popup ("Para lançar
@@ -199,9 +200,10 @@ Cada cena exporta a lista dos seus alvos como `const` (`ALVOS_NOVO_TITULO =
 por essa lista. **Um passo que aponta para um campo que não existe na cena
 não compila.**
 
-Roteiros que passam por duas cenas (Lista → Novo título) indicam a cena por
-passo (`cena?` no `Passo`, herdando a do roteiro). Ao trocar de cena, a
-transição é um fade curto.
+Cada passo diz a sua cena: `cena` é obrigatório no passo, sem herança do
+roteiro. Os tipos vêm de `construtorDeRoteiros<typeof ALVOS>()`. A cena de
+filtros é a própria cena da lista. Ao trocar de cena, a transição é um fade
+curto.
 
 ### Estado
 
