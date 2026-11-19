@@ -8,11 +8,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   CANAL_VENDA,
   FORMA_PAGAMENTO_VENDA,
+  MODALIDADE_CARTAO,
   ROTULOS_CANAL_VENDA,
   ROTULOS_CLASSIFICACAO_FISCAL,
   ROTULOS_FORMA_PAGAMENTO_VENDA,
+  ROTULOS_MODALIDADE_CARTAO,
   SEM_VALOR,
 } from "@/lib/schemas/enums";
+import {
+  calcularRepasses,
+  condicaoParaVenda,
+  type CondicaoCartao,
+  type ModalidadeCartaoValor,
+} from "@/lib/producao/cartao";
 import {
   calcularItem,
   calcularPedido,
@@ -44,6 +52,8 @@ export type OpcoesPedido = {
   lotes: (Omit<LoteParaVenda, "validade" | "liberadoAte"> & { validade: string; liberadoAte: string | null })[];
   contaCaixaPadraoId: string | null;
   contaRecebimentoPadraoId: string | null;
+  /** Operadoras ativas da filial, para a venda na maquininha. */
+  operadoras: { id: string; nome: string; condicoes: CondicaoCartao[] }[];
 };
 
 type ItemForm = {
@@ -92,6 +102,9 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
   const [canal, setCanal] = useState<string>(SEM_VALOR);
   const [forma, setForma] = useState<FormaPagamento>("PIX");
   const [contaId, setContaId] = useState(opcoes.contaRecebimentoPadraoId ?? "");
+  const [operadoraId, setOperadoraId] = useState(opcoes.operadoras.length === 1 ? opcoes.operadoras[0].id : "");
+  const [modalidade, setModalidade] = useState<ModalidadeCartaoValor | "">("");
+  const [parcelasCartao, setParcelasCartao] = useState("2");
   const [prazos, setPrazos] = useState("");
   // Ajuste manual das parcelas: vale só enquanto prazos, data e total forem os de quando foi feito.
   const [ajuste, setAjuste] = useState<{ chave: string; linhas: ParcelaForm[] } | null>(null);
@@ -102,7 +115,9 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
   const [itens, setItens] = useState<ItemForm[]>(() => [itemVazio(1)]);
   const proximaChave = useRef(2);
 
-  const aVista = forma !== "A_PRAZO";
+  const naMaquininha = forma === "CARTAO";
+  const aPrazo = forma === "A_PRAZO";
+  const aVista = !aPrazo && !naMaquininha;
   const contasDaForma = opcoes.contas.filter((c) => (forma === "DINHEIRO" ? c.tipo === "CAIXA" : c.tipo !== "CAIXA"));
   const lotesPorId = new Map(opcoes.lotes.map((l) => [l.id, l]));
 
@@ -155,10 +170,24 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
   const totais = calcularPedido(
     completas.map((l) => ({ quantidadeKg: l.quantidadeKg, precoKg: l.precoKg, custoKg: l.lote!.custoKg })),
   );
+  // Maquininha: a prévia usa o mesmo cálculo do servidor (RN-35).
+  const operadora = opcoes.operadoras.find((o) => o.id === operadoraId);
+  const modalidadesDaOperadora = MODALIDADE_CARTAO.filter((m) => operadora?.condicoes.some((c) => c.modalidade === m));
+  const nParcelasCartao = modalidade === "CREDITO_PARCELADO" ? Number(parcelasCartao) : 1;
+  const condicaoCartao =
+    operadora && modalidade ? condicaoParaVenda(operadora.condicoes, modalidade, nParcelasCartao) : null;
+  const repassesPrevia =
+    naMaquininha && condicaoCartao && totais.valor > 0 && data
+      ? calcularRepasses(dataDeCalendario(data), totais.valor, condicaoCartao, nParcelasCartao)
+      : [];
+  const opcoesParcelasCartao = (operadora?.condicoes ?? [])
+    .filter((c) => c.modalidade === "CREDITO_PARCELADO")
+    .flatMap((c) => Array.from({ length: c.parcelasAte - c.parcelasDe + 1 }, (_, i) => c.parcelasDe + i));
+
   const leituraPrazos = interpretarPrazos(prazos);
   const chaveParcelas = `${prazos}|${data}|${totais.valor}`;
   const geradas: ParcelaForm[] =
-    !aVista && leituraPrazos.ok && totais.valor > 0 && data
+    aPrazo && leituraPrazos.ok && totais.valor > 0 && data
       ? gerarParcelasPorPrazos(dataDeCalendario(data), totais.valor, leituraPrazos.prazos).map((p) => ({
           dataVencimento: paraDataIso(p.dataVencimento),
           valor: p.valor.toFixed(2),
@@ -167,7 +196,7 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
   const parcelas = ajuste?.chave === chaveParcelas ? ajuste.linhas : geradas;
   const somaParcelas = parcelas.reduce((acc, p) => acc + Math.round((numero(p.valor) || 0) * 100), 0) / 100;
   const erroParcelas =
-    aVista || parcelas.length === 0
+    !aPrazo || parcelas.length === 0
       ? null
       : validarParcelasVenda(
           dataDeCalendario(data),
@@ -201,12 +230,19 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
       <input type="hidden" name="itens" value={itensJson} />
       <input type="hidden" name="retiraNaPropriedade" value={retira ? "true" : "false"} />
       <input type="hidden" name="formaPagamento" value={forma} />
-      {!aVista ? (
+      {aPrazo ? (
         <input
           type="hidden"
           name="parcelas"
           value={JSON.stringify(parcelas.map((p) => ({ dataVencimento: p.dataVencimento, valor: numero(p.valor) })))}
         />
+      ) : null}
+      {naMaquininha ? (
+        <>
+          <input type="hidden" name="operadoraCartaoId" value={operadoraId} />
+          <input type="hidden" name="modalidadeCartao" value={modalidade} />
+          <input type="hidden" name="parcelasCartao" value={modalidade === "CREDITO_PARCELADO" ? parcelasCartao : ""} />
+        </>
       ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2">
@@ -271,7 +307,7 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
               </SelectContent>
             </Select>
           </Campo>
-        ) : (
+        ) : aPrazo ? (
           <Campo id="prazos" rotulo="Prazos (dias)">
             <Input
               id="prazos"
@@ -292,6 +328,67 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
               </p>
             )}
           </Campo>
+        ) : (
+          <>
+            <Campo id="operadoraCartao" rotulo="Operadora">
+              <Select
+                value={operadoraId || null}
+                onValueChange={(v) => {
+                  setOperadoraId(v ?? "");
+                  setModalidade("");
+                }}
+              >
+                <SelectTrigger id="operadoraCartao" className="w-full">
+                  <SelectValue placeholder="Selecione a operadora" />
+                </SelectTrigger>
+                <SelectContent>
+                  {opcoes.operadoras.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Campo>
+            <Campo id="modalidadeCartao" rotulo="Modalidade">
+              <Select
+                value={modalidade || null}
+                onValueChange={(v) => setModalidade((v ?? "") as ModalidadeCartaoValor | "")}
+              >
+                <SelectTrigger id="modalidadeCartao" className="w-full">
+                  <SelectValue placeholder="Selecione a modalidade" />
+                </SelectTrigger>
+                <SelectContent>
+                  {modalidadesDaOperadora.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {ROTULOS_MODALIDADE_CARTAO[m]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Campo>
+            {modalidade === "CREDITO_PARCELADO" ? (
+              <Campo id="parcelasCartao" rotulo="Parcelas">
+                <Select value={parcelasCartao} onValueChange={(v) => v && setParcelasCartao(v)}>
+                  <SelectTrigger id="parcelasCartao" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {opcoesParcelasCartao.map((n) => (
+                      <SelectItem key={n} value={String(n)}>
+                        {n}x
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Campo>
+            ) : null}
+            {opcoes.operadoras.length === 0 ? (
+              <p className="text-sm text-destructive sm:col-span-2">
+                Nenhuma operadora ativa: cadastre em Cadastros → Operadoras de cartão.
+              </p>
+            ) : null}
+          </>
         )}
         <Campo id="classificacaoFiscal" rotulo="Classificação">
           <Select
@@ -459,7 +556,7 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
         </Button>
       </section>
 
-      {!aVista && parcelas.length > 0 ? (
+      {aPrazo && parcelas.length > 0 ? (
         <section className="space-y-2">
           <h2 className="text-sm font-semibold">Parcelas</h2>
           {parcelas.map((parcela, indice) => (
@@ -490,6 +587,27 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
         </section>
       ) : null}
 
+      {repassesPrevia.length > 0 ? (
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold">Repasses previstos</h2>
+          {repassesPrevia.map((r) => (
+            <p key={r.numero} className="text-sm tabular-nums">
+              {repassesPrevia.length > 1 ? `${r.numero}º · ` : ""}
+              {formatarData(r.data)} · bruto {formatarMoeda(r.bruto)} · taxa {formatarMoeda(r.taxa)} · líquido{" "}
+              {formatarMoeda(r.liquido)}
+            </p>
+          ))}
+          <p className="text-xs text-muted-foreground">
+            A operadora deposita o líquido. Confirme cada repasse em Financeiro → Repasses de cartão.
+          </p>
+        </section>
+      ) : naMaquininha && operadora && modalidade && !condicaoCartao ? (
+        <p className="text-sm text-destructive">
+          A {operadora.nome} não tem condição para {ROTULOS_MODALIDADE_CARTAO[modalidade]}
+          {modalidade === "CREDITO_PARCELADO" ? ` em ${nParcelasCartao}x` : ""}.
+        </p>
+      ) : null}
+
       <section className="rounded-lg border bg-muted/40 p-3">
         <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
           <div>
@@ -515,7 +633,9 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
       <Button
         type="submit"
         className="w-full sm:w-auto"
-        disabled={pendente || (!aVista && (parcelas.length === 0 || erroParcelas !== null))}
+        disabled={
+          pendente || (aPrazo && (parcelas.length === 0 || erroParcelas !== null)) || (naMaquininha && !condicaoCartao)
+        }
       >
         {pendente ? "Salvando..." : "Salvar pedido"}
       </Button>
