@@ -176,6 +176,8 @@ O mesmo tipo de relatório do fluxo de caixa, mas agrupado por uma dimensão ana
 
 Permite orçar um valor único por safra (sem grade mensal, já que cada safra tem seu próprio período de início e fim) e comparar entre todas as safras cadastradas — planejadas, em andamento ou já encerradas — o orçado, o realizado e o projetado de cada uma.
 
+Realizado e projetado somam tudo o que está marcado com a safra, em qualquer data: uma compra de pré-safra ou uma venda recebida depois da colheita entram na safra em que foram marcadas, não no período em que aconteceram. O realizado considera só movimentações conciliadas; o projetado, os títulos em aberto (inclusive os atrasados).
+
 ### 4.4. Fiscal × gerencial
 
 Mostra, para a filial atual e o ano escolhido, quanto do movimento tem documento fiscal e quanto é negociado sem nota: entradas e saídas realizadas por mês (com o percentual gerencial), o que está em aberto hoje a pagar e a receber em cada classificação, os parceiros com maior valor em títulos gerenciais e a lista de **pendências fiscais** — títulos fiscais ainda sem tipo de documento, número, chave de acesso ou anexo. Clicar no documento leva à lista de títulos já filtrada pelo parceiro. Os dois relatórios (comparativo mensal e pendências) podem ser exportados em CSV, Excel ou PDF.

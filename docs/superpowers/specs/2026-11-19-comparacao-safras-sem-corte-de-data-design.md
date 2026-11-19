@@ -1,6 +1,6 @@
 # Comparação entre safras sem corte de data
 
-Data: 2026-11-19 · Status: aprovada para implementação
+Data: 2026-11-19 · Status: implementada (2026-11-19)
 
 Item do [backlog](../../backlog.md) ("Realizado/projetado por safra ignora
 lançamentos marcados fora da janela `dataInicio`/`dataFim`", Fase 5,
