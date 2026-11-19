@@ -238,8 +238,8 @@ Estrutura espelha `financeiro/fluxo-de-caixa/`:
   janela pedida (modo `ANO_CIVIL`) não cobre o mês corrente — a projeção
   sempre parte do saldo de hoje, com aviso textual na tela. — **→
   backlog** (já registrado).
-- Consolidação por empresa (soma de filiais) — Fase 5. — **→ backlog**
-  (já registrado em Filtros globais).
+- Consolidação por empresa (soma de filiais) — Fase 5. — **descartado**
+  (2026-11-18): a Hortitex usa uma filial só.
 - Exportação (CSV/Excel/PDF) do relatório. — **feito** (Fase 6b).
 - Parcelas em aberto com `dataVencimento` anterior ao início da janela
   exibida não entram na projeção (nem no saldo, nem em nenhum mês) — ver
