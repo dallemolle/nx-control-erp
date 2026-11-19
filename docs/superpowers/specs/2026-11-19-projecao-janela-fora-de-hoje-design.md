@@ -1,6 +1,6 @@
 # Projeção de caixa em janelas que não contêm hoje
 
-Data: 2026-11-19 · Status: aprovada para implementação
+Data: 2026-11-19 · Status: implementada (2026-11-19)
 
 Item do [backlog](../../backlog.md) ("Reconstrução da cadeia de saldo em
 janelas fora do intervalo visível", Fase 4, sub-projeto 2). Completa a
