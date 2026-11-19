@@ -8,6 +8,8 @@ import {
   buscarProjetadoPorDimensao,
   buscarRealizadoPorDimensaoNoPeriodo,
   buscarProjetadoPorDimensaoNoPeriodo,
+  buscarRealizadoPorSafras,
+  buscarProjetadoPorSafras,
   listarValoresDimensao,
   listarFluxoDeCaixaPorDimensao,
 } from "./fluxoDeCaixaPorDimensao";
@@ -426,6 +428,119 @@ describe("fluxoDeCaixaPorDimensao", () => {
         );
         expect(totaisForaDoIntervalo.get(centroCustoAtivoId)).toBeUndefined();
       });
+    });
+  });
+
+  describe("buscarRealizadoPorSafras / buscarProjetadoPorSafras (sem corte de data)", () => {
+    // Cada teste cria a própria safra, com período mar–jun/2026, para não somar com os outros.
+    async function criarSafra(nome: string) {
+      const safra = await prisma.safra.create({
+        data: {
+          filialId: fixture.filialId,
+          nome: `${nome} ${Date.now()}`,
+          dataInicio: new Date("2026-03-01T00:00:00Z"),
+          dataFim: new Date("2026-06-30T00:00:00Z"),
+        },
+      });
+      return safra.id;
+    }
+
+    function lancamento(safraId: string | null, data: string, tipo: "ENTRADA" | "SAIDA", valor: number, conciliado = true) {
+      return prisma.lancamentoBancario.create({
+        data: {
+          filialId: fixture.filialId,
+          contaBancariaId: fixture.contaBancariaId,
+          data: new Date(data),
+          tipo,
+          valor,
+          descricao: "Lançamento de safra",
+          origem: "MANUAL",
+          usuarioId: fixture.usuarioId,
+          conciliado,
+          safraId,
+        },
+      });
+    }
+
+    function tituloDaSafra(safraId: string, tipo: "PAGAR" | "RECEBER", parcelas: { dataVencimento: Date; valorOriginal: number }[]) {
+      return criarTitulo(fixture.sessao, tipo, {
+        contraparteId: tipo === "PAGAR" ? fixture.fornecedorId : fixture.clienteId,
+        documento: `FCD-SAFRA-${Date.now()}-${Math.random()}`,
+        dataEmissao: new Date(),
+        dataCompetencia: new Date(),
+        categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+        centroCustoId: "",
+        centroLucroId: "",
+        safraId,
+        projetoId: "",
+        contaBancariaId: fixture.contaBancariaId,
+        formaPagamento: "",
+        parcelas: parcelas.map((p, i) => ({ numero: i + 1, ...p })),
+      });
+    }
+
+    test("realizado soma lançamentos da safra antes do início e depois do fim; ignora outra safra e não conciliado", async () => {
+      const safraId = await criarSafra("Sem corte");
+      const outraSafraId = await criarSafra("Outra");
+      await lancamento(safraId, "2025-12-10T00:00:00Z", "SAIDA", 100);
+      await lancamento(safraId, "2026-09-10T00:00:00Z", "ENTRADA", 250);
+      await lancamento(safraId, "2026-04-01T00:00:00Z", "SAIDA", 777, false);
+      await lancamento(outraSafraId, "2026-04-01T00:00:00Z", "SAIDA", 999);
+
+      const totais = await buscarRealizadoPorSafras(fixture.filialId, [safraId]);
+      expect(totais.get(safraId)).toEqual({ entradas: 250, saidas: 100 });
+      expect(totais.has(outraSafraId)).toBe(false);
+    });
+
+    test("realizado usa o título da baixa quando o lançamento não tem safra, fora do período", async () => {
+      const safraId = await criarSafra("Fallback");
+      const titulo = await tituloDaSafra(safraId, "PAGAR", [
+        { dataVencimento: new Date("2027-02-01T00:00:00Z"), valorOriginal: 400 },
+      ]);
+      const baixa = await registrarBaixa(fixture.sessao, titulo.parcelas[0].id, {
+        data: new Date("2027-02-05T00:00:00Z"),
+        valorPago: 400,
+        valorJuros: 0,
+        valorMulta: 0,
+        valorDesconto: 0,
+        contaBancariaId: fixture.contaBancariaId,
+      });
+      await aprovarBaixa(fixture.sessaoAdmin, baixa.id);
+      // Simula dado histórico: sem a safra direta no lançamento, só o vínculo via baixa.
+      await prisma.lancamentoBancario.updateMany({
+        where: { baixaId: baixa.id },
+        data: { safraId: null, conciliado: true },
+      });
+
+      const totais = await buscarRealizadoPorSafras(fixture.filialId, [safraId]);
+      expect(totais.get(safraId)?.saidas).toBe(400);
+    });
+
+    test("projetado soma parcelas em aberto vencidas antes do início e vencendo depois do fim; ignora paga", async () => {
+      const safraId = await criarSafra("Projetado");
+      const titulo = await tituloDaSafra(safraId, "PAGAR", [
+        { dataVencimento: new Date("2027-08-01T00:00:00Z"), valorOriginal: 300 },
+        { dataVencimento: new Date("2025-01-10T00:00:00Z"), valorOriginal: 200 },
+        { dataVencimento: new Date("2026-04-10T00:00:00Z"), valorOriginal: 50 },
+      ]);
+      const paga = titulo.parcelas.find((p) => Number(p.valorOriginal) === 50)!;
+      const baixa = await registrarBaixa(fixture.sessao, paga.id, {
+        data: new Date("2026-04-10T00:00:00Z"),
+        valorPago: 50,
+        valorJuros: 0,
+        valorMulta: 0,
+        valorDesconto: 0,
+        contaBancariaId: fixture.contaBancariaId,
+      });
+      await aprovarBaixa(fixture.sessaoAdmin, baixa.id);
+
+      const totais = await buscarProjetadoPorSafras(fixture.filialId, [safraId]);
+      expect(totais.get(safraId)).toEqual({ entradas: 0, saidas: 500 });
+    });
+
+    test("lista de safras vazia devolve mapa vazio", async () => {
+      expect((await buscarRealizadoPorSafras(fixture.filialId, [])).size).toBe(0);
+      expect((await buscarProjetadoPorSafras(fixture.filialId, [])).size).toBe(0);
     });
   });
 
