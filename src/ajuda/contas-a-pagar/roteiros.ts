@@ -237,11 +237,12 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "baixa.valorPago",
         instrucao: "Informe o valor pago",
         explicacao:
-          "É o total que saiu da conta, igual ao comprovante: valor da parcela + juros + multa − desconto. A " +
+          "É o total que saiu da conta, igual ao comprovante: valor da parcela + juros + multa. A " +
           "parcela foi paga 5 dias atrasada, com R$ 12,00 de juros: 1.000,00 + 12,00 = 1012,00.",
         dica:
-          "Pagou menos que o valor da parcela? Tudo bem: a parcela fica como PARCIALMENTE_PAGO e o restante " +
-          "continua em aberto, esperando outra baixa.",
+          "Pagou menos que o valor da parcela, ou teve desconto? Hoje o sistema compara só o valor pago com o " +
+          "valor da parcela: a parcela fica como PARCIALMENTE_PAGO e a diferença continua em aberto. Se foi " +
+          "desconto, combine com o responsável pelo financeiro como registrar antes de lançar a baixa.",
         preenche: { "baixa.valorPago": "1012,00" },
       },
       {
