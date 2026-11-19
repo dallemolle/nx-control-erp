@@ -1,6 +1,6 @@
 # Recebimento por cartão (repasse e taxa da operadora)
 
-Data: 2026-11-19 · Status: desenho aprovado
+Data: 2026-11-19 · Status: implementada (2026-11-19)
 
 Item do backlog "Recebimento por cartão: prazo de repasse, parcelas e taxa da
 operadora" (Financeiro — controles e conciliação; spec da venda a prazo,

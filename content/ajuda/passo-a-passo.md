@@ -145,6 +145,23 @@ Com o seletor **Fiscal** ou **Gerencial**, a receita e os custos do ano-base pas
 
 > Esta é a única tela financeira que já mostra o dado consolidado de toda a empresa, não só da filial atual.
 
+### 3.8. Repasses de cartão
+
+A venda na maquininha (seção 6.1) não entra no caixa na hora: a operadora deposita depois, já descontada a taxa. Cada pedido gera os **repasses previstos** — um só no débito, no crédito à vista e no Pix na maquininha, ou um por parcela no crédito parcelado (quando a operadora não antecipa). Esta tela lista esses repasses, com operadora, data prevista, pedido, valor bruto, taxa e líquido. Por padrão aparecem os que faltam receber (a receber e atrasados); filtre por operadora, período ou situação.
+
+Quando o depósito cair na conta:
+
+1. marque os repasses que ele cobre — a tela soma o **líquido** dos marcados, para conferir com o valor do extrato;
+2. informe a data em que o dinheiro entrou (vem preenchida com a data prevista, se já passou) e clique em **Confirmar recebimento**;
+3. o sistema registra a entrada do valor bruto e a saída da taxa na conta da operadora, e as parcelas ficam pagas — sem passar pelas Aprovações pendentes;
+4. em Financeiro → Conciliação, concilie em grupo a linha do depósito com essas entradas e saídas: a soma bate com o líquido. Se a taxa real vier alguns centavos diferente, use "lançar diferença" no próprio grupo.
+
+Confirmou o repasse errado? Clique em **Desfazer** na linha: as baixas e os lançamentos são apagados e o repasse volta a ficar a receber. Depois de conciliado, desfaça a conciliação primeiro.
+
+As contas a receber (em nome da operadora) e a pagar (taxa) desses pedidos não aceitam baixa pela tela de títulos: o recebimento é sempre confirmado aqui.
+
+> Aparece para quem pode registrar baixas (Administrador, Financeiro e Tesouraria).
+
 ## 4. Controladoria
 
 ### 4.1. Orçamento
@@ -301,14 +318,14 @@ Para ver cada OP, use o link **Ver as OPs do período**, que abre a tela Process
 
 ## 6. Vendas
 
-Antes do primeiro pedido, em Administração → Configuração de produção (seção 8.5), escolha a **categoria de venda**, a **conta de recebimento** (Pix, transferência e cartão) e a **conta Caixa** (dinheiro). A conta Caixa é cadastrada em Cadastros → Contas bancárias, com o tipo Caixa.
+Antes do primeiro pedido, em Administração → Configuração de produção (seção 8.5), escolha a **categoria de venda**, a **conta de recebimento** (Pix e transferência) e a **conta Caixa** (dinheiro). Para vender na maquininha, cadastre antes a operadora (seção 7.7). A conta Caixa é cadastrada em Cadastros → Contas bancárias, com o tipo Caixa.
 
 ### 6.1. Novo pedido
 
 Em Vendas → Pedidos → **Novo pedido**, informe:
 
 - data e **cliente** — ao escolher o cliente, o canal de venda, a classificação (Fiscal ou Gerencial), o "retira na propriedade" e o endereço de entrega vêm do cadastro dele e podem ser mudados no pedido;
-- **forma de pagamento**: dinheiro, Pix, transferência, cartão ou a prazo. À vista, escolha a conta onde o dinheiro entrou (a padrão já vem marcada); a prazo, informe os **prazos em dias** desde a data do pedido, separados por barra (ex.: `28/56` = duas parcelas; 0 = no dia; até 60 parcelas);
+- **forma de pagamento**: dinheiro, Pix, transferência, maquininha (cartão ou Pix) ou a prazo. À vista, escolha a conta onde o dinheiro entrou (a padrão já vem marcada); na maquininha, a operadora, a modalidade e as parcelas (veja abaixo); a prazo, informe os **prazos em dias** desde a data do pedido, separados por barra (ex.: `28/56` = duas parcelas; 0 = no dia; até 60 parcelas);
 - nº da nota fiscal, se a venda for Fiscal e tiver nota;
 - os **itens**: para cada um, o lote (a lista vem em ordem de validade, com o saldo de cada lote), a quantidade em kg ou na unidade comercial do produto (rasa, por exemplo) e o preço por kg (sugerido pelo preço de referência do produto).
 
@@ -316,11 +333,14 @@ Cada item mostra o valor, o custo (o custo do lote) e a margem; o rodapé mostra
 
 **Parcelas a prazo:** ao digitar os prazos, o pedido mostra as parcelas com o valor dividido igualmente (os centavos que sobram vão para a última). O vencimento e o valor de cada parcela podem ser ajustados antes de salvar, mas a soma tem que ser igual ao total do pedido: se não bater, a diferença aparece em vermelho e o pedido não salva. Mudar os prazos, a data ou os itens gera as parcelas de novo e desfaz os ajustes. O pedido guarda a condição pelos dias de cada vencimento (se você mudou 56 para 60, fica "28/60") e mostra as parcelas no detalhe e no recibo.
 
+**Maquininha (cartão ou Pix):** escolha a **operadora**, a **modalidade** (débito, crédito à vista, crédito parcelado ou Pix na maquininha) e, no parcelado, o **número de parcelas**. Aparecem só as modalidades e parcelas que a operadora tem cadastradas. O pedido mostra os **repasses previstos** — data, valor bruto, taxa e líquido de cada um — calculados pela taxa e pelo prazo da operadora. O Pix lido direto na chave da conta da empresa continua sendo a forma **Pix**.
+
 Ao salvar, o pedido recebe um **número** sequencial da filial e o sistema:
 
 - tira a quantidade de cada lote do estoque;
 - cria a **conta a receber** do cliente (documento = nº da nota, ou PV-número do pedido sem nota), com uma parcela à vista ou uma parcela por prazo a prazo;
 - se a venda for **à vista**, já registra o recebimento aprovado na conta escolhida: a parcela fica paga e o valor entra no fluxo de caixa. Em dinheiro, entra na conta Caixa e não precisa de conciliação;
+- se a venda for **na maquininha**, a conta a receber sai em nome da operadora, com uma parcela por repasse (valor bruto), e a taxa vira uma conta a pagar com as mesmas datas. Nada é recebido na hora: o pedido fica "Aguardando repasse" até o recebimento ser confirmado em Financeiro → Repasses de cartão (seção 3.8);
 - se o cliente **não retira na propriedade**, cria uma entrega pendente (seção 6.3).
 
 O perfil Vendas faz tudo isso sem acessar o financeiro.
@@ -336,7 +356,8 @@ Clique no número para abrir o pedido: itens com margem, pagamento (com link par
 **Corrigir um pedido:** os itens não são editados. Use **Cancelar pedido**, informe o motivo e lance de novo. O cancelamento devolve o estoque aos lotes, cancela a conta a receber e a entrega e, na venda à vista, desfaz o recebimento que o próprio pedido criou. Só o Administrador e o Financeiro cancelam. O cancelamento é recusado quando:
 
 - o financeiro já registrou um recebimento nesse pedido (uma baixa pendente ou aprovada que não foi criada pela venda) — trate primeiro no financeiro;
-- o recebimento à vista já foi conciliado com uma linha do extrato — desfaça a conciliação em Financeiro → Conciliação e cancele depois.
+- o recebimento à vista já foi conciliado com uma linha do extrato — desfaça a conciliação em Financeiro → Conciliação e cancele depois;
+- na maquininha, algum repasse já foi confirmado — desfaça a confirmação em Financeiro → Repasses de cartão (e, se conciliado, a conciliação antes).
 
 Quando não dá para cancelar, o botão fica desabilitado e o motivo aparece ao lado.
 
@@ -386,6 +407,17 @@ Base para a recepção de fruto, as vendas por lote e o processamento (este nas 
 4. **Locais de armazenamento** (da filial): câmaras, freezers e áreas de recepção, com temperatura e capacidade (opcional, usada para mostrar a ocupação no estoque).
 5. **Insumos** (da empresa): embalagens, energia e mão de obra, com unidade e custo unitário de referência.
 
+### 7.7. Operadoras de cartão
+
+Cada maquininha da filial (Stone, Cielo, etc.) é cadastrada em Cadastros → Operadoras de cartão, com:
+
+- **nome** e **CNPJ** da operadora — o sistema usa (ou cria) o fornecedor e o cliente com esse CNPJ: as contas a receber dos repasses saem em nome do cliente e a taxa em nome do fornecedor. Se o cadastro com esse CNPJ estiver inativo, reative-o antes;
+- **conta de depósito**: a conta bancária onde a operadora deposita (não pode ser uma conta Caixa);
+- **categoria da taxa**: uma categoria de despesa da filial (por exemplo, "Taxas de cartão");
+- as **condições**: para cada modalidade (débito, crédito à vista, crédito parcelado, Pix na maquininha), a **taxa** (% sobre o valor da venda) e o **prazo** do primeiro repasse, em dias corridos. No crédito parcelado, informe a faixa de parcelas (de 2 a 12, sem sobrepor faixas — por exemplo 2–6x e 7–12x com taxas diferentes) e marque **Antecipado** se a operadora paga tudo de uma vez no prazo; sem antecipação, os repasses vêm um por mês.
+
+Mudar a taxa vale para as vendas novas: cada pedido guarda a taxa usada na venda. Uma operadora pode ser inativada (some da venda; o histórico fica).
+
 ## 8. Administração
 
 ### 8.1. Empresas
@@ -426,7 +458,7 @@ Registra automaticamente toda alteração relevante feita no sistema — quem fe
 
 Parâmetros da filial atual usados pela produção: registro na ADEPARA e endereço (vão para a etiqueta do lote), com quantos dias de antecedência um lote congelado ou resfriado aparece como "vencendo", temperatura e tempo mínimos do branqueamento, e a tolerância do balanço de massa (em %). Enquanto nada for salvo, valem os padrões: 30 dias (congelado), 1 dia (in natura e resfriado), 80 °C, 10 segundos e 3%. Só o Administrador altera esta tela.
 
-O card **Vendas** define a **categoria de venda** (uma categoria de receita, usada na conta a receber de cada pedido), a **conta de recebimento** (usada nas vendas em Pix, transferência e cartão; não pode ser uma conta Caixa) e a **conta Caixa** (usada nas vendas em dinheiro). Sem a categoria de venda, nenhum pedido é aceito.
+O card **Vendas** define a **categoria de venda** (uma categoria de receita, usada na conta a receber de cada pedido), a **conta de recebimento** (usada nas vendas em Pix e transferência; não pode ser uma conta Caixa; a maquininha usa a conta de depósito da operadora) e a **conta Caixa** (usada nas vendas em dinheiro). Sem a categoria de venda, nenhum pedido é aceito.
 
 ## 9. Gestão
 
