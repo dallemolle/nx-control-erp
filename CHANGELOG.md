@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.1.34](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.33...nx-control-erp-v0.1.34) (2026-11-19)
+
+
+### Novidades
+
+* **cartao:** cadastro de operadoras com cliente e fornecedor pelo CNPJ ([f9c0696](https://github.com/dallemolle/nx-control-erp/commit/f9c069681b5dc984674a8d9fa48febc35f6eb0db))
+* **cartao:** cálculo dos repasses e rótulos da maquininha ([2e81d97](https://github.com/dallemolle/nx-control-erp/commit/2e81d97908953e3b09cb2081d4c9ef924e1dd703))
+* **cartao:** confirmar e desfazer repasses, baixa manual bloqueada e cancelamento ([581fb5f](https://github.com/dallemolle/nx-control-erp/commit/581fb5fce5e44195ca3b9070092ecdced941c6fa))
+* **cartao:** maquininha no formulário, detalhe e recibo do pedido ([47219d5](https://github.com/dallemolle/nx-control-erp/commit/47219d58afd6bcc077bc1c4fb55da142407e9f45))
+* **cartao:** modelo de operadora, condições e repasse confirmado ([e0cb2c0](https://github.com/dallemolle/nx-control-erp/commit/e0cb2c02c8c9452323271d7b64b7e1b59466681f))
+* **cartao:** tela de operadoras de cartão ([dbaaafd](https://github.com/dallemolle/nx-control-erp/commit/dbaaafd08620972da62559df405c49519f287702))
+* **cartao:** tela de repasses de cartão ([a0fe6c9](https://github.com/dallemolle/nx-control-erp/commit/a0fe6c9ffffe5aa361570a1b73a558b73cd6cb6d))
+* **cartao:** venda na maquininha gera repasses e taxa sem baixa ([99d2162](https://github.com/dallemolle/nx-control-erp/commit/99d2162182c9d24feac51570f35a4e53c88d8772))
+
+
+### Correções
+
+* **cartao:** singular de dia no prazo das condições ([3e1fa27](https://github.com/dallemolle/nx-control-erp/commit/3e1fa27948f5c72119240458aef307b1388367c3))
+
 ## [0.1.33](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.32...nx-control-erp-v0.1.33) (2026-11-19)
 
 
