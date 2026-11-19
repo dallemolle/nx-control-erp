@@ -146,7 +146,7 @@ export default async function PedidosPage({ searchParams }: { searchParams: Prom
                     <span className="text-muted-foreground">({PERCENTUAL.format(p.margemPercentual)})</span>
                   </TableCell>
                   <TableCell>
-                    <SituacaoPagamentoBadge situacao={p.situacao} />
+                    <SituacaoPagamentoBadge situacao={p.situacao} naMaquininha={p.operadoraCartaoId !== null} />
                   </TableCell>
                   <TableCell>{p.entrega ? ROTULOS_STATUS_ENTREGA[p.entrega.status] : "Retira"}</TableCell>
                 </TableRow>

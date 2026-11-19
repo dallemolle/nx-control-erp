@@ -53,6 +53,13 @@ export const ROTULOS_SITUACAO_PAGAMENTO: Record<SituacaoPagamento, string> = {
   CANCELADO: "Cancelado",
 };
 
+/** Venda na maquininha: quem deve é a operadora, então "em aberto" é aguardar o repasse. */
+export function rotuloSituacaoPagamento(situacao: SituacaoPagamento, naMaquininha: boolean): string {
+  if (naMaquininha && situacao === "EM_ABERTO") return "Aguardando repasse";
+  if (naMaquininha && situacao === "VENCIDO") return "Repasse atrasado";
+  return ROTULOS_SITUACAO_PAGAMENTO[situacao];
+}
+
 /**
  * Situação do pedido lida das parcelas do título (RN-26). Usa o vencimento
  * além do status gravado, que só é recalculado quando o financeiro mexe no título.

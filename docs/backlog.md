@@ -104,24 +104,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   `recalcularEPersistirStatusParcela`, que também não audita por ser
   derivado, não uma ação de usuário.
 
-## Financeiro — controles e conciliação
-
-- **Recebimento por cartão: prazo de repasse, parcelas e taxa da operadora**
-  (spec da venda a prazo em parcelas, 2026-11-16; não urgente, mas precisa
-  ser tratado). Hoje a venda no cartão (`formaPagamento` `CARTAO` do pedido)
-  é baixada na hora, pelo valor cheio, na conta de recebimento. Na prática a
-  operadora paga depois (crédito 1x em ~30 dias; parcelado mês a mês) e
-  desconta a taxa (MDR). Efeitos: saldo e fluxo realizado mostram dinheiro
-  que ainda não entrou, a projeção não vê os repasses futuros, a conciliação
-  dá divergência de valor em toda venda no cartão (o extrato traz o líquido)
-  e a taxa nunca vira despesa, inflando a margem. Caminho: cadastro de
-  condições da operadora (taxa e prazo por modalidade: débito, crédito 1x,
-  parcelado em N), venda no cartão gera título a receber contra a operadora
-  com as parcelas do repasse (valor líquido) e lança a taxa como despesa;
-  depósito que junta várias vendas já concilia com a conciliação em grupo.
-  Antes de priorizar, confirmar com a Hortitex quanto do faturamento passa
-  pelo cartão.
-
 ## Produção — custo da OP
 
 - **Histórico do preço de referência do produto** (rateio do custo da OP,

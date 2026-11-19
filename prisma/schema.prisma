@@ -169,6 +169,7 @@ model Filial {
   recepcoesFruto          RecepcaoFruto[]
   pedidosVenda            PedidoVenda[]
   ordensProducao          OrdemProducao[]
+  operadorasCartao        OperadoraCartao[]
 
   @@index([empresaId])
   @@map("filiais")
@@ -379,6 +380,7 @@ model CategoriaFinanceira {
   orcamentos               Orcamento[]
   configuracoesCompraFruto ConfiguracaoProducao[] @relation("CategoriaCompraFruto")
   configuracoesVenda       ConfiguracaoProducao[] @relation("CategoriaVenda")
+  operadorasCartaoTaxa     OperadoraCartao[]
 
   @@index([filialId])
   @@map("categorias_financeiras")
@@ -448,8 +450,9 @@ model Cliente {
 
   empresa      Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   banco        Banco?        @relation(fields: [bancoId], references: [id])
-  titulos      Titulo[]
-  pedidosVenda PedidoVenda[]
+  titulos          Titulo[]
+  pedidosVenda     PedidoVenda[]
+  operadorasCartao OperadoraCartao[]
 
   @@unique([empresaId, cnpjCpf])
   @@index([empresaId])
@@ -484,7 +487,8 @@ model Fornecedor {
   empresa        Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   banco          Banco?          @relation(fields: [bancoId], references: [id])
   titulos        Titulo[]
-  recepcoesFruto RecepcaoFruto[]
+  recepcoesFruto   RecepcaoFruto[]
+  operadorasCartao OperadoraCartao[]
 
   @@unique([empresaId, cnpjCpf])
   @@index([empresaId])
@@ -526,6 +530,7 @@ model ContaBancaria {
   linhasExtrato                  LinhaExtrato[]
   gruposConciliacao              GrupoConciliacao[]
   pedidosVenda                   PedidoVenda[]
+  operadorasCartao               OperadoraCartao[]
   configuracoesRecebimentoPadrao ConfiguracaoProducao[]   @relation("ContaRecebimentoPadrao")
   configuracoesCaixaPadrao       ConfiguracaoProducao[]   @relation("ContaCaixaPadrao")
 
@@ -617,8 +622,9 @@ model Titulo {
 
   parcelas      Parcela[]
   anexos        Anexo[]
-  recepcaoFruto RecepcaoFruto?
-  pedidoVenda   PedidoVenda?
+  recepcaoFruto   RecepcaoFruto?
+  pedidoVenda     PedidoVenda?   @relation("TituloDoPedido")
+  pedidoVendaTaxa PedidoVenda?   @relation("TituloTaxaDoPedido")
 
   @@index([filialId])
   @@index([fornecedorId])
@@ -644,6 +650,7 @@ model Parcela {
   parcelaOrigem Parcela?  @relation("RenegociacaoParcela", fields: [parcelaOrigemId], references: [id])
   renegociacoes Parcela[] @relation("RenegociacaoParcela")
   baixas        Baixa[]
+  repasseCartao RepasseCartaoConfirmado?
 
   @@unique([tituloId, numero])
   @@index([tituloId])
@@ -671,8 +678,10 @@ model Baixa {
   contaBancaria ContaBancaria        @relation(fields: [contaBancariaId], references: [id])
   usuario       Usuario              @relation("BaixaRegistradaPor", fields: [usuarioId], references: [id])
   avaliadoPor   Usuario?             @relation("BaixaAvaliadaPor", fields: [avaliadoPorId], references: [id])
-  lancamentos   LancamentoBancario[]
-  pedidoVenda   PedidoVenda?
+  lancamentos        LancamentoBancario[]
+  pedidoVenda        PedidoVenda?
+  repasseRecebimento RepasseCartaoConfirmado? @relation("RepasseRecebimento")
+  repasseTaxa        RepasseCartaoConfirmado? @relation("RepasseTaxa")
 
   @@index([parcelaId])
   @@map("baixas")
@@ -1215,6 +1224,75 @@ enum StatusEntrega {
   CANCELADA
 }
 
+enum ModalidadeCartao {
+  DEBITO
+  CREDITO_VISTA
+  CREDITO_PARCELADO
+  PIX_MAQUININHA
+}
+
+/// Operadora da maquininha (D-37/D-38): onde deposita, em nome de quem saem os títulos e a categoria da taxa.
+model OperadoraCartao {
+  id              String   @id @default(uuid())
+  filialId        String
+  nome            String
+  contaBancariaId String
+  fornecedorId    String
+  clienteId       String
+  categoriaTaxaId String
+  ativo           Boolean  @default(true)
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime @updatedAt
+
+  filial        Filial                    @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  contaBancaria ContaBancaria             @relation(fields: [contaBancariaId], references: [id], onDelete: Restrict)
+  fornecedor    Fornecedor                @relation(fields: [fornecedorId], references: [id], onDelete: Restrict)
+  cliente       Cliente                   @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  categoriaTaxa CategoriaFinanceira       @relation(fields: [categoriaTaxaId], references: [id], onDelete: Restrict)
+  condicoes     CondicaoOperadoraCartao[]
+  pedidosVenda  PedidoVenda[]
+
+  @@unique([filialId, nome])
+  @@index([filialId])
+  @@map("operadoras_cartao")
+}
+
+/// Taxa e prazo por modalidade; no parcelado, por faixa de parcelas (2 a 12, sem sobreposição).
+model CondicaoOperadoraCartao {
+  id             String           @id @default(uuid())
+  operadoraId    String
+  modalidade     ModalidadeCartao
+  parcelasDe     Int
+  parcelasAte    Int
+  taxaPercentual Decimal          @db.Decimal(7, 4)
+  /// Dias corridos da venda até o 1º repasse.
+  prazoDias      Int
+  /// Só parcelado: um repasse único no prazo.
+  antecipado     Boolean          @default(false)
+
+  operadora OperadoraCartao @relation(fields: [operadoraId], references: [id], onDelete: Cascade)
+
+  @@index([operadoraId])
+  @@map("condicoes_operadora_cartao")
+}
+
+/// Repasse confirmado: a parcela a receber e as baixas que a confirmação criou (para desfazer).
+model RepasseCartaoConfirmado {
+  id                 String   @id @default(uuid())
+  parcelaId          String   @unique
+  baixaRecebimentoId String   @unique
+  baixaTaxaId        String?  @unique
+  data               DateTime
+  usuarioId          String
+  criadoEm           DateTime @default(now())
+
+  parcela          Parcela @relation(fields: [parcelaId], references: [id], onDelete: Cascade)
+  baixaRecebimento Baixa   @relation("RepasseRecebimento", fields: [baixaRecebimentoId], references: [id], onDelete: Cascade)
+  baixaTaxa        Baixa?  @relation("RepasseTaxa", fields: [baixaTaxaId], references: [id], onDelete: Cascade)
+
+  @@map("repasses_cartao_confirmados")
+}
+
 model PedidoVenda {
   id                    String              @id @default(uuid())
   filialId              String
@@ -1238,6 +1316,13 @@ model PedidoVenda {
   tituloId              String?             @unique
   /// Baixa criada pela venda à vista; o cancelamento a apaga.
   baixaAutomaticaId     String?             @unique
+  /// Só CARTAO (maquininha): operadora, modalidade, parcelas e taxa congeladas na venda.
+  operadoraCartaoId     String?
+  modalidadeCartao      ModalidadeCartao?
+  parcelasCartao        Int?
+  taxaCartaoPercentual  Decimal?            @db.Decimal(7, 4)
+  /// Título a PAGAR da taxa da operadora.
+  tituloTaxaId          String?             @unique
   usuarioId             String
   criadoEm              DateTime            @default(now())
   atualizadoEm          DateTime            @updatedAt
@@ -1245,7 +1330,9 @@ model PedidoVenda {
   filial          Filial            @relation(fields: [filialId], references: [id], onDelete: Cascade)
   cliente         Cliente           @relation(fields: [clienteId], references: [id], onDelete: Restrict)
   contaBancaria   ContaBancaria?    @relation(fields: [contaBancariaId], references: [id], onDelete: Restrict)
-  titulo          Titulo?           @relation(fields: [tituloId], references: [id], onDelete: SetNull)
+  titulo          Titulo?           @relation("TituloDoPedido", fields: [tituloId], references: [id], onDelete: SetNull)
+  tituloTaxa      Titulo?           @relation("TituloTaxaDoPedido", fields: [tituloTaxaId], references: [id], onDelete: SetNull)
+  operadoraCartao OperadoraCartao?  @relation(fields: [operadoraCartaoId], references: [id], onDelete: Restrict)
   baixaAutomatica Baixa?            @relation(fields: [baixaAutomaticaId], references: [id], onDelete: SetNull)
   usuario         Usuario           @relation(fields: [usuarioId], references: [id])
   itens           ItemPedidoVenda[]
