@@ -56,6 +56,7 @@ describe("criarEmpresa", () => {
       cnpjCpf: `${randomSuffix}/0001-01`,
       moedaPadrao: "BRL",
       corPrimaria: null,
+      exigirAprovacaoPorOutro: false,
     });
     novaEmpresaId = empresa.id;
 
@@ -74,6 +75,7 @@ describe("criarEmpresa", () => {
       cnpjCpf: `${randomSuffix}/0001-01`,
       moedaPadrao: "BRL",
       corPrimaria: null,
+      exigirAprovacaoPorOutro: false,
     });
 
     expect(empresa.corPrimaria).toBeNull();
@@ -98,6 +100,7 @@ describe("criarEmpresa", () => {
         cnpjCpf: `${randomSuffix}/0001-01`,
         moedaPadrao: "BRL",
         corPrimaria: "#0B2545",
+        exigirAprovacaoPorOutro: false,
       },
       arquivo,
     );
@@ -131,6 +134,7 @@ describe("criarEmpresa", () => {
           cnpjCpf: `${randomSuffix}/0001-01`,
           moedaPadrao: "BRL",
           corPrimaria: null,
+          exigirAprovacaoPorOutro: false,
         },
         arquivo,
       ),
@@ -167,6 +171,7 @@ describe("atualizarEmpresa — cor e logo", () => {
       cnpjCpf: `${randomSuffix}/0001-02`,
       moedaPadrao: "BRL",
       corPrimaria: null,
+      exigirAprovacaoPorOutro: true,
     });
     empresaId = empresa.id;
   });
@@ -188,14 +193,25 @@ describe("atualizarEmpresa — cor e logo", () => {
       cnpjCpf: (await prisma.empresa.findUniqueOrThrow({ where: { id: empresaId } })).cnpjCpf,
       moedaPadrao: "BRL",
       corPrimaria: "#F5D76E",
+      exigirAprovacaoPorOutro: true,
     });
 
     expect(empresa.corPrimaria).toBe("#F5D76E");
   });
 
   test("empresa criada sem informar a opção exige aprovação por outra pessoa", async () => {
-    const empresa = await prisma.empresa.findUniqueOrThrow({ where: { id: empresaId } });
-    expect(empresa.exigirAprovacaoPorOutro).toBe(true);
+    const empresa = await prisma.empresa.create({
+      data: {
+        razaoSocial: "Empresa Padrão Ltda",
+        nomeFantasia: "Empresa Padrão",
+        cnpjCpf: `${Math.random().toString(36).substring(2, 10)}/0001-03`,
+      },
+    });
+    try {
+      expect(empresa.exigirAprovacaoPorOutro).toBe(true);
+    } finally {
+      await prisma.empresa.delete({ where: { id: empresa.id } });
+    }
   });
 
   test("desligar exigirAprovacaoPorOutro grava e audita antes e depois", async () => {
@@ -231,6 +247,7 @@ describe("atualizarEmpresa — cor e logo", () => {
         cnpjCpf: dadosAtuais.cnpjCpf,
         moedaPadrao: dadosAtuais.moedaPadrao,
         corPrimaria: dadosAtuais.corPrimaria,
+        exigirAprovacaoPorOutro: dadosAtuais.exigirAprovacaoPorOutro,
       },
       arquivo,
     );
@@ -258,6 +275,7 @@ describe("atualizarEmpresa — cor e logo", () => {
         cnpjCpf: antes.cnpjCpf,
         moedaPadrao: antes.moedaPadrao,
         corPrimaria: antes.corPrimaria,
+        exigirAprovacaoPorOutro: antes.exigirAprovacaoPorOutro,
       },
       arquivo,
     );
@@ -283,6 +301,7 @@ describe("atualizarEmpresa — cor e logo", () => {
         cnpjCpf: antes.cnpjCpf,
         moedaPadrao: antes.moedaPadrao,
         corPrimaria: antes.corPrimaria,
+        exigirAprovacaoPorOutro: antes.exigirAprovacaoPorOutro,
       },
       null,
       true,
@@ -306,6 +325,7 @@ describe("atualizarEmpresa — cor e logo", () => {
           cnpjCpf: antes.cnpjCpf,
           moedaPadrao: antes.moedaPadrao,
           corPrimaria: antes.corPrimaria,
+          exigirAprovacaoPorOutro: antes.exigirAprovacaoPorOutro,
         },
         arquivo,
       ),

@@ -56,6 +56,9 @@ describe("cliente - permissão de alteração por filial", () => {
       contato: "Contato",
       email: "cliente@teste.local",
       telefone: "1234567890",
+      municipio: null,
+      enderecoEntrega: null,
+      retiraNaPropriedade: false,
     };
 
     await expect(criarCliente(sessao, dados)).rejects.toThrow(FilialSomenteLeituraError);
@@ -76,6 +79,9 @@ describe("cliente - dados bancários", () => {
     contato: "",
     email: "",
     telefone: "",
+    municipio: null,
+    enderecoEntrega: null,
+    retiraNaPropriedade: false,
   };
 
   beforeAll(async () => {
