@@ -172,8 +172,15 @@ export const ROTULOS_FORMA_PAGAMENTO_VENDA = {
   DINHEIRO: "Dinheiro",
   PIX: "Pix",
   TRANSFERENCIA: "Transferência",
-  CARTAO: "Cartão",
+  CARTAO: "Maquininha (cartão ou Pix)",
   A_PRAZO: "A prazo",
+} as const;
+export const MODALIDADE_CARTAO = ["DEBITO", "CREDITO_VISTA", "CREDITO_PARCELADO", "PIX_MAQUININHA"] as const;
+export const ROTULOS_MODALIDADE_CARTAO = {
+  DEBITO: "Débito",
+  CREDITO_VISTA: "Crédito à vista",
+  CREDITO_PARCELADO: "Crédito parcelado",
+  PIX_MAQUININHA: "Pix na maquininha",
 } as const;
 export const STATUS_PEDIDO_VENDA = ["CONFIRMADO", "CANCELADO"] as const;
 export const ROTULOS_STATUS_PEDIDO_VENDA = { CONFIRMADO: "Confirmado", CANCELADO: "Cancelado" } as const;
