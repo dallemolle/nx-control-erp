@@ -45,6 +45,8 @@ export function Simulador({
   // Setas do teclado enquanto o roteiro está aberto.
   useEffect(() => {
     function aoTeclar(evento: KeyboardEvent) {
+      // Alt+← é "voltar" do navegador; não é navegação do roteiro.
+      if (evento.altKey || evento.ctrlKey || evento.metaKey || evento.shiftKey) return;
       if (evento.key === "ArrowRight") {
         evento.preventDefault();
         setIndice((atual) => limitarIndice(roteiro, atual + 1));
@@ -68,17 +70,14 @@ export function Simulador({
         {roteiro.quemPode && <p className="text-xs text-muted-foreground">{roteiro.quemPode}</p>}
       </div>
 
-      <div
-        ref={area}
-        aria-hidden="true"
-        inert
-        className="min-h-48 flex-1 overflow-auto rounded-lg border bg-background p-4 select-none"
-      >
-        <DestaqueContext value={passo?.alvo ?? null}>
-          <div key={cenaAtual} className="animate-in duration-200 fade-in-0 motion-reduce:animate-none">
-            {Cena ? <Cena tipo={definicao.tipo} valores={valores} /> : null}
-          </div>
-        </DestaqueContext>
+      <div ref={area} className="min-h-48 flex-1 overflow-auto rounded-lg border bg-background p-4 select-none">
+        <div aria-hidden="true" inert>
+          <DestaqueContext value={passo?.alvo ?? null}>
+            <div key={cenaAtual} className="animate-in duration-200 fade-in-0 motion-reduce:animate-none">
+              {Cena ? <Cena tipo={definicao.tipo} valores={valores} /> : null}
+            </div>
+          </DestaqueContext>
+        </div>
       </div>
 
       <div aria-live="polite" className="space-y-1 rounded-lg border bg-muted/40 p-3">

@@ -17,7 +17,7 @@ export const EXEMPLO = {
   parcelas: [
     { numero: 1, vencimento: "10/10/2026", valor: "1000,00", valorFormatado: "R$ 1.000,00", status: "VENCIDO" },
     { numero: 2, vencimento: "10/11/2026", valor: "1000,00", valorFormatado: "R$ 1.000,00", status: "VENCIDO" },
-    { numero: 3, vencimento: "10/12/2026", valor: "1000,00", valorFormatado: "R$ 1.000,00", status: "A_VENCER" },
+    { numero: 3, vencimento: "10/12/2026", valor: "1000,00", valorFormatado: "R$ 1.000,00", status: "EM_ABERTO" },
   ],
   renegociacao: [
     { vencimento: "25/11/2026", valor: "500,00" },

@@ -105,7 +105,7 @@ ou o roteiro não existirem no registro, o link aparece como texto comum.
 > A fazenda comprou **adubo** da **Agro Insumos Ltda**: nota fiscal
 > **NF-e 1234**, série 1, emitida em **10/09/2026**, total de **R$ 3.000,00**,
 > em **3 parcelas de R$ 1.000,00** (vencimentos 10/10, 10/11 e 10/12/2026;
-> as parcelas 1 e 2 aparecem vencidas e a 3, a vencer).
+> as parcelas 1 e 2 aparecem vencidas e a 3, em aberto).
 > Categoria **Insumos Agrícolas**, centro de custo **Lavoura**, safra
 > **2025/26**, pagamento por **boleto** pela conta **Banco do Brasil — CC
 > 12345-6**.
@@ -160,14 +160,14 @@ src/components/ajuda/
   campos-simulados.tsx     CampoSimulado, SelectSimulado, BotaoSimulado:
                            primitivas de src/components/ui com data-alvo,
                            somente leitura, estilo de destaque
-  link-ajuda.tsx           botão usado pelo markdown (#ajuda/...)
+                           (o link do markdown usa BotaoAjuda gatilho="link")
 
 src/ajuda/
   tipos.ts                 DefinicaoAjuda, Roteiro, Passo
   roteiro.ts               lógica pura: valoresAte(roteiro, n), limites
   registro.ts              mapa tela → DefinicaoAjuda (carregado sob demanda)
   contas-a-pagar/
-    cenas.tsx              CenaLista, CenaFiltros, CenaNovoTitulo,
+    cenas.tsx              CenaLista (com os filtros), CenaNovoTitulo,
                            CenaBaixa, CenaRenegociar
     exemplo.ts             dados fixos da história
     roteiros.ts            os 6 roteiros
@@ -222,7 +222,7 @@ esqueleto.
 ### Integração com as telas
 
 Em [contas-a-pagar/page.tsx](../../../src/app/(dashboard)/financeiro/contas-a-pagar/page.tsx),
-o `h1` passa a ficar num `flex items-center gap-2` com `<BotaoAjuda
+o `h1` passa a ficar num `flex items-center gap-1` com `<BotaoAjuda
 tela="contas-a-pagar" />` ao lado. É a única mudança na tela.
 
 Em [passo-a-passo.md](../../../content/ajuda/passo-a-passo.md), a seção 3.1

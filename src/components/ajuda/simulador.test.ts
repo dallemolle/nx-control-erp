@@ -53,6 +53,6 @@ describe("Simulador", () => {
   });
 
   test("a cena é decorativa para leitor de tela", () => {
-    expect(html).toMatch(/aria-hidden="true"[^>]*inert/);
+    expect(html).toMatch(/<div (?=[^>]*aria-hidden="true")(?=[^>]*inert)/);
   });
 });

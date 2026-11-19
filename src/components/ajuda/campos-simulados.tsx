@@ -16,7 +16,7 @@ export function Alvo({ nome, className, children }: { nome: string; className?: 
       data-alvo={nome}
       data-destacado={ativo ? "true" : undefined}
       className={cn(
-        "rounded-lg transition-[box-shadow,background-color] duration-200 motion-reduce:transition-none",
+        "scroll-m-3 rounded-lg transition-[box-shadow,background-color] duration-200 motion-reduce:transition-none",
         ativo && "bg-primary/5 ring-2 ring-primary ring-offset-2 ring-offset-background",
         className,
       )}

@@ -107,8 +107,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "novo.conta",
         instrucao: "Escolha a conta bancária prevista (opcional)",
         explicacao:
-          "É a conta de onde você pretende pagar, usada na previsão do fluxo de caixa. Na hora de pagar, dá para " +
-          "usar outra conta.",
+          "É só uma anotação de onde você pretende pagar. Na hora da baixa, você escolhe a conta de onde o " +
+          "dinheiro saiu de fato.",
         preenche: { "novo.conta": EXEMPLO.conta },
       },
       {
@@ -144,7 +144,7 @@ export const ROTEIROS: readonly Roteiro[] = [
         explicacao: "Os três estão no alto da nota fiscal impressa (o DANFE).",
         dica:
           "A nota ainda não chegou? Pode salvar sem o número e completar depois, pelo botão Editar do título. " +
-          "Enquanto faltar, o título aparece na lista com um triângulo amarelo de pendência.",
+          "Enquanto faltar o número ou o anexo, o título aparece na lista com um triângulo amarelo de pendência.",
         preenche: {
           "novo.numeroNota": EXEMPLO.numeroNota,
           "novo.serie": EXEMPLO.serie,
@@ -193,7 +193,7 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "novo.salvar",
         instrucao: "Clique em Salvar",
         explicacao:
-          "Se faltar algum campo obrigatório, aparece uma mensagem em vermelho acima do botão dizendo o que " +
+          "Se faltar algum campo obrigatório, o navegador ou uma mensagem em vermelho acima do botão avisa o que " +
           "corrigir.",
       },
     ],
@@ -201,7 +201,9 @@ export const ROTEIROS: readonly Roteiro[] = [
       texto:
         "A janela fecha e o título aparece na lista de Contas a pagar. Clique na linha dele para ver os detalhes " +
         "e as três parcelas. O sistema marca sozinho as parcelas perto de vencer (A_VENCER, até 7 dias antes) e as " +
-        "vencidas (VENCIDO). Quando o dinheiro sair da conta, registre o pagamento com o botão Baixar.",
+        "vencidas (VENCIDO). Anexe o PDF ou o XML da nota em Anexos, na linha aberta do título: sem anexo, o título " +
+        "fica com o triângulo amarelo de pendência fiscal. Quando o dinheiro sair da conta, registre o pagamento " +
+        "com o botão Baixar.",
       proximoRoteiro: "pagar-parcela",
     },
   }),
