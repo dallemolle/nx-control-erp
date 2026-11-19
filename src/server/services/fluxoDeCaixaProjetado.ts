@@ -173,14 +173,26 @@ export function buscarParcelasEmAbertoVencidasAntes(
   return buscarParcelasEmAberto(filialId, { lt: inicio }, classificacao);
 }
 
+/** Parcelas em aberto com vencimento em `[de, ate)` — a linha "A vencer até" de uma janela futura. */
+export function buscarParcelasEmAbertoVencendoEntre(
+  filialId: string,
+  de: Date,
+  ate: Date,
+  classificacao?: FiltroClassificacao,
+): Promise<ParcelaParaProjecao[]> {
+  return buscarParcelasEmAberto(filialId, { gte: de, lt: ate }, classificacao);
+}
+
 /**
  * Com `opcoes.classificacao`: só parcelas de títulos daquela classificação,
  * partindo de 0 (acumulado — o saldo bancário não se divide) e sem alerta de
  * saldo negativo, que não faz sentido sobre um acumulado parcial.
  *
- * A linha "Em atraso" só existe quando a janela contém hoje: numa janela
- * inteira no futuro ou no passado, "antes da janela" misturaria parcelas que
- * ainda nem venceram.
+ * Tudo parte do saldo em caixa de hoje. O corte do atraso é o menor entre o
+ * início da janela e o início de hoje: "Em atraso" (sempre presente) soma as
+ * parcelas em aberto vencidas antes dele. Numa janela que começa depois de
+ * hoje, "A vencer até" soma as que vencem de hoje até a véspera da janela.
+ * Os três intervalos (atraso, a vencer, meses) não se sobrepõem.
  */
 export async function listarFluxoDeCaixaProjetado(
   sessao: SessaoAtiva,
@@ -194,18 +206,22 @@ export async function listarFluxoDeCaixaProjetado(
   const inicioDaJanela = periodos[0].inicio;
   const fimDaJanela = periodos[periodos.length - 1].fim;
   const agora = new Date();
-  const contemHoje = inicioDaJanela <= agora && agora <= fimDaJanela;
+  const inicioDeHoje = new Date(Date.UTC(agora.getUTCFullYear(), agora.getUTCMonth(), agora.getUTCDate()));
+  const corte = inicioDaJanela < inicioDeHoje ? inicioDaJanela : inicioDeHoje;
+  const janelaFutura = inicioDaJanela > inicioDeHoje;
 
-  const [saldoInicialAbsoluto, parcelas, atrasadas] = await Promise.all([
+  const [saldoInicialAbsoluto, parcelas, atrasadas, aVencerAntes] = await Promise.all([
     opcoes.classificacao ? Promise.resolve(0) : buscarSaldoEmCaixaAte(sessao.filialId, agora),
     buscarParcelasEmAbertoNoPeriodo(sessao.filialId, inicioDaJanela, fimDaJanela, opcoes.classificacao),
-    contemHoje
-      ? buscarParcelasEmAbertoVencidasAntes(sessao.filialId, inicioDaJanela, opcoes.classificacao)
+    buscarParcelasEmAbertoVencidasAntes(sessao.filialId, corte, opcoes.classificacao),
+    janelaFutura
+      ? buscarParcelasEmAbertoVencendoEntre(sessao.filialId, inicioDeHoje, inicioDaJanela, opcoes.classificacao)
       : Promise.resolve(undefined),
   ]);
 
   const resultado = calcularPeriodosFluxoDeCaixaProjetado(periodos, parcelas, saldoInicialAbsoluto, {
-    atrasadas: atrasadas && { parcelas: atrasadas, venceuAte: new Date(inicioDaJanela.getTime() - 1) },
+    atrasadas: { parcelas: atrasadas, venceuAte: new Date(corte.getTime() - 1) },
+    aVencerAntes,
   });
   if (!opcoes.classificacao) return resultado;
   return {

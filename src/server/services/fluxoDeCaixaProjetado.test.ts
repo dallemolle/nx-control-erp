@@ -226,10 +226,11 @@ describe("linha Em atraso (integração)", () => {
   test("parcela em aberto vencida antes da janela entra no atraso e em nenhum mês", async () => {
     await criarTituloNaFixture(fixture, "PAGAR", 4321, mesesAtras(2));
 
-    const { emAtraso, periodos } = await listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", hoje);
+    const { emAtraso, aVencerAntes, periodos } = await listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", hoje);
     expect(emAtraso?.saidasProjetadas).toBe(4321);
     expect(periodos.reduce((soma, p) => soma + p.saidasProjetadas, 0)).toBe(0);
     expect(periodos[0].saldoInicial).toBeCloseTo(emAtraso!.saldoFinal, 2);
+    expect(aVencerAntes).toBeNull();
   });
 
   test("parcela vencida antes e paga integralmente não entra", async () => {
@@ -261,12 +262,6 @@ describe("linha Em atraso (integração)", () => {
     expect(emAtraso?.saidasProjetadas).toBe(antesDeJaneiro);
   });
 
-  test("janela que não contém hoje não tem linha de atraso", async () => {
-    const anoQueVem = new Date(Date.UTC(hoje.getUTCFullYear() + 1, 0, 1));
-    const { emAtraso } = await listarFluxoDeCaixaProjetado(fixture.sessao, "ANO_CIVIL", anoQueVem);
-    expect(emAtraso).toBeNull();
-  });
-
   test("filtro de classificação: atraso só da classificação e sem alerta", async () => {
     const valor = 10_000_000;
     await prisma.titulo.create({
@@ -294,6 +289,91 @@ describe("linha Em atraso (integração)", () => {
 
     const fiscal = await listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", hoje, { classificacao: "FISCAL" });
     expect(fiscal.emAtraso!.saidasProjetadas).toBeLessThan(valor);
+  });
+});
+
+describe("janelas que não contêm hoje (integração)", () => {
+  let fixture: FixtureFinanceiro;
+  const agora = new Date();
+  const ano = agora.getUTCFullYear();
+  const inicioDeHoje = new Date(Date.UTC(ano, agora.getUTCMonth(), agora.getUTCDate()));
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("FCPJ", "TESOURARIA");
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fixture);
+  });
+
+  test("ano civil seguinte: atrasada em Em atraso, a vencer até 31/12 na linha nova, nada disso nos meses", async () => {
+    await criarTituloNaFixture(fixture, "PAGAR", 111, mesesAtras(2));
+    await criarTituloNaFixture(fixture, "RECEBER", 222, inicioDeHoje);
+    await criarTituloNaFixture(fixture, "RECEBER", 333, new Date(Date.UTC(ano + 1, 0, 15)));
+
+    const { emAtraso, aVencerAntes, periodos } = await listarFluxoDeCaixaProjetado(
+      fixture.sessao,
+      "ANO_CIVIL",
+      new Date(Date.UTC(ano + 1, 0, 1)),
+    );
+
+    expect(emAtraso?.saidasProjetadas).toBe(111);
+    expect(emAtraso?.entradasProjetadas).toBe(0);
+    expect(emAtraso?.venceuAte.getTime()).toBe(inicioDeHoje.getTime() - 1);
+    expect(aVencerAntes?.entradasProjetadas).toBe(222);
+    expect(aVencerAntes?.saidasProjetadas).toBe(0);
+    expect(aVencerAntes?.venceAte.toISOString()).toBe(`${ano}-12-31T23:59:59.999Z`);
+    expect(aVencerAntes!.saldoInicial).toBeCloseTo(emAtraso!.saldoFinal, 2);
+    expect(periodos[0].saldoInicial).toBeCloseTo(aVencerAntes!.saldoFinal, 2);
+    expect(periodos[0].entradasProjetadas).toBe(333);
+    expect(periodos.reduce((soma, p) => soma + p.saidasProjetadas, 0)).toBe(0);
+  });
+
+  test("ano civil anterior: o que venceu antes da janela fica em Em atraso, o do ano no mês, sem linha A vencer", async () => {
+    await criarTituloNaFixture(fixture, "PAGAR", 444, new Date(Date.UTC(ano - 2, 5, 10)));
+    await criarTituloNaFixture(fixture, "PAGAR", 555, new Date(Date.UTC(ano - 1, 5, 10)));
+
+    const { emAtraso, aVencerAntes, periodos } = await listarFluxoDeCaixaProjetado(
+      fixture.sessao,
+      "ANO_CIVIL",
+      new Date(Date.UTC(ano - 1, 0, 1)),
+    );
+
+    expect(emAtraso?.saidasProjetadas).toBe(444);
+    expect(emAtraso?.venceuAte.toISOString()).toBe(`${ano - 2}-12-31T23:59:59.999Z`);
+    expect(aVencerAntes).toBeNull();
+    expect(periodos[5].saidasProjetadas).toBe(555);
+    expect(periodos[0].saldoInicial).toBeCloseTo(emAtraso!.saldoFinal, 2);
+  });
+
+  test("filtro de classificação: linha A vencer só da classificação e sem alerta", async () => {
+    const valor = 10_000_000;
+    await prisma.titulo.create({
+      data: {
+        filialId: fixture.filialId,
+        tipo: "PAGAR",
+        fornecedorId: fixture.fornecedorId,
+        documento: `AVENCER-GER-${Date.now()}`,
+        dataEmissao: inicioDeHoje,
+        dataCompetencia: inicioDeHoje,
+        categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+        classificacaoFiscal: "GERENCIAL",
+        parcelas: {
+          create: [
+            { numero: 1, dataVencimento: inicioDeHoje, valorOriginal: valor, valorAtualizado: valor, status: "A_VENCER" },
+          ],
+        },
+      },
+    });
+    const anoQueVem = new Date(Date.UTC(ano + 1, 0, 1));
+
+    const gerencial = await listarFluxoDeCaixaProjetado(fixture.sessao, "ANO_CIVIL", anoQueVem, { classificacao: "GERENCIAL" });
+    expect(gerencial.emAtraso).toMatchObject({ saldoInicial: 0, alerta: false });
+    expect(gerencial.aVencerAntes).toMatchObject({ alerta: false });
+    expect(gerencial.aVencerAntes!.saidasProjetadas).toBeGreaterThanOrEqual(valor);
+
+    const fiscal = await listarFluxoDeCaixaProjetado(fixture.sessao, "ANO_CIVIL", anoQueVem, { classificacao: "FISCAL" });
+    expect(fiscal.aVencerAntes!.saidasProjetadas).toBeLessThan(valor);
   });
 });
 
