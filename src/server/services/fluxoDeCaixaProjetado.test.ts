@@ -111,12 +111,14 @@ describe("calcularPeriodosFluxoDeCaixaProjetado", () => {
     expect(resultado[0].entradasProjetadas).toBe(0);
   });
 
+  const venceuAte = new Date("2026-08-31T23:59:59.999Z");
+
   test("com atrasadas: linha de atraso soma por tipo e o primeiro mês parte do saldo final dela", () => {
     const atrasadas: ParcelaParaProjecao[] = [
       { dataVencimento: new Date(Date.UTC(2026, 6, 10)), saldo: 400, tipo: "RECEBER" },
       { dataVencimento: new Date(Date.UTC(2026, 7, 20)), saldo: 150, tipo: "PAGAR" },
     ];
-    const r = calcularPeriodosFluxoDeCaixaProjetado(periodos, [], 500, atrasadas);
+    const r = calcularPeriodosFluxoDeCaixaProjetado(periodos, [], 500, { atrasadas: { parcelas: atrasadas, venceuAte } });
     expect(r.emAtraso).toMatchObject({
       saldoInicial: 500,
       entradasProjetadas: 400,
@@ -125,21 +127,64 @@ describe("calcularPeriodosFluxoDeCaixaProjetado", () => {
       saldoFinal: 750,
       alerta: false,
     });
-    expect(r.emAtraso?.venceuAte.toISOString()).toBe("2026-08-31T23:59:59.999Z");
+    expect(r.emAtraso?.venceuAte).toBe(venceuAte);
+    expect(r.aVencerAntes).toBeNull();
     expect(r.periodos[0].saldoInicial).toBe(750);
   });
 
-  test("atrasadas vazias geram linha zerada; sem atrasadas, emAtraso é null", () => {
-    const vazia = calcularPeriodosFluxoDeCaixaProjetado(periodos, [], 500, []);
+  test("atrasadas vazias geram linha zerada; sem anteriores, as duas linhas são null", () => {
+    const vazia = calcularPeriodosFluxoDeCaixaProjetado(periodos, [], 500, { atrasadas: { parcelas: [], venceuAte } });
     expect(vazia.emAtraso).toMatchObject({ entradasProjetadas: 0, saidasProjetadas: 0, saldoFinal: 500 });
-    expect(calcularPeriodosFluxoDeCaixaProjetado(periodos, [], 500).emAtraso).toBeNull();
+    const sem = calcularPeriodosFluxoDeCaixaProjetado(periodos, [], 500);
+    expect(sem.emAtraso).toBeNull();
+    expect(sem.aVencerAntes).toBeNull();
   });
 
   test("linha de atraso com saldo final negativo marca alerta", () => {
-    const r = calcularPeriodosFluxoDeCaixaProjetado(periodos, [], 100, [
-      { dataVencimento: new Date(Date.UTC(2026, 7, 1)), saldo: 300, tipo: "PAGAR" },
-    ]);
+    const r = calcularPeriodosFluxoDeCaixaProjetado(periodos, [], 100, {
+      atrasadas: { parcelas: [{ dataVencimento: new Date(Date.UTC(2026, 7, 1)), saldo: 300, tipo: "PAGAR" }], venceuAte },
+    });
     expect(r.emAtraso).toMatchObject({ saldoFinal: -200, alerta: true });
+  });
+
+  test("encadeia atraso → a vencer antes → meses", () => {
+    const r = calcularPeriodosFluxoDeCaixaProjetado(
+      periodos,
+      [{ dataVencimento: new Date(Date.UTC(2026, 8, 5)), saldo: 50, tipo: "RECEBER" }],
+      500,
+      {
+        atrasadas: { parcelas: [{ dataVencimento: new Date(Date.UTC(2026, 5, 1)), saldo: 100, tipo: "PAGAR" }], venceuAte },
+        aVencerAntes: [
+          { dataVencimento: new Date(Date.UTC(2026, 7, 10)), saldo: 300, tipo: "RECEBER" },
+          { dataVencimento: new Date(Date.UTC(2026, 7, 20)), saldo: 20, tipo: "PAGAR" },
+        ],
+      },
+    );
+    expect(r.emAtraso).toMatchObject({ saldoInicial: 500, saldoFinal: 400 });
+    expect(r.aVencerAntes).toMatchObject({
+      saldoInicial: 400,
+      entradasProjetadas: 300,
+      saidasProjetadas: 20,
+      geracaoLiquida: 280,
+      saldoFinal: 680,
+      alerta: false,
+    });
+    expect(r.aVencerAntes?.venceAte.toISOString()).toBe("2026-08-31T23:59:59.999Z");
+    expect(r.periodos[0]).toMatchObject({ saldoInicial: 680, entradasProjetadas: 50, saldoFinal: 730 });
+  });
+
+  test("sem atrasadas, a linha A vencer parte do saldo inicial; vazia gera linha zerada", () => {
+    const r = calcularPeriodosFluxoDeCaixaProjetado(periodos, [], 500, { aVencerAntes: [] });
+    expect(r.emAtraso).toBeNull();
+    expect(r.aVencerAntes).toMatchObject({ saldoInicial: 500, entradasProjetadas: 0, saidasProjetadas: 0, saldoFinal: 500 });
+    expect(r.periodos[0].saldoInicial).toBe(500);
+  });
+
+  test("linha A vencer com saldo final negativo marca alerta", () => {
+    const r = calcularPeriodosFluxoDeCaixaProjetado(periodos, [], 100, {
+      aVencerAntes: [{ dataVencimento: new Date(Date.UTC(2026, 7, 1)), saldo: 300, tipo: "PAGAR" }],
+    });
+    expect(r.aVencerAntes).toMatchObject({ saldoFinal: -200, alerta: true });
   });
 });
 

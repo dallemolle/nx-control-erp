@@ -20,7 +20,7 @@ export type PeriodoFluxoDeCaixaProjetado = SubPeriodo & {
 
 /** Parcelas em aberto vencidas antes da janela, numa linha própria antes do primeiro mês. */
 export type LinhaEmAtraso = {
-  /** Último instante antes da janela — para o rótulo "venc. até". */
+  /** Último instante do atraso (véspera do corte) — para o rótulo "venc. até". */
   venceuAte: Date;
   saldoInicial: number;
   entradasProjetadas: number;
@@ -30,7 +30,23 @@ export type LinhaEmAtraso = {
   alerta: boolean;
 };
 
-export type FluxoDeCaixaProjetado = { emAtraso: LinhaEmAtraso | null; periodos: PeriodoFluxoDeCaixaProjetado[] };
+/** Parcelas em aberto que vencem entre hoje e a véspera de uma janela futura. */
+export type LinhaAVencerAntes = Omit<LinhaEmAtraso, "venceuAte"> & {
+  /** Véspera da janela, para o rótulo "A vencer até". */
+  venceAte: Date;
+};
+
+export type FluxoDeCaixaProjetado = {
+  emAtraso: LinhaEmAtraso | null;
+  aVencerAntes: LinhaAVencerAntes | null;
+  periodos: PeriodoFluxoDeCaixaProjetado[];
+};
+
+/** Parcelas que vencem antes da janela, cada grupo na sua linha (presente = linha existe, mesmo vazia). */
+export type ParcelasAntesDaJanela = {
+  atrasadas?: { parcelas: ParcelaParaProjecao[]; venceuAte: Date };
+  aVencerAntes?: ParcelaParaProjecao[];
+};
 
 /**
  * Recorta a janela de 12 meses do modo escolhido. MOVEL desliza a partir do
@@ -79,20 +95,26 @@ function agregar(parcelas: ParcelaParaProjecao[], saldoInicial: number) {
  * `calcularPeriodosFluxoDeCaixa` no fluxo realizado, mas agrupando por
  * `tipo` de título (RECEBER/PAGAR) em vez de tipo de lançamento.
  *
- * Com `atrasadas` (parcelas vencidas antes da janela, mesmo vazia), monta
- * antes a linha "Em atraso" e os meses partem do saldo final dela; sem
- * `atrasadas`, `emAtraso` é `null`.
+ * Antes dos meses, na ordem: a linha "Em atraso" (se `anteriores.atrasadas`
+ * vier) e a linha "A vencer até" (se `anteriores.aVencerAntes` vier). Cada
+ * uma parte do saldo final da anterior, e os meses partem da última.
  */
 export function calcularPeriodosFluxoDeCaixaProjetado(
   periodos: SubPeriodo[],
   parcelas: ParcelaParaProjecao[],
   saldoInicialAbsoluto: number,
-  atrasadas?: ParcelaParaProjecao[],
+  anteriores: ParcelasAntesDaJanela = {},
 ): FluxoDeCaixaProjetado {
-  const emAtraso = atrasadas
-    ? { venceuAte: new Date(periodos[0].inicio.getTime() - 1), ...agregar(atrasadas, saldoInicialAbsoluto) }
+  const emAtraso = anteriores.atrasadas
+    ? { venceuAte: anteriores.atrasadas.venceuAte, ...agregar(anteriores.atrasadas.parcelas, saldoInicialAbsoluto) }
     : null;
-  let saldoCorrente = emAtraso ? emAtraso.saldoFinal : saldoInicialAbsoluto;
+  const aVencerAntes = anteriores.aVencerAntes
+    ? {
+        venceAte: new Date(periodos[0].inicio.getTime() - 1),
+        ...agregar(anteriores.aVencerAntes, emAtraso ? emAtraso.saldoFinal : saldoInicialAbsoluto),
+      }
+    : null;
+  let saldoCorrente = aVencerAntes?.saldoFinal ?? emAtraso?.saldoFinal ?? saldoInicialAbsoluto;
 
   const meses = periodos.map(({ inicio, fim }) => {
     const doPeriodo = parcelas.filter((p) => p.dataVencimento >= inicio && p.dataVencimento <= fim);
@@ -101,7 +123,7 @@ export function calcularPeriodosFluxoDeCaixaProjetado(
     return { inicio, fim, ...linha };
   });
 
-  return { emAtraso, periodos: meses };
+  return { emAtraso, aVencerAntes, periodos: meses };
 }
 
 const STATUS_EM_ABERTO = ["EM_ABERTO", "A_VENCER", "VENCIDO", "PARCIALMENTE_PAGO"] as const;
@@ -182,10 +204,13 @@ export async function listarFluxoDeCaixaProjetado(
       : Promise.resolve(undefined),
   ]);
 
-  const resultado = calcularPeriodosFluxoDeCaixaProjetado(periodos, parcelas, saldoInicialAbsoluto, atrasadas);
+  const resultado = calcularPeriodosFluxoDeCaixaProjetado(periodos, parcelas, saldoInicialAbsoluto, {
+    atrasadas: atrasadas && { parcelas: atrasadas, venceuAte: new Date(inicioDaJanela.getTime() - 1) },
+  });
   if (!opcoes.classificacao) return resultado;
   return {
     emAtraso: resultado.emAtraso && { ...resultado.emAtraso, alerta: false },
+    aVencerAntes: resultado.aVencerAntes && { ...resultado.aVencerAntes, alerta: false },
     periodos: resultado.periodos.map((periodo) => ({ ...periodo, alerta: false })),
   };
 }
