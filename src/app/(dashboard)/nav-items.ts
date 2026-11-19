@@ -71,6 +71,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/cadastros/locais-armazenamento", label: "Locais de armazenamento", acao: "cadastro:ler" },
       { href: "/cadastros/bancos", label: "Bancos", acao: "cadastro:ler" },
       { href: "/cadastros/contas-bancarias", label: "Contas bancárias", acao: "cadastro:ler" },
+      { href: "/cadastros/operadoras-cartao", label: "Operadoras de cartão", acao: "cadastro:ler" },
     ],
   },
   {
