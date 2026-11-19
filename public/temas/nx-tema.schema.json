@@ -113,7 +113,10 @@
                   "type": "string",
                   "pattern": "^#[0-9a-fA-F]{6}$"
                 }
-              ]
+              ],
+              "items": false,
+              "minItems": 5,
+              "maxItems": 5
             }
           },
           "required": [
@@ -220,7 +223,10 @@
                   "type": "string",
                   "pattern": "^#[0-9a-fA-F]{6}$"
                 }
-              ]
+              ],
+              "items": false,
+              "minItems": 5,
+              "maxItems": 5
             }
           },
           "required": [
