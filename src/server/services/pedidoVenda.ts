@@ -369,6 +369,11 @@ export async function situacaoParaCancelar(
 ): Promise<SituacaoCancelamentoPedido> {
   if (pedido.status === "CANCELADO") return { pode: false, motivo: "O pedido já está cancelado" };
   if (pedido.tituloId) {
+    // Maquininha: o repasse confirmado é desfeito na tela de repasses antes do cancelamento.
+    const confirmados = await db.repasseCartaoConfirmado.count({ where: { parcela: { tituloId: pedido.tituloId } } });
+    if (confirmados > 0) return { pode: false, motivo: "Desfaça a confirmação dos repasses antes de cancelar" };
+  }
+  if (pedido.tituloId) {
     const outras = await db.baixa.count({
       where: {
         parcela: { tituloId: pedido.tituloId },
@@ -420,6 +425,9 @@ export async function cancelarPedido(sessao: SessaoAtiva, id: string, motivo: st
     }
     if (pedido.tituloId) {
       await tx.parcela.updateMany({ where: { tituloId: pedido.tituloId }, data: { status: "CANCELADO" } });
+    }
+    if (pedido.tituloTaxaId) {
+      await tx.parcela.updateMany({ where: { tituloId: pedido.tituloTaxaId }, data: { status: "CANCELADO" } });
     }
     for (const item of pedido.itens) {
       await registrarMovimento(tx, {
