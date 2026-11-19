@@ -1,7 +1,7 @@
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { podeExecutar } from "@/server/auth/permissions";
 import { listarFluxoDeCaixaProjetado, type ModoJanelaProjetado } from "@/server/services/fluxoDeCaixaProjetado";
-import { formatarRotuloPeriodo, rotuloEmAtraso } from "../../_fluxo-de-caixa/formatar-rotulo-periodo";
+import { formatarRotuloPeriodo, rotuloAVencerAntes, rotuloEmAtraso } from "../../_fluxo-de-caixa/formatar-rotulo-periodo";
 import { dataValida } from "../../_fluxo-de-caixa/data-valida";
 import { type ColunaExport } from "@/lib/export/csv";
 import { responderExport } from "@/lib/export/responder";
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
   const dataReferencia = dataValida(url.searchParams.get("data") ?? undefined);
   const classificacao = classificacaoDaUrl(url.searchParams.get("classificacao") ?? undefined);
 
-  const { emAtraso, periodos } = await listarFluxoDeCaixaProjetado(sessao, modo, dataReferencia, { classificacao });
+  const { emAtraso, aVencerAntes, periodos } = await listarFluxoDeCaixaProjetado(sessao, modo, dataReferencia, { classificacao });
   const paraLinha = (mes: string, l: Omit<LinhaExport, "mes">): LinhaExport => ({
     mes,
     saldoInicial: l.saldoInicial,
@@ -62,6 +62,7 @@ export async function GET(request: Request) {
   });
   const linhas: LinhaExport[] = [
     ...(emAtraso ? [paraLinha(rotuloEmAtraso(emAtraso.venceuAte), emAtraso)] : []),
+    ...(aVencerAntes ? [paraLinha(rotuloAVencerAntes(aVencerAntes.venceAte), aVencerAntes)] : []),
     ...periodos.map((periodo) => paraLinha(formatarRotuloPeriodo("MES", periodo.inicio, periodo.fim), periodo)),
   ];
 
