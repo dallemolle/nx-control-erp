@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.36](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.35...nx-control-erp-v0.1.36) (2026-11-19)
+
+
+### Novidades
+
+* **controladoria:** buscas de realizado e projetado por safra sem corte de data ([e209ef7](https://github.com/dallemolle/nx-control-erp/commit/e209ef70bb0dbbd1d4cdefb2a3391d61218b5a3c))
+
+
+### Correções
+
+* **controladoria:** comparação entre safras soma o que está marcado com a safra em qualquer data ([96d6474](https://github.com/dallemolle/nx-control-erp/commit/96d64741b252cbba17e777a96c7a4e54d297bb4d))
+
 ## [0.1.35](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.34...nx-control-erp-v0.1.35) (2026-11-19)
 
 
