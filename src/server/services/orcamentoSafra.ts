@@ -2,7 +2,7 @@ import { prisma } from "@/server/db/client";
 import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permissions";
 import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
-import { buscarRealizadoPorDimensaoNoPeriodo, buscarProjetadoPorDimensaoNoPeriodo } from "./fluxoDeCaixaPorDimensao";
+import { buscarRealizadoPorSafras, buscarProjetadoPorSafras } from "./fluxoDeCaixaPorDimensao";
 import type { FiltroClassificacao } from "./classificacaoFiscal";
 import type { StatusSafraProjeto } from "@prisma/client";
 
@@ -20,7 +20,7 @@ export type LinhaComparativoSafra = {
 /**
  * Monta uma linha do comparativo orçado x realizado x projetado por safra.
  * `realizado`/`projetado` já chegam como saldo líquido (entradas - saídas)
- * do período da safra — diferente do relatório de fluxo por dimensão
+ * de tudo o que está marcado com a safra — diferente do relatório de fluxo por dimensão
  * (2a), que separa entradas e saídas em colunas próprias.
  */
 export function montarLinhaComparativoSafra(
@@ -80,6 +80,12 @@ export async function salvarValorOrcamentoSafra(
   });
 }
 
+/**
+ * Realizado e projetado de cada safra somam tudo o que está marcado com ela,
+ * em qualquer data: as datas da safra não cortam os valores (compras de
+ * pré-safra e vendas pós-colheita entram). Uma consulta de cada para todas
+ * as safras.
+ */
 export async function listarComparativoSafras(
   sessao: SessaoAtiva,
   // Filtra só realizado e projetado; o orçado da safra é um só.
@@ -96,28 +102,25 @@ export async function listarComparativoSafras(
     orderBy: { dataInicio: "desc" },
   });
 
-  const orcamentos = await prisma.orcamentoSafra.findMany({ where: { filialId: sessao.filialId } });
+  const safraIds = safras.map((safra) => safra.id);
 
-  const linhas: LinhaComparativoSafra[] = [];
-  for (const safra of safras) {
-    const [realizadoPorSafra, projetadoPorSafra] = await Promise.all([
-      buscarRealizadoPorDimensaoNoPeriodo(sessao.filialId, "SAFRA", safra.dataInicio, safra.dataFim, opcoes.classificacao),
-      buscarProjetadoPorDimensaoNoPeriodo(sessao.filialId, "SAFRA", safra.dataInicio, safra.dataFim, opcoes.classificacao),
-    ]);
+  const [orcamentos, realizadoPorSafra, projetadoPorSafra] = await Promise.all([
+    prisma.orcamentoSafra.findMany({ where: { filialId: sessao.filialId } }),
+    buscarRealizadoPorSafras(sessao.filialId, safraIds, opcoes.classificacao),
+    buscarProjetadoPorSafras(sessao.filialId, safraIds, opcoes.classificacao),
+  ]);
+
+  return safras.map((safra) => {
     const orcamento = orcamentos.find((o) => o.safraId === safra.id);
     const r = realizadoPorSafra.get(safra.id) ?? { entradas: 0, saidas: 0 };
     const p = projetadoPorSafra.get(safra.id) ?? { entradas: 0, saidas: 0 };
-
-    linhas.push(
-      montarLinhaComparativoSafra(
-        safra.id,
-        safra.nome,
-        safra.status,
-        orcamento ? Number(orcamento.valor) : 0,
-        r.entradas - r.saidas,
-        p.entradas - p.saidas,
-      ),
+    return montarLinhaComparativoSafra(
+      safra.id,
+      safra.nome,
+      safra.status,
+      orcamento ? Number(orcamento.valor) : 0,
+      r.entradas - r.saidas,
+      p.entradas - p.saidas,
     );
-  }
-  return linhas;
+  });
 }

@@ -29,8 +29,9 @@ export default async function ComparacaoSafrasPage({
       <div>
         <h1 className="text-lg font-semibold">Comparação entre safras</h1>
         <p className="text-sm text-muted-foreground">
-          Orçado, realizado e projetado por safra — cada safra usa seu
-          próprio período (início/fim), não o ano civil. Realizado usa
+          Orçado, realizado e projetado por safra. Realizado e projetado somam
+          tudo o que está marcado com a safra, em qualquer data (inclusive
+          compras de pré-safra e vendas depois da colheita). Realizado usa
           apenas movimentações já conciliadas; projetado usa títulos em
           aberto.
         </p>
