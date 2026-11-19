@@ -66,6 +66,8 @@ export async function criarFixtureProducao(sufixo: string): Promise<FixtureProdu
       // OP antes de lote, fruta, produto, local e insumo (linhas em cascata).
       await prisma.ordemProducao.deleteMany({ where: filiais });
       await prisma.pedidoVenda.deleteMany({ where: filiais });
+      // Operadora antes de conta, cliente, fornecedor e categoria (relações Restrict).
+      await prisma.operadoraCartao.deleteMany({ where: filiais });
       await prisma.ajusteEstoque.deleteMany({ where: filiais });
       await prisma.recepcaoFruto.deleteMany({ where: filiais });
       await prisma.titulo.deleteMany({ where: filiais });
