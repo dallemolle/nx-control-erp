@@ -87,3 +87,15 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   auditoria `ENCERRAR` da OP. Se for preciso consultar "qual preço valia em
   tal data" (ex.: para explicar um custo antigo sem abrir a auditoria),
   criar um histórico de preços por produto.
+
+## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
+
+- **Ajuda com simulação nas demais telas do Financeiro.** O piloto cobre só
+  Contas a pagar (engine em `src/components/ajuda/`, conteúdo em
+  `src/ajuda/`). Faltam, uma tela por sessão depois do piloto aprovado no
+  uso: Contas a receber (só roteiros novos; as cenas já aceitam
+  `tipo: "RECEBER"`), Aprovações pendentes, Repasses de cartão, Tesouraria,
+  Conciliação e os três fluxos de caixa. Critério de cada uma: quem nunca
+  usou o sistema consegue lançar seguindo só a ajuda.
+- **Ajuda com simulação nos outros menus** (Produção, Vendas, Cadastros,
+  Controladoria, Administração), depois do Financeiro, na mesma engine.
