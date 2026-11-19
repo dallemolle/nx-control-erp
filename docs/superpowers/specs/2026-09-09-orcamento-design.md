@@ -218,5 +218,5 @@ adiante) → `/controladoria/orcamento`.
 - Migration de backfill pra categorizar lançamentos históricos gerados
   por baixa — resolvido via fallback na leitura, não em dado persistido.
   — **descartado:** resolvido pelo fallback.
-- Consolidação por empresa — este sub-projeto é por filial. — **→
-  backlog** (já registrado em Filtros globais).
+- Consolidação por empresa — este sub-projeto é por filial. —
+  **descartado** (2026-11-18): a Hortitex usa uma filial só.

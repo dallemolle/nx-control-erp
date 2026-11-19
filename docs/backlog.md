@@ -7,18 +7,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
 
 ## Segurança — dependências
 
-- **`mysql2`/`deepmerge-ts` vulneráveis via `@prisma/config` (dependência
-  do CLI `prisma`, dev-only).** `npm audit` (checado em 2026-09-12) marca
-  como alta severidade. Este projeto usa só Postgres — `mysql2` só existe
-  porque o CLI do Prisma dá suporte genérico a múltiplos bancos. Checado
-  contra a versão mais recente do Prisma disponível na época (`7.10.0`):
-  ainda depende da mesma `deepmerge-ts@7.1.5` vulnerável — não é algo que
-  uma atualização da nossa dependência resolva hoje, é um fix pendente do
-  próprio Prisma. O único caminho que `npm audit fix --force` oferece é
-  fazer downgrade do `prisma` para `6.19.3` (versão major anterior à que
-  o projeto usa — rejeitado, risco real de regressão). Reavaliar quando o
-  Prisma lançar uma versão que já traga `deepmerge-ts >= 8.0.0`.
-
 - **`uuid` vulnerável via `exceljs`** (severidade moderada,
   `GHSA-w5hq-g745-h8pq` — falta de checagem de limites de buffer em
   `v3`/`v5`/`v6` quando um buffer é fornecido pelo chamador). `exceljs`
@@ -73,32 +61,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   comparar contra saídas, não contra o saldo líquido) ou resultado líquido
   esperado (permitir negativo no schema usado por esta tela).
 
-## Dashboard executivo (Fase 6)
-
-- **Gráfico "Orçado x Realizado" por categoria, consolidado por empresa.**
-  Cortado da v1 do dashboard executivo: `CategoriaFinanceira` é cadastrada
-  por filial, então não existe uma identidade única "esta categoria" que
-  some naturalmente entre filiais (duas filiais podem ter categorias de
-  mesmo nome como linhas totalmente diferentes no banco). Revisitar quando
-  o sub-projeto de Filtros globais (ou um cadastro de categoria
-  compartilhado entre filiais) existir.
-
-- **Gráfico "Fluxo de caixa por dimensão" (centro de custo/lucro/safra),
-  consolidado por empresa.** Mesmo problema do item acima —
-  `CentroCusto`/`CentroLucro`/`Safra` são cadastros por filial, sem chave
-  comum entre filiais para agregar. A tela por filial já existe
-  (sub-projeto 2a, `/controladoria/fluxo-por-dimensao`); o que falta é uma
-  visão consolidada por empresa, que depende da mesma solução do item
-  acima.
-
-## Cobertura de relatórios
-
-- **Rollup hierárquico de Centro de Custo** (Fase 5, sub-projeto 2a). Se
-  `CentroCusto` vier a ter hierarquia (centro-pai/centro-filho), o
-  relatório por dimensão hoje trata cada `centroCustoId` como uma linha
-  isolada, sem somar filhos no total do pai. Não implementado porque a
-  hierarquia em si não existe no modelo hoje.
-
 ## Fluxo de caixa projetado
 
 - **Reconstrução da cadeia de saldo em janelas fora do intervalo visível**
@@ -110,49 +72,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   do saldo inicial da janela pode não refletir a realidade de um ano
   distante. Reconstruir a cadeia completa através de anos não exibidos
   ficou para uma iteração futura.
-
-## Relatórios exportáveis (Fase 6, sub-projeto 6b)
-
-- **"Necessidade de capital de giro" sem export** — fica de fora até existir
-  modelo de dados para o conceito (mesma decisão já registrada para o
-  Dashboard executivo). Todos os demais relatórios da lista original da
-  Fase 6 já exportam CSV/Excel/PDF (PDF concluído em 2026-11-05, junto com
-  o `400` para `?formato=` desconhecido e a data do arquivo em horário de
-  Brasília).
-
-- **`exceljs` é uma dependência pesada** (traz `archiver`, `unzipper`,
-  `glob@7`, `fstream`, algumas já descontinuadas). Só é importado por
-  Route Handlers hoje (nunca por um componente client), o que é o correto
-  — não existe uma convenção `server-only` neste projeto para impedir um
-  import client acidental no futuro que arrastaria toda essa árvore pro
-  bundle do navegador. Considerar adicionar `import "server-only"` em
-  `src/lib/export/excel.ts` se isso vier a ser um problema real.
-
-## Filtros globais (Fase 6, sub-projeto 6c)
-
-- **Consolidação por empresa ("empresa sem filial selecionada = todas as
-  filiais")** ficou fora do v1 — exige tornar `SessaoAtiva.filialId`
-  opcional (mudança de sessão/autenticação, não de tela). Quando for
-  retomado, os filtros de dimensão já combinam livremente com qualquer
-  jeito de escopo de filial que vier a existir — não há acoplamento entre
-  os dois.
-- **Banco e conta bancária como filtro** ficaram fora do v1 — exigem 1
-  hop extra (`contaBancaria.bancoId`), mesmo padrão dos demais filtros de
-  título, só que indireto. Adicionar como filtros de título normais
-  quando houver demanda.
-- **Multi-select por dimensão** (ex.: filtrar por 2 categorias ao mesmo
-  tempo) ficou fora do v1 — cada dimensão aceita hoje só um valor por
-  vez. Se necessário no futuro, a mudança troca `categoriaId?: string`
-  etc. por `categoriaIds?: string[]` em `FiltroTitulos` e o `where` do
-  Prisma passa a usar `in: [...]` em vez de igualdade — mecânica direta,
-  sem redesenho.
-- **Extensão do mecanismo para as demais telas financeiras** (fluxo de
-  caixa realizado/projetado, dashboard executivo, conciliação, fluxo por
-  dimensão) — este sub-projeto só aplicou o mecanismo a Contas a
-  pagar/receber. Estender é wiring repetitivo sobre o mesmo padrão
-  (`FiltroTitulos`-equivalente + `BarraDeFiltros`-equivalente por tela),
-  não redesenho. Reavaliado em 2026-11-05: nenhuma tela por enquanto
-  (decisão do usuário) — só retomar com pedido de uma tela específica.
 
 ## API REST de automação (lançamentos via agente)
 

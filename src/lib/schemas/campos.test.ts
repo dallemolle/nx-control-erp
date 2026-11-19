@@ -31,3 +31,11 @@ describe("textoOpcional", () => {
     expect(textoOpcional.parse(undefined)).toBeNull();
   });
 });
+
+describe("campo ausente dentro de um objeto", () => {
+  // Formulário HTML não posta checkbox desmarcado: a chave some do objeto.
+  test("checkbox ausente vira false e texto ausente vira null", () => {
+    const schema = z.object({ marcado: checkboxSchema, texto: textoOpcional });
+    expect(schema.parse({})).toEqual({ marcado: false, texto: null });
+  });
+});

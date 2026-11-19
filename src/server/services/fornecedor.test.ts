@@ -54,6 +54,7 @@ describe("fornecedor - permissão de alteração por filial", () => {
       contato: "Contato",
       email: "fornecedor@teste.local",
       telefone: "1234567890",
+      municipio: null,
     };
 
     await expect(criarFornecedor(sessao, dados)).rejects.toThrow(FilialSomenteLeituraError);
@@ -74,6 +75,7 @@ describe("fornecedor - dados bancários", () => {
     contato: "",
     email: "",
     telefone: "",
+    municipio: null,
   };
 
   beforeAll(async () => {

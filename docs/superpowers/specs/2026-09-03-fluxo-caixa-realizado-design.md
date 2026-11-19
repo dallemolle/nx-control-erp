@@ -178,8 +178,8 @@ Nova entrada de nav "Fluxo de caixa" → `/financeiro/fluxo-de-caixa` (sem
   registrado).
 - Quebra por centro de custo, centro de lucro, safra ou projeto — Fase 5
   ("Comparativos por dimensão"). — **feito** (fluxo por dimensão).
-- Consolidação por empresa (soma de filiais) — Fase 5. — **→ backlog**
-  (já registrado em Filtros globais).
+- Consolidação por empresa (soma de filiais) — Fase 5. — **descartado**
+  (2026-11-18): a Hortitex usa uma filial só.
 - Intervalo de datas livre (o usuário só navega período-a-período dentro
   da granularidade escolhida, sem escolher um range arbitrário). —
   **descartado:** a navegação por período atende.

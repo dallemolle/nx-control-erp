@@ -52,6 +52,7 @@ describe("tema por empresa", () => {
         cnpjCpf: `${sufixo}/0001-77`,
         moedaPadrao: "BRL",
         corPrimaria: null,
+        exigirAprovacaoPorOutro: false,
       })
     ).id;
   });

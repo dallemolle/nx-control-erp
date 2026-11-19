@@ -1,3 +1,4 @@
+import "server-only";
 import ExcelJS from "exceljs";
 import type { ColunaExport } from "./csv";
 
