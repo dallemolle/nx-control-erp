@@ -50,15 +50,18 @@ tela em `/controladoria/fluxo-por-dimensao`) e Comparação entre safras
   caixa por dimensão, generalizada para aceitar qualquer intervalo de
   datas (`buscarRealizadoPorDimensaoNoPeriodo`/
   `buscarProjetadoPorDimensaoNoPeriodo`) em vez de duplicar a query —
-  chamada com o período próprio de cada safra. Valor é o saldo líquido
-  (entradas − saídas), diferente das colunas separadas do relatório por
-  dimensão.
+  hoje pelas buscas por safras sem corte de data
+  (`buscarRealizadoPorSafras`/`buscarProjetadoPorSafras`, 2026-11-19):
+  conta tudo o que está marcado com a safra, em qualquer data. Valor é o
+  saldo líquido (entradas − saídas), diferente das colunas separadas do
+  relatório por dimensão.
 - Lista toda safra ativa da filial (`PLANEJADO`/`EM_ANDAMENTO`/`ENCERRADO`,
   sem limite de quantidade). Sem alerta de estouro nesta versão (não
   pedido no escopo original, ver `docs/backlog.md`).
-- Duas decisões conscientes registradas em `docs/backlog.md`: o realizado
-  ignora lançamento marcado com a safra mas datado fora do período
-  oficial; o orçado é sempre ≥0 enquanto realizado/projetado têm sinal.
+- Decisão consciente registrada em `docs/backlog.md`: o orçado é sempre
+  ≥0 enquanto realizado/projetado têm sinal. A outra (o realizado ignorava
+  lançamento marcado com a safra mas datado fora do período oficial) foi
+  revista em 2026-11-19.
 
 ## Depende de
 

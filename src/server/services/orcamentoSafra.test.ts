@@ -156,6 +156,52 @@ describe("listarComparativoSafras (integração)", () => {
     expect(linha?.projetado).toBeLessThanOrEqual(-800);
   });
 
+  test("realizado e projetado incluem o que está marcado com a safra fora do período dela", async () => {
+    const safra = await prisma.safra.create({
+      data: {
+        filialId: fixture.filialId,
+        nome: "Safra com pré-safra",
+        status: "EM_ANDAMENTO",
+        dataInicio: new Date("2026-09-01T00:00:00Z"),
+        dataFim: new Date("2027-03-31T00:00:00Z"),
+      },
+    });
+
+    await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: new Date("2026-07-20T00:00:00Z"),
+        tipo: "SAIDA",
+        valor: 600,
+        descricao: "Insumo de pré-safra",
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+        conciliado: true,
+        safraId: safra.id,
+      },
+    });
+
+    await criarTitulo(fixture.sessao, "RECEBER", {
+      contraparteId: fixture.clienteId,
+      documento: `ORCSAF3-POS-${Date.now()}`,
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: safra.id,
+      projetoId: "",
+      contaBancariaId: fixture.contaBancariaId,
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: new Date("2027-06-30T00:00:00Z"), valorOriginal: 900 }],
+    });
+
+    const linha = (await listarComparativoSafras(fixture.sessao)).find((l) => l.safraId === safra.id);
+    expect(linha?.realizado).toBe(-600);
+    expect(linha?.projetado).toBe(900);
+  });
+
   test("safra sem orçamento salvo aparece com orcado 0, não é omitida", async () => {
     const safraSemOrcamento = await prisma.safra.create({
       data: {

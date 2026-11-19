@@ -1,4 +1,5 @@
 import { prisma } from "@/server/db/client";
+import type { Prisma } from "@prisma/client";
 import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { saldoRemanescenteParcela } from "./fluxoDeCaixaProjetado";
@@ -44,22 +45,26 @@ function somar(totais: Map<string | null, TotaisPorDimensao>, chave: string | nu
   totais.set(chave, atual);
 }
 
-export async function buscarRealizadoPorDimensaoNoPeriodo(
+/**
+ * Consulta e agregação do realizado por dimensão — campo direto primeiro,
+ * fallback via baixa->parcela->titulo; sem os dois, chave `null`. `filtro`
+ * restringe o que entra (período, safras) além do recorte fixo: filial,
+ * conciliado, conta ativa e classificação.
+ */
+async function somarRealizadoPorDimensao(
   filialId: string,
   tipoDimensao: TipoDimensao,
-  inicio: Date,
-  fim: Date,
+  filtro: Prisma.LancamentoBancarioWhereInput,
   classificacao?: FiltroClassificacao,
 ): Promise<Map<string | null, TotaisPorDimensao>> {
   const campo = CAMPO_POR_DIMENSAO[tipoDimensao];
 
   const lancamentos = await prisma.lancamentoBancario.findMany({
     where: {
-      filialId,
-      conciliado: true,
-      contaBancaria: { ativo: true },
-      data: { gte: inicio, lte: fim },
-      ...whereLancamentoPorClassificacao(classificacao),
+      AND: [
+        { filialId, conciliado: true, contaBancaria: { ativo: true }, ...whereLancamentoPorClassificacao(classificacao) },
+        filtro,
+      ],
     },
     include: {
       baixa: {
@@ -83,12 +88,46 @@ export async function buscarRealizadoPorDimensaoNoPeriodo(
   return totais;
 }
 
+export function buscarRealizadoPorDimensaoNoPeriodo(
+  filialId: string,
+  tipoDimensao: TipoDimensao,
+  inicio: Date,
+  fim: Date,
+  classificacao?: FiltroClassificacao,
+): Promise<Map<string | null, TotaisPorDimensao>> {
+  return somarRealizadoPorDimensao(filialId, tipoDimensao, { data: { gte: inicio, lte: fim } }, classificacao);
+}
+
+/**
+ * Realizado de cada safra pela marcação, sem corte de data (comparação entre
+ * safras). Mesmo critério de `direto ?? viaBaixa`: o lançamento com safra
+ * própria vale por ela; sem safra própria, vale a do título da baixa.
+ */
+export async function buscarRealizadoPorSafras(
+  filialId: string,
+  safraIds: string[],
+  classificacao?: FiltroClassificacao,
+): Promise<Map<string | null, TotaisPorDimensao>> {
+  if (safraIds.length === 0) return new Map();
+  return somarRealizadoPorDimensao(
+    filialId,
+    "SAFRA",
+    {
+      OR: [
+        { safraId: { in: safraIds } },
+        { safraId: null, baixa: { parcela: { titulo: { safraId: { in: safraIds } } } } },
+      ],
+    },
+    classificacao,
+  );
+}
+
 /**
  * Realizado por dimensão — campo direto primeiro (lançamentos criados após
  * a correção na origem), fallback via baixa->parcela->titulo pra dado
  * histórico. Sem os dois, cai em `null` ("Não classificado"). Wrapper fino
  * sobre a versão por intervalo — usado pelo relatório mensal (2a) e por
- * nada mais; a lógica de query vive só em `buscarRealizadoPorDimensaoNoPeriodo`.
+ * nada mais; a lógica de query vive só em `somarRealizadoPorDimensao`.
  */
 export async function buscarRealizadoPorDimensao(
   filialId: string,
@@ -106,20 +145,28 @@ export async function buscarRealizadoPorDimensao(
   );
 }
 
-export async function buscarProjetadoPorDimensaoNoPeriodo(
+/**
+ * Consulta e agregação do projetado por dimensão — parcelas em aberto, pelo
+ * saldo remanescente, na dimensão do título. `filtro` restringe o que entra
+ * (período, safras) além do recorte fixo: filial, classificação e status.
+ */
+async function somarProjetadoPorDimensao(
   filialId: string,
   tipoDimensao: TipoDimensao,
-  inicio: Date,
-  fim: Date,
+  filtro: Prisma.ParcelaWhereInput,
   classificacao?: FiltroClassificacao,
 ): Promise<Map<string | null, TotaisPorDimensao>> {
   const campo = CAMPO_POR_DIMENSAO[tipoDimensao];
 
   const parcelas = await prisma.parcela.findMany({
     where: {
-      titulo: { filialId, ...whereTituloPorClassificacao(classificacao) },
-      status: { in: ["EM_ABERTO", "A_VENCER", "VENCIDO", "PARCIALMENTE_PAGO"] },
-      dataVencimento: { gte: inicio, lte: fim },
+      AND: [
+        {
+          titulo: { filialId, ...whereTituloPorClassificacao(classificacao) },
+          status: { in: ["EM_ABERTO", "A_VENCER", "VENCIDO", "PARCIALMENTE_PAGO"] },
+        },
+        filtro,
+      ],
     },
     include: {
       titulo: { select: { tipo: true, centroCustoId: true, centroLucroId: true, safraId: true, projetoId: true } },
@@ -137,6 +184,26 @@ export async function buscarProjetadoPorDimensaoNoPeriodo(
     somar(totais, dimensaoId, parcela.titulo.tipo === "RECEBER" ? "entradas" : "saidas", saldo);
   }
   return totais;
+}
+
+export function buscarProjetadoPorDimensaoNoPeriodo(
+  filialId: string,
+  tipoDimensao: TipoDimensao,
+  inicio: Date,
+  fim: Date,
+  classificacao?: FiltroClassificacao,
+): Promise<Map<string | null, TotaisPorDimensao>> {
+  return somarProjetadoPorDimensao(filialId, tipoDimensao, { dataVencimento: { gte: inicio, lte: fim } }, classificacao);
+}
+
+/** Projetado de cada safra pela marcação do título, sem corte de vencimento (comparação entre safras). */
+export async function buscarProjetadoPorSafras(
+  filialId: string,
+  safraIds: string[],
+  classificacao?: FiltroClassificacao,
+): Promise<Map<string | null, TotaisPorDimensao>> {
+  if (safraIds.length === 0) return new Map();
+  return somarProjetadoPorDimensao(filialId, "SAFRA", { titulo: { safraId: { in: safraIds } } }, classificacao);
 }
 
 /**

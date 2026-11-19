@@ -1,5 +1,7 @@
 # Comparação entre safras — Fase 5, sub-projeto 2b
 
+> **Revisto em 2026-11-19:** realizado e projetado deixaram de ser cortados pelo período da safra e somam tudo o que está marcado com ela — ver [spec](2026-11-19-comparacao-safras-sem-corte-de-data-design.md).
+
 ## Contexto
 
 Fase 5 (Controladoria e orçamento) foi dividida em dois sub-projetos.

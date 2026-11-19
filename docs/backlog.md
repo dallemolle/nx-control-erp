@@ -36,19 +36,6 @@ para ser retomado sem precisar reconstruir o raciocínio original.
 
 ## Comparação entre safras (Fase 5, sub-projeto 2b)
 
-- **Realizado/projetado por safra ignora lançamentos marcados fora da
-  janela `dataInicio`/`dataFim`.** `listarComparativoSafras` conta apenas
-  lançamentos/parcelas cuja data cai dentro do período oficial da safra —
-  um insumo comprado antes do início oficial, ou uma venda liquidada
-  depois do fim, mesmo estando marcado com aquela safra, não aparece no
-  comparativo (e, diferente do relatório de fluxo por dimensão do
-  sub-projeto 2a, não há uma linha "Não classificado" para reconciliar).
-  Decisão consciente ao aprovar o desenho: manter como está por ora. Se
-  vier a ser um problema real (compras de pré-safra, liquidações
-  pós-colheita), a mudança é pequena — trocar o período por um filtro
-  "todo lançamento marcado com esta safra, sem corte de data" em
-  `orcamentoSafra.ts`'s `listarComparativoSafras`.
-
 - **Sinal do orçado por safra (sempre ≥ 0) não bate com o sinal do
   realizado/projetado (saldo líquido, pode ser negativo).** `orçado`
   reaproveita `valorOrcamentoSchema` (não aceita negativo), enquanto
