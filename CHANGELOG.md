@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.35](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.34...nx-control-erp-v0.1.35) (2026-11-19)
+
+
+### Novidades
+
+* **financeiro:** linha A vencer antes da janela no cálculo do fluxo projetado ([a69dd79](https://github.com/dallemolle/nx-control-erp/commit/a69dd798267967cce6eac4c5fe368b0965bc743e))
+* **financeiro:** linha A vencer até na tela e no export do fluxo projetado ([2e64e7f](https://github.com/dallemolle/nx-control-erp/commit/2e64e7f0ee5466b58dfed92a915b9e9ad29a2152))
+* **financeiro:** projeção soma o que vence antes de janelas passadas e futuras ([7ab5b21](https://github.com/dallemolle/nx-control-erp/commit/7ab5b217aef0da8aae230ec4ac3f62b024bcbf0a))
+* **financeiro:** rótulo da linha A vencer até do fluxo projetado ([8ef26dd](https://github.com/dallemolle/nx-control-erp/commit/8ef26ddcfbd851b27fe14307ab0f76fc0b83cec6))
+
 ## [0.1.34](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.33...nx-control-erp-v0.1.34) (2026-11-19)
 
 
