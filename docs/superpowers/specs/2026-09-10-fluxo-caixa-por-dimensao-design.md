@@ -295,8 +295,9 @@ teste):
 - Relatório "fluxo de caixa por Projeto" — o dado passa a ser capturado
   nesta entrega, mas a tela de relatório fica pra quando for pedida. —
   **feito** (dimensão `PROJETO` na mesma tela).
-- Rollup hierárquico de centro de custo (filho somando no pai). — **→
-  backlog** (já registrado).
+- Rollup hierárquico de centro de custo (filho somando no pai). —
+  **descartado** (2026-11-18): o modelo não tem hierarquia de centros de
+  custo; reabrir se ela for criada.
 - Tornar as 4 dimensões obrigatórias no cadastro de `Titulo`. —
   **descartado:** obrigar trava o cadastro; a linha "Não classificado"
   mostra o que falta.
