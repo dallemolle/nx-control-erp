@@ -3,7 +3,12 @@ import type { DefinicaoAjuda } from "./tipos";
 type EntradaRegistro = { titulo: string; carregar: () => Promise<DefinicaoAjuda> };
 
 /** Telas com ajuda. O conteúdo só é baixado quando o popup abre (import dinâmico). */
-const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {};
+const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
+  "contas-a-pagar": {
+    titulo: "Contas a pagar",
+    carregar: () => import("./contas-a-pagar").then((modulo) => modulo.ajudaContasAPagar),
+  },
+};
 
 export function temAjuda(tela: string): boolean {
   return Object.hasOwn(REGISTRO, tela);
