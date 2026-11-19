@@ -12,6 +12,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/financeiro/contas-a-pagar", label: "Contas a pagar", acao: "titulo:ler" },
       { href: "/financeiro/contas-a-receber", label: "Contas a receber", acao: "titulo:ler" },
       { href: "/financeiro/aprovacoes", label: "Aprovações pendentes", acao: "titulo:aprovar" },
+      { href: "/financeiro/repasses-cartao", label: "Repasses de cartão", acao: "titulo:baixar" },
       { href: "/financeiro/tesouraria", label: "Tesouraria", acao: "lancamento:ler" },
       { href: "/financeiro/conciliacao", label: "Conciliação", acao: "conciliacao:ler" },
       { href: "/financeiro/fluxo-de-caixa", label: "Fluxo de caixa", acao: "lancamento:ler" },
