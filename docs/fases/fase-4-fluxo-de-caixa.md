@@ -39,6 +39,9 @@ tela em `/financeiro/fluxo-de-caixa-estrategico`).
   em aberto (`EM_ABERTO`/`A_VENCER`/`VENCIDO`/`PARCIALMENTE_PAGO`) mês a
   mês. Parcelas em aberto vencidas antes da janela entram numa linha Em
   atraso antes do primeiro mês (2026-11-16).
+  Em janelas que não contêm hoje, o atraso vai até o menor entre o início
+  da janela e hoje, e numa janela futura uma linha "A vencer até" soma o
+  que vence entre hoje e a véspera dela (2026-11-19).
 - Dois modos de janela: móvel (padrão, 12 meses a partir do mês atual) e
   ano civil (Jan-Dez de um ano escolhido, pra comparar com um orçamento
   anual futuro).

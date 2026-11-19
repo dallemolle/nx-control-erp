@@ -36,7 +36,9 @@ rodapé.
    como hoje, sem contar duas vezes). Numa janela inteira no futuro ou no
    passado não há linha: "antes da janela" incluiria parcelas que ainda nem
    venceram. Esse caso segue com o aviso atual e pertence ao item "meses
-   invisíveis" do backlog.
+   invisíveis" do backlog. **Feito** (2026-11-19,
+   [spec](2026-11-19-projecao-janela-fora-de-hoje-design.md)): a linha passou a
+   existir em qualquer janela.
 5. **A linha aparece mesmo zerada** quando a janela contém hoje: "0,00 em
    atraso" também informa.
 6. **Mesmas regras dos meses:** alerta de saldo negativo (`saldoFinal < 0`) na
@@ -102,6 +104,6 @@ rodapé.
 
 - "Saldo projetado (30 dias)" do dashboard executivo incluir o atraso —
   **descartado:** o dashboard mostra a inadimplência em indicador próprio.
-- Linha de atraso em janelas que não contêm hoje — **descartado:** pertence
-  ao item "meses invisíveis", já no backlog.
+- Linha de atraso em janelas que não contêm hoje — **feito** (2026-11-19,
+  [spec](2026-11-19-projecao-janela-fora-de-hoje-design.md)).
 - Corte do atraso por idade — **descartado:** decisão do usuário (entra tudo).

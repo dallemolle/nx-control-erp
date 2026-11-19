@@ -21,3 +21,8 @@ export function formatarRotuloPeriodo(granularidade: Granularidade, inicio: Date
 export function rotuloEmAtraso(venceuAte: Date): string {
   return `Em atraso (venc. até ${dataCurta(venceuAte)})`;
 }
+
+/** Rótulo da linha de parcelas que vencem entre hoje e a véspera de uma janela futura. */
+export function rotuloAVencerAntes(venceAte: Date): string {
+  return `A vencer até ${dataCurta(venceAte)}`;
+}
