@@ -234,6 +234,8 @@ O quadro de resumo mostra na hora o peso líquido, o % de descarte, o preço por
 
 ### 5.2. Processamento (OP)
 
+**Ver simulação (Processamento):** [abrir uma OP](#ajuda/processamento/abrir-op) · [lançar o fruto e a polpa](#ajuda/processamento/lancar-fruto-polpa) · [lançar insumos e o processo](#ajuda/processamento/insumos-processo) · [encerrar a OP](#ajuda/processamento/encerrar-op) · [corrigir, reabrir ou cancelar](#ajuda/processamento/corrigir-op) · [consultar e exportar](#ajuda/processamento/consultar-ops)
+
 Cada batelada de fruto processado em polpa é uma **ordem de produção (OP)**. Em Produção → Processamento → **Nova OP**, informe a data, a fruta e o responsável. A OP recebe um número (ex.: OP-261110-01: data e sequência do dia) e abre o detalhe, com quatro abas:
 
 - **Consumo:** escolha os lotes de fruto da mesma fruta (em ordem de validade, com o saldo de cada um) e quantos kg entraram. O fruto sai do estoque na hora. Lote vencido na data da OP é recusado, a não ser que tenha sido liberado na tela de Estoque e a liberação cubra a data da OP (seção 5.3).
