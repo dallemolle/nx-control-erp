@@ -1,3 +1,5 @@
+// Espelhado na ajuda (src/ajuda/fluxo-de-caixa-projetado/cenas.tsx): mudou rótulo, coluna ou texto? Ajuste a ajuda junto.
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
@@ -10,7 +12,8 @@ import { AvisoVisaoFiltrada } from "../_fluxo-de-caixa/aviso-visao-filtrada";
 import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
-import { formatarMoeda } from "@/lib/formatacao";
+import { formatarMoeda } from "@/lib/formatacao";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 
 const MODOS_VALIDOS: ModoJanelaProjetado[] = ["MOVEL", "ANO_CIVIL"];
 
@@ -55,7 +58,10 @@ export default async function FluxoDeCaixaProjetadoPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold">Fluxo de caixa projetado</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Fluxo de caixa projetado</h1>
+          <BotaoAjuda tela="fluxo-de-caixa-projetado" />
+        </div>
         <p className="text-sm text-muted-foreground">
           Projeção calculada a partir do saldo em caixa conciliado de hoje e
           dos títulos a pagar/receber em aberto. Parcelas em aberto vencidas

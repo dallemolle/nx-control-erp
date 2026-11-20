@@ -47,4 +47,9 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("fluxo-de-caixa")).toBe("Fluxo de caixa");
     expect((await carregarAjuda("fluxo-de-caixa")).roteiros.length).toBe(3);
   });
+
+  test("fluxo de caixa projetado tem ajuda", async () => {
+    expect(tituloDaAjuda("fluxo-de-caixa-projetado")).toBe("Fluxo de caixa projetado");
+    expect((await carregarAjuda("fluxo-de-caixa-projetado")).roteiros.length).toBe(3);
+  });
 });
