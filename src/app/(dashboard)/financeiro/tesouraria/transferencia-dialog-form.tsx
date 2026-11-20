@@ -1,4 +1,5 @@
 "use client";
+// Espelhado na ajuda (src/ajuda/tesouraria/cenas.tsx): mudou rótulo, campo ou botão? Ajuste a ajuda junto.
 
 import {
   Dialog,

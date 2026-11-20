@@ -20,6 +20,10 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Repasses de cartão",
     carregar: () => import("./repasses-cartao").then((modulo) => modulo.ajudaRepassesCartao),
   },
+  tesouraria: {
+    titulo: "Tesouraria",
+    carregar: () => import("./tesouraria").then((modulo) => modulo.ajudaTesouraria),
+  },
 };
 
 export function temAjuda(tela: string): boolean {
