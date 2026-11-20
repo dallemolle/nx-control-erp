@@ -28,6 +28,10 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Conciliação bancária",
     carregar: () => import("./conciliacao").then((modulo) => modulo.ajudaConciliacao),
   },
+  "fluxo-de-caixa": {
+    titulo: "Fluxo de caixa",
+    carregar: () => import("./fluxo-de-caixa").then((modulo) => modulo.ajudaFluxoDeCaixa),
+  },
 };
 
 export function temAjuda(tela: string): boolean {

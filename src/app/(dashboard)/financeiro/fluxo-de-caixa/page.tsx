@@ -1,3 +1,5 @@
+// Espelhado na ajuda (src/ajuda/fluxo-de-caixa/cenas.tsx): mudou rótulo, coluna ou seletor? Ajuste a ajuda junto.
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission } from "@/server/auth/permissions";
@@ -9,7 +11,8 @@ import { ExportarLinks } from "../../_shared/exportar-links";
 import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
 import { AvisoVisaoFiltrada } from "../_fluxo-de-caixa/aviso-visao-filtrada";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
-import { formatarMoeda } from "@/lib/formatacao";
+import { formatarMoeda } from "@/lib/formatacao";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 
 const GRANULARIDADES_VALIDAS: Granularidade[] = ["DIA", "SEMANA", "MES", "ANO"];
 
@@ -44,7 +47,10 @@ export default async function FluxoDeCaixaPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold">Fluxo de caixa</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Fluxo de caixa</h1>
+          <BotaoAjuda tela="fluxo-de-caixa" />
+        </div>
         <p className="text-sm text-muted-foreground">
           Movimentações bancárias já conciliadas, por período.
         </p>

@@ -42,4 +42,9 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("conciliacao")).toBe("Conciliação bancária");
     expect((await carregarAjuda("conciliacao")).roteiros.length).toBe(6);
   });
+
+  test("fluxo de caixa tem ajuda", async () => {
+    expect(tituloDaAjuda("fluxo-de-caixa")).toBe("Fluxo de caixa");
+    expect((await carregarAjuda("fluxo-de-caixa")).roteiros.length).toBe(3);
+  });
 });

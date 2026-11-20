@@ -141,6 +141,8 @@ Quando uma linha do extrato corresponde a mais de um lançamento (um PIX que qui
 
 ### 3.5. Fluxo de caixa
 
+**Ver simulação (Fluxo de caixa):** [ler o fluxo de caixa](#ajuda/fluxo-de-caixa/ler-fluxo) · [ver por dia, semana ou ano](#ajuda/fluxo-de-caixa/mudar-periodo) · [ver só o fiscal ou o gerencial](#ajuda/fluxo-de-caixa/filtrar-classificacao)
+
 Mostra, por período (dia, semana, mês ou ano), o saldo inicial, entradas, saídas, geração de caixa (entradas menos saídas) e saldo final — tudo a partir dos lançamentos bancários já conciliados. É o retrato do que já aconteceu na conta bancária, período a período, com navegação para períodos anteriores/seguintes.
 
 O seletor **Todos / Fiscal / Gerencial** mostra só o movimento de uma classificação. Nessa visão as colunas de saldo viram **Acumulado** (começam em zero), porque o saldo do banco é um só e não se divide entre fiscal e gerencial; transferências entre contas também ficam de fora. O mesmo seletor existe no fluxo de caixa projetado, no fluxo estratégico, no orçamento, no fluxo por dimensão e na comparação entre safras (nesses dois últimos, o orçado não muda com o filtro).
