@@ -701,8 +701,9 @@ Numeração continua a do Financeiro e da Controladoria.
   (2026-11-20, 4 roteiros, sem lacuna nova); Painel feito (2026-11-20, 3
   roteiros, sem lacuna nova); Relatório mensal feito (2026-11-20, 3
   roteiros, sem lacuna nova); Relatório de vendas feito (2026-11-20, 3
-  roteiros, sem lacuna nova). Faltam os relatórios de origem e
-  processamento, Vendas, Cadastros e Administração.
+  roteiros, sem lacuna nova); Relatório de origem feito (2026-11-20, 3
+  roteiros, sem lacuna nova). Faltam o Relatório de processamento, Vendas,
+  Cadastros e Administração.
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
   (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,
