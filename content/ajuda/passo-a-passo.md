@@ -194,6 +194,8 @@ Permite definir, mês a mês, o valor orçado para cada categoria financeira do 
 
 O mesmo tipo de relatório do fluxo de caixa, mas agrupado por uma dimensão analítica em vez de por período — centro de custo, centro de lucro, safra ou projeto, à escolha. Útil para responder perguntas como "quanto entrou e saiu na Lavoura A este mês" em vez de "quanto entrou e saiu na empresa toda".
 
+**Ver simulação (Fluxo de caixa por dimensão):** [ver quanto entrou e saiu em cada centro de custo](#ajuda/fluxo-por-dimensao/ler-por-dimensao) · [entender o "Não classificado" e trocar de dimensão](#ajuda/fluxo-por-dimensao/nao-classificado) · [filtrar por classificação e exportar](#ajuda/fluxo-por-dimensao/filtrar-exportar)
+
 ### 4.3. Comparação entre safras
 
 Permite orçar um valor único por safra (sem grade mensal, já que cada safra tem seu próprio período de início e fim) e comparar entre todas as safras cadastradas — planejadas, em andamento ou já encerradas — o orçado, o realizado e o projetado de cada uma.

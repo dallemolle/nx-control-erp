@@ -1,4 +1,6 @@
+// Espelhado na ajuda (src/ajuda/fluxo-por-dimensao/cenas.tsx): mudou rótulo, coluna ou texto? Ajuste a ajuda junto.
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission } from "@/server/auth/permissions";
 import { listarFluxoDeCaixaPorDimensao, type TipoDimensao } from "@/server/services/fluxoDeCaixaPorDimensao";
@@ -55,7 +57,10 @@ export default async function FluxoPorDimensaoPage({
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-lg font-semibold">Fluxo de caixa por dimensão</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Fluxo de caixa por dimensão</h1>
+          <BotaoAjuda tela="fluxo-por-dimensao" />
+        </div>
         <p className="text-sm text-muted-foreground">
           Realizado (movimentações conciliadas) e projetado (títulos em
           aberto) do mês, agrupados por centro de custo, centro de lucro,

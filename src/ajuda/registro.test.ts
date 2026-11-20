@@ -62,4 +62,9 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("orcamento")).toBe("Orçamento");
     expect((await carregarAjuda("orcamento")).roteiros.length).toBe(3);
   });
+
+  test("fluxo por dimensão tem ajuda", async () => {
+    expect(tituloDaAjuda("fluxo-por-dimensao")).toBe("Fluxo de caixa por dimensão");
+    expect((await carregarAjuda("fluxo-por-dimensao")).roteiros.length).toBe(3);
+  });
 });
