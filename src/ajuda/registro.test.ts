@@ -32,4 +32,9 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("repasses-cartao")).toBe("Repasses de cartão");
     expect((await carregarAjuda("repasses-cartao")).roteiros.length).toBe(3);
   });
+
+  test("tesouraria tem ajuda", async () => {
+    expect(tituloDaAjuda("tesouraria")).toBe("Tesouraria");
+    expect((await carregarAjuda("tesouraria")).roteiros.length).toBe(4);
+  });
 });

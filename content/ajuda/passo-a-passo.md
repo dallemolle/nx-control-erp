@@ -111,6 +111,8 @@ Aprovar uma baixa efetiva o pagamento: gera automaticamente um lançamento banc�
 
 ### 3.3. Tesouraria
 
+**Ver simulação (Tesouraria):** [lançar uma entrada ou saída avulsa](#ajuda/tesouraria/lancar-avulso) · [transferir entre contas](#ajuda/tesouraria/transferir) · [conferir o saldo com o extrato](#ajuda/tesouraria/conferir-saldo) · [consultar e exportar](#ajuda/tesouraria/ver-lancamentos)
+
 A tela de Tesouraria mostra o saldo contábil de cada conta bancária da filial e permite três operações que não passam pelo fluxo de título/baixa: lançamento manual (uma entrada ou saída avulsa, como uma tarifa bancária ou uma venda de sucata), transferência entre contas da mesma filial, e informar o saldo bancário (para conferência com o extrato do banco).
 
 O lançamento manual também é classificado como Fiscal (padrão) ou Gerencial, com o tipo e o número do comprovante. Transferências entre contas não têm classificação — não são receita nem despesa. A lista de lançamentos tem o filtro Todos / Fiscal / Gerencial.

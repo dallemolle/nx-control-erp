@@ -1,3 +1,5 @@
+// Espelhado na ajuda (src/ajuda/tesouraria/cenas.tsx): mudou rótulo, coluna ou botão? Ajuste a ajuda junto.
+
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -18,6 +20,7 @@ import { BadgeClassificacao } from "../../_shared/badge-classificacao";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
 import { nomeDaContaBancaria } from "@/lib/contaBancaria";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 
 const ORIGEM_LABEL: Record<string, string> = {
   MANUAL: "Manual",
@@ -57,7 +60,10 @@ export default async function TesourariaPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Tesouraria</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-lg font-semibold">Tesouraria</h1>
+            <BotaoAjuda tela="tesouraria" />
+          </div>
           <p className="text-sm text-muted-foreground">
             Lançamentos bancários e saldo das contas da filial ativa.
           </p>

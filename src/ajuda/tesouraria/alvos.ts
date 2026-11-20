@@ -1,0 +1,30 @@
+/** Alvos que cada cena desenha. Os roteiros só podem apontar para estes (ver `construtorDeRoteiros`). */
+export const ALVOS = {
+  painel: [
+    "painel.novoLancamento",
+    "painel.transferencia",
+    "painel.informarSaldo",
+    "painel.cardBanco",
+    "painel.diferencaBanco",
+    "painel.cardCaixa",
+    "painel.exportar",
+    "painel.classificacao",
+    "painel.tabela",
+    "painel.origem",
+  ],
+  lancamento: [
+    "lanc.conta",
+    "lanc.tipo",
+    "lanc.valor",
+    "lanc.data",
+    "lanc.descricao",
+    "lanc.classificacao",
+    "lanc.comprovante",
+    "lanc.numero",
+    "lanc.categoria",
+    "lanc.centroCusto",
+    "lanc.salvar",
+  ],
+  transferencia: ["transf.origem", "transf.destino", "transf.data", "transf.valor", "transf.descricao", "transf.salvar"],
+  saldo: ["saldo.conta", "saldo.data", "saldo.valor", "saldo.salvar"],
+} as const;
