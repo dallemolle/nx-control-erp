@@ -326,6 +326,8 @@ Cada alerta com ocorrência fica destacado e abre a lista já filtrada: lotes ve
 
 Os relatórios seguem as mesmas regras do painel: cancelados ficam fora, OP aberta entra no volume, o custo da polpa usa só OPs encerradas e o a receber é a posição de hoje. Todos exportam PDF, CSV e Excel.
 
+**Ver simulação (Relatório mensal):** [ver o ano mês a mês](#ajuda/relatorio-mensal/ver-ano) · [ler as tabelas](#ajuda/relatorio-mensal/ler-tabelas) · [exportar](#ajuda/relatorio-mensal/exportar-mensal)
+
 **Relatório mensal** (Produção → Relatório mensal): escolha o ano pelas setas. No topo, dois gráficos: recebido × processado × vendido (kg) e faturamento com a margem por mês. Abaixo, quatro tabelas com os doze meses e o total:
 
 - **Recepção:** kg próprio e de terceiros de cada fruta (peso líquido) e o total recebido.

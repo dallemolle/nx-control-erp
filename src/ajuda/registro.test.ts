@@ -107,4 +107,9 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("painel")).toBe("Painel de produção");
     expect((await carregarAjuda("painel")).roteiros.length).toBe(3);
   });
+
+  test("relatório mensal tem ajuda", async () => {
+    expect(tituloDaAjuda("relatorio-mensal")).toBe("Relatório mensal");
+    expect((await carregarAjuda("relatorio-mensal")).roteiros.length).toBe(3);
+  });
 });
