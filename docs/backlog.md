@@ -139,13 +139,30 @@ Achados na ajuda da Tesouraria (2026-11-20).
   certo. Calcular o saldo contábil até a data do saldo informado. A ajuda
   orienta a informar o saldo do dia mais recente.
 
+## Financeiro — conciliação
+
+Achados na ajuda da Conciliação (2026-11-20).
+
+- **Confirmar 1:1 aceita valor diferente.** `confirmarConciliacaoManual`
+  (`src/server/services/conciliacao.ts`) só confere conta e se o lançamento
+  está livre: não compara valor nem sentido com a linha do extrato. Uma linha
+  de R$ 990 conciliada com um lançamento de R$ 1.000 deixa o realizado com
+  R$ 1.000 e esconde a diferença. A conciliação em grupo já exige soma exata;
+  o 1:1 deveria exigir o mesmo (ou mandar para o grupo com "Lançar a
+  diferença"). A ajuda avisa para conferir o valor.
+- **Reconciliar pendentes ignora Sugestão, Divergência e Duplicado.**
+  `reconciliarPendentes` só reprocessa `NAO_CONCILIADO`. Uma linha marcada
+  como Divergência fica com o status velho mesmo depois de surgir o
+  lançamento exato, e o automático nunca a pega. Reprocessar todos os status
+  não conciliados.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feitas: Contas a
-  pagar, Contas a receber, Aprovações pendentes, Repasses de cartão e Tesouraria (engine em `src/components/ajuda/`, conteúdo em
+  pagar, Contas a receber, Aprovações pendentes, Repasses de cartão, Tesouraria e Conciliação (engine em `src/components/ajuda/`, conteúdo em
   `src/ajuda/`, cenas de títulos comuns em `src/ajuda/_titulos/`). Faltam, uma
   tela por sessão:
-  Conciliação e os três fluxos de caixa. Critério de cada uma: quem nunca
+  os três fluxos de caixa. Critério de cada uma: quem nunca
   usou o sistema consegue lançar seguindo só a ajuda.
 - **Ajuda com simulação nos outros menus** (Produção, Vendas, Cadastros,
   Controladoria, Administração), depois do Financeiro, na mesma engine.
