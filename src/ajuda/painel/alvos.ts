@@ -1,0 +1,28 @@
+/** Alvos que cada cena desenha. Os roteiros só podem apontar para estes (ver `construtorDeRoteiros`). */
+export const ALVOS = {
+  painel: [
+    "painel.periodo",
+    "painel.atalhos",
+    "painel.exportar",
+    "rec.recebido",
+    "rec.terceiros",
+    "rec.descarte",
+    "rec.ops",
+    "rec.rendimento",
+    "rec.custo",
+    "ven.faturamento",
+    "ven.kg",
+    "ven.pedidos",
+    "ven.margem",
+    "ven.aReceber",
+    "est.polpa",
+    "est.fruto",
+    "est.valor",
+    "alerta.vencidos",
+    "alerta.entregas",
+    "alerta.opsBalanco",
+    "alerta.grupo",
+    "tab.estoque",
+    "tab.vendas",
+  ],
+} as const;

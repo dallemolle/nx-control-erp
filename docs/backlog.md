@@ -698,8 +698,9 @@ Numeração continua a do Financeiro e da Controladoria.
   4 roteiros, lacuna 22); Processamento feito (2026-11-20, 6 roteiros,
   lacuna 23); Estoque feito (2026-11-20, 5 roteiros, lacuna 24); Ajustes de
   estoque feito (2026-11-20, 4 roteiros, lacuna 25); Rastreabilidade feita
-  (2026-11-20, 4 roteiros, sem lacuna nova). Faltam o Painel e os relatórios
-  da Produção, Vendas, Cadastros e Administração.
+  (2026-11-20, 4 roteiros, sem lacuna nova); Painel feito (2026-11-20, 3
+  roteiros, sem lacuna nova). Faltam os relatórios da Produção, Vendas,
+  Cadastros e Administração.
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
   (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,

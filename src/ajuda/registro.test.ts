@@ -102,4 +102,9 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("rastreabilidade")).toBe("Rastreabilidade");
     expect((await carregarAjuda("rastreabilidade")).roteiros.length).toBe(4);
   });
+
+  test("painel de produção tem ajuda", async () => {
+    expect(tituloDaAjuda("painel")).toBe("Painel de produção");
+    expect((await carregarAjuda("painel")).roteiros.length).toBe(3);
+  });
 });

@@ -306,6 +306,8 @@ Pedidos e OPs cancelados e linhas removidas ficam ocultos. Use **Mostrar cancela
 
 ### 5.7. Painel de produção
 
+**Ver simulação (Painel):** [ler a recepção e o processamento](#ajuda/painel/recepcao-processamento) · [ler as vendas e o estoque](#ajuda/painel/vendas-estoque) · [usar os alertas e exportar](#ajuda/painel/alertas-exportar)
+
 Produção → **Painel** resume o período escolhido (padrão: o mês atual; atalhos Mês atual, Mês anterior e Ano) em três blocos:
 
 - **Recepção e processamento:** fruto recebido (kg líquido), quanto veio de terceiros, descarte na triagem, nº de OPs, fruto processado, polpa produzida, rendimento e custo médio da polpa, com uma linha por fruta.

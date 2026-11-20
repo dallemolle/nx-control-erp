@@ -76,6 +76,10 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Rastreabilidade",
     carregar: () => import("./rastreabilidade").then((modulo) => modulo.ajudaRastreabilidade),
   },
+  painel: {
+    titulo: "Painel de produção",
+    carregar: () => import("./painel").then((modulo) => modulo.ajudaPainel),
+  },
 };
 
 export function temAjuda(tela: string): boolean {
