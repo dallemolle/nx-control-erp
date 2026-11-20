@@ -36,6 +36,10 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Fluxo de caixa projetado",
     carregar: () => import("./fluxo-de-caixa-projetado").then((modulo) => modulo.ajudaFluxoDeCaixaProjetado),
   },
+  "fluxo-de-caixa-estrategico": {
+    titulo: "Fluxo de caixa estratégico",
+    carregar: () => import("./fluxo-de-caixa-estrategico").then((modulo) => modulo.ajudaFluxoDeCaixaEstrategico),
+  },
 };
 
 export function temAjuda(tela: string): boolean {

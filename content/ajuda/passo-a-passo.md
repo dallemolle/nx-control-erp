@@ -155,6 +155,8 @@ Complementa o fluxo de caixa realizado com uma projeção de 12 meses (ou por an
 
 ### 3.7. Fluxo de caixa estratégico
 
+**Ver simulação (Fluxo de caixa estratégico):** [ler a projeção de 5 anos](#ajuda/fluxo-de-caixa-estrategico/ler-projecao) · [ajustar as premissas](#ajuda/fluxo-de-caixa-estrategico/ajustar-premissas) · [comparar cenários e filtrar](#ajuda/fluxo-de-caixa-estrategico/comparar-cenarios)
+
 Projeta os próximos anos da empresa (consolidando todas as filiais) a partir de três cenários com premissas próprias: crescimento de receita, crescimento de custos, percentual de investimento (capex) sobre a receita, novo endividamento anual e taxa de juros. Os três cenários — base, otimista e pessimista — podem ser ajustados livremente, para enxergar o efeito de diferentes hipóteses de negócio nos próximos anos.
 
 Com o seletor **Fiscal** ou **Gerencial**, a receita e os custos do ano-base passam a ser só daquela classificação e a linha de saldo vira **Acumulado de caixa**, partindo de zero: mostra quanto aquela parte do negócio gera de caixa nos próximos anos. As premissas dos cenários são as mesmas nas três visões.
