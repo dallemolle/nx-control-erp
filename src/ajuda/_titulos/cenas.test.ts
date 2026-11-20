@@ -2,12 +2,16 @@ import { createElement, type ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import type { PropsCena } from "@/ajuda/tipos";
-import { CenaBaixa, CenaLista, CenaNovoTitulo, CenaRenegociar } from "./cenas";
+import { EXEMPLO } from "@/ajuda/contas-a-pagar/exemplo";
+import { criarCenas } from "./cenas";
+
+const { lista: CenaLista, novoTitulo: CenaNovoTitulo, baixa: CenaBaixa, renegociar: CenaRenegociar } =
+  criarCenas(EXEMPLO);
 
 const html = (componente: ComponentType<PropsCena>, valores: Record<string, string> = {}) =>
   renderToStaticMarkup(createElement(componente, { tipo: "PAGAR", valores }));
 
-describe("cenas de Contas a pagar", () => {
+describe("cenas de títulos (exemplo de Contas a pagar)", () => {
   test("lista mostra o título do exemplo fechado por padrão", () => {
     const saida = html(CenaLista);
     expect(saida).toContain("Contas a pagar");

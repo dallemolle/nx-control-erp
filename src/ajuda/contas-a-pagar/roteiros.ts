@@ -1,5 +1,5 @@
 import { construtorDeRoteiros, type Roteiro } from "@/ajuda/tipos";
-import type { ALVOS } from "./alvos";
+import type { ALVOS } from "@/ajuda/_titulos/alvos";
 import { EXEMPLO } from "./exemplo";
 
 const roteiro = construtorDeRoteiros<typeof ALVOS>();
@@ -38,12 +38,12 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "novo.fornecedor",
         instrucao: "Escolha o fornecedor",
         explicacao:
-          `Clique na caixa e escolha na lista quem vai receber o dinheiro. No exemplo, a ${EXEMPLO.fornecedor}, ` +
+          `Clique na caixa e escolha na lista quem vai receber o dinheiro. No exemplo, a ${EXEMPLO.contraparte}, ` +
           "que vendeu o adubo.",
         dica:
           "O fornecedor não aparece na lista? Então ele ainda não foi cadastrado. Cadastre primeiro em " +
           "Cadastros → Fornecedores e depois volte aqui.",
-        preenche: { "novo.fornecedor": EXEMPLO.fornecedor },
+        preenche: { "novo.fornecedor": EXEMPLO.contraparte },
       },
       {
         cena: "novoTitulo",
@@ -410,7 +410,7 @@ export const ROTEIROS: readonly Roteiro[] = [
         explicacao:
           "A barra de filtros fica acima da lista. Cada filtro escolhido já atualiza a lista na hora: não há botão " +
           "de buscar.",
-        preenche: { "lista.filtro.fornecedor": EXEMPLO.fornecedor },
+        preenche: { "lista.filtro.fornecedor": EXEMPLO.contraparte },
       },
       {
         cena: "lista",
