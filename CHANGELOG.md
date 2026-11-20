@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.1.37](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.36...nx-control-erp-v0.1.37) (2026-11-20)
+
+
+### Novidades
+
+* **ajuda:** link do manual e registro de telas com ajuda ([8bf2511](https://github.com/dallemolle/nx-control-erp/commit/8bf25117acde1508e1939d06b33f35f4e18b0599))
+* **ajuda:** links do Passo a passo abrem a simulação da tela ([0325528](https://github.com/dallemolle/nx-control-erp/commit/0325528670546653d7a4f75d8050cab84f34963d))
+* **ajuda:** popup com roteiros guiados e réplica da tela ([47dd9eb](https://github.com/dallemolle/nx-control-erp/commit/47dd9eb23ec459dda54116a6824d9a9035bf8360))
+* **ajuda:** réplica das telas de Contas a pagar ([3356766](https://github.com/dallemolle/nx-control-erp/commit/3356766a54467328689a2f105261a7e152a6c206))
+* **ajuda:** tipos e lógica dos roteiros guiados ([fd71ffd](https://github.com/dallemolle/nx-control-erp/commit/fd71ffda1a2e5ac5f5c09fd88e602b7574b529a8))
+* **financeiro:** ajuda com simulação em Contas a pagar ([0cb1199](https://github.com/dallemolle/nx-control-erp/commit/0cb1199e46415cebf86b0e23b3bb6f1f7f670f13))
+
+
+### Correções
+
+* **ajuda:** ajustes da revisão final (textos, rolagem da cena, atalhos) ([5247d2d](https://github.com/dallemolle/nx-control-erp/commit/5247d2d53b8cbb6b3036a450c3c2ff81f86c4b34))
+* **ajuda:** texto da baixa não sugere abater desconto do saldo ([1860749](https://github.com/dallemolle/nx-control-erp/commit/186074987ac18fc6dbf397ffcc9a6553096d092f))
+
 ## [0.1.36](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.35...nx-control-erp-v0.1.36) (2026-11-19)
 
 
