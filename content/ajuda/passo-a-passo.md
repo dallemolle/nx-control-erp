@@ -337,6 +337,8 @@ Os relatórios seguem as mesmas regras do painel: cancelados ficam fora, OP aber
 
 Por último, a polpa produzida de cada produto mês a mês. A planilha (CSV/Excel) traz um indicador por linha, com as colunas Bloco, Indicador, Fruta, Mês e Valor, pronta para tabela dinâmica.
 
+**Ver simulação (Relatório de vendas):** [período e gráficos](#ajuda/relatorio-vendas/periodo-graficos) · [ler as tabelas](#ajuda/relatorio-vendas/ler-tabelas) · [exportar](#ajuda/relatorio-vendas/exportar-vendas)
+
 **Relatório de vendas** (Produção → Relatório de vendas): escolha o período (padrão: o mês atual). Os gráficos mostram o faturamento por canal e os dez clientes que mais compraram. As tabelas:
 
 - **Vendas por cliente:** todos os clientes em ordem de faturamento, com kg, % do total, preço médio, margem, **canal principal** (o canal que mais faturou com o cliente no período) e o **a receber de hoje**. Clientes sem compra no período mas com saldo em aberto aparecem no fim, para a cobrança.
