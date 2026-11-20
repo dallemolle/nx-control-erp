@@ -1,3 +1,5 @@
+// Espelhado na ajuda (src/ajuda/fluxo-de-caixa-estrategico/cenas.tsx): mudou rótulo, métrica ou texto? Ajuste a ajuda junto.
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeExecutar } from "@/server/auth/permissions";
@@ -9,7 +11,8 @@ import { AvisoVisaoFiltrada } from "../_fluxo-de-caixa/aviso-visao-filtrada";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 import { formatarMoeda } from "@/lib/formatacao";
 import { filiaisDesativadasComPendencia } from "@/server/services/filiaisConsolidadas";
-import { AvisoFiliaisDesativadas } from "../../_shared/aviso-filiais-desativadas";
+import { AvisoFiliaisDesativadas } from "../../_shared/aviso-filiais-desativadas";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 
 const LABEL_CENARIO: Record<(typeof TIPOS_CENARIO)[number], string> = {
   BASE: "Base",
@@ -40,7 +43,10 @@ export default async function FluxoDeCaixaEstrategicoPage({
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-lg font-semibold">Fluxo de caixa estratégico</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Fluxo de caixa estratégico</h1>
+          <BotaoAjuda tela="fluxo-de-caixa-estrategico" />
+        </div>
         <p className="text-sm text-muted-foreground">
           Projeção de 5 anos por cenário, consolidando as filiais ativas
           da empresa a partir do fluxo de caixa realizado dos últimos 12

@@ -1,5 +1,6 @@
 // src/app/(dashboard)/financeiro/conciliacao/campos-lancamento-avulso.tsx
 "use client";
+// Espelhado na ajuda (src/ajuda/conciliacao/cenas.tsx): mudou rótulo, campo ou botão? Ajuste a ajuda junto.
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

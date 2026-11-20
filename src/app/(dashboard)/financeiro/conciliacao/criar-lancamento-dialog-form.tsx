@@ -1,5 +1,6 @@
 // src/app/(dashboard)/financeiro/conciliacao/criar-lancamento-dialog-form.tsx
 "use client";
+// Espelhado na ajuda (src/ajuda/conciliacao/cenas.tsx): mudou rótulo, campo ou botão? Ajuste a ajuda junto.
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";

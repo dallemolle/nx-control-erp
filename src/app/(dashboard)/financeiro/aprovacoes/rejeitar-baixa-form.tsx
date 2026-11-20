@@ -1,4 +1,5 @@
 "use client";
+// Espelhado na ajuda (src/ajuda/aprovacoes/cenas.tsx): mudou rótulo, campo ou botão? Ajuste a ajuda junto.
 
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";

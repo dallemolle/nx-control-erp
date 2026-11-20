@@ -12,6 +12,34 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Contas a receber",
     carregar: () => import("./contas-a-receber").then((modulo) => modulo.ajudaContasAReceber),
   },
+  "aprovacoes": {
+    titulo: "Aprovações pendentes",
+    carregar: () => import("./aprovacoes").then((modulo) => modulo.ajudaAprovacoes),
+  },
+  "repasses-cartao": {
+    titulo: "Repasses de cartão",
+    carregar: () => import("./repasses-cartao").then((modulo) => modulo.ajudaRepassesCartao),
+  },
+  tesouraria: {
+    titulo: "Tesouraria",
+    carregar: () => import("./tesouraria").then((modulo) => modulo.ajudaTesouraria),
+  },
+  conciliacao: {
+    titulo: "Conciliação bancária",
+    carregar: () => import("./conciliacao").then((modulo) => modulo.ajudaConciliacao),
+  },
+  "fluxo-de-caixa": {
+    titulo: "Fluxo de caixa",
+    carregar: () => import("./fluxo-de-caixa").then((modulo) => modulo.ajudaFluxoDeCaixa),
+  },
+  "fluxo-de-caixa-projetado": {
+    titulo: "Fluxo de caixa projetado",
+    carregar: () => import("./fluxo-de-caixa-projetado").then((modulo) => modulo.ajudaFluxoDeCaixaProjetado),
+  },
+  "fluxo-de-caixa-estrategico": {
+    titulo: "Fluxo de caixa estratégico",
+    carregar: () => import("./fluxo-de-caixa-estrategico").then((modulo) => modulo.ajudaFluxoDeCaixaEstrategico),
+  },
 };
 
 export function temAjuda(tela: string): boolean {

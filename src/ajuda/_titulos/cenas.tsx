@@ -10,13 +10,14 @@ import {
   JanelaSimulada,
   SelectSimulado,
 } from "@/components/ajuda/campos-simulados";
-import type { PropsCena, TipoTela } from "@/ajuda/tipos";
+import type { PropsCena } from "@/ajuda/tipos";
 import type { ExemploTitulos } from "./exemplo";
 
 // Espelho de src/app/(dashboard)/financeiro/_titulos/*. Mudou um rótulo ou campo lá? Ajuste aqui também.
 // As cenas valem para Contas a pagar e Contas a receber: os rótulos vêm de `tipo` e os dados, do exemplo.
 
-type ComExemplo = { exemplo: ExemploTitulos };
+type TipoTela = "PAGAR" | "RECEBER";
+type ComExemplo = { tipo: TipoTela; exemplo: ExemploTitulos };
 
 const rotuloContraparte = (tipo: TipoTela) => (tipo === "PAGAR" ? "Fornecedor" : "Cliente");
 const sufixo = (tipo: TipoTela) => (tipo === "PAGAR" ? "a pagar" : "a receber");
@@ -25,7 +26,7 @@ const VARIANTE_STATUS: Record<string, "default" | "secondary" | "destructive"> =
   VENCIDO: "destructive",
 };
 
-function BarraDeFiltros({ tipo, valores }: PropsCena) {
+function BarraDeFiltros({ tipo, valores }: PropsCena & Pick<ComExemplo, "tipo">) {
   return (
     <div className="flex flex-wrap items-end gap-3">
       <SelectSimulado
@@ -92,7 +93,7 @@ function Detalhe({ rotulo, valor }: { rotulo: string; valor: string }) {
   );
 }
 
-function LinhasDoExemplo({ valores, exemplo }: Pick<PropsCena, "valores"> & ComExemplo) {
+function LinhasDoExemplo({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exemplo">) {
   const expandido = valores["lista.linhaExemplo"] === "expandida";
   return (
     <>
@@ -393,7 +394,7 @@ function CenaBaixa({ valores }: PropsCena) {
   );
 }
 
-function CenaRenegociar({ valores, exemplo }: PropsCena & ComExemplo) {
+function CenaRenegociar({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exemplo">) {
   const linhas = [1, 2].filter((n) => n === 1 || valores[`reneg.parcela${n}`] !== undefined);
   return (
     <JanelaSimulada titulo="Renegociar parcela">
@@ -420,14 +421,14 @@ function CenaRenegociar({ valores, exemplo }: PropsCena & ComExemplo) {
   );
 }
 
-/** As cenas de uma tela de títulos, preenchidas com o exemplo dela. */
-export function criarCenas(exemplo: ExemploTitulos) {
+/** As cenas de uma tela de títulos (pagar ou receber), preenchidas com o exemplo dela. */
+export function criarCenas(tipo: TipoTela, exemplo: ExemploTitulos) {
   return {
     lista: function Lista(props: PropsCena) {
-      return <CenaLista {...props} exemplo={exemplo} />;
+      return <CenaLista {...props} tipo={tipo} exemplo={exemplo} />;
     },
     novoTitulo: function NovoTitulo(props: PropsCena) {
-      return <CenaNovoTitulo {...props} exemplo={exemplo} />;
+      return <CenaNovoTitulo {...props} tipo={tipo} exemplo={exemplo} />;
     },
     baixa: CenaBaixa,
     renegociar: function Renegociar(props: PropsCena) {

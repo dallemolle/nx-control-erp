@@ -278,9 +278,28 @@ desde a ajuda de Contas a receber, o arquivo é `src/ajuda/_titulos/cenas.tsx`).
 - Ajuda contextual em Contas a receber → feito (2026-11-19, branch
   `feat/ajuda-contas-a-receber`: cenas movidas para `src/ajuda/_titulos/`,
   com o exemplo como parâmetro, e roteiros em `src/ajuda/contas-a-receber/`).
-- Ajuda contextual nas demais telas do Financeiro (Aprovações pendentes,
-  Repasses de cartão, Tesouraria, Conciliação, Fluxos de caixa) → backlog,
-  uma tela por sessão depois do piloto aprovado no uso.
+- Ajuda contextual em Aprovações pendentes → feito (2026-11-20, branch
+  `feat/ajuda-aprovacoes`: 3 roteiros em `src/ajuda/aprovacoes/`; o `tipo`
+  pagar/receber saiu de `DefinicaoAjuda` e foi para `criarCenas`). As
+  lacunas do fluxo de aprovação achadas ao escrever os roteiros foram para o
+  backlog (seção "Financeiro — lacunas achadas ao escrever a ajuda contextual").
+- Ajuda contextual em Repasses de cartão → feito (2026-11-20, branch
+  `feat/ajuda-repasses-cartao`: 3 roteiros em `src/ajuda/repasses-cartao/`).
+- Ajuda contextual em Tesouraria → feito (2026-11-20, branch
+  `feat/ajuda-tesouraria`: 4 roteiros em `src/ajuda/tesouraria/`). Duas
+  lacunas achadas foram para o backlog (seção "Financeiro — lacunas achadas ao escrever a ajuda contextual").
+- Ajuda contextual em Conciliação → feito (2026-11-20, branch
+  `feat/ajuda-conciliacao`: 6 roteiros em `src/ajuda/conciliacao/`). Duas
+  lacunas achadas foram para o backlog (seção "Financeiro — lacunas achadas ao escrever a ajuda contextual").
+- Ajuda contextual no Fluxo de caixa (realizado) → feito (2026-11-20, branch
+  `feat/ajuda-fluxo-de-caixa`: 3 roteiros em `src/ajuda/fluxo-de-caixa/`).
+- Ajuda contextual no Fluxo de caixa projetado → feito (2026-11-20, branch
+  `feat/ajuda-fluxo-projetado`: 3 roteiros em `src/ajuda/fluxo-de-caixa-projetado/`).
+  A lacuna achada foi para o backlog (item 13 das lacunas do Financeiro).
+- Ajuda contextual no Fluxo de caixa estratégico → feito (2026-11-20, branch
+  `feat/ajuda-fluxo-estrategico`: 3 roteiros em `src/ajuda/fluxo-de-caixa-estrategico/`).
+  Com isso, todas as telas do Financeiro têm ajuda. A lacuna achada foi para o
+  backlog (item 14 das lacunas do Financeiro).
 - Ajuda contextual nos outros menus (Produção, Vendas, Cadastros,
   Controladoria, Administração) → backlog, depois do Financeiro.
 - Treino interativo, em que a pessoa digita para avançar — descartado

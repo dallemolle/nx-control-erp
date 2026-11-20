@@ -1,4 +1,5 @@
 "use client";
+// Espelhado na ajuda (src/ajuda/repasses-cartao/cenas.tsx): mudou rótulo, coluna ou botão? Ajuste a ajuda junto.
 
 import Link from "next/link";
 import { useActionState, useState } from "react";

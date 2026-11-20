@@ -6,10 +6,10 @@ import { EXEMPLO } from "@/ajuda/contas-a-pagar/exemplo";
 import { criarCenas } from "./cenas";
 
 const { lista: CenaLista, novoTitulo: CenaNovoTitulo, baixa: CenaBaixa, renegociar: CenaRenegociar } =
-  criarCenas(EXEMPLO);
+  criarCenas("PAGAR", EXEMPLO);
 
 const html = (componente: ComponentType<PropsCena>, valores: Record<string, string> = {}) =>
-  renderToStaticMarkup(createElement(componente, { tipo: "PAGAR", valores }));
+  renderToStaticMarkup(createElement(componente, { valores }));
 
 describe("cenas de títulos (exemplo de Contas a pagar)", () => {
   test("lista mostra o título do exemplo fechado por padrão", () => {
@@ -38,7 +38,7 @@ describe("cenas de títulos (exemplo de Contas a pagar)", () => {
   });
 
   test("contas a receber troca os rótulos", () => {
-    const saida = renderToStaticMarkup(createElement(CenaLista, { tipo: "RECEBER", valores: {} }));
+    const saida = renderToStaticMarkup(createElement(criarCenas("RECEBER", EXEMPLO).lista, { valores: {} }));
     expect(saida).toContain("Contas a receber");
     expect(saida).toContain("Cliente");
   });

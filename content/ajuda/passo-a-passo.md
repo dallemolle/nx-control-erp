@@ -99,6 +99,8 @@ A barra de filtros tem o filtro **Classificação** (Todas / Fiscal / Gerencial)
 
 ### 3.2. Aprovações pendentes
 
+**Ver simulação (Aprovações pendentes):** [aprovar uma baixa](#ajuda/aprovacoes/aprovar-baixa) · [rejeitar uma baixa](#ajuda/aprovacoes/rejeitar-baixa) · [quando o Aprovar fica desabilitado](#ajuda/aprovacoes/aprovar-bloqueado)
+
 Quando alguém do perfil Financeiro registra uma baixa (pagamento ou recebimento) em uma parcela, ela não é efetivada na hora — fica pendente de aprovação. Esta tela lista todas as baixas aguardando aprovação da filial atual, com o valor pago, quem registrou, e os botões Aprovar/Rejeitar.
 
 Aprovar uma baixa efetiva o pagamento: gera automaticamente um lançamento bancário (entrada ou saída, conforme o tipo do título) na conta bancária informada, e atualiza o status da parcela. Rejeitar exige informar um motivo (por exemplo, duplicidade de nota fiscal) e devolve a parcela para o estado anterior, sem gerar lançamento nenhum.
@@ -109,6 +111,8 @@ Aprovar uma baixa efetiva o pagamento: gera automaticamente um lançamento banc�
 
 ### 3.3. Tesouraria
 
+**Ver simulação (Tesouraria):** [lançar uma entrada ou saída avulsa](#ajuda/tesouraria/lancar-avulso) · [transferir entre contas](#ajuda/tesouraria/transferir) · [conferir o saldo com o extrato](#ajuda/tesouraria/conferir-saldo) · [consultar e exportar](#ajuda/tesouraria/ver-lancamentos)
+
 A tela de Tesouraria mostra o saldo contábil de cada conta bancária da filial e permite três operações que não passam pelo fluxo de título/baixa: lançamento manual (uma entrada ou saída avulsa, como uma tarifa bancária ou uma venda de sucata), transferência entre contas da mesma filial, e informar o saldo bancário (para conferência com o extrato do banco).
 
 O lançamento manual também é classificado como Fiscal (padrão) ou Gerencial, com o tipo e o número do comprovante. Transferências entre contas não têm classificação — não são receita nem despesa. A lista de lançamentos tem o filtro Todos / Fiscal / Gerencial.
@@ -116,6 +120,8 @@ O lançamento manual também é classificado como Fiscal (padrão) ou Gerencial,
 **Dinheiro em espécie (conta Caixa).** Pagamentos e recebimentos em dinheiro vão para uma conta do tipo Caixa (cadastrada em Contas bancárias). Lançamentos manuais, transferências e baixas aprovadas numa conta Caixa já entram conciliados, porque dinheiro não tem extrato: aparecem na hora no fluxo de caixa, no dashboard e no orçamento. Um saque do banco para o caixa é uma transferência: o lado do caixa já entra conciliado, e o lado do banco espera o extrato, como sempre. Para conferir o caixa físico, conte o dinheiro e use "Informar saldo" na conta Caixa: a Tesouraria mostra a diferença entre o saldo contado e o saldo do sistema.
 
 ### 3.4. Conciliação bancária
+
+**Ver simulação (Conciliação):** [importar o extrato](#ajuda/conciliacao/importar-extrato) · [entender o status](#ajuda/conciliacao/entender-status) · [confirmar uma sugestão](#ajuda/conciliacao/confirmar-sugestao) · [conciliar em grupo](#ajuda/conciliacao/conciliar-grupo) · [criar o lançamento que falta](#ajuda/conciliacao/criar-lancamento) · [desconciliar e reprocessar](#ajuda/conciliacao/desconciliar)
 
 A conciliação bancária cruza o extrato real do banco com os lançamentos já registrados no sistema, para confirmar que tudo que aconteceu na conta bancária tem um lançamento correspondente. O fluxo é: importar o extrato (arquivo OFX exportado do banco), o sistema tenta casar automaticamente cada linha do extrato com um lançamento existente (por valor e data), e o que não casar automaticamente fica disponível para revisão manual.
 
@@ -135,15 +141,21 @@ Quando uma linha do extrato corresponde a mais de um lançamento (um PIX que qui
 
 ### 3.5. Fluxo de caixa
 
+**Ver simulação (Fluxo de caixa):** [ler o fluxo de caixa](#ajuda/fluxo-de-caixa/ler-fluxo) · [ver por dia, semana ou ano](#ajuda/fluxo-de-caixa/mudar-periodo) · [ver só o fiscal ou o gerencial](#ajuda/fluxo-de-caixa/filtrar-classificacao)
+
 Mostra, por período (dia, semana, mês ou ano), o saldo inicial, entradas, saídas, geração de caixa (entradas menos saídas) e saldo final — tudo a partir dos lançamentos bancários já conciliados. É o retrato do que já aconteceu na conta bancária, período a período, com navegação para períodos anteriores/seguintes.
 
 O seletor **Todos / Fiscal / Gerencial** mostra só o movimento de uma classificação. Nessa visão as colunas de saldo viram **Acumulado** (começam em zero), porque o saldo do banco é um só e não se divide entre fiscal e gerencial; transferências entre contas também ficam de fora. O mesmo seletor existe no fluxo de caixa projetado, no fluxo estratégico, no orçamento, no fluxo por dimensão e na comparação entre safras (nesses dois últimos, o orçado não muda com o filtro).
 
 ### 3.6. Fluxo de caixa projetado
 
+**Ver simulação (Fluxo de caixa projetado):** [ler a projeção](#ajuda/fluxo-de-caixa-projetado/ler-projecao) · [andar no tempo e trocar o modo](#ajuda/fluxo-de-caixa-projetado/navegar) · [projetar só o fiscal ou o gerencial](#ajuda/fluxo-de-caixa-projetado/filtrar-classificacao)
+
 Complementa o fluxo de caixa realizado com uma projeção de 12 meses (ou por ano civil) baseada nos títulos a pagar e a receber já cadastrados e ainda em aberto — ou seja, mostra para onde o saldo em caixa tende a ir, não só onde já esteve. A projeção parte do saldo em caixa de hoje e soma/subtrai as parcelas previstas mês a mês. As parcelas em aberto que venceram antes do primeiro mês aparecem numa linha **Em atraso** no topo, porque esse dinheiro ainda vai entrar ou sair. Ao navegar para um período futuro, o atraso vai até ontem, e uma segunda linha, **A vencer até**, soma o que vence de hoje até a véspera do período; o saldo dos meses parte da última dessas linhas. Num período passado, os meses mostram o que daquele período continua em aberto, como se o atraso fosse quitado até o fim dele. Um saldo final negativo em algum mês aparece destacado.
 
 ### 3.7. Fluxo de caixa estratégico
+
+**Ver simulação (Fluxo de caixa estratégico):** [ler a projeção de 5 anos](#ajuda/fluxo-de-caixa-estrategico/ler-projecao) · [ajustar as premissas](#ajuda/fluxo-de-caixa-estrategico/ajustar-premissas) · [comparar cenários e filtrar](#ajuda/fluxo-de-caixa-estrategico/comparar-cenarios)
 
 Projeta os próximos anos da empresa (consolidando todas as filiais) a partir de três cenários com premissas próprias: crescimento de receita, crescimento de custos, percentual de investimento (capex) sobre a receita, novo endividamento anual e taxa de juros. Os três cenários — base, otimista e pessimista — podem ser ajustados livremente, para enxergar o efeito de diferentes hipóteses de negócio nos próximos anos.
 
@@ -152,6 +164,8 @@ Com o seletor **Fiscal** ou **Gerencial**, a receita e os custos do ano-base pas
 > Esta é a única tela financeira que já mostra o dado consolidado de toda a empresa, não só da filial atual.
 
 ### 3.8. Repasses de cartão
+
+**Ver simulação (Repasses de cartão):** [confirmar um repasse](#ajuda/repasses-cartao/confirmar-repasse) · [desfazer um repasse](#ajuda/repasses-cartao/desfazer-repasse) · [acompanhar o que a operadora deve](#ajuda/repasses-cartao/acompanhar-repasses)
 
 A venda na maquininha (seção 6.1) não entra no caixa na hora: a operadora deposita depois, já descontada a taxa. Cada pedido gera os **repasses previstos** — um só no débito, no crédito à vista e no Pix na maquininha, ou um por parcela no crédito parcelado (quando a operadora não antecipa). Esta tela lista esses repasses, com operadora, data prevista, pedido, valor bruto, taxa e líquido. Por padrão aparecem os que faltam receber (a receber e atrasados); filtre por operadora, período ou situação.
 

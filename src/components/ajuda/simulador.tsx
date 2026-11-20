@@ -74,7 +74,7 @@ export function Simulador({
         <div aria-hidden="true" inert>
           <DestaqueContext value={passo?.alvo ?? null}>
             <div key={cenaAtual} className="animate-in duration-200 fade-in-0 motion-reduce:animate-none">
-              {Cena ? <Cena tipo={definicao.tipo} valores={valores} /> : null}
+              {Cena ? <Cena valores={valores} /> : null}
             </div>
           </DestaqueContext>
         </div>

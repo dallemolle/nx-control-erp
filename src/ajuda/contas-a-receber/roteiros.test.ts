@@ -22,7 +22,7 @@ describe("roteiros de Contas a receber", () => {
 
   test("a réplica mostra a tela de receber com o exemplo dela", () => {
     const html = renderToStaticMarkup(
-      createElement(cenas.lista, { tipo: "RECEBER", valores: { "lista.linhaExemplo": "expandida" } }),
+      createElement(cenas.lista, { valores: { "lista.linhaExemplo": "expandida" } }),
     );
     expect(html).toContain("Novo título a receber");
     expect(html).toContain(EXEMPLO.contraparte);
@@ -50,7 +50,7 @@ describe("roteiros de Contas a receber", () => {
   test.each(roteiros.map((r) => [r.id, r] as const))("%s: o alvo de cada passo aparece na cena", (_id, roteiro) => {
     roteiro.passos.forEach((passo, indice) => {
       const html = renderToStaticMarkup(
-        createElement(cenas[passo.cena], { tipo: "RECEBER", valores: valoresAte(roteiro, indice) }),
+        createElement(cenas[passo.cena], { valores: valoresAte(roteiro, indice) }),
       );
       expect(html, `passo ${indice + 1} (${passo.alvo})`).toContain(`data-alvo="${passo.alvo}"`);
     });

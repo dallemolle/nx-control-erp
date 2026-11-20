@@ -42,7 +42,7 @@ describe("roteiros de Contas a pagar", () => {
   test.each(roteiros.map((r) => [r.id, r] as const))("%s: o alvo de cada passo aparece na cena", (_id, roteiro) => {
     roteiro.passos.forEach((passo, indice) => {
       const html = renderToStaticMarkup(
-        createElement(cenas[passo.cena], { tipo: "PAGAR", valores: valoresAte(roteiro, indice) }),
+        createElement(cenas[passo.cena], { valores: valoresAte(roteiro, indice) }),
       );
       expect(html, `passo ${indice + 1} (${passo.alvo})`).toContain(`data-alvo="${passo.alvo}"`);
     });
