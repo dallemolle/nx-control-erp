@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,7 +40,10 @@ export default async function RastreabilidadePage({
   return (
     <div className="max-w-6xl space-y-6">
       <div>
-        <h1 className="text-lg font-semibold">Rastreabilidade</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Rastreabilidade</h1>
+          <BotaoAjuda tela="rastreabilidade" />
+        </div>
         <p className="text-sm text-muted-foreground">
           De onde veio um lote e para quem foi, até os clientes da polpa feita com o fruto. Use no recall e na
           fiscalização.
