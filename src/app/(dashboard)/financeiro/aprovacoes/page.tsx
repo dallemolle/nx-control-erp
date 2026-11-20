@@ -1,3 +1,5 @@
+// Espelhado na ajuda (src/ajuda/aprovacoes/cenas.tsx): mudou rótulo, coluna ou botão? Ajuste a ajuda junto.
+
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
@@ -6,6 +8,7 @@ import { exigeAprovacaoPorOutro, listarBaixasPendentes } from "@/server/services
 import { aprovarBaixaAction } from "./actions";
 import { RejeitarBaixaForm } from "./rejeitar-baixa-form";
 import { formatarMoeda } from "@/lib/formatacao";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 
 export default async function AprovacoesPage() {
   const sessao = await requireSessaoAtiva();
@@ -19,7 +22,10 @@ export default async function AprovacoesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold">Aprovações pendentes</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Aprovações pendentes</h1>
+          <BotaoAjuda tela="aprovacoes" />
+        </div>
         <p className="text-sm text-muted-foreground">Baixas registradas aguardando aprovação de tesouraria.</p>
       </div>
       <Table>

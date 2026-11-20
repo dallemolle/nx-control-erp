@@ -22,4 +22,9 @@ describe("registro da ajuda", () => {
     expect(definicao.tituloTela).toBe("Contas a receber");
     expect(definicao.roteiros.length).toBe(6);
   });
+
+  test("aprovações pendentes tem ajuda", async () => {
+    expect(tituloDaAjuda("aprovacoes")).toBe("Aprovações pendentes");
+    expect((await carregarAjuda("aprovacoes")).roteiros.length).toBe(3);
+  });
 });

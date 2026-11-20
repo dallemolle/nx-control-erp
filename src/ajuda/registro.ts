@@ -12,6 +12,10 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Contas a receber",
     carregar: () => import("./contas-a-receber").then((modulo) => modulo.ajudaContasAReceber),
   },
+  "aprovacoes": {
+    titulo: "Aprovações pendentes",
+    carregar: () => import("./aprovacoes").then((modulo) => modulo.ajudaAprovacoes),
+  },
 };
 
 export function temAjuda(tela: string): boolean {

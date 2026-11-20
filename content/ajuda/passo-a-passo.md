@@ -99,6 +99,8 @@ A barra de filtros tem o filtro **Classificação** (Todas / Fiscal / Gerencial)
 
 ### 3.2. Aprovações pendentes
 
+**Ver simulação (Aprovações pendentes):** [aprovar uma baixa](#ajuda/aprovacoes/aprovar-baixa) · [rejeitar uma baixa](#ajuda/aprovacoes/rejeitar-baixa) · [quando o Aprovar fica desabilitado](#ajuda/aprovacoes/aprovar-bloqueado)
+
 Quando alguém do perfil Financeiro registra uma baixa (pagamento ou recebimento) em uma parcela, ela não é efetivada na hora — fica pendente de aprovação. Esta tela lista todas as baixas aguardando aprovação da filial atual, com o valor pago, quem registrou, e os botões Aprovar/Rejeitar.
 
 Aprovar uma baixa efetiva o pagamento: gera automaticamente um lançamento bancário (entrada ou saída, conforme o tipo do título) na conta bancária informada, e atualiza o status da parcela. Rejeitar exige informar um motivo (por exemplo, duplicidade de nota fiscal) e devolve a parcela para o estado anterior, sem gerar lançamento nenhum.
