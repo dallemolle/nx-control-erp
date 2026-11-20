@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.40](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.39...nx-control-erp-v0.1.40) (2026-11-20)
+
+
+### Novidades
+
+* **controladoria:** ajuda com simulação em Comparação entre safras ([ee7b8ce](https://github.com/dallemolle/nx-control-erp/commit/ee7b8ce6e071dc36aeeead71a4070c52a7f2d334))
+* **controladoria:** ajuda com simulação em Fiscal × gerencial ([a7adf3b](https://github.com/dallemolle/nx-control-erp/commit/a7adf3be8a513ae25849e1c93376decd53b71ef7))
+* **controladoria:** ajuda com simulação em Fluxo de caixa por dimensão ([1e8e47c](https://github.com/dallemolle/nx-control-erp/commit/1e8e47c2894a3bb4065b936ffa3fa47abd97e7d8))
+* **controladoria:** ajuda com simulação em Orçamento ([f3b6764](https://github.com/dallemolle/nx-control-erp/commit/f3b6764f47198ac85353e9980e988b348cbdcb8e))
+
 ## [0.1.39](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.38...nx-control-erp-v0.1.39) (2026-11-20)
 
 
