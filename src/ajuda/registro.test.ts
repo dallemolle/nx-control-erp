@@ -77,4 +77,9 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("fiscal-gerencial")).toBe("Fiscal × gerencial");
     expect((await carregarAjuda("fiscal-gerencial")).roteiros.length).toBe(3);
   });
+
+  test("recepção de fruto tem ajuda", async () => {
+    expect(tituloDaAjuda("recepcao")).toBe("Recepção de fruto");
+    expect((await carregarAjuda("recepcao")).roteiros.length).toBe(4);
+  });
 });

@@ -216,6 +216,8 @@ O módulo de produção substitui a planilha de controle da agroindústria. Ante
 
 ### 5.1. Recepção de fruto
 
+**Ver simulação (Recepção de fruto):** [registrar fruto comprado](#ajuda/recepcao/registrar-compra) · [registrar fruto colhido](#ajuda/recepcao/registrar-colheita) · [corrigir ou excluir](#ajuda/recepcao/corrigir-excluir) · [consultar, rastrear e exportar](#ajuda/recepcao/consultar-exportar)
+
 Cada carga de fruto recebida vira um **lote**. Em Produção → Recepção de fruto → **Nova recepção**, informe:
 
 - data e produto (só fruto);

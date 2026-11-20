@@ -587,6 +587,31 @@ continua, para cada item ter um número único). Prioridade a definir.
   `src/ajuda/fiscal-gerencial/roteiros.ts` (diz que o link não abre o título
   direto).
 
+## Produção — lacunas achadas ao escrever a ajuda contextual
+
+Numeração continua a do Financeiro e da Controladoria.
+
+### 22. Romaneio corrigido na recepção não chega à conta a pagar
+
+- **Problema:** na criação, o "Romaneio / NF" da recepção vira o documento da
+  conta a pagar (ou `RF-<lote>`, se vazio). O "Editar" da recepção muda o
+  romaneio só na recepção (`atualizarDadosRecepcao`); o título continua com o
+  documento antigo, sem aviso.
+- **Exemplo:** o José da Silva entrega açaí sem romaneio; a conta nasce como
+  "RF-FA-261120-01". No dia seguinte o romaneio 152 chega e é lançado pelo
+  Editar: a recepção mostra 152, Contas a pagar continua "RF-FA-261120-01".
+- **Onde:** `src/server/services/recepcaoFruto.ts` (`atualizarDadosRecepcao`);
+  o formulário em `producao/recepcao/recepcao-acoes.tsx`.
+- **Impacto:** o financeiro procura o pagamento pelo romaneio e não acha; os
+  dois registros da mesma carga discordam.
+- **Caminhos:** ao editar o romaneio, atualizar também o documento do título
+  enquanto ele não tiver baixa (e registrar na auditoria); ou avisar no
+  diálogo que o título precisa ser editado em Contas a pagar.
+- **Cuidados:** título com baixa ou já conciliado; título com documento já
+  mudado à mão em Contas a pagar (não sobrescrever sem perguntar).
+- **Ao corrigir:** passo "Corrija e salve" do roteiro `corrigir-excluir` em
+  `src/ajuda/recepcao/roteiros.ts` (diz que o documento da conta não muda).
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -600,4 +625,13 @@ continua, para cada item ter um número único). Prioridade a definir.
   Comparação entre safras feita (2026-11-20, 3 roteiros, lacuna 20 e
   atualização do item de sinal do orçado da Fase 5); Fiscal × gerencial feita
   (2026-11-20, 3 roteiros, lacuna 21). **Toda a Controladoria tem ajuda.**
-  Faltam Produção, Vendas, Cadastros e Administração.
+  Produção, na ordem do trabalho (recepção, processamento, estoque, ajustes,
+  rastreabilidade, painel, relatórios): Recepção de fruto feita (2026-11-20,
+  4 roteiros, lacuna 22). Faltam as demais telas da Produção, Vendas,
+  Cadastros e Administração.
+- **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
+  as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
+  (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,
+  conferir se algum conteúdo do manual (seções sem tela, como Primeiros
+  acessos e Perfis) não ficou sem lugar na ajuda; depois, tirar o item do
+  menu, a página e os links `#ajuda/...` do manual.
