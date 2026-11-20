@@ -258,6 +258,8 @@ Na lista de OPs, o filtro **A verificar** mostra só as OPs (não canceladas) co
 
 ### 5.3. Estoque
 
+**Ver simulação (Estoque):** [ler o estoque](#ajuda/estoque/ler-estoque) · [filtrar e ver o que vence em outro dia](#ajuda/estoque/filtrar-referencia) · [transferir um lote de local](#ajuda/estoque/transferir) · [liberar um lote vencido](#ajuda/estoque/liberar-vencido) · [ver por produto e local](#ajuda/estoque/produto-local)
+
 Mostra os lotes com saldo, em ordem de validade (o que vence primeiro aparece primeiro). Cada lote tem um status:
 
 | Status | Quando |
@@ -267,7 +269,7 @@ Mostra os lotes com saldo, em ordem de validade (o que vence primeiro aparece pr
 | Vencido | Passou da validade. |
 | Zerado | Sem saldo. |
 
-Filtre por produto, local e status, ou mude a **data de referência** para ver como estava (ou estará) o estoque em outro dia. A aba **Por produto e local** soma o saldo e o valor a custo, e mostra a ocupação de cada local que tem capacidade cadastrada.
+Filtre por produto, local e status, ou mude a **data de referência** para ver o que estará vencendo ou vencido em outro dia: os dias e o status passam a ser contados nessa data, mas o saldo é sempre o de hoje (a tela não mostra o estoque de um dia passado). A aba **Por produto e local** soma o saldo e o valor a custo, e mostra a ocupação de cada local que tem capacidade cadastrada.
 
 O botão **Transferir** leva o lote, ou parte dele, para outro local: escolha o local e a quantidade em kg (já vem com o saldo inteiro). Com o saldo inteiro, o lote só muda de local. Com parte dele, a parte vira um lote novo no destino com o mesmo código e uma barra no fim (`FA-261110-01/1`, `/2`…), com a mesma validade, custo e origem; se já existe um lote dessa família no destino, a quantidade é somada nele (devolver para o local de origem junta de volta). Polpa de OP aberta só pode mudar de local inteira.
 

@@ -632,6 +632,30 @@ Numeração continua a do Financeiro e da Controladoria.
 - **Ao corrigir:** dica do passo "Salvar processo" do roteiro
   `insumos-processo` em `src/ajuda/processamento/roteiros.ts`.
 
+### 24. Estoque: data de referência não mostra o estoque de outro dia
+
+- **Problema:** a "Data de referência" do Estoque muda só a conta dos dias e
+  do status (OK, Vencendo, Vencido). O saldo é sempre o atual. O manual dizia
+  que ela mostrava "como estava (ou estará) o estoque em outro dia" (texto
+  corrigido em 2026-11-20).
+- **Exemplo:** um lote de 300 kg vendido inteiro ontem; com a data de
+  referência de anteontem, ele não aparece (está zerado), e os cartões não
+  contam esses 300 kg.
+- **Onde:** `src/server/services/estoque.ts` (`listarLotes` e
+  `resumoPorStatus` leem `saldoKg` do lote); `producao/estoque/page.tsx`.
+- **Impacto:** quem precisa do estoque de fim de mês (inventário,
+  contabilidade) não tem como tirar depois do dia; e quem confia no rótulo
+  pode tomar a foto atual por histórica.
+- **Caminhos:** calcular o saldo na data somando os movimentos até ela (a
+  tabela de movimentos já existe), com valor a custo na data; ou renomear o
+  campo para "Calcular vencimento em" e criar uma posição de estoque por data
+  no Relatório mensal.
+- **Cuidados:** lotes filhos de transferência, estornos e OPs reabertas
+  (custo do lote muda); desempenho com muitos movimentos.
+- **Ao corrigir:** dica do passo "Mude a data de referência" do roteiro
+  `filtrar-referencia` em `src/ajuda/estoque/roteiros.ts` e o parágrafo da
+  seção 5.3 do Passo a passo.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -648,8 +672,8 @@ Numeração continua a do Financeiro e da Controladoria.
   Produção, na ordem do trabalho (recepção, processamento, estoque, ajustes,
   rastreabilidade, painel, relatórios): Recepção de fruto feita (2026-11-20,
   4 roteiros, lacuna 22); Processamento feito (2026-11-20, 6 roteiros,
-  lacuna 23). Faltam as demais telas da Produção, Vendas, Cadastros e
-  Administração.
+  lacuna 23); Estoque feito (2026-11-20, 5 roteiros, lacuna 24). Faltam as
+  demais telas da Produção, Vendas, Cadastros e Administração.
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
   (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,
