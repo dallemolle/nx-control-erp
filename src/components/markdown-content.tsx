@@ -1,5 +1,8 @@
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
+import { lerLinkAjuda } from "@/ajuda/link";
+import { temAjuda } from "@/ajuda/registro";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 
 const componentes: Components = {
   h1: ({ children }) => <h1 className="mb-4 text-2xl font-semibold">{children}</h1>,
@@ -22,11 +25,24 @@ const componentes: Components = {
   thead: ({ children }) => <thead className="border-b">{children}</thead>,
   th: ({ children }) => <th className="px-3 py-2 text-left font-medium">{children}</th>,
   td: ({ children }) => <td className="border-b px-3 py-2 align-top">{children}</td>,
-  a: ({ children, href }) => (
-    <a href={href} className="text-primary underline underline-offset-2">
-      {children}
-    </a>
-  ),
+  a: ({ children, href }) => {
+    const destino = lerLinkAjuda(href);
+    if (destino) {
+      // Link para a ajuda de uma tela: abre o mesmo popup do ícone. Tela sem ajuda vira texto comum.
+      return temAjuda(destino.tela) ? (
+        <BotaoAjuda tela={destino.tela} roteiroInicial={destino.roteiro} gatilho="link">
+          {children}
+        </BotaoAjuda>
+      ) : (
+        <span>{children}</span>
+      );
+    }
+    return (
+      <a href={href} className="text-primary underline underline-offset-2">
+        {children}
+      </a>
+    );
+  },
   code: ({ children }) => <code className="rounded bg-muted px-1 py-0.5 text-sm">{children}</code>,
 };
 

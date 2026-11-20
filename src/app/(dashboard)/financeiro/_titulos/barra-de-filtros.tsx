@@ -1,4 +1,5 @@
 "use client";
+// Espelhado na ajuda (src/ajuda/contas-a-pagar/cenas.tsx): mudou rótulo, campo ou botão? Ajuste a ajuda junto.
 
 import type { ChangeEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";

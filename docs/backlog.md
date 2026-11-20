@@ -87,3 +87,26 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   auditoria `ENCERRAR` da OP. Se for preciso consultar "qual preço valia em
   tal data" (ex.: para explicar um custo antigo sem abrir a auditoria),
   criar um histórico de preços por produto.
+
+## Financeiro — baixa
+
+- **Desconto na baixa não abate o saldo da parcela.** `calcularStatusParcela`
+  (`src/server/services/parcela.ts`) compara só a soma de `valorPago` das baixas
+  aprovadas com `valorAtualizado`; `valorDesconto` (e juros/multa) são só registro.
+  Uma parcela paga com desconto fica PARCIALMENTE_PAGO com a diferença em aberto.
+  A ajuda de Contas a pagar (roteiro pagar-parcela) orienta a combinar com o
+  financeiro. Correção provável: considerar `valorPago + valorDesconto − juros −
+  multa` contra o valor da parcela (ou o desconto abater o saldo), com cuidado com
+  relatórios que somam `valorPago`.
+
+## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
+
+- **Ajuda com simulação nas demais telas do Financeiro.** O piloto cobre só
+  Contas a pagar (engine em `src/components/ajuda/`, conteúdo em
+  `src/ajuda/`). Faltam, uma tela por sessão depois do piloto aprovado no
+  uso: Contas a receber (só roteiros novos; as cenas já aceitam
+  `tipo: "RECEBER"`), Aprovações pendentes, Repasses de cartão, Tesouraria,
+  Conciliação e os três fluxos de caixa. Critério de cada uma: quem nunca
+  usou o sistema consegue lançar seguindo só a ajuda.
+- **Ajuda com simulação nos outros menus** (Produção, Vendas, Cadastros,
+  Controladoria, Administração), depois do Financeiro, na mesma engine.

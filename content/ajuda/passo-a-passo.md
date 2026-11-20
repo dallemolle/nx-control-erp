@@ -12,6 +12,8 @@ O sistema também reconhece dimensões próprias do agronegócio, como **Safra**
 
 Os capítulos seguem a mesma organização do menu lateral do sistema: Financeiro, Controladoria, Produção, Vendas, Cadastros, Administração e Gestão. Cada seção explica o que a tela faz, os principais campos e ações disponíveis, e qualquer regra de negócio relevante para o dia a dia.
 
+Algumas telas têm um ícone **?** ao lado do título. Ele abre a ajuda da própria tela, com roteiros que mostram a tela passo a passo, já preenchida com um exemplo. Os links **Ver simulação** deste manual abrem a mesma ajuda.
+
 ## 2. Primeiros acessos
 
 ### 2.1. Login
@@ -50,6 +52,8 @@ Cada vínculo de usuário com uma empresa tem um perfil, que determina o que a p
 ### 3.1. Contas a pagar e Contas a receber
 
 As telas Contas a pagar e Contas a receber funcionam de forma idêntica, mudando só o tipo de título e a contraparte (fornecedor de um lado, cliente do outro). Cada título pode ter uma ou mais parcelas, cada uma com seu próprio vencimento e valor. A lista mostra um título por linha; clicar na linha expande e mostra as parcelas dele, com as ações disponíveis para cada uma.
+
+**Ver simulação (Contas a pagar):** [cadastrar um título](#ajuda/contas-a-pagar/cadastrar-titulo) · [pagar uma parcela](#ajuda/contas-a-pagar/pagar-parcela) · [mudar o vencimento](#ajuda/contas-a-pagar/mudar-vencimento) · [renegociar](#ajuda/contas-a-pagar/renegociar) · [cancelar](#ajuda/contas-a-pagar/cancelar-parcela) · [encontrar e exportar](#ajuda/contas-a-pagar/encontrar-exportar)
 
 **Cadastrando um novo título**
 
