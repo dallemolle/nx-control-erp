@@ -15,6 +15,7 @@ import { filtroTitulosDaUrl, algumFiltroAtivo, queryStringDosFiltros } from "../
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { titulosParaCliente } from "../_titulos/titulos-para-cliente";
 import { nomeDaContaBancaria } from "@/lib/contaBancaria";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 
 function paramCru(valor: string | string[] | undefined): string | undefined {
   return Array.isArray(valor) ? valor[0] : valor;
@@ -72,7 +73,10 @@ export default async function ContasAReceberPage({ searchParams }: { searchParam
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Contas a receber</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-lg font-semibold">Contas a receber</h1>
+            <BotaoAjuda tela="contas-a-receber" />
+          </div>
           <p className="text-sm text-muted-foreground">Títulos e parcelas a receber da filial ativa.</p>
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">

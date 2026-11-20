@@ -8,6 +8,10 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Contas a pagar",
     carregar: () => import("./contas-a-pagar").then((modulo) => modulo.ajudaContasAPagar),
   },
+  "contas-a-receber": {
+    titulo: "Contas a receber",
+    carregar: () => import("./contas-a-receber").then((modulo) => modulo.ajudaContasAReceber),
+  },
 };
 
 export function temAjuda(tela: string): boolean {

@@ -55,6 +55,8 @@ As telas Contas a pagar e Contas a receber funcionam de forma idêntica, mudando
 
 **Ver simulação (Contas a pagar):** [cadastrar um título](#ajuda/contas-a-pagar/cadastrar-titulo) · [pagar uma parcela](#ajuda/contas-a-pagar/pagar-parcela) · [mudar o vencimento](#ajuda/contas-a-pagar/mudar-vencimento) · [renegociar](#ajuda/contas-a-pagar/renegociar) · [cancelar](#ajuda/contas-a-pagar/cancelar-parcela) · [encontrar e exportar](#ajuda/contas-a-pagar/encontrar-exportar)
 
+**Ver simulação (Contas a receber):** [cadastrar um título](#ajuda/contas-a-receber/cadastrar-titulo) · [receber uma parcela](#ajuda/contas-a-receber/receber-parcela) · [mudar o vencimento](#ajuda/contas-a-receber/mudar-vencimento) · [renegociar](#ajuda/contas-a-receber/renegociar) · [cancelar](#ajuda/contas-a-receber/cancelar-parcela) · [encontrar e exportar](#ajuda/contas-a-receber/encontrar-exportar)
+
 **Cadastrando um novo título**
 
 O botão "Novo título a pagar"/"Novo título a receber" abre um formulário para o cabeçalho do título (fornecedor/cliente, documento, datas de emissão e competência, categoria financeira e, opcionalmente, centro de custo, centro de lucro, safra, projeto e conta bancária) e para as parcelas (número, vencimento e valor de cada uma).
