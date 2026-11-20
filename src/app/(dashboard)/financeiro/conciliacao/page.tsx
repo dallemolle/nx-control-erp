@@ -1,4 +1,5 @@
 // src/app/(dashboard)/financeiro/conciliacao/page.tsx
+// Espelhado na ajuda (src/ajuda/conciliacao/cenas.tsx): mudou rótulo, coluna ou botão? Ajuste a ajuda junto.
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
@@ -20,6 +21,7 @@ import { LinhaExtratoActions } from "./linha-extrato-actions";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
 import { nomeDaContaBancaria } from "@/lib/contaBancaria";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 
 function statusValido(valor: string | undefined): StatusLinhaExtrato | undefined {
   return STATUS_LINHA_EXTRATO.includes(valor as (typeof STATUS_LINHA_EXTRATO)[number])
@@ -59,7 +61,10 @@ export default async function ConciliacaoPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Conciliação bancária</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-lg font-semibold">Conciliação bancária</h1>
+            <BotaoAjuda tela="conciliacao" />
+          </div>
           <p className="text-sm text-muted-foreground">
             Importe o extrato (OFX) e concilie com os lançamentos já registrados.
           </p>

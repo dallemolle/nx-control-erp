@@ -1,5 +1,6 @@
 // src/app/(dashboard)/financeiro/conciliacao/filtro-status.tsx
 "use client";
+// Espelhado na ajuda (src/ajuda/conciliacao/cenas.tsx): mudou rótulo, campo ou botão? Ajuste a ajuda junto.
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

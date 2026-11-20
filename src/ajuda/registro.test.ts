@@ -37,4 +37,9 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("tesouraria")).toBe("Tesouraria");
     expect((await carregarAjuda("tesouraria")).roteiros.length).toBe(4);
   });
+
+  test("conciliação tem ajuda", async () => {
+    expect(tituloDaAjuda("conciliacao")).toBe("Conciliação bancária");
+    expect((await carregarAjuda("conciliacao")).roteiros.length).toBe(6);
+  });
 });
