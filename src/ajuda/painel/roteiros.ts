@@ -120,7 +120,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "A receber em aberto: a posição de hoje",
         explicacao:
           "O saldo das parcelas ainda não pagas dos pedidos, de qualquer data: não muda com o período. No exemplo, " +
-          `${formatarMoeda(A_RECEBER)} do pedido 131, da Sorveteria Polar.`,
+          `${formatarMoeda(A_RECEBER)}: o pedido 131, da Sorveteria Polar, e o resto de um pedido de outubro do ` +
+          "Mercadinho São João.",
       },
       {
         cena: "painel",

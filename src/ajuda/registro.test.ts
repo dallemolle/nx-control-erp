@@ -112,4 +112,9 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("relatorio-mensal")).toBe("Relatório mensal");
     expect((await carregarAjuda("relatorio-mensal")).roteiros.length).toBe(3);
   });
+
+  test("relatório de vendas tem ajuda", async () => {
+    expect(tituloDaAjuda("relatorio-vendas")).toBe("Relatório de vendas");
+    expect((await carregarAjuda("relatorio-vendas")).roteiros.length).toBe(3);
+  });
 });

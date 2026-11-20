@@ -90,8 +90,11 @@ export const ITENS_VENDIDOS: readonly {
   { pedido: 131, produtoId: "amc", quantidadeKg: 50, precoKg: 14, custoKg: 5.0104 },
 ];
 
-/** Saldo de hoje das parcelas em aberto dos pedidos: o 131, ainda não pago. */
-export const A_RECEBER = 700;
+/**
+ * Saldo de hoje das parcelas em aberto dos pedidos: o 131 (R$ 700,00, da Sorveteria Polar) e o resto do 115, de
+ * outubro (R$ 450,00, do Mercadinho São João). O mesmo do Relatório de vendas.
+ */
+export const A_RECEBER = 1150;
 
 /** Lotes com saldo hoje (22/11). */
 export const LOTES: readonly {
