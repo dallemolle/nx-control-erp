@@ -316,7 +316,9 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   avulsa sem categoria de receita.
 - **Ao corrigir:** dica do passo "Entradas e Saídas" do roteiro `ler-fluxo` em
   `src/ajuda/fluxo-de-caixa/roteiros.ts`; manual, seções 3.5 e 3.7; a ajuda do
-  fluxo estratégico, quando existir.
+  fluxo estratégico, quando existir; na ajuda do Fluxo por dimensão
+  (`src/ajuda/fluxo-por-dimensao/`), o passo "Não classificado" (o saque
+  aparece como entrada e saída) e os números do exemplo (`exemplo.ts`).
 
 ### 11. Lançamento de baixa não diz de qual título é
 
@@ -483,6 +485,53 @@ continua, para cada item ter um número único). Prioridade a definir.
   "E depois?" sobre não haver mensagem de salvo), passo da Venda de produtos
   ("17.5%") e o teste `roteiros.test.ts`; a réplica em `cenas.tsx`.
 
+### 18. Fluxo por dimensão sem total e sem aviso de visão filtrada
+
+- **Problema:** a tabela de `controladoria/fluxo-por-dimensao/page.tsx` (e a
+  exportação) não tem linha de total, e a coluna "Saldo" é entradas − saídas
+  do mês (realizado + projetado), não um saldo. Com o filtro Fiscal/Gerencial,
+  a tela não mostra o aviso de visão filtrada que as telas de fluxo do
+  Financeiro mostram (`AvisoVisaoFiltrada`).
+- **Exemplo:** para conferir com o Fluxo de caixa de novembro, o usuário
+  precisa somar as linhas à mão (na ajuda, R$ 24.774,10 no total). Com
+  "Fiscal" selecionado, o saque e o recibo somem sem nenhum aviso na tela.
+- **Onde:** `src/app/(dashboard)/controladoria/fluxo-por-dimensao/page.tsx` e
+  `export/route.ts`.
+- **Impacto:** relatório difícil de conciliar com os outros fluxos; "Saldo"
+  pode ser lido como saldo bancário da área.
+- **Caminhos:** linha de total no fim (tela e exportação); renomear "Saldo"
+  para "Resultado do mês" ou "Líquido"; mostrar o aviso de visão filtrada
+  (reaproveitar o componente do Financeiro, ajustando o texto).
+- **Cuidados:** com a lacuna 10 aberta, o total soma as duas pernas das
+  transferências em entradas e saídas (o líquido fica certo).
+- **Ao corrigir:** roteiro `ler-por-dimensao` (passo "Saldo" e o "E depois?"
+  que manda somar as linhas) e o passo "Veja o que mudou" do
+  `filtrar-exportar`, que avisa que não há aviso; a réplica em
+  `src/ajuda/fluxo-por-dimensao/cenas.tsx`.
+
+### 19. Sem rateio: um título só pode ter um centro de custo
+
+- **Problema:** título e lançamento têm um único `centroCustoId`,
+  `centroLucroId`, `safraId` e `projetoId`. Não há rateio (percentual ou valor)
+  entre dois ou mais valores da mesma dimensão.
+- **Exemplo:** uma nota de diesel de R$ 3.000,00 usada metade na Lavoura e
+  metade no Pomar precisa ser lançada como dois títulos, ou fica toda num
+  centro de custo só. Energia elétrica da sede e da agroindústria, mesmo caso.
+- **Onde:** modelos `Titulo` e `LancamentoBancario` (`prisma/schema.prisma`);
+  consultas em `fluxoDeCaixaPorDimensao.ts` e `orcamentoSafra.ts`.
+- **Impacto:** a análise por dimensão fica distorcida ou obriga a quebrar
+  documentos fiscais em vários títulos (o que atrapalha a conferência com a
+  nota).
+- **Caminhos:** tabela de rateio por título (dimensão, valor ou %), herdada
+  pelo lançamento da baixa; as consultas passam a somar a fração de cada
+  rateio. Mais simples: rateio só de centro de custo, que é o caso mais comum.
+- **Cuidados:** baixa parcial e juros/desconto precisam seguir a mesma
+  proporção; importação de títulos por planilha; exportações; dados
+  existentes viram rateio de 100%.
+- **Ao corrigir:** observação do índice da ajuda
+  (`src/ajuda/fluxo-por-dimensao/index.ts`) e os campos de dimensão das cenas
+  de títulos (`src/ajuda/_titulos/`).
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -492,5 +541,5 @@ continua, para cada item ter um número único). Prioridade a definir.
 - **Ajuda com simulação nos outros menus** (Produção, Vendas, Cadastros,
   Controladoria, Administração), depois do Financeiro, na mesma engine.
   Controladoria: Orçamento feito (2026-11-20, 3 roteiros, lacunas 15 a 17);
-  faltam Fluxo de caixa por dimensão, Comparação entre safras e Fiscal ×
-  gerencial, uma por sessão.
+  Fluxo de caixa por dimensão feito (2026-11-20, 3 roteiros, lacunas 18 e 19);
+  faltam Comparação entre safras e Fiscal × gerencial, uma por sessão.
