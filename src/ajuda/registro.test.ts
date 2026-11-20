@@ -92,4 +92,9 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("estoque")).toBe("Estoque");
     expect((await carregarAjuda("estoque")).roteiros.length).toBe(5);
   });
+
+  test("ajustes de estoque tem ajuda", async () => {
+    expect(tituloDaAjuda("ajustes")).toBe("Ajustes de estoque");
+    expect((await carregarAjuda("ajustes")).roteiros.length).toBe(4);
+  });
 });

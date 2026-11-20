@@ -656,6 +656,30 @@ Numeração continua a do Financeiro e da Controladoria.
   `filtrar-referencia` em `src/ajuda/estoque/roteiros.ts` e o parágrafo da
   seção 5.3 do Passo a passo.
 
+### 25. Ajuste de estoque errado não tem estorno
+
+- **Problema:** ajuste lançado não pode ser editado nem excluído. Para
+  corrigir, é preciso lançar o ajuste contrário, com motivo "Outro" ou
+  "Inventário", sem nenhum vínculo com o ajuste errado.
+- **Exemplo:** a Maria lança saída de 10 kg no AMC-261120-01 quando era no
+  AMC-261118-01. A lista passa a ter três linhas (a errada, a entrada que a
+  desfaz e a certa) e o filtro por motivo mostra "perdas" que não existiram.
+- **Onde:** `src/server/services/ajusteEstoque.ts` (só `criarAjuste`);
+  `producao/ajustes/page.tsx` (lista sem ações).
+- **Impacto:** relatório de perdas inflado e histórico difícil de ler. Pior:
+  o ajuste conta como movimento do lote mesmo desfeito, então a recepção
+  daquele lote não pode mais ser excluída e a OP da polpa não pode mais ser
+  reaberta nem cancelada.
+- **Caminhos:** "Estornar" no ajuste (com motivo, gera o movimento contrário
+  ligado ao original e some dos totais de perda); ou excluir ajuste do mesmo
+  dia, enquanto o lote não teve outro movimento depois.
+- **Cuidados:** saldo não pode ficar negativo ao estornar uma entrada;
+  auditoria; a regra de "lote com movimento" da recepção e da OP deveria
+  ignorar o par ajuste/estorno.
+- **Ao corrigir:** roteiro `corrigir-ajuste` em
+  `src/ajuda/ajustes/roteiros.ts` (ensina o ajuste contrário) e o "E depois?"
+  dele.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -672,8 +696,9 @@ Numeração continua a do Financeiro e da Controladoria.
   Produção, na ordem do trabalho (recepção, processamento, estoque, ajustes,
   rastreabilidade, painel, relatórios): Recepção de fruto feita (2026-11-20,
   4 roteiros, lacuna 22); Processamento feito (2026-11-20, 6 roteiros,
-  lacuna 23); Estoque feito (2026-11-20, 5 roteiros, lacuna 24). Faltam as
-  demais telas da Produção, Vendas, Cadastros e Administração.
+  lacuna 23); Estoque feito (2026-11-20, 5 roteiros, lacuna 24); Ajustes de
+  estoque feito (2026-11-20, 4 roteiros, lacuna 25). Faltam as demais telas
+  da Produção, Vendas, Cadastros e Administração.
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
   (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,

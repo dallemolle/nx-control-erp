@@ -279,6 +279,8 @@ No topo, três cartões contam os lotes com saldo e os kg em cada situação (OK
 
 ### 5.4. Ajustes de estoque
 
+**Ver simulação (Ajustes de estoque):** [dar baixa no estoque](#ajuda/ajustes/dar-baixa) · [acertar depois de uma contagem](#ajuda/ajustes/inventario) · [corrigir um ajuste errado](#ajuda/ajustes/corrigir-ajuste) · [consultar e exportar](#ajuda/ajustes/consultar-ajustes)
+
 Use para tudo que sai ou entra no estoque sem ser recepção ou venda: lote vencido, avaria/quebra, amostra para a ADEPARA ou laboratório, consumo interno ou acerto de inventário. Escolha o lote (a lista vem em ordem de validade, com o saldo de cada um), se é saída ou entrada, a quantidade em kg e o motivo. Uma saída maior que o saldo do lote é recusada. Só o Administrador e o perfil Produção lançam ajustes.
 
 ### 5.5. Etiqueta do lote
