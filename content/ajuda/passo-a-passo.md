@@ -155,6 +155,8 @@ Com o seletor **Fiscal** ou **Gerencial**, a receita e os custos do ano-base pas
 
 ### 3.8. Repasses de cartão
 
+**Ver simulação (Repasses de cartão):** [confirmar um repasse](#ajuda/repasses-cartao/confirmar-repasse) · [desfazer um repasse](#ajuda/repasses-cartao/desfazer-repasse) · [acompanhar o que a operadora deve](#ajuda/repasses-cartao/acompanhar-repasses)
+
 A venda na maquininha (seção 6.1) não entra no caixa na hora: a operadora deposita depois, já descontada a taxa. Cada pedido gera os **repasses previstos** — um só no débito, no crédito à vista e no Pix na maquininha, ou um por parcela no crédito parcelado (quando a operadora não antecipa). Esta tela lista esses repasses, com operadora, data prevista, pedido, valor bruto, taxa e líquido. Por padrão aparecem os que faltam receber (a receber e atrasados); filtre por operadora, período ou situação.
 
 Quando o depósito cair na conta:
