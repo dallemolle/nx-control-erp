@@ -282,15 +282,15 @@ desde a ajuda de Contas a receber, o arquivo é `src/ajuda/_titulos/cenas.tsx`).
   `feat/ajuda-aprovacoes`: 3 roteiros em `src/ajuda/aprovacoes/`; o `tipo`
   pagar/receber saiu de `DefinicaoAjuda` e foi para `criarCenas`). As
   lacunas do fluxo de aprovação achadas ao escrever os roteiros foram para o
-  backlog (seção "Financeiro — baixa").
+  backlog (seção "Financeiro — lacunas achadas ao escrever a ajuda contextual").
 - Ajuda contextual em Repasses de cartão → feito (2026-11-20, branch
   `feat/ajuda-repasses-cartao`: 3 roteiros em `src/ajuda/repasses-cartao/`).
 - Ajuda contextual em Tesouraria → feito (2026-11-20, branch
   `feat/ajuda-tesouraria`: 4 roteiros em `src/ajuda/tesouraria/`). Duas
-  lacunas achadas foram para o backlog (seção "Financeiro — tesouraria").
+  lacunas achadas foram para o backlog (seção "Financeiro — lacunas achadas ao escrever a ajuda contextual").
 - Ajuda contextual em Conciliação → feito (2026-11-20, branch
   `feat/ajuda-conciliacao`: 6 roteiros em `src/ajuda/conciliacao/`). Duas
-  lacunas achadas foram para o backlog (seção "Financeiro — conciliação").
+  lacunas achadas foram para o backlog (seção "Financeiro — lacunas achadas ao escrever a ajuda contextual").
 - Ajuda contextual no Fluxo de caixa (realizado) → feito (2026-11-20, branch
   `feat/ajuda-fluxo-de-caixa`: 3 roteiros em `src/ajuda/fluxo-de-caixa/`).
 - Ajuda contextual nos fluxos de caixa projetado e estratégico → backlog, uma
