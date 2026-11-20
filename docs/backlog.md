@@ -122,12 +122,29 @@ Os quatro itens abaixo (achados na ajuda de Aprovações pendentes, 2026-11-20) 
   o perfil Financeiro não acessa, e a parcela não mostra que houve baixa
   rejeitada. Mostrar a rejeição e o motivo na parcela (ou num aviso).
 
+## Financeiro — tesouraria
+
+Achados na ajuda da Tesouraria (2026-11-20).
+
+- **Lançamento manual e transferência não podem ser corrigidos.** Não há
+  edição nem exclusão de `LancamentoBancario` (`lancamentoBancario.ts`); o
+  único caminho é anular com um lançamento no sentido contrário, que deixa
+  dois registros falsos no fluxo de caixa e na conciliação. Mesma família do
+  estorno de baixa (seção "Financeiro — baixa"): um estorno auditado, com
+  cuidado com lançamento já conciliado e com os dois lados da transferência.
+- **Diferença da Tesouraria compara datas diferentes.** O quadro da conta
+  subtrai o último saldo informado (de uma data) do saldo contábil com
+  lançamentos de todas as datas (`calcularSaldoContabil`). Se houver
+  lançamento depois da data informada, a diferença não fecha mesmo com tudo
+  certo. Calcular o saldo contábil até a data do saldo informado. A ajuda
+  orienta a informar o saldo do dia mais recente.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feitas: Contas a
-  pagar, Contas a receber, Aprovações pendentes e Repasses de cartão (engine em `src/components/ajuda/`, conteúdo em
+  pagar, Contas a receber, Aprovações pendentes, Repasses de cartão e Tesouraria (engine em `src/components/ajuda/`, conteúdo em
   `src/ajuda/`, cenas de títulos comuns em `src/ajuda/_titulos/`). Faltam, uma
-  tela por sessão: Tesouraria,
+  tela por sessão:
   Conciliação e os três fluxos de caixa. Critério de cada uma: quem nunca
   usou o sistema consegue lançar seguindo só a ajuda.
 - **Ajuda com simulação nos outros menus** (Produção, Vendas, Cadastros,

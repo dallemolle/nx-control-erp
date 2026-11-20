@@ -285,8 +285,11 @@ desde a ajuda de Contas a receber, o arquivo é `src/ajuda/_titulos/cenas.tsx`).
   backlog (seção "Financeiro — baixa").
 - Ajuda contextual em Repasses de cartão → feito (2026-11-20, branch
   `feat/ajuda-repasses-cartao`: 3 roteiros em `src/ajuda/repasses-cartao/`).
-- Ajuda contextual nas demais telas do Financeiro (Tesouraria, Conciliação,
-  Fluxos de caixa) → backlog, uma tela por sessão.
+- Ajuda contextual em Tesouraria → feito (2026-11-20, branch
+  `feat/ajuda-tesouraria`: 4 roteiros em `src/ajuda/tesouraria/`). Duas
+  lacunas achadas foram para o backlog (seção "Financeiro — tesouraria").
+- Ajuda contextual nas demais telas do Financeiro (Conciliação, Fluxos de
+  caixa) → backlog, uma tela por sessão.
 - Ajuda contextual nos outros menus (Produção, Vendas, Cadastros,
   Controladoria, Administração) → backlog, depois do Financeiro.
 - Treino interativo, em que a pessoa digita para avançar — descartado
