@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission } from "@/server/auth/permissions";
 import { buscarRelatorioVendas } from "@/server/services/relatorioProducao/vendas";
@@ -32,7 +33,10 @@ export default async function RelatorioVendasPage({ searchParams }: { searchPara
   return (
     <div className="space-y-8">
       <div className="space-y-1">
-        <h1 className="text-lg font-semibold">Relatório de vendas</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Relatório de vendas</h1>
+          <BotaoAjuda tela="relatorio-vendas" />
+        </div>
         <p className="text-sm text-muted-foreground">
           {formatarData(periodo.inicio)} a {formatarData(periodo.fim)}. Pedidos cancelados ficam fora; a
           receber na data de hoje.
