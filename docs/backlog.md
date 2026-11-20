@@ -99,6 +99,10 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   multa` contra o valor da parcela (ou o desconto abater o saldo), com cuidado com
   relatórios que somam `valorPago`.
 
+Os quatro itens abaixo (achados na ajuda de Aprovações pendentes, 2026-11-20) são
+**correções de prioridade alta**, para depois da ajuda contextual dos menus
+(os módulos ainda não estão em uso).
+
 - **Aprovação às cegas.** Aprovações pendentes mostra só documento,
   contraparte, valor pago e quem registrou. Data, conta bancária, número da
   parcela, juros, multa e desconto da baixa não aparecem, e o lançamento sai
