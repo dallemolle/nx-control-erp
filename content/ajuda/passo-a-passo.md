@@ -293,6 +293,8 @@ O endereço é configurado em Administração → Configuração de produção. 
 
 ### 5.6. Rastreabilidade (recall)
 
+**Ver simulação (Rastreabilidade):** [recall: do fruto até os clientes](#ajuda/rastreabilidade/recall-fruto) · [da polpa até o produtor](#ajuda/rastreabilidade/origem-polpa) · [lote dividido por transferência](#ajuda/rastreabilidade/familia) · [achar, ver cancelados e exportar](#ajuda/rastreabilidade/buscar-exportar)
+
 Em **Produção → Rastreabilidade**, digite o código do lote e clique em **Rastrear**. Também dá para clicar no código do lote no estoque, na recepção, na OP ou no pedido. Se digitar só parte do código (ex.: `FA-2611`), aparece a lista de lotes que batem.
 
 - **Lote de polpa:** mostra a OP que o produziu (branqueamento, rendimento, balanço), os lotes de fruto usados, com a origem de cada um, e os clientes que compraram a polpa.
