@@ -24,6 +24,10 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Tesouraria",
     carregar: () => import("./tesouraria").then((modulo) => modulo.ajudaTesouraria),
   },
+  conciliacao: {
+    titulo: "Conciliação bancária",
+    carregar: () => import("./conciliacao").then((modulo) => modulo.ajudaConciliacao),
+  },
 };
 
 export function temAjuda(tela: string): boolean {

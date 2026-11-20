@@ -1,5 +1,6 @@
 // src/app/(dashboard)/financeiro/conciliacao/importar-extrato-dialog-form.tsx
 "use client";
+// Espelhado na ajuda (src/ajuda/conciliacao/cenas.tsx): mudou rótulo, campo ou botão? Ajuste a ajuda junto.
 
 import { useState, useTransition } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";

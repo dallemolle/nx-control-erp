@@ -1,5 +1,6 @@
 // src/app/(dashboard)/financeiro/conciliacao/linha-extrato-actions.tsx
 "use client";
+// Espelhado na ajuda (src/ajuda/conciliacao/cenas.tsx): mudou rótulo, campo ou botão? Ajuste a ajuda junto.
 
 import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";

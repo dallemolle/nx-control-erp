@@ -121,6 +121,8 @@ O lançamento manual também é classificado como Fiscal (padrão) ou Gerencial,
 
 ### 3.4. Conciliação bancária
 
+**Ver simulação (Conciliação):** [importar o extrato](#ajuda/conciliacao/importar-extrato) · [entender o status](#ajuda/conciliacao/entender-status) · [confirmar uma sugestão](#ajuda/conciliacao/confirmar-sugestao) · [conciliar em grupo](#ajuda/conciliacao/conciliar-grupo) · [criar o lançamento que falta](#ajuda/conciliacao/criar-lancamento) · [desconciliar e reprocessar](#ajuda/conciliacao/desconciliar)
+
 A conciliação bancária cruza o extrato real do banco com os lançamentos já registrados no sistema, para confirmar que tudo que aconteceu na conta bancária tem um lançamento correspondente. O fluxo é: importar o extrato (arquivo OFX exportado do banco), o sistema tenta casar automaticamente cada linha do extrato com um lançamento existente (por valor e data), e o que não casar automaticamente fica disponível para revisão manual.
 
 **Status de uma linha do extrato**
