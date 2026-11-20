@@ -345,13 +345,46 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   (mesmo valor, mesmo sentido, até 3 dias, um só candidato), como na ajuda
   (roteiro `entender-status`).
 
+### 13. Baixa aprovada e não conciliada some da projeção
+
+- **Problema:** a projeção parte do saldo em caixa **conciliado**
+  (`buscarSaldoEmCaixaAte`, que só soma lançamentos com `conciliado: true`),
+  mas cada parcela entra pelo que falta pagar depois das baixas **aprovadas**
+  (`saldoRemanescenteParcela` em `fluxoDeCaixaProjetado.ts`). Entre a
+  aprovação e a conciliação, o pagamento não está em nenhum dos dois lados.
+- **Exemplo:** a parcela de R$ 1.012,00 do adubo é paga e aprovada em 19/11; o
+  extrato só é conciliado na semana seguinte. Nesse meio tempo, o saldo de
+  partida ainda tem os R$ 1.012,00 (o lançamento não está conciliado) e a
+  parcela já não aparece como saída. A projeção fica R$ 1.012,00 otimista. No
+  recebimento acontece o contrário: a projeção fica pessimista.
+- **Onde mais:** o "saldo projetado em 30 dias" do Dashboard executivo
+  (`dashboardExecutivo.ts`) faz a mesma conta (caixa conciliado + parcelas em
+  aberto). Ele também ignora as parcelas em atraso, que a tela do projetado
+  mostra na linha "Em atraso": os dois números não batem entre si.
+- **Impacto:** dado errado temporário, do tamanho do que está aprovado e não
+  conciliado. Numa filial que concilia uma vez por mês, pode ser o mês inteiro
+  de pagamentos.
+- **Caminhos:** partir do saldo contábil (todos os lançamentos, conciliados ou
+  não), como a Tesouraria; ou somar ao saldo de partida os lançamentos de baixa
+  ainda não conciliados; ou mostrar uma linha "Aprovado, aguardando
+  conciliação". Alinhar o dashboard com a tela (mesma função, com ou sem
+  atrasados, e dizer qual).
+- **Cuidados:** o Fluxo de caixa realizado deve continuar só com conciliados
+  (é o retrato do banco); conta Caixa já nasce conciliada e não tem o problema;
+  lançamentos manuais não conciliados (sem título) também ficam fora hoje.
+- **Ao corrigir:** dica do passo "Entradas e saídas projetadas" do roteiro
+  `ler-projecao` em `src/ajuda/fluxo-de-caixa-projetado/roteiros.ts` (manda
+  conciliar em dia) e o passo "O ponto de partida é o saldo de hoje"; manual,
+  seção 3.6 e a seção do Dashboard executivo.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feitas: Contas a
-  pagar, Contas a receber, Aprovações pendentes, Repasses de cartão, Tesouraria, Conciliação e Fluxo de caixa (engine em `src/components/ajuda/`, conteúdo em
+  pagar, Contas a receber, Aprovações pendentes, Repasses de cartão, Tesouraria, Conciliação, Fluxo de caixa e Fluxo de caixa
+  projetado (engine em `src/components/ajuda/`, conteúdo em
   `src/ajuda/`, cenas de títulos comuns em `src/ajuda/_titulos/`). Faltam, uma
   tela por sessão:
-  os fluxos de caixa projetado e estratégico. Critério de cada uma: quem nunca
+  o fluxo de caixa estratégico. Critério de cada uma: quem nunca
   usou o sistema consegue lançar seguindo só a ajuda.
 - **Ajuda com simulação nos outros menus** (Produção, Vendas, Cadastros,
   Controladoria, Administração), depois do Financeiro, na mesma engine.
