@@ -1,4 +1,5 @@
 "use client";
+// Espelhado na ajuda (src/ajuda/fluxo-de-caixa/cenas.tsx): mudou rótulo ou passo da navegação? Ajuste a ajuda junto.
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
