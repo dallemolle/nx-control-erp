@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.38](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.37...nx-control-erp-v0.1.38) (2026-11-20)
+
+
+### Novidades
+
+* **financeiro:** ajuda com simulação em Contas a receber ([c717cdc](https://github.com/dallemolle/nx-control-erp/commit/c717cdc19a8869cbc5253d3488ed6bf380117d66))
+
 ## [0.1.37](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.36...nx-control-erp-v0.1.37) (2026-11-20)
 
 
