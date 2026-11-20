@@ -612,6 +612,26 @@ Numeração continua a do Financeiro e da Controladoria.
 - **Ao corrigir:** passo "Corrija e salve" do roteiro `corrigir-excluir` em
   `src/ajuda/recepcao/roteiros.ts` (diz que o documento da conta não muda).
 
+### 23. Aba Processo da OP perde o que não foi salvo, sem aviso
+
+- **Problema:** na OP, a aba Processo (branqueamento, água, caroço, perda,
+  observação) só grava com "Salvar processo". As abas são links: trocar de
+  aba, ou sair da tela, descarta o que foi digitado, sem aviso.
+- **Exemplo:** a operadora digita 85 °C, 10 s, 400 L, 450 kg e 20 kg e clica
+  em "Produção" para conferir a polpa; volta e os campos estão como antes. O
+  balanço continua "Verificar" e ela não sabe por quê.
+- **Onde:** `producao/processamento/[numero]/processo-form.tsx` e as abas em
+  `[numero]/page.tsx`.
+- **Impacto:** retrabalho e OP encerrada com "Verificar" confirmado por
+  engano (a confirmação parece só burocracia quando o número "foi digitado").
+- **Caminhos:** avisar ao sair com alterações não salvas (o editor de tema já
+  faz isso com `beforeunload`; as abas precisam de um aviso próprio, porque são
+  navegação do Next); ou salvar ao sair do campo.
+- **Cuidados:** não salvar sozinho valores parciais que mudem o status de
+  "Verificar" sem a pessoa ver; OP encerrada não tem formulário.
+- **Ao corrigir:** dica do passo "Salvar processo" do roteiro
+  `insumos-processo` em `src/ajuda/processamento/roteiros.ts`.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -627,8 +647,9 @@ Numeração continua a do Financeiro e da Controladoria.
   (2026-11-20, 3 roteiros, lacuna 21). **Toda a Controladoria tem ajuda.**
   Produção, na ordem do trabalho (recepção, processamento, estoque, ajustes,
   rastreabilidade, painel, relatórios): Recepção de fruto feita (2026-11-20,
-  4 roteiros, lacuna 22). Faltam as demais telas da Produção, Vendas,
-  Cadastros e Administração.
+  4 roteiros, lacuna 22); Processamento feito (2026-11-20, 6 roteiros,
+  lacuna 23). Faltam as demais telas da Produção, Vendas, Cadastros e
+  Administração.
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
   (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,
