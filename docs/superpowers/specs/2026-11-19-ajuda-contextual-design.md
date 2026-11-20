@@ -291,7 +291,10 @@ desde a ajuda de Contas a receber, o arquivo é `src/ajuda/_titulos/cenas.tsx`).
 - Ajuda contextual em Conciliação → feito (2026-11-20, branch
   `feat/ajuda-conciliacao`: 6 roteiros em `src/ajuda/conciliacao/`). Duas
   lacunas achadas foram para o backlog (seção "Financeiro — conciliação").
-- Ajuda contextual nos fluxos de caixa → backlog, uma tela por sessão.
+- Ajuda contextual no Fluxo de caixa (realizado) → feito (2026-11-20, branch
+  `feat/ajuda-fluxo-de-caixa`: 3 roteiros em `src/ajuda/fluxo-de-caixa/`).
+- Ajuda contextual nos fluxos de caixa projetado e estratégico → backlog, uma
+  tela por sessão.
 - Ajuda contextual nos outros menus (Produção, Vendas, Cadastros,
   Controladoria, Administração) → backlog, depois do Financeiro.
 - Treino interativo, em que a pessoa digita para avançar — descartado

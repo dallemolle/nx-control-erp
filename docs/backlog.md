@@ -159,10 +159,10 @@ Achados na ajuda da Conciliação (2026-11-20).
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feitas: Contas a
-  pagar, Contas a receber, Aprovações pendentes, Repasses de cartão, Tesouraria e Conciliação (engine em `src/components/ajuda/`, conteúdo em
+  pagar, Contas a receber, Aprovações pendentes, Repasses de cartão, Tesouraria, Conciliação e Fluxo de caixa (engine em `src/components/ajuda/`, conteúdo em
   `src/ajuda/`, cenas de títulos comuns em `src/ajuda/_titulos/`). Faltam, uma
   tela por sessão:
-  os três fluxos de caixa. Critério de cada uma: quem nunca
+  os fluxos de caixa projetado e estratégico. Critério de cada uma: quem nunca
   usou o sistema consegue lançar seguindo só a ajuda.
 - **Ajuda com simulação nos outros menus** (Produção, Vendas, Cadastros,
   Controladoria, Administração), depois do Financeiro, na mesma engine.
