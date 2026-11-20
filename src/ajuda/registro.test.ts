@@ -27,4 +27,9 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("aprovacoes")).toBe("Aprovações pendentes");
     expect((await carregarAjuda("aprovacoes")).roteiros.length).toBe(3);
   });
+
+  test("repasses de cartão tem ajuda", async () => {
+    expect(tituloDaAjuda("repasses-cartao")).toBe("Repasses de cartão");
+    expect((await carregarAjuda("repasses-cartao")).roteiros.length).toBe(3);
+  });
 });

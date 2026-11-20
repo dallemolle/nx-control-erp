@@ -1,3 +1,5 @@
+// Espelhado na ajuda (src/ajuda/repasses-cartao/cenas.tsx): mudou rótulo, filtro ou botão? Ajuste a ajuda junto.
+
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission } from "@/server/auth/permissions";
 import { prisma } from "@/server/db/client";
@@ -5,6 +7,7 @@ import { listarRepasses, type FiltroRepasses } from "@/server/services/repasseCa
 import { hojeDeCalendario, paraDataIso } from "@/lib/producao/periodo";
 import { BarraDeFiltros } from "../../producao/_shared/barra-de-filtros";
 import { RepassesLista } from "./repasses-lista";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 
 type Parametros = { operadora?: string; inicio?: string; fim?: string; situacao?: string };
 
@@ -38,7 +41,10 @@ export default async function RepassesCartaoPage({ searchParams }: { searchParam
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold">Repasses de cartão</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Repasses de cartão</h1>
+          <BotaoAjuda tela="repasses-cartao" />
+        </div>
         <p className="text-sm text-muted-foreground">
           Marque os repasses que caíram na conta, confira o líquido com o extrato e confirme. Depois concilie o
           depósito em grupo na Conciliação.
