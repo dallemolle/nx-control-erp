@@ -117,4 +117,9 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("relatorio-vendas")).toBe("Relatório de vendas");
     expect((await carregarAjuda("relatorio-vendas")).roteiros.length).toBe(3);
   });
+
+  test("relatório de origem tem ajuda", async () => {
+    expect(tituloDaAjuda("relatorio-origem")).toBe("Relatório de origem");
+    expect((await carregarAjuda("relatorio-origem")).roteiros.length).toBe(3);
+  });
 });

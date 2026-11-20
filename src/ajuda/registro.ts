@@ -88,6 +88,10 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Relatório de vendas",
     carregar: () => import("./relatorio-vendas").then((modulo) => modulo.ajudaRelatorioVendas),
   },
+  "relatorio-origem": {
+    titulo: "Relatório de origem",
+    carregar: () => import("./relatorio-origem").then((modulo) => modulo.ajudaRelatorioOrigem),
+  },
 };
 
 export function temAjuda(tela: string): boolean {
