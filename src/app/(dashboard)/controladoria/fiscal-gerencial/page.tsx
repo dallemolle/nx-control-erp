@@ -1,4 +1,6 @@
+// Espelhado na ajuda (src/ajuda/fiscal-gerencial/cenas.tsx): mudou rótulo, coluna, bloco ou texto? Ajuste a ajuda junto.
 import Link from "next/link";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -79,7 +81,10 @@ export default async function FiscalGerencialPage({
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-lg font-semibold">Fiscal × gerencial</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Fiscal × gerencial</h1>
+          <BotaoAjuda tela="fiscal-gerencial" />
+        </div>
         <p className="text-sm text-muted-foreground">
           Quanto do movimento da filial ativa tem documento fiscal e quanto é negociado sem nota. Realizado usa
           movimentações conciliadas (transferências entre contas ficam de fora); em aberto usa os títulos ainda não

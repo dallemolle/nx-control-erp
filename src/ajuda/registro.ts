@@ -40,6 +40,22 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Fluxo de caixa estratégico",
     carregar: () => import("./fluxo-de-caixa-estrategico").then((modulo) => modulo.ajudaFluxoDeCaixaEstrategico),
   },
+  orcamento: {
+    titulo: "Orçamento",
+    carregar: () => import("./orcamento").then((modulo) => modulo.ajudaOrcamento),
+  },
+  "fluxo-por-dimensao": {
+    titulo: "Fluxo de caixa por dimensão",
+    carregar: () => import("./fluxo-por-dimensao").then((modulo) => modulo.ajudaFluxoPorDimensao),
+  },
+  "comparacao-safras": {
+    titulo: "Comparação entre safras",
+    carregar: () => import("./comparacao-safras").then((modulo) => modulo.ajudaComparacaoSafras),
+  },
+  "fiscal-gerencial": {
+    titulo: "Fiscal × gerencial",
+    carregar: () => import("./fiscal-gerencial").then((modulo) => modulo.ajudaFiscalGerencial),
+  },
 };
 
 export function temAjuda(tela: string): boolean {

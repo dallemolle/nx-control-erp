@@ -1,4 +1,6 @@
+// Espelhado na ajuda (src/ajuda/orcamento/cenas.tsx): mudou rótulo, coluna ou texto? Ajuste a ajuda junto.
 import { Badge } from "@/components/ui/badge";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeEscreverOrcamento } from "@/server/auth/permissions";
@@ -54,7 +56,10 @@ export default async function OrcamentoPage({
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-lg font-semibold">Orçamento</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Orçamento</h1>
+          <BotaoAjuda tela="orcamento" />
+        </div>
         <p className="text-sm text-muted-foreground">
           Orçamento por categoria financeira e mês. Comparativo usa o
           realizado (movimentações conciliadas) e o projetado (títulos

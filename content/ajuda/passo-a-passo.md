@@ -186,21 +186,29 @@ As contas a receber (em nome da operadora) e a pagar (taxa) desses pedidos não 
 
 ### 4.1. Orçamento
 
-Permite definir, mês a mês, o valor orçado para cada categoria financeira do ano, e compara automaticamente com o realizado (o que já aconteceu, via lançamentos conciliados) e o projetado (o que ainda está previsto, via títulos em aberto), mostrando a variação absoluta e percentual entre orçado e o restante. Categorias de despesa que ultrapassarem o orçado aparecem destacadas como alerta de estouro.
+Permite definir, mês a mês, o valor orçado para cada categoria financeira do ano, e compara automaticamente com o realizado (o que já aconteceu, via lançamentos conciliados) e o projetado (o que ainda está previsto, via títulos em aberto), mostrando a variação absoluta e percentual entre o realizado e o orçado. Categorias de despesa em que realizado mais projetado ultrapassam o orçado aparecem destacadas como alerta de estouro, mesmo que a variação (que olha só o realizado) ainda seja negativa. O orçamento é por filial.
+
+**Ver simulação (Orçamento):** [orçar o ano](#ajuda/orcamento/orcar-ano) · [comparar orçado, realizado e projetado](#ajuda/orcamento/ler-comparativo) · [filtrar por classificação e exportar](#ajuda/orcamento/filtrar-exportar)
 
 ### 4.2. Fluxo de caixa por dimensão
 
 O mesmo tipo de relatório do fluxo de caixa, mas agrupado por uma dimensão analítica em vez de por período — centro de custo, centro de lucro, safra ou projeto, à escolha. Útil para responder perguntas como "quanto entrou e saiu na Lavoura A este mês" em vez de "quanto entrou e saiu na empresa toda".
 
+**Ver simulação (Fluxo de caixa por dimensão):** [ver quanto entrou e saiu em cada centro de custo](#ajuda/fluxo-por-dimensao/ler-por-dimensao) · [entender o "Não classificado" e trocar de dimensão](#ajuda/fluxo-por-dimensao/nao-classificado) · [filtrar por classificação e exportar](#ajuda/fluxo-por-dimensao/filtrar-exportar)
+
 ### 4.3. Comparação entre safras
 
 Permite orçar um valor único por safra (sem grade mensal, já que cada safra tem seu próprio período de início e fim) e comparar entre todas as safras cadastradas — planejadas, em andamento ou já encerradas — o orçado, o realizado e o projetado de cada uma.
 
-Realizado e projetado somam tudo o que está marcado com a safra, em qualquer data: uma compra de pré-safra ou uma venda recebida depois da colheita entram na safra em que foram marcadas, não no período em que aconteceram. O realizado considera só movimentações conciliadas; o projetado, os títulos em aberto (inclusive os atrasados).
+Realizado e projetado somam tudo o que está marcado com a safra, em qualquer data: uma compra de pré-safra ou uma venda recebida depois da colheita entram na safra em que foram marcadas, não no período em que aconteceram. O realizado considera só movimentações conciliadas; o projetado, os títulos em aberto (inclusive os atrasados). Os dois são resultado (entradas menos saídas), por isso o orçado que faz sentido é o resultado esperado da safra, não o custo.
+
+**Ver simulação (Comparação entre safras):** [orçar uma safra](#ajuda/comparacao-safras/orcar-safra) · [comparar o resultado das safras](#ajuda/comparacao-safras/comparar-safras) · [filtrar por classificação e exportar](#ajuda/comparacao-safras/filtrar-exportar)
 
 ### 4.4. Fiscal × gerencial
 
 Mostra, para a filial atual e o ano escolhido, quanto do movimento tem documento fiscal e quanto é negociado sem nota: entradas e saídas realizadas por mês (com o percentual gerencial), o que está em aberto hoje a pagar e a receber em cada classificação, os parceiros com maior valor em títulos gerenciais e a lista de **pendências fiscais** — títulos fiscais ainda sem tipo de documento, número, chave de acesso ou anexo. Clicar no documento leva à lista de títulos já filtrada pelo parceiro. Os dois relatórios (comparativo mensal e pendências) podem ser exportados em CSV, Excel ou PDF.
+
+**Ver simulação (Fiscal × gerencial):** [ver quanto do movimento tem nota](#ajuda/fiscal-gerencial/ler-comparativo) · [em aberto e maiores parceiros sem nota](#ajuda/fiscal-gerencial/em-aberto-parceiros) · [resolver as pendências fiscais](#ajuda/fiscal-gerencial/pendencias)
 
 ## 5. Produção
 

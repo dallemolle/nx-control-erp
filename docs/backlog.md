@@ -47,6 +47,13 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   significa custo esperado (mantém ≥0, mas aí a Variação teria que
   comparar contra saídas, não contra o saldo líquido) ou resultado líquido
   esperado (permitir negativo no schema usado por esta tela).
+  **Atualização (2026-11-20, ajuda contextual):** a ajuda da tela orienta a
+  orçar o **resultado esperado** da safra, que é o único jeito de a Variação
+  fazer sentido com a conta atual, e avisa que não dá para orçar prejuízo.
+  Ao corrigir: roteiro `orcar-safra` (passo do orçado e a dica sobre
+  negativo) e a observação do índice em `src/ajuda/comparacao-safras/`;
+  manual, seção 4.3 (frase "o orçado que faz sentido é o resultado
+  esperado").
 
 ## API REST de automação (lançamentos via agente)
 
@@ -316,7 +323,9 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   avulsa sem categoria de receita.
 - **Ao corrigir:** dica do passo "Entradas e Saídas" do roteiro `ler-fluxo` em
   `src/ajuda/fluxo-de-caixa/roteiros.ts`; manual, seções 3.5 e 3.7; a ajuda do
-  fluxo estratégico, quando existir.
+  fluxo estratégico, quando existir; na ajuda do Fluxo por dimensão
+  (`src/ajuda/fluxo-por-dimensao/`), o passo "Não classificado" (o saque
+  aparece como entrada e saída) e os números do exemplo (`exemplo.ts`).
 
 ### 11. Lançamento de baixa não diz de qual título é
 
@@ -399,6 +408,185 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   `src/ajuda/fluxo-de-caixa-estrategico/roteiros.ts` (avisa que não desconta
   CAPEX nem juros) e a réplica (`cenas.tsx`, rótulo da métrica); manual, seção 3.7.
 
+## Controladoria — lacunas achadas ao escrever a ajuda contextual
+
+Mesmo formato e mesma numeração das lacunas do Financeiro (a numeração
+continua, para cada item ter um número único). Prioridade a definir.
+
+### 15. Realizado do Orçamento ignora o sentido do lançamento
+
+- **Problema:** `buscarRealizadoPorCategoria` (`src/server/services/orcamento.ts`)
+  soma `lancamento.valor` sem olhar `tipo` (ENTRADA/SAIDA). E o lançamento
+  manual da Tesouraria e o avulso da Conciliação deixam escolher qualquer
+  categoria em qualquer sentido (a lista não filtra receita/despesa), sem
+  validação no serviço.
+- **Exemplo:** a Agro Insumos devolve R$ 200,00 de adubo. A tesouraria lança
+  uma entrada de R$ 200,00 na categoria Insumos Agrícolas. No Orçamento, o
+  realizado de Insumos **sobe** R$ 200,00 em vez de cair, e pode até marcar
+  Estouro por causa da devolução.
+- **Onde:** `src/server/services/orcamento.ts` (`buscarRealizadoPorCategoria`);
+  `src/app/(dashboard)/financeiro/tesouraria/lancamento-dialog-form.tsx` e
+  `src/app/(dashboard)/financeiro/conciliacao/campos-lancamento-avulso.tsx`
+  (lista de categorias).
+- **Impacto:** realizado inflado e estouro falso em qualquer categoria com
+  estorno, devolução ou lançamento no sentido "contrário".
+- **Caminhos:** somar com sinal conforme o tipo da categoria (saída numa
+  despesa soma, entrada numa despesa abate; o inverso para receita); e/ou
+  filtrar a lista de categorias pelo sentido do lançamento, deixando a
+  devolução como exceção explícita.
+- **Cuidados:** o Fluxo por dimensão já separa entradas e saídas
+  (`fluxoDeCaixaPorDimensao.ts`); conferir a Comparação entre safras na sessão
+  da ajuda dela. Dados já lançados no sentido "errado" mudam de valor quando a
+  regra mudar.
+- **Ao corrigir:** passo "Realizado" do roteiro `ler-comparativo` em
+  `src/ajuda/orcamento/roteiros.ts`, se a regra virar "com sinal"; manual,
+  seção 4.1.
+
+### 16. Variação e Estouro do Orçamento medem coisas diferentes
+
+- **Problema:** em `montarLinhaComparativo`, a Variação (e a Variação %) é
+  realizado − orçado, mas o alerta de Estouro é realizado + projetado > orçado.
+  O selo "Estouro" aparece dentro da célula da Variação.
+- **Exemplo:** na ajuda, Insumos Agrícolas em novembro: orçado R$ 1.500,00,
+  realizado R$ 800,00, projetado R$ 1.000,00. A célula mostra "−R$ 700,00
+  Estouro" e −46.7%: o número diz "sobrou" e o selo diz "estourou".
+- **Onde:** `src/server/services/orcamento.ts` (`montarLinhaComparativo`),
+  `src/app/(dashboard)/controladoria/orcamento/page.tsx` e a exportação
+  (`orcamento/export/route.ts`, colunas Variação e Estouro).
+- **Impacto:** leitura confusa justamente no indicador principal da tela; quem
+  olha só a variação acha que está dentro do orçado.
+- **Caminhos:** mostrar uma coluna "Previsto" (realizado + projetado) e a
+  variação sobre ela; ou manter a variação do realizado e levar o selo para
+  uma coluna própria ("Situação"); ou as duas variações lado a lado.
+- **Cuidados:** a Comparação entre safras usa a mesma variação (só o
+  realizado), mas não tem alerta de estouro (`orcamentoSafra.ts`): decidir a
+  regra para as duas telas juntas. Testes de `orcamento.test.ts` fixam a regra
+  atual.
+- **Ao corrigir:** dica do passo "Linha vermelha com Estouro" do roteiro
+  `ler-comparativo` (explica a diferença) e a réplica
+  (`src/ajuda/orcamento/cenas.tsx`, colunas); manual, seção 4.1 (frase "mesmo
+  que a variação... ainda seja negativa").
+
+### 17. Grade do Orçamento: sem meses, sem confirmação e fácil de errar
+
+- **Problema:** na grade "Valores orçados", (a) os 12 campos não têm o nome do
+  mês; (b) ao rolar para o lado, o nome da categoria some; (c) o Salvar não
+  mostra "salvo" (`state.sucesso` do `LinhaOrcamentoForm` não é usado); (d)
+  campo numérico aceita "1.500", que é lido como R$ 1,50 sem aviso; (e)
+  receita e despesa aparecem misturadas, sem indicar o tipo; (f) a Variação %
+  sai com ponto ("17.5%"), fora do padrão brasileiro do resto da tela.
+- **Exemplo:** para orçar novembro, o usuário conta 11 campos a partir da
+  esquerda; se errar, grava outubro, e nada na tela confirma o que foi salvo.
+- **Onde:** `src/app/(dashboard)/controladoria/orcamento/linha-orcamento-form.tsx`
+  e `page.tsx`.
+- **Impacto:** erro de digitação silencioso no orçamento, que alimenta o
+  estouro e as decisões do mês.
+- **Caminhos:** cabeçalho com os meses (Jan…Dez) e coluna do nome fixa
+  (`sticky`); mensagem "Salvo" na linha; campo de moeda como nos títulos
+  (vírgula decimal, sem ambiguidade de ponto); agrupar por Receita/Despesa;
+  formatar a Variação % com vírgula.
+- **Cuidados:** a grade rola na horizontal no celular (comentário no
+  `page.tsx`); manter. A Comparação entre safras tem um formulário parecido
+  (`comparacao-safras/linha-safra-form.tsx`), com os mesmos problemas (c), (d)
+  e (f): corrigir junto, e ajustar o roteiro `orcar-safra` (dica do ponto de
+  milhar, "E depois?" sem mensagem de salvo) e o `comparar-safras` ("-17.5%",
+  "9.1%").
+- **Ao corrigir:** roteiro `orcar-ano` (dica "A grade não mostra o nome dos
+  meses", explicação do valor com ponto e a dica do ponto de milhar, texto do
+  "E depois?" sobre não haver mensagem de salvo), passo da Venda de produtos
+  ("17.5%") e o teste `roteiros.test.ts`; a réplica em `cenas.tsx`.
+
+### 18. Fluxo por dimensão sem total e sem aviso de visão filtrada
+
+- **Problema:** a tabela de `controladoria/fluxo-por-dimensao/page.tsx` (e a
+  exportação) não tem linha de total, e a coluna "Saldo" é entradas − saídas
+  do mês (realizado + projetado), não um saldo. Com o filtro Fiscal/Gerencial,
+  a tela não mostra o aviso de visão filtrada que as telas de fluxo do
+  Financeiro mostram (`AvisoVisaoFiltrada`).
+- **Exemplo:** para conferir com o Fluxo de caixa de novembro, o usuário
+  precisa somar as linhas à mão (na ajuda, R$ 24.774,10 no total). Com
+  "Fiscal" selecionado, o saque e o recibo somem sem nenhum aviso na tela.
+- **Onde:** `src/app/(dashboard)/controladoria/fluxo-por-dimensao/page.tsx` e
+  `export/route.ts`.
+- **Impacto:** relatório difícil de conciliar com os outros fluxos; "Saldo"
+  pode ser lido como saldo bancário da área.
+- **Caminhos:** linha de total no fim (tela e exportação); renomear "Saldo"
+  para "Resultado do mês" ou "Líquido"; mostrar o aviso de visão filtrada
+  (reaproveitar o componente do Financeiro, ajustando o texto).
+- **Cuidados:** com a lacuna 10 aberta, o total soma as duas pernas das
+  transferências em entradas e saídas (o líquido fica certo).
+- **Ao corrigir:** roteiro `ler-por-dimensao` (passo "Saldo" e o "E depois?"
+  que manda somar as linhas) e o passo "Veja o que mudou" do
+  `filtrar-exportar`, que avisa que não há aviso; a réplica em
+  `src/ajuda/fluxo-por-dimensao/cenas.tsx`.
+
+### 19. Sem rateio: um título só pode ter um centro de custo
+
+- **Problema:** título e lançamento têm um único `centroCustoId`,
+  `centroLucroId`, `safraId` e `projetoId`. Não há rateio (percentual ou valor)
+  entre dois ou mais valores da mesma dimensão.
+- **Exemplo:** uma nota de diesel de R$ 3.000,00 usada metade na Lavoura e
+  metade no Pomar precisa ser lançada como dois títulos, ou fica toda num
+  centro de custo só. Energia elétrica da sede e da agroindústria, mesmo caso.
+- **Onde:** modelos `Titulo` e `LancamentoBancario` (`prisma/schema.prisma`);
+  consultas em `fluxoDeCaixaPorDimensao.ts` e `orcamentoSafra.ts`.
+- **Impacto:** a análise por dimensão fica distorcida ou obriga a quebrar
+  documentos fiscais em vários títulos (o que atrapalha a conferência com a
+  nota).
+- **Caminhos:** tabela de rateio por título (dimensão, valor ou %), herdada
+  pelo lançamento da baixa; as consultas passam a somar a fração de cada
+  rateio. Mais simples: rateio só de centro de custo, que é o caso mais comum.
+- **Cuidados:** baixa parcial e juros/desconto precisam seguir a mesma
+  proporção; importação de títulos por planilha; exportações; dados
+  existentes viram rateio de 100%.
+- **Ao corrigir:** observação do índice da ajuda
+  (`src/ajuda/fluxo-por-dimensao/index.ts`) e os campos de dimensão das cenas
+  de títulos (`src/ajuda/_titulos/`).
+
+### 20. Status de safra e projeto aparece como código (EM_ANDAMENTO)
+
+- **Problema:** o status de safra e de projeto aparece como o valor do banco
+  (PLANEJADO, EM_ANDAMENTO, ENCERRADO) na Comparação entre safras, nas listas
+  de Cadastros → Safras e Projetos e nas opções do formulário de cadastro. Só
+  a exportação da Comparação traduz ("Em andamento").
+- **Exemplo:** na Comparação, a 2025/26 mostra "EM_ANDAMENTO"; o PDF exportado
+  da mesma tela mostra "Em andamento".
+- **Onde:** `controladoria/comparacao-safras/page.tsx`,
+  `cadastros/safras/page.tsx` e `safra-dialog-form.tsx`,
+  `cadastros/projetos/page.tsx` (e o formulário de projeto, conferir); o
+  rótulo certo já existe em `comparacao-safras/export/route.ts`
+  (`STATUS_LABEL`).
+- **Impacto:** acabamento: texto técnico na tela de quem não é da TI.
+- **Caminhos:** mover o `STATUS_LABEL` para `src/lib` e usar em todos os
+  lugares; no formulário, só o rótulo muda (o valor enviado continua o código).
+- **Cuidados:** a ajuda de Cadastros, quando existir, deve usar o rótulo novo.
+- **Ao corrigir:** passo "Status" do roteiro `comparar-safras` (cita os
+  códigos) e a réplica (`src/ajuda/comparacao-safras/cenas.tsx`); a frase do
+  `filtrar-exportar` que diz que só o arquivo traz o status por extenso.
+
+### 21. Pendência fiscal: o link não abre o título
+
+- **Problema:** em "Pendências fiscais" (`controladoria/fiscal-gerencial/
+  page.tsx`), o link do documento abre Contas a pagar/receber filtrada só pelo
+  parceiro e pela classificação Fiscal. O usuário ainda precisa achar o
+  título na lista, abrir a linha para anexar e clicar em Editar para completar
+  os dados.
+- **Exemplo:** a Agro Insumos tem 20 notas fiscais no ano; para completar a
+  chave da NF-e 2210, o link mostra as 20 e o usuário procura a certa.
+- **Onde:** `page.tsx` (montagem do `href`); as listas de títulos em
+  `src/app/(dashboard)/financeiro/_titulos/` não têm hoje um parâmetro para
+  abrir um título específico.
+- **Impacto:** a tela que existe para resolver pendências torna a resolução
+  trabalhosa justamente para os parceiros com mais notas.
+- **Caminhos:** aceitar `?titulo=<id>` nas listas (filtrar por ele e abrir a
+  linha já expandida, com Anexos visível); ou abrir o formulário de edição
+  direto da tela de pendências.
+- **Cuidados:** permissão (quem só lê pode ver a pendência, mas não editar);
+  o filtro de busca da lista não deve ficar "preso" no título depois.
+- **Ao corrigir:** passo "Clique no documento" do roteiro `pendencias` em
+  `src/ajuda/fiscal-gerencial/roteiros.ts` (diz que o link não abre o título
+  direto).
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -407,3 +595,9 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   Item mantido aqui só como histórico; pode ser removido na próxima limpeza.
 - **Ajuda com simulação nos outros menus** (Produção, Vendas, Cadastros,
   Controladoria, Administração), depois do Financeiro, na mesma engine.
+  Controladoria: Orçamento feito (2026-11-20, 3 roteiros, lacunas 15 a 17);
+  Fluxo de caixa por dimensão feito (2026-11-20, 3 roteiros, lacunas 18 e 19);
+  Comparação entre safras feita (2026-11-20, 3 roteiros, lacuna 20 e
+  atualização do item de sinal do orçado da Fase 5); Fiscal × gerencial feita
+  (2026-11-20, 3 roteiros, lacuna 21). **Toda a Controladoria tem ajuda.**
+  Faltam Produção, Vendas, Cadastros e Administração.
