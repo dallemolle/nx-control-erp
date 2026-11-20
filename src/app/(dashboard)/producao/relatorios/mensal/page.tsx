@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission } from "@/server/auth/permissions";
 import { buscarRelatorioMensal } from "@/server/services/relatorioProducao/mensal";
@@ -37,7 +38,10 @@ export default async function RelatorioMensalPage({ searchParams }: { searchPara
   return (
     <div className="space-y-8">
       <div className="space-y-1">
-        <h1 className="text-lg font-semibold">Relatório mensal</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Relatório mensal</h1>
+          <BotaoAjuda tela="relatorio-mensal" />
+        </div>
         <p className="text-sm text-muted-foreground">
           Ano {ano}. Cancelados ficam fora; custo da polpa só de OPs encerradas.
         </p>
