@@ -1,4 +1,5 @@
 "use client";
+// Espelhado na ajuda (src/ajuda/fluxo-de-caixa-estrategico/cenas.tsx): mudou rótulo ou campo? Ajuste a ajuda junto.
 
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";

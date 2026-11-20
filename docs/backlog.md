@@ -377,14 +377,33 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   conciliar em dia) e o passo "O ponto de partida é o saldo de hoje"; manual,
   seção 3.6 e a seção do Dashboard executivo.
 
+### 14. "Margem líquida" do Fluxo estratégico é a margem operacional
+
+- **Problema:** `calcularProjecaoEstrategica`
+  (`src/server/services/fluxoDeCaixaEstrategico.ts`) calcula
+  `margemLiquida = geracaoOperacional / receita`, ou seja (receita − custo) ÷
+  receita. A tela e a exportação mostram isso como "Margem líquida", mas a conta
+  não desconta CAPEX nem juros, que a própria tabela mostra logo acima.
+- **Exemplo:** no cenário Pessimista da ajuda, o Ano 3 tem geração líquida de
+  −R$ 54.190,91 e saldo negativo, mas a "margem líquida" mostra −36,9%, que é só
+  a operação; com CAPEX e juros seria bem pior. Num cenário com muita dívida, a
+  margem parece estável enquanto o caixa afunda.
+- **Impacto:** dado enganoso num indicador de decisão (o nome promete uma coisa
+  e a conta faz outra).
+- **Caminhos:** renomear para "Margem operacional" (tela, exportação, manual);
+  ou mudar a conta para geração líquida ÷ receita (mas a geração líquida inclui
+  dívida nova como entrada, o que também distorce); ou mostrar as duas.
+- **Cuidados:** a spec do fluxo estratégico (Fase 6) pode ter definido a
+  fórmula de propósito: conferir antes; a exportação usa o mesmo rótulo.
+- **Ao corrigir:** passo "Margem líquida" do roteiro `ler-projecao` em
+  `src/ajuda/fluxo-de-caixa-estrategico/roteiros.ts` (avisa que não desconta
+  CAPEX nem juros) e a réplica (`cenas.tsx`, rótulo da métrica); manual, seção 3.7.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
-- **Ajuda com simulação nas demais telas do Financeiro.** Feitas: Contas a
-  pagar, Contas a receber, Aprovações pendentes, Repasses de cartão, Tesouraria, Conciliação, Fluxo de caixa e Fluxo de caixa
-  projetado (engine em `src/components/ajuda/`, conteúdo em
-  `src/ajuda/`, cenas de títulos comuns em `src/ajuda/_titulos/`). Faltam, uma
-  tela por sessão:
-  o fluxo de caixa estratégico. Critério de cada uma: quem nunca
-  usou o sistema consegue lançar seguindo só a ajuda.
+- **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
+  todas as telas do Financeiro têm ajuda (engine em `src/components/ajuda/`,
+  conteúdo em `src/ajuda/`, cenas de títulos comuns em `src/ajuda/_titulos/`).
+  Item mantido aqui só como histórico; pode ser removido na próxima limpeza.
 - **Ajuda com simulação nos outros menus** (Produção, Vendas, Cadastros,
   Controladoria, Administração), depois do Financeiro, na mesma engine.
