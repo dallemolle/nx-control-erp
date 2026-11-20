@@ -72,4 +72,9 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("comparacao-safras")).toBe("Comparação entre safras");
     expect((await carregarAjuda("comparacao-safras")).roteiros.length).toBe(3);
   });
+
+  test("fiscal × gerencial tem ajuda", async () => {
+    expect(tituloDaAjuda("fiscal-gerencial")).toBe("Fiscal × gerencial");
+    expect((await carregarAjuda("fiscal-gerencial")).roteiros.length).toBe(3);
+  });
 });

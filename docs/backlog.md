@@ -564,6 +564,29 @@ continua, para cada item ter um número único). Prioridade a definir.
   códigos) e a réplica (`src/ajuda/comparacao-safras/cenas.tsx`); a frase do
   `filtrar-exportar` que diz que só o arquivo traz o status por extenso.
 
+### 21. Pendência fiscal: o link não abre o título
+
+- **Problema:** em "Pendências fiscais" (`controladoria/fiscal-gerencial/
+  page.tsx`), o link do documento abre Contas a pagar/receber filtrada só pelo
+  parceiro e pela classificação Fiscal. O usuário ainda precisa achar o
+  título na lista, abrir a linha para anexar e clicar em Editar para completar
+  os dados.
+- **Exemplo:** a Agro Insumos tem 20 notas fiscais no ano; para completar a
+  chave da NF-e 2210, o link mostra as 20 e o usuário procura a certa.
+- **Onde:** `page.tsx` (montagem do `href`); as listas de títulos em
+  `src/app/(dashboard)/financeiro/_titulos/` não têm hoje um parâmetro para
+  abrir um título específico.
+- **Impacto:** a tela que existe para resolver pendências torna a resolução
+  trabalhosa justamente para os parceiros com mais notas.
+- **Caminhos:** aceitar `?titulo=<id>` nas listas (filtrar por ele e abrir a
+  linha já expandida, com Anexos visível); ou abrir o formulário de edição
+  direto da tela de pendências.
+- **Cuidados:** permissão (quem só lê pode ver a pendência, mas não editar);
+  o filtro de busca da lista não deve ficar "preso" no título depois.
+- **Ao corrigir:** passo "Clique no documento" do roteiro `pendencias` em
+  `src/ajuda/fiscal-gerencial/roteiros.ts` (diz que o link não abre o título
+  direto).
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -575,4 +598,6 @@ continua, para cada item ter um número único). Prioridade a definir.
   Controladoria: Orçamento feito (2026-11-20, 3 roteiros, lacunas 15 a 17);
   Fluxo de caixa por dimensão feito (2026-11-20, 3 roteiros, lacunas 18 e 19);
   Comparação entre safras feita (2026-11-20, 3 roteiros, lacuna 20 e
-  atualização do item de sinal do orçado da Fase 5); falta Fiscal × gerencial.
+  atualização do item de sinal do orçado da Fase 5); Fiscal × gerencial feita
+  (2026-11-20, 3 roteiros, lacuna 21). **Toda a Controladoria tem ajuda.**
+  Faltam Produção, Vendas, Cadastros e Administração.

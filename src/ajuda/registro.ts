@@ -52,6 +52,10 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Comparação entre safras",
     carregar: () => import("./comparacao-safras").then((modulo) => modulo.ajudaComparacaoSafras),
   },
+  "fiscal-gerencial": {
+    titulo: "Fiscal × gerencial",
+    carregar: () => import("./fiscal-gerencial").then((modulo) => modulo.ajudaFiscalGerencial),
+  },
 };
 
 export function temAjuda(tela: string): boolean {

@@ -208,6 +208,8 @@ Realizado e projetado somam tudo o que está marcado com a safra, em qualquer da
 
 Mostra, para a filial atual e o ano escolhido, quanto do movimento tem documento fiscal e quanto é negociado sem nota: entradas e saídas realizadas por mês (com o percentual gerencial), o que está em aberto hoje a pagar e a receber em cada classificação, os parceiros com maior valor em títulos gerenciais e a lista de **pendências fiscais** — títulos fiscais ainda sem tipo de documento, número, chave de acesso ou anexo. Clicar no documento leva à lista de títulos já filtrada pelo parceiro. Os dois relatórios (comparativo mensal e pendências) podem ser exportados em CSV, Excel ou PDF.
 
+**Ver simulação (Fiscal × gerencial):** [ver quanto do movimento tem nota](#ajuda/fiscal-gerencial/ler-comparativo) · [em aberto e maiores parceiros sem nota](#ajuda/fiscal-gerencial/em-aberto-parceiros) · [resolver as pendências fiscais](#ajuda/fiscal-gerencial/pendencias)
+
 ## 5. Produção
 
 O módulo de produção substitui a planilha de controle da agroindústria. Antes de começar, faça os cadastros de produção (seção 7.6) e, em Administração → Configuração de produção, escolha a **categoria de compra de fruto** e o **prazo de pagamento ao produtor**.
