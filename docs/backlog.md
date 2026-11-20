@@ -99,12 +99,31 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   multa` contra o valor da parcela (ou o desconto abater o saldo), com cuidado com
   relatórios que somam `valorPago`.
 
+- **Aprovação às cegas.** Aprovações pendentes mostra só documento,
+  contraparte, valor pago e quem registrou. Data, conta bancária, número da
+  parcela, juros, multa e desconto da baixa não aparecem, e o lançamento sai
+  com essa data e nessa conta. Mostrar esses campos na linha (ou num detalhe).
+  A ajuda da tela orienta a perguntar a quem registrou.
+- **Baixa aprovada não pode ser desfeita.** Não existe estorno de baixa nem
+  exclusão do lançamento que ela gera (`efetivarBaixa` em
+  `src/server/services/baixa.ts`). Uma aprovação errada (conta, data ou valor)
+  fica sem correção pelo sistema. Precisa de um estorno auditado que reabra a
+  parcela e remova (ou contra-lance) o lançamento, com cuidado com lançamento
+  já conciliado.
+- **Parcela com baixa pendente aceita outra baixa.** O botão Baixar continua
+  na parcela enquanto a baixa espera aprovação, e `registrarBaixa` não checa
+  pendentes: baixa em dobro passa e só é pega se o aprovador perceber.
+  Avisar (ou impedir) quando já houver baixa pendente na parcela.
+- **Rejeição não chega a quem registrou.** O motivo fica só na Auditoria, que
+  o perfil Financeiro não acessa, e a parcela não mostra que houve baixa
+  rejeitada. Mostrar a rejeição e o motivo na parcela (ou num aviso).
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feitas: Contas a
-  pagar e Contas a receber (engine em `src/components/ajuda/`, conteúdo em
+  pagar, Contas a receber e Aprovações pendentes (engine em `src/components/ajuda/`, conteúdo em
   `src/ajuda/`, cenas de títulos comuns em `src/ajuda/_titulos/`). Faltam, uma
-  tela por sessão: Aprovações pendentes, Repasses de cartão, Tesouraria,
+  tela por sessão: Repasses de cartão, Tesouraria,
   Conciliação e os três fluxos de caixa. Critério de cada uma: quem nunca
   usou o sistema consegue lançar seguindo só a ajuda.
 - **Ajuda com simulação nos outros menus** (Produção, Vendas, Cadastros,

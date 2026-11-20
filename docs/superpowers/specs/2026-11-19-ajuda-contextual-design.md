@@ -278,9 +278,13 @@ desde a ajuda de Contas a receber, o arquivo é `src/ajuda/_titulos/cenas.tsx`).
 - Ajuda contextual em Contas a receber → feito (2026-11-19, branch
   `feat/ajuda-contas-a-receber`: cenas movidas para `src/ajuda/_titulos/`,
   com o exemplo como parâmetro, e roteiros em `src/ajuda/contas-a-receber/`).
-- Ajuda contextual nas demais telas do Financeiro (Aprovações pendentes,
-  Repasses de cartão, Tesouraria, Conciliação, Fluxos de caixa) → backlog,
-  uma tela por sessão depois do piloto aprovado no uso.
+- Ajuda contextual em Aprovações pendentes → feito (2026-11-20, branch
+  `feat/ajuda-aprovacoes`: 3 roteiros em `src/ajuda/aprovacoes/`; o `tipo`
+  pagar/receber saiu de `DefinicaoAjuda` e foi para `criarCenas`). As
+  lacunas do fluxo de aprovação achadas ao escrever os roteiros foram para o
+  backlog (seção "Financeiro — baixa").
+- Ajuda contextual nas demais telas do Financeiro (Repasses de cartão,
+  Tesouraria, Conciliação, Fluxos de caixa) → backlog, uma tela por sessão.
 - Ajuda contextual nos outros menus (Produção, Vendas, Cadastros,
   Controladoria, Administração) → backlog, depois do Financeiro.
 - Treino interativo, em que a pessoa digita para avançar — descartado
