@@ -48,6 +48,10 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Fluxo de caixa por dimensão",
     carregar: () => import("./fluxo-por-dimensao").then((modulo) => modulo.ajudaFluxoPorDimensao),
   },
+  "comparacao-safras": {
+    titulo: "Comparação entre safras",
+    carregar: () => import("./comparacao-safras").then((modulo) => modulo.ajudaComparacaoSafras),
+  },
 };
 
 export function temAjuda(tela: string): boolean {

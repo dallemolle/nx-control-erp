@@ -1,5 +1,7 @@
 "use client";
 
+// Espelhado na ajuda (src/ajuda/comparacao-safras/cenas.tsx): mudou campo, botão ou mensagem? Ajuste a ajuda junto.
+
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

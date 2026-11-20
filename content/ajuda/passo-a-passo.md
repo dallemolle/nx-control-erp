@@ -200,7 +200,9 @@ O mesmo tipo de relatório do fluxo de caixa, mas agrupado por uma dimensão ana
 
 Permite orçar um valor único por safra (sem grade mensal, já que cada safra tem seu próprio período de início e fim) e comparar entre todas as safras cadastradas — planejadas, em andamento ou já encerradas — o orçado, o realizado e o projetado de cada uma.
 
-Realizado e projetado somam tudo o que está marcado com a safra, em qualquer data: uma compra de pré-safra ou uma venda recebida depois da colheita entram na safra em que foram marcadas, não no período em que aconteceram. O realizado considera só movimentações conciliadas; o projetado, os títulos em aberto (inclusive os atrasados).
+Realizado e projetado somam tudo o que está marcado com a safra, em qualquer data: uma compra de pré-safra ou uma venda recebida depois da colheita entram na safra em que foram marcadas, não no período em que aconteceram. O realizado considera só movimentações conciliadas; o projetado, os títulos em aberto (inclusive os atrasados). Os dois são resultado (entradas menos saídas), por isso o orçado que faz sentido é o resultado esperado da safra, não o custo.
+
+**Ver simulação (Comparação entre safras):** [orçar uma safra](#ajuda/comparacao-safras/orcar-safra) · [comparar o resultado das safras](#ajuda/comparacao-safras/comparar-safras) · [filtrar por classificação e exportar](#ajuda/comparacao-safras/filtrar-exportar)
 
 ### 4.4. Fiscal × gerencial
 
