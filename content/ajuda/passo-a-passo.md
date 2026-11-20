@@ -186,7 +186,9 @@ As contas a receber (em nome da operadora) e a pagar (taxa) desses pedidos não 
 
 ### 4.1. Orçamento
 
-Permite definir, mês a mês, o valor orçado para cada categoria financeira do ano, e compara automaticamente com o realizado (o que já aconteceu, via lançamentos conciliados) e o projetado (o que ainda está previsto, via títulos em aberto), mostrando a variação absoluta e percentual entre orçado e o restante. Categorias de despesa que ultrapassarem o orçado aparecem destacadas como alerta de estouro.
+Permite definir, mês a mês, o valor orçado para cada categoria financeira do ano, e compara automaticamente com o realizado (o que já aconteceu, via lançamentos conciliados) e o projetado (o que ainda está previsto, via títulos em aberto), mostrando a variação absoluta e percentual entre o realizado e o orçado. Categorias de despesa em que realizado mais projetado ultrapassam o orçado aparecem destacadas como alerta de estouro, mesmo que a variação (que olha só o realizado) ainda seja negativa. O orçamento é por filial.
+
+**Ver simulação (Orçamento):** [orçar o ano](#ajuda/orcamento/orcar-ano) · [comparar orçado, realizado e projetado](#ajuda/orcamento/ler-comparativo) · [filtrar por classificação e exportar](#ajuda/orcamento/filtrar-exportar)
 
 ### 4.2. Fluxo de caixa por dimensão
 

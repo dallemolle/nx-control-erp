@@ -399,6 +399,90 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   `src/ajuda/fluxo-de-caixa-estrategico/roteiros.ts` (avisa que não desconta
   CAPEX nem juros) e a réplica (`cenas.tsx`, rótulo da métrica); manual, seção 3.7.
 
+## Controladoria — lacunas achadas ao escrever a ajuda contextual
+
+Mesmo formato e mesma numeração das lacunas do Financeiro (a numeração
+continua, para cada item ter um número único). Prioridade a definir.
+
+### 15. Realizado do Orçamento ignora o sentido do lançamento
+
+- **Problema:** `buscarRealizadoPorCategoria` (`src/server/services/orcamento.ts`)
+  soma `lancamento.valor` sem olhar `tipo` (ENTRADA/SAIDA). E o lançamento
+  manual da Tesouraria e o avulso da Conciliação deixam escolher qualquer
+  categoria em qualquer sentido (a lista não filtra receita/despesa), sem
+  validação no serviço.
+- **Exemplo:** a Agro Insumos devolve R$ 200,00 de adubo. A tesouraria lança
+  uma entrada de R$ 200,00 na categoria Insumos Agrícolas. No Orçamento, o
+  realizado de Insumos **sobe** R$ 200,00 em vez de cair, e pode até marcar
+  Estouro por causa da devolução.
+- **Onde:** `src/server/services/orcamento.ts` (`buscarRealizadoPorCategoria`);
+  `src/app/(dashboard)/financeiro/tesouraria/lancamento-dialog-form.tsx` e
+  `src/app/(dashboard)/financeiro/conciliacao/campos-lancamento-avulso.tsx`
+  (lista de categorias).
+- **Impacto:** realizado inflado e estouro falso em qualquer categoria com
+  estorno, devolução ou lançamento no sentido "contrário".
+- **Caminhos:** somar com sinal conforme o tipo da categoria (saída numa
+  despesa soma, entrada numa despesa abate; o inverso para receita); e/ou
+  filtrar a lista de categorias pelo sentido do lançamento, deixando a
+  devolução como exceção explícita.
+- **Cuidados:** o Fluxo por dimensão já separa entradas e saídas
+  (`fluxoDeCaixaPorDimensao.ts`); conferir a Comparação entre safras na sessão
+  da ajuda dela. Dados já lançados no sentido "errado" mudam de valor quando a
+  regra mudar.
+- **Ao corrigir:** passo "Realizado" do roteiro `ler-comparativo` em
+  `src/ajuda/orcamento/roteiros.ts`, se a regra virar "com sinal"; manual,
+  seção 4.1.
+
+### 16. Variação e Estouro do Orçamento medem coisas diferentes
+
+- **Problema:** em `montarLinhaComparativo`, a Variação (e a Variação %) é
+  realizado − orçado, mas o alerta de Estouro é realizado + projetado > orçado.
+  O selo "Estouro" aparece dentro da célula da Variação.
+- **Exemplo:** na ajuda, Insumos Agrícolas em novembro: orçado R$ 1.500,00,
+  realizado R$ 800,00, projetado R$ 1.000,00. A célula mostra "−R$ 700,00
+  Estouro" e −46.7%: o número diz "sobrou" e o selo diz "estourou".
+- **Onde:** `src/server/services/orcamento.ts` (`montarLinhaComparativo`),
+  `src/app/(dashboard)/controladoria/orcamento/page.tsx` e a exportação
+  (`orcamento/export/route.ts`, colunas Variação e Estouro).
+- **Impacto:** leitura confusa justamente no indicador principal da tela; quem
+  olha só a variação acha que está dentro do orçado.
+- **Caminhos:** mostrar uma coluna "Previsto" (realizado + projetado) e a
+  variação sobre ela; ou manter a variação do realizado e levar o selo para
+  uma coluna própria ("Situação"); ou as duas variações lado a lado.
+- **Cuidados:** a Comparação entre safras usa a mesma variação (só o
+  realizado), mas não tem alerta de estouro (`orcamentoSafra.ts`): decidir a
+  regra para as duas telas juntas. Testes de `orcamento.test.ts` fixam a regra
+  atual.
+- **Ao corrigir:** dica do passo "Linha vermelha com Estouro" do roteiro
+  `ler-comparativo` (explica a diferença) e a réplica
+  (`src/ajuda/orcamento/cenas.tsx`, colunas); manual, seção 4.1 (frase "mesmo
+  que a variação... ainda seja negativa").
+
+### 17. Grade do Orçamento: sem meses, sem confirmação e fácil de errar
+
+- **Problema:** na grade "Valores orçados", (a) os 12 campos não têm o nome do
+  mês; (b) ao rolar para o lado, o nome da categoria some; (c) o Salvar não
+  mostra "salvo" (`state.sucesso` do `LinhaOrcamentoForm` não é usado); (d)
+  campo numérico aceita "1.500", que é lido como R$ 1,50 sem aviso; (e)
+  receita e despesa aparecem misturadas, sem indicar o tipo; (f) a Variação %
+  sai com ponto ("17.5%"), fora do padrão brasileiro do resto da tela.
+- **Exemplo:** para orçar novembro, o usuário conta 11 campos a partir da
+  esquerda; se errar, grava outubro, e nada na tela confirma o que foi salvo.
+- **Onde:** `src/app/(dashboard)/controladoria/orcamento/linha-orcamento-form.tsx`
+  e `page.tsx`.
+- **Impacto:** erro de digitação silencioso no orçamento, que alimenta o
+  estouro e as decisões do mês.
+- **Caminhos:** cabeçalho com os meses (Jan…Dez) e coluna do nome fixa
+  (`sticky`); mensagem "Salvo" na linha; campo de moeda como nos títulos
+  (vírgula decimal, sem ambiguidade de ponto); agrupar por Receita/Despesa;
+  formatar a Variação % com vírgula.
+- **Cuidados:** a grade rola na horizontal no celular (comentário no
+  `page.tsx`); manter. A Comparação entre safras tem um formulário parecido.
+- **Ao corrigir:** roteiro `orcar-ano` (dica "A grade não mostra o nome dos
+  meses", explicação do valor com ponto e a dica do ponto de milhar, texto do
+  "E depois?" sobre não haver mensagem de salvo), passo da Venda de produtos
+  ("17.5%") e o teste `roteiros.test.ts`; a réplica em `cenas.tsx`.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -407,3 +491,6 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   Item mantido aqui só como histórico; pode ser removido na próxima limpeza.
 - **Ajuda com simulação nos outros menus** (Produção, Vendas, Cadastros,
   Controladoria, Administração), depois do Financeiro, na mesma engine.
+  Controladoria: Orçamento feito (2026-11-20, 3 roteiros, lacunas 15 a 17);
+  faltam Fluxo de caixa por dimensão, Comparação entre safras e Fiscal ×
+  gerencial, uma por sessão.

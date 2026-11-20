@@ -40,6 +40,10 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Fluxo de caixa estratégico",
     carregar: () => import("./fluxo-de-caixa-estrategico").then((modulo) => modulo.ajudaFluxoDeCaixaEstrategico),
   },
+  orcamento: {
+    titulo: "Orçamento",
+    carregar: () => import("./orcamento").then((modulo) => modulo.ajudaOrcamento),
+  },
 };
 
 export function temAjuda(tela: string): boolean {
