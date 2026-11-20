@@ -94,18 +94,17 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   (`src/server/services/parcela.ts`) compara só a soma de `valorPago` das baixas
   aprovadas com `valorAtualizado`; `valorDesconto` (e juros/multa) são só registro.
   Uma parcela paga com desconto fica PARCIALMENTE_PAGO com a diferença em aberto.
-  A ajuda de Contas a pagar (roteiro pagar-parcela) orienta a combinar com o
-  financeiro. Correção provável: considerar `valorPago + valorDesconto − juros −
+  A ajuda de Contas a pagar e a de Contas a receber (roteiros de baixa)
+  orientam a combinar com o financeiro. Correção provável: considerar `valorPago + valorDesconto − juros −
   multa` contra o valor da parcela (ou o desconto abater o saldo), com cuidado com
   relatórios que somam `valorPago`.
 
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
-- **Ajuda com simulação nas demais telas do Financeiro.** O piloto cobre só
-  Contas a pagar (engine em `src/components/ajuda/`, conteúdo em
-  `src/ajuda/`). Faltam, uma tela por sessão depois do piloto aprovado no
-  uso: Contas a receber (só roteiros novos; as cenas já aceitam
-  `tipo: "RECEBER"`), Aprovações pendentes, Repasses de cartão, Tesouraria,
+- **Ajuda com simulação nas demais telas do Financeiro.** Feitas: Contas a
+  pagar e Contas a receber (engine em `src/components/ajuda/`, conteúdo em
+  `src/ajuda/`, cenas de títulos comuns em `src/ajuda/_titulos/`). Faltam, uma
+  tela por sessão: Aprovações pendentes, Repasses de cartão, Tesouraria,
   Conciliação e os três fluxos de caixa. Critério de cada uma: quem nunca
   usou o sistema consegue lançar seguindo só a ajuda.
 - **Ajuda com simulação nos outros menus** (Produção, Vendas, Cadastros,
