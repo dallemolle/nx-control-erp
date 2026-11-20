@@ -629,3 +629,9 @@ Numeração continua a do Financeiro e da Controladoria.
   rastreabilidade, painel, relatórios): Recepção de fruto feita (2026-11-20,
   4 roteiros, lacuna 22). Faltam as demais telas da Produção, Vendas,
   Cadastros e Administração.
+- **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
+  as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
+  (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,
+  conferir se algum conteúdo do manual (seções sem tela, como Primeiros
+  acessos e Perfis) não ficou sem lugar na ajuda; depois, tirar o item do
+  menu, a página e os links `#ajuda/...` do manual.
