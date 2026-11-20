@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.39](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.38...nx-control-erp-v0.1.39) (2026-11-20)
+
+
+### Novidades
+
+* **financeiro:** ajuda com simulação em Aprovações pendentes ([39a573c](https://github.com/dallemolle/nx-control-erp/commit/39a573cf53726f70d2d6420b2765f6118cbf9e03))
+* **financeiro:** ajuda com simulação em Conciliação bancária ([75783af](https://github.com/dallemolle/nx-control-erp/commit/75783afcd1d683954c7de890fa740e50f34dd60f))
+* **financeiro:** ajuda com simulação em Fluxo de caixa ([f75fba0](https://github.com/dallemolle/nx-control-erp/commit/f75fba0778e7f91f8c73840d60dcc7bcf002a3ec))
+* **financeiro:** ajuda com simulação em Fluxo de caixa estratégico ([fdb9601](https://github.com/dallemolle/nx-control-erp/commit/fdb9601a1bfe6483b2b81a324005661db168b607))
+* **financeiro:** ajuda com simulação em Fluxo de caixa projetado ([d50af7a](https://github.com/dallemolle/nx-control-erp/commit/d50af7aae66d43e5ef59d57f2045815039448abf))
+* **financeiro:** ajuda com simulação em Repasses de cartão ([6e74c0a](https://github.com/dallemolle/nx-control-erp/commit/6e74c0a8722576e796eb83353d3c13691eb99441))
+* **financeiro:** ajuda com simulação em Tesouraria ([b75f562](https://github.com/dallemolle/nx-control-erp/commit/b75f56276050a387508b88f1749f0ed2e991b2e8))
+
 ## [0.1.38](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.37...nx-control-erp-v0.1.38) (2026-11-20)
 
 
