@@ -19,7 +19,7 @@ describe("registro da ajuda", () => {
   test("contas a receber tem ajuda e carrega a definição", async () => {
     expect(tituloDaAjuda("contas-a-receber")).toBe("Contas a receber");
     const definicao = await carregarAjuda("contas-a-receber");
-    expect(definicao.tipo).toBe("RECEBER");
+    expect(definicao.tituloTela).toBe("Contas a receber");
     expect(definicao.roteiros.length).toBe(6);
   });
 });

@@ -1,11 +1,9 @@
 import type { ComponentType } from "react";
 
-export type TipoTela = "PAGAR" | "RECEBER";
-
 /** Valores mostrados nos campos da cena, pelo nome do alvo. */
 export type Valores = Readonly<Partial<Record<string, string>>>;
 
-export type PropsCena = { tipo: TipoTela; valores: Valores };
+export type PropsCena = { valores: Valores };
 
 export type Passo = {
   /** Cena mostrada neste passo (chave de `DefinicaoAjuda.cenas`). */
@@ -33,7 +31,6 @@ export type Roteiro = {
 export type DefinicaoAjuda = {
   tituloTela: string;
   resumo: string;
-  tipo: TipoTela;
   cenas: Readonly<Record<string, ComponentType<PropsCena>>>;
   roteiros: readonly Roteiro[];
   /** Avisos do índice que não viram roteiro (ex.: importação por CSV). */

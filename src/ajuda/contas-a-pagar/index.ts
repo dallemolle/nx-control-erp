@@ -6,8 +6,7 @@ import { ROTEIROS } from "./roteiros";
 export const ajudaContasAPagar: DefinicaoAjuda = {
   tituloTela: "Contas a pagar",
   resumo: "Tudo o que a fazenda deve: cada título com as suas parcelas, do cadastro ao pagamento.",
-  tipo: "PAGAR",
-  cenas: criarCenas(EXEMPLO),
+  cenas: criarCenas("PAGAR", EXEMPLO),
   roteiros: ROTEIROS,
   observacoes: [
     "Para cadastrar muitos títulos de uma vez a partir de uma planilha, use o botão Importar CSV, acima da " +

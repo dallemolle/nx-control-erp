@@ -28,7 +28,6 @@ const ROTEIRO: Roteiro = {
 const DEFINICAO: DefinicaoAjuda = {
   tituloTela: "Teste",
   resumo: "",
-  tipo: "PAGAR",
   cenas: { cena: CenaTeste },
   roteiros: [ROTEIRO],
 };
