@@ -11,9 +11,12 @@ import {
   SelectSimulado,
 } from "@/components/ajuda/campos-simulados";
 import type { PropsCena, TipoTela } from "@/ajuda/tipos";
-import { EXEMPLO, OUTROS_TITULOS } from "./exemplo";
+import type { ExemploTitulos } from "./exemplo";
 
 // Espelho de src/app/(dashboard)/financeiro/_titulos/*. Mudou um rótulo ou campo lá? Ajuste aqui também.
+// As cenas valem para Contas a pagar e Contas a receber: os rótulos vêm de `tipo` e os dados, do exemplo.
+
+type ComExemplo = { exemplo: ExemploTitulos };
 
 const rotuloContraparte = (tipo: TipoTela) => (tipo === "PAGAR" ? "Fornecedor" : "Cliente");
 const sufixo = (tipo: TipoTela) => (tipo === "PAGAR" ? "a pagar" : "a receber");
@@ -89,7 +92,7 @@ function Detalhe({ rotulo, valor }: { rotulo: string; valor: string }) {
   );
 }
 
-function LinhasDoExemplo({ valores }: Pick<PropsCena, "valores">) {
+function LinhasDoExemplo({ valores, exemplo }: Pick<PropsCena, "valores"> & ComExemplo) {
   const expandido = valores["lista.linhaExemplo"] === "expandida";
   return (
     <>
@@ -97,17 +100,17 @@ function LinhasDoExemplo({ valores }: Pick<PropsCena, "valores">) {
         <TableCell>
           <Alvo nome="lista.linhaExemplo" className="inline-flex flex-col p-1">
             <div className="flex items-center gap-2">
-              <span className="font-medium">{EXEMPLO.documento}</span>
+              <span className="font-medium">{exemplo.documento}</span>
               <Badge variant="outline">Fiscal</Badge>
             </div>
             <div className="text-xs text-muted-foreground">
-              {EXEMPLO.tipoComprovante} nº {EXEMPLO.numeroNota} / série {EXEMPLO.serie}
+              {exemplo.tipoComprovante} nº {exemplo.numeroNota} / série {exemplo.serie}
             </div>
           </Alvo>
         </TableCell>
-        <TableCell>{EXEMPLO.fornecedor}</TableCell>
-        <TableCell>{EXEMPLO.categoria}</TableCell>
-        <TableCell className="text-right">{EXEMPLO.parcelas.length}</TableCell>
+        <TableCell>{exemplo.contraparte}</TableCell>
+        <TableCell>{exemplo.categoria}</TableCell>
+        <TableCell className="text-right">{exemplo.parcelas.length}</TableCell>
         <TableCell className="text-right">
           <BotaoSimulado variant="outline" size="sm">
             Editar
@@ -119,20 +122,20 @@ function LinhasDoExemplo({ valores }: Pick<PropsCena, "valores">) {
           <TableRow className="bg-muted/30">
             <TableCell colSpan={5}>
               <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
-                <Detalhe rotulo="Emissão" valor={EXEMPLO.emissao} />
-                <Detalhe rotulo="Competência" valor={EXEMPLO.competencia} />
-                <Detalhe rotulo="Centro de custo" valor={EXEMPLO.centroCusto} />
-                <Detalhe rotulo="Centro de lucro" valor="—" />
-                <Detalhe rotulo="Safra" valor={EXEMPLO.safra} />
+                <Detalhe rotulo="Emissão" valor={exemplo.emissao} />
+                <Detalhe rotulo="Competência" valor={exemplo.competencia} />
+                <Detalhe rotulo="Centro de custo" valor={exemplo.centroCusto ?? "—"} />
+                <Detalhe rotulo="Centro de lucro" valor={exemplo.centroLucro ?? "—"} />
+                <Detalhe rotulo="Safra" valor={exemplo.safra ?? "—"} />
                 <Detalhe rotulo="Projeto" valor="—" />
-                <Detalhe rotulo="Conta bancária" valor={EXEMPLO.conta} />
-                <Detalhe rotulo="Forma de pagamento" valor={EXEMPLO.formaPagamento} />
+                <Detalhe rotulo="Conta bancária" valor={exemplo.conta} />
+                <Detalhe rotulo="Forma de pagamento" valor={exemplo.formaPagamento} />
                 <Detalhe rotulo="Classificação" valor="Fiscal" />
-                <Detalhe rotulo="Comprovante" valor={EXEMPLO.tipoComprovante} />
+                <Detalhe rotulo="Comprovante" valor={exemplo.tipoComprovante} />
               </dl>
             </TableCell>
           </TableRow>
-          {EXEMPLO.parcelas.map((parcela) => {
+          {exemplo.parcelas.map((parcela) => {
             const p = `lista.p${parcela.numero}`;
             return (
               <TableRow key={parcela.numero} className="bg-muted/30">
@@ -184,7 +187,7 @@ function LinhasDoExemplo({ valores }: Pick<PropsCena, "valores">) {
   );
 }
 
-export function CenaLista({ tipo, valores }: PropsCena) {
+function CenaLista({ tipo, valores, exemplo }: PropsCena & ComExemplo) {
   const semExemplo = valores["lista.tabela"] === "sem-exemplo";
   const filtrado = Boolean(valores["lista.filtro.fornecedor"]);
   return (
@@ -223,7 +226,7 @@ export function CenaLista({ tipo, valores }: PropsCena) {
             </TableHeader>
             <TableBody>
               {!filtrado &&
-                OUTROS_TITULOS.map((titulo) => (
+                exemplo.outrosTitulos.map((titulo) => (
                   <TableRow key={titulo.documento}>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -243,7 +246,7 @@ export function CenaLista({ tipo, valores }: PropsCena) {
                     </TableCell>
                   </TableRow>
                 ))}
-              {!semExemplo && <LinhasDoExemplo valores={valores} />}
+              {!semExemplo && <LinhasDoExemplo valores={valores} exemplo={exemplo} />}
             </TableBody>
           </Table>
         </Alvo>
@@ -279,7 +282,7 @@ function LinhaDeParcela({
   );
 }
 
-export function CenaNovoTitulo({ tipo, valores }: PropsCena) {
+function CenaNovoTitulo({ tipo, valores, exemplo }: PropsCena & ComExemplo) {
   const comNota = Boolean(valores["novo.tipoComprovante"]);
   const linhas = [1, 2, 3].filter((n) => n === 1 || valores[`novo.parcela${n}`] !== undefined);
   return (
@@ -315,7 +318,7 @@ export function CenaNovoTitulo({ tipo, valores }: PropsCena) {
         <SelectSimulado
           alvo="novo.classificacao"
           rotulo="Classificação"
-          valor={valores["novo.classificacao"] ?? EXEMPLO.classificacao}
+          valor={valores["novo.classificacao"] ?? exemplo.classificacao}
         />
         <SelectSimulado
           alvo="novo.tipoComprovante"
@@ -354,8 +357,8 @@ export function CenaNovoTitulo({ tipo, valores }: PropsCena) {
             key={n}
             alvo={`novo.parcela${n}`}
             valores={valores}
-            vencimento={EXEMPLO.parcelas[n - 1].vencimento}
-            valor={EXEMPLO.parcelas[n - 1].valor}
+            vencimento={exemplo.parcelas[n - 1].vencimento}
+            valor={exemplo.parcelas[n - 1].valor}
             removivel={linhas.length > 1}
           />
         ))}
@@ -370,7 +373,7 @@ export function CenaNovoTitulo({ tipo, valores }: PropsCena) {
   );
 }
 
-export function CenaBaixa({ valores }: PropsCena) {
+function CenaBaixa({ valores }: PropsCena) {
   return (
     <JanelaSimulada titulo="Registrar baixa">
       <div className="grid grid-cols-2 gap-4">
@@ -390,7 +393,7 @@ export function CenaBaixa({ valores }: PropsCena) {
   );
 }
 
-export function CenaRenegociar({ valores }: PropsCena) {
+function CenaRenegociar({ valores, exemplo }: PropsCena & ComExemplo) {
   const linhas = [1, 2].filter((n) => n === 1 || valores[`reneg.parcela${n}`] !== undefined);
   return (
     <JanelaSimulada titulo="Renegociar parcela">
@@ -398,7 +401,7 @@ export function CenaRenegociar({ valores }: PropsCena) {
         {linhas.map((n) => {
           const alvo = `reneg.parcela${n}`;
           const preenchida = valores[alvo] === "preenchida";
-          const nova = EXEMPLO.renegociacao[n - 1];
+          const nova = exemplo.renegociacao[n - 1];
           return (
             <Alvo key={n} nome={alvo} className="flex gap-2 p-1">
               <CampoSimulado valor={preenchida ? nova.vencimento : undefined} placeholder="dd/mm/aaaa" />
@@ -415,4 +418,20 @@ export function CenaRenegociar({ valores }: PropsCena) {
       </div>
     </JanelaSimulada>
   );
+}
+
+/** As cenas de uma tela de títulos, preenchidas com o exemplo dela. */
+export function criarCenas(exemplo: ExemploTitulos) {
+  return {
+    lista: function Lista(props: PropsCena) {
+      return <CenaLista {...props} exemplo={exemplo} />;
+    },
+    novoTitulo: function NovoTitulo(props: PropsCena) {
+      return <CenaNovoTitulo {...props} exemplo={exemplo} />;
+    },
+    baixa: CenaBaixa,
+    renegociar: function Renegociar(props: PropsCena) {
+      return <CenaRenegociar {...props} exemplo={exemplo} />;
+    },
+  };
 }

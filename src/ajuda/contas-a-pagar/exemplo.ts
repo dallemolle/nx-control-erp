@@ -1,6 +1,8 @@
+import type { ExemploTitulos } from "@/ajuda/_titulos/exemplo";
+
 /** A história usada em todos os roteiros de Contas a pagar. Dados fictícios e fixos. */
 export const EXEMPLO = {
-  fornecedor: "Agro Insumos Ltda",
+  contraparte: "Agro Insumos Ltda",
   documento: "NF-e 1234",
   emissao: "10/09/2026",
   competencia: "10/09/2026",
@@ -23,22 +25,20 @@ export const EXEMPLO = {
     { vencimento: "25/11/2026", valor: "500,00" },
     { vencimento: "25/12/2026", valor: "500,00" },
   ],
-} as const;
-
-/** Outros títulos da lista, para a réplica não parecer vazia. */
-export const OUTROS_TITULOS = [
-  {
-    documento: "Fatura 556",
-    classificacao: "Fiscal",
-    contraparte: "Energia Rural S.A.",
-    categoria: "Energia elétrica",
-    parcelas: 1,
-  },
-  {
-    documento: "Recibo 88",
-    classificacao: "Gerencial",
-    contraparte: "José da Silva",
-    categoria: "Mão de obra temporária",
-    parcelas: 1,
-  },
-] as const;
+  outrosTitulos: [
+    {
+      documento: "Fatura 556",
+      classificacao: "Fiscal",
+      contraparte: "Energia Rural S.A.",
+      categoria: "Energia elétrica",
+      parcelas: 1,
+    },
+    {
+      documento: "Recibo 88",
+      classificacao: "Gerencial",
+      contraparte: "José da Silva",
+      categoria: "Mão de obra temporária",
+      parcelas: 1,
+    },
+  ],
+} as const satisfies ExemploTitulos;

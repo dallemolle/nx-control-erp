@@ -5,7 +5,7 @@ import { valoresAte } from "@/ajuda/roteiro";
 import { chaveAcessoValida, normalizarChaveAcesso } from "@/lib/classificacaoFiscal";
 import { EXEMPLO } from "./exemplo";
 import { construtorDeRoteiros } from "@/ajuda/tipos";
-import type { ALVOS } from "./alvos";
+import type { ALVOS } from "@/ajuda/_titulos/alvos";
 import { ajudaContasAPagar } from "./index";
 
 const { roteiros, cenas } = ajudaContasAPagar;

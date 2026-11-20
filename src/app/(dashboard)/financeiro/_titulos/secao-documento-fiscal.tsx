@@ -1,5 +1,5 @@
 "use client";
-// Espelhado na ajuda (src/ajuda/contas-a-pagar/cenas.tsx): mudou rótulo, campo ou botão? Ajuste a ajuda junto.
+// Espelhado na ajuda (src/ajuda/_titulos/cenas.tsx): mudou rótulo, campo ou botão? Ajuste a ajuda junto.
 
 import { useState } from "react";
 import type { ClassificacaoFiscal, TipoComprovante } from "@prisma/client";

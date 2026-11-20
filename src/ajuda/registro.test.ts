@@ -15,4 +15,11 @@ describe("registro da ajuda", () => {
     const definicao = await carregarAjuda("contas-a-pagar");
     expect(definicao.roteiros.length).toBe(6);
   });
+
+  test("contas a receber tem ajuda e carrega a definição", async () => {
+    expect(tituloDaAjuda("contas-a-receber")).toBe("Contas a receber");
+    const definicao = await carregarAjuda("contas-a-receber");
+    expect(definicao.tipo).toBe("RECEBER");
+    expect(definicao.roteiros.length).toBe(6);
+  });
 });

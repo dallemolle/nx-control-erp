@@ -270,13 +270,17 @@ que têm o ícone ?, a ajuda abre direto da tela").
 As cenas espelham formulários reais, então uma mudança de campo em
 `_titulos/` precisa ser repetida na cena. Para isso não depender de memória,
 o plano inclui um comentário no topo de cada componente espelhado
-(`// Espelhado em src/ajuda/contas-a-pagar/cenas.tsx: ajuste a ajuda junto`).
+(`// Espelhado em src/ajuda/contas-a-pagar/cenas.tsx: ajuste a ajuda junto`;
+desde a ajuda de Contas a receber, o arquivo é `src/ajuda/_titulos/cenas.tsx`).
 
 ## Fora do escopo
 
-- Ajuda contextual nas demais telas do Financeiro (Contas a receber,
-  Aprovações pendentes, Repasses de cartão, Tesouraria, Conciliação, Fluxos
-  de caixa) → backlog, uma tela por sessão depois do piloto aprovado no uso.
+- Ajuda contextual em Contas a receber → feito (2026-11-19, branch
+  `feat/ajuda-contas-a-receber`: cenas movidas para `src/ajuda/_titulos/`,
+  com o exemplo como parâmetro, e roteiros em `src/ajuda/contas-a-receber/`).
+- Ajuda contextual nas demais telas do Financeiro (Aprovações pendentes,
+  Repasses de cartão, Tesouraria, Conciliação, Fluxos de caixa) → backlog,
+  uma tela por sessão depois do piloto aprovado no uso.
 - Ajuda contextual nos outros menus (Produção, Vendas, Cadastros,
   Controladoria, Administração) → backlog, depois do Financeiro.
 - Treino interativo, em que a pessoa digita para avançar — descartado
