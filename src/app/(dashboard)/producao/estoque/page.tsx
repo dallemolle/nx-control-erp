@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -70,7 +71,10 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold">Estoque</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Estoque</h1>
+          <BotaoAjuda tela="estoque" />
+        </div>
         <p className="text-sm text-muted-foreground">
           Saldo por lote, em ordem de validade (o que vence primeiro sai primeiro).
         </p>
