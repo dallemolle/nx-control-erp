@@ -1,4 +1,6 @@
+// Espelhado na ajuda (src/ajuda/comparacao-safras/cenas.tsx): mudou rótulo, coluna ou texto? Ajuste a ajuda junto.
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeEscreverOrcamento } from "@/server/auth/permissions";
 import { listarComparativoSafras } from "@/server/services/orcamentoSafra";
@@ -27,7 +29,10 @@ export default async function ComparacaoSafrasPage({
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-lg font-semibold">Comparação entre safras</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Comparação entre safras</h1>
+          <BotaoAjuda tela="comparacao-safras" />
+        </div>
         <p className="text-sm text-muted-foreground">
           Orçado, realizado e projetado por safra. Realizado e projetado somam
           tudo o que está marcado com a safra, em qualquer data (inclusive

@@ -47,6 +47,13 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   significa custo esperado (mantém ≥0, mas aí a Variação teria que
   comparar contra saídas, não contra o saldo líquido) ou resultado líquido
   esperado (permitir negativo no schema usado por esta tela).
+  **Atualização (2026-11-20, ajuda contextual):** a ajuda da tela orienta a
+  orçar o **resultado esperado** da safra, que é o único jeito de a Variação
+  fazer sentido com a conta atual, e avisa que não dá para orçar prejuízo.
+  Ao corrigir: roteiro `orcar-safra` (passo do orçado e a dica sobre
+  negativo) e a observação do índice em `src/ajuda/comparacao-safras/`;
+  manual, seção 4.3 (frase "o orçado que faz sentido é o resultado
+  esperado").
 
 ## API REST de automação (lançamentos via agente)
 
@@ -479,7 +486,11 @@ continua, para cada item ter um número único). Prioridade a definir.
   (vírgula decimal, sem ambiguidade de ponto); agrupar por Receita/Despesa;
   formatar a Variação % com vírgula.
 - **Cuidados:** a grade rola na horizontal no celular (comentário no
-  `page.tsx`); manter. A Comparação entre safras tem um formulário parecido.
+  `page.tsx`); manter. A Comparação entre safras tem um formulário parecido
+  (`comparacao-safras/linha-safra-form.tsx`), com os mesmos problemas (c), (d)
+  e (f): corrigir junto, e ajustar o roteiro `orcar-safra` (dica do ponto de
+  milhar, "E depois?" sem mensagem de salvo) e o `comparar-safras` ("-17.5%",
+  "9.1%").
 - **Ao corrigir:** roteiro `orcar-ano` (dica "A grade não mostra o nome dos
   meses", explicação do valor com ponto e a dica do ponto de milhar, texto do
   "E depois?" sobre não haver mensagem de salvo), passo da Venda de produtos
@@ -532,6 +543,27 @@ continua, para cada item ter um número único). Prioridade a definir.
   (`src/ajuda/fluxo-por-dimensao/index.ts`) e os campos de dimensão das cenas
   de títulos (`src/ajuda/_titulos/`).
 
+### 20. Status de safra e projeto aparece como código (EM_ANDAMENTO)
+
+- **Problema:** o status de safra e de projeto aparece como o valor do banco
+  (PLANEJADO, EM_ANDAMENTO, ENCERRADO) na Comparação entre safras, nas listas
+  de Cadastros → Safras e Projetos e nas opções do formulário de cadastro. Só
+  a exportação da Comparação traduz ("Em andamento").
+- **Exemplo:** na Comparação, a 2025/26 mostra "EM_ANDAMENTO"; o PDF exportado
+  da mesma tela mostra "Em andamento".
+- **Onde:** `controladoria/comparacao-safras/page.tsx`,
+  `cadastros/safras/page.tsx` e `safra-dialog-form.tsx`,
+  `cadastros/projetos/page.tsx` (e o formulário de projeto, conferir); o
+  rótulo certo já existe em `comparacao-safras/export/route.ts`
+  (`STATUS_LABEL`).
+- **Impacto:** acabamento: texto técnico na tela de quem não é da TI.
+- **Caminhos:** mover o `STATUS_LABEL` para `src/lib` e usar em todos os
+  lugares; no formulário, só o rótulo muda (o valor enviado continua o código).
+- **Cuidados:** a ajuda de Cadastros, quando existir, deve usar o rótulo novo.
+- **Ao corrigir:** passo "Status" do roteiro `comparar-safras` (cita os
+  códigos) e a réplica (`src/ajuda/comparacao-safras/cenas.tsx`); a frase do
+  `filtrar-exportar` que diz que só o arquivo traz o status por extenso.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -542,4 +574,5 @@ continua, para cada item ter um número único). Prioridade a definir.
   Controladoria, Administração), depois do Financeiro, na mesma engine.
   Controladoria: Orçamento feito (2026-11-20, 3 roteiros, lacunas 15 a 17);
   Fluxo de caixa por dimensão feito (2026-11-20, 3 roteiros, lacunas 18 e 19);
-  faltam Comparação entre safras e Fiscal × gerencial, uma por sessão.
+  Comparação entre safras feita (2026-11-20, 3 roteiros, lacuna 20 e
+  atualização do item de sinal do orçado da Fase 5); falta Fiscal × gerencial.

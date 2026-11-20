@@ -67,4 +67,9 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("fluxo-por-dimensao")).toBe("Fluxo de caixa por dimensão");
     expect((await carregarAjuda("fluxo-por-dimensao")).roteiros.length).toBe(3);
   });
+
+  test("comparação entre safras tem ajuda", async () => {
+    expect(tituloDaAjuda("comparacao-safras")).toBe("Comparação entre safras");
+    expect((await carregarAjuda("comparacao-safras")).roteiros.length).toBe(3);
+  });
 });
