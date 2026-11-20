@@ -60,6 +60,10 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Recepção de fruto",
     carregar: () => import("./recepcao").then((modulo) => modulo.ajudaRecepcao),
   },
+  processamento: {
+    titulo: "Processamento",
+    carregar: () => import("./processamento").then((modulo) => modulo.ajudaProcessamento),
+  },
 };
 
 export function temAjuda(tela: string): boolean {
