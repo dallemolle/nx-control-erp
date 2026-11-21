@@ -92,7 +92,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     titulo: "Ajuda",
     itens: [
-      { href: "/ajuda/passo-a-passo", label: "Passo a passo" },
+      { href: "/ajuda/primeiros-passos", label: "Primeiros passos" },
       { href: "/ajuda/novidades", label: "Novidades" },
     ],
   },

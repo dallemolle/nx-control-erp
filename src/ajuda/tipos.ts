@@ -19,7 +19,7 @@ export type Passo = {
 };
 
 export type Roteiro = {
-  /** Usado no link do manual: `#ajuda/<tela>/<id>`. */
+  /** Identifica o roteiro dentro da tela. */
   id: string;
   titulo: string;
   quandoUsar: string;

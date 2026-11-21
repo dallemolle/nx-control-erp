@@ -10,6 +10,6 @@ export const ajudaContasAPagar: DefinicaoAjuda = {
   roteiros: ROTEIROS,
   observacoes: [
     "Para cadastrar muitos títulos de uma vez a partir de uma planilha, use o botão Importar CSV, acima da " +
-      "lista. O formato do arquivo está no Passo a passo, seção 3.1.",
+      "lista. O próprio diálogo explica as colunas do arquivo e tem um modelo para baixar.",
   ],
 };
