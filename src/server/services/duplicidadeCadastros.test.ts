@@ -4,8 +4,9 @@ import type { SessaoAtiva } from "@/server/auth/sessao";
 import { atualizarBanco, criarBanco } from "./banco";
 import { atualizarCentroCusto, criarCentroCusto } from "./centroCusto";
 import { atualizarCentroLucro, criarCentroLucro } from "./centroLucro";
+import { atualizarProjeto, criarProjeto } from "./projeto";
 
-/** Código repetido em Bancos e nos Centros vira mensagem para o usuário, e não o erro do banco de dados. */
+/** Código repetido em Bancos, nos Centros e em Projetos vira mensagem para o usuário, e não o erro do banco de dados. */
 describe("cadastros com código único", () => {
   const sufixo = Math.random().toString(36).substring(2, 8);
   let empresaId: string;
@@ -35,6 +36,7 @@ describe("cadastros com código único", () => {
     await prisma.banco.deleteMany({ where: { id: { in: bancosCriados } } });
     await prisma.centroCusto.deleteMany({ where: { filialId } });
     await prisma.centroLucro.deleteMany({ where: { filialId } });
+    await prisma.projeto.deleteMany({ where: { filialId } });
     await prisma.usuario.delete({ where: { id: usuarioId } });
     await prisma.filial.delete({ where: { id: filialId } });
     await prisma.empresa.delete({ where: { id: empresaId } });
@@ -73,5 +75,16 @@ describe("cadastros com código único", () => {
     await expect(atualizarCentroLucro(sessao, outro.id, { nome: "Loja", codigo: "CL-01" })).rejects.toThrow(
       "Já existe um centro de lucro com este código",
     );
+  });
+
+  test("projeto: código repetido na filial ao criar e ao editar", async () => {
+    await criarProjeto(sessao, { nome: "Reforma do galpão", codigo: "PRJ-01", status: "ENCERRADO" });
+    const outro = await criarProjeto(sessao, { nome: "Câmara fria", codigo: "PRJ-02", status: "EM_ANDAMENTO" });
+    await expect(criarProjeto(sessao, { nome: "Outro", codigo: "PRJ-01", status: "PLANEJADO" })).rejects.toThrow(
+      "Já existe um projeto com este código",
+    );
+    await expect(
+      atualizarProjeto(sessao, outro.id, { nome: "Câmara fria", codigo: "PRJ-01", status: "EM_ANDAMENTO" }),
+    ).rejects.toThrow("Já existe um projeto com este código");
   });
 });

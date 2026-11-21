@@ -3,6 +3,9 @@ import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permiss
 import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { ProjetoFormValues } from "@/lib/schemas/projeto";
+import { comMensagemDeDuplicidade } from "./duplicidade";
+
+const MSG_CODIGO_DUPLICADO = "Já existe um projeto com este código";
 
 export async function listarProjetos(filialId: string) {
   return prisma.projeto.findMany({ where: { filialId }, orderBy: { codigo: "asc" } });
@@ -12,9 +15,10 @@ export async function criarProjeto(sessao: SessaoAtiva, dados: ProjetoFormValues
   requirePermission(sessao.perfil, "cadastro:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
-  const projeto = await prisma.projeto.create({
-    data: { ...dados, filialId: sessao.filialId },
-  });
+  const projeto = await comMensagemDeDuplicidade(
+    () => prisma.projeto.create({ data: { ...dados, filialId: sessao.filialId } }),
+    MSG_CODIGO_DUPLICADO,
+  );
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
@@ -41,7 +45,10 @@ export async function atualizarProjeto(
   const anterior = await prisma.projeto.findUniqueOrThrow({
     where: { id, filialId: sessao.filialId },
   });
-  const projeto = await prisma.projeto.update({ where: { id }, data: dados });
+  const projeto = await comMensagemDeDuplicidade(
+    () => prisma.projeto.update({ where: { id }, data: dados }),
+    MSG_CODIGO_DUPLICADO,
+  );
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
