@@ -50,6 +50,18 @@ describe("avisosDaBaixa", () => {
       expect(tipos({ data: dia("2026-09-15"), criadoEm: new Date("2026-10-16T02:30:00.000Z") })).toEqual([]);
     });
 
+    it("data com hora (a API aceita) vale pelo dia UTC: hoje às 17:00Z não é futuro", () => {
+      expect(
+        tipos({ data: new Date("2026-10-16T17:00:00.000Z"), criadoEm: new Date("2026-10-16T13:00:00.000Z") }),
+      ).toEqual([]);
+    });
+
+    it("data com hora conta os dias pelo dia UTC (31 dias)", () => {
+      expect(textos({ data: new Date("2026-09-14T15:00:00.000Z") })).toEqual([
+        "Data da baixa 31 dias antes do registro",
+      ]);
+    });
+
     it("o exemplo da lacuna: 16/01 digitado em vez de 16/10", () => {
       expect(textos({ data: dia("2026-01-16"), criadoEm: new Date("2026-10-16T14:30:00.000Z") })).toEqual([
         "Data da baixa 273 dias antes do registro",

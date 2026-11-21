@@ -9,7 +9,12 @@ const { roteiros, cenas } = ajudaAprovacoes;
 
 describe("roteiros de Aprovações pendentes", () => {
   test("são os 4 roteiros, com ids únicos", () => {
-    expect(roteiros.map((r) => r.id)).toEqual(["aprovar-baixa", "entender-avisos", "rejeitar-baixa", "aprovar-bloqueado"]);
+    expect(roteiros.map((r) => r.id)).toEqual([
+      "aprovar-baixa",
+      "entender-avisos",
+      "rejeitar-baixa",
+      "aprovar-bloqueado",
+    ]);
   });
 
   test("a réplica tem as colunas da tela real e só a baixa do próprio usuário bloqueada", () => {

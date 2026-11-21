@@ -12,6 +12,7 @@ export function AvisosDaBaixa({ avisos }: { avisos: readonly AvisoBaixa[] }) {
       {avisos.map((aviso) => (
         <li key={aviso.tipo} className="flex items-start gap-1 text-xs text-amber-700 dark:text-amber-500">
           <TriangleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />
+          <span className="sr-only">Aviso: </span>
           {aviso.texto}
         </li>
       ))}

@@ -46,10 +46,14 @@ const centavos = (valor: number) => Math.round(valor * 100);
 export function avisosDaBaixa(dados: DadosAvisoBaixa): AvisoBaixa[] {
   const avisos: AvisoBaixa[] = [];
 
-  if (dados.data.getTime() > dados.hoje.getTime()) {
+  // A API aceita data com hora: vale o dia de calendário UTC.
+  const d = dados.data;
+  const data = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+
+  if (data.getTime() > dados.hoje.getTime()) {
     avisos.push({ tipo: "DATA_FUTURA", texto: "Data da baixa no futuro" });
   }
-  const diasAntes = Math.round((hojeDeCalendario(dados.criadoEm).getTime() - dados.data.getTime()) / UM_DIA_MS);
+  const diasAntes = Math.round((hojeDeCalendario(dados.criadoEm).getTime() - data.getTime()) / UM_DIA_MS);
   if (diasAntes > DIAS_LIMITE_DATA_ANTIGA) {
     avisos.push({ tipo: "DATA_ANTIGA", texto: `Data da baixa ${diasAntes} dias antes do registro` });
   }

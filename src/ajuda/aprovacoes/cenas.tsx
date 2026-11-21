@@ -31,6 +31,7 @@ export function CenaLista({ valores }: PropsCena) {
             {BAIXAS.map((baixa, i) => {
               const l = `lista.l${i + 1}`;
               const bloqueada = baixa.registradoPor === VOCE;
+              const avisos = avisosDoExemplo(baixa);
               return (
                 <TableRow key={baixa.documento} className="align-top">
                   <TableCell>
@@ -42,9 +43,11 @@ export function CenaLista({ valores }: PropsCena) {
                         {baixa.totalParcelas}
                       </p>
                     </Alvo>
-                    <Alvo nome={`${l}.avisos`} className="w-fit p-1">
-                      <AvisosDaBaixa avisos={avisosDoExemplo(baixa)} />
-                    </Alvo>
+                    {avisos.length > 0 && (
+                      <Alvo nome={`${l}.avisos`} className="w-fit p-1">
+                        <AvisosDaBaixa avisos={avisos} />
+                      </Alvo>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Alvo nome={`${l}.baixa`} className="inline-block p-1">
