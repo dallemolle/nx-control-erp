@@ -575,9 +575,13 @@ O card **Vendas** define a **categoria de venda** (uma categoria de receita, usa
 
 ### 9.1. Dashboard executivo
 
-Visão consolidada das filiais ativas da empresa, pensada para quem acompanha o negócio como um todo (Administrador, Gestor, Auditor). Reúne os principais indicadores financeiros (caixa disponível, contas a pagar/receber em aberto, inadimplência, geração de caixa do mês, obrigações dos próximos 7/30 dias, recebimentos esperados e saldo projetado), um bloco **Fiscal × gerencial** do mês (entradas fiscais e gerenciais, percentual gerencial e número de pendências fiscais) e três gráficos: entradas x saídas dos últimos 6 meses, evolução do saldo, e aging (distribuição por faixa de atraso/vencimento) das contas a pagar e a receber.
+Visão consolidada das filiais ativas da empresa, pensada para quem acompanha o negócio como um todo (Administrador, Gestor, Auditor). Reúne os principais indicadores financeiros (caixa disponível, contas a pagar/receber em aberto, inadimplência, geração de caixa do mês, obrigações dos próximos 7/30 dias, recebimentos esperados e saldo projetado), um bloco **Fiscal × gerencial** do mês (entradas fiscais e gerenciais, percentual gerencial e número de pendências fiscais) e três gráficos: entradas x saídas dos últimos 6 meses, evolução do saldo, e aging (só as parcelas vencidas, por faixa de dias de atraso) das contas a pagar e a receber.
+
+O caixa, a geração de caixa e os gráficos contam só lançamentos **conciliados**. A inadimplência é o que falta receber das parcelas com vencimento antes de hoje (a paga em parte entra pelo que falta). As obrigações e os recebimentos esperados vão de hoje até daqui a 7 ou 30 dias, sem as atrasadas; o saldo projetado é caixa + recebimentos esperados − obrigações de 30 dias. "Hoje" e "mês atual" seguem o horário de Brasília.
 
 Filiais desativadas não entram nesses números (nem no Fluxo de caixa estratégico). Se alguma delas ainda tiver parcelas em aberto ou saldo em caixa, um aviso no topo da tela mostra quais e quanto — para tratar essas pendências, um administrador pode reativar a filial em Administração → Filiais.
+
+**Ver simulação:** [ler os indicadores](#ajuda/dashboard-executivo/ler-indicadores) · [fiscal × gerencial do mês](#ajuda/dashboard-executivo/fiscal-gerencial) · [ler os gráficos](#ajuda/dashboard-executivo/ler-graficos)
 
 ## 10. Glossário
 
