@@ -42,7 +42,7 @@ export function CenaLista({ valores }: PropsCena) {
                         {baixa.totalParcelas}
                       </p>
                     </Alvo>
-                    <Alvo nome={`${l}.avisos`} className="inline-block p-1">
+                    <Alvo nome={`${l}.avisos`} className="w-fit p-1">
                       <AvisosDaBaixa avisos={avisosDoExemplo(baixa)} />
                     </Alvo>
                   </TableCell>
