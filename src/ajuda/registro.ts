@@ -120,6 +120,10 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Produtos",
     carregar: () => import("./produtos").then((modulo) => modulo.ajudaProdutos),
   },
+  "operadoras-cartao": {
+    titulo: "Operadoras de cartão",
+    carregar: () => import("./operadoras-cartao").then((modulo) => modulo.ajudaOperadorasCartao),
+  },
 };
 
 export function temAjuda(tela: string): boolean {

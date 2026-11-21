@@ -157,4 +157,9 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("produtos")).toBe("Produtos");
     expect((await carregarAjuda("produtos")).roteiros.length).toBe(3);
   });
+
+  test("operadoras de cartão tem ajuda", async () => {
+    expect(tituloDaAjuda("operadoras-cartao")).toBe("Operadoras de cartão");
+    expect((await carregarAjuda("operadoras-cartao")).roteiros.length).toBe(3);
+  });
 });

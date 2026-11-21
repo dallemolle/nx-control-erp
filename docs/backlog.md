@@ -846,7 +846,9 @@ Numeração continua a de Vendas.
   4 roteiros, lacunas 28 e 29); Fornecedores feito (2026-11-21, 3 roteiros,
   lacuna 30 já corrigida); Contas bancárias feito (2026-11-21, 3
   roteiros, lacuna 31 e lacuna 32 já corrigida); Produtos feito
-  (2026-11-21, 3 roteiros, sem lacuna nova). Faltam as demais telas de Cadastros e a
+  (2026-11-21, 3 roteiros, sem lacuna nova); Operadoras de cartão feito
+  (2026-11-21, 3 roteiros, sem lacuna nova). Todas as telas ricas de
+  Cadastros têm ajuda; faltam as simples (em grupos) e a
   Administração.
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo

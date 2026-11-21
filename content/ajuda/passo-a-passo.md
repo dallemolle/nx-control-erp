@@ -483,6 +483,8 @@ Cada maquininha da filial (Stone, Cielo, etc.) é cadastrada em Cadastros → Op
 
 Mudar a taxa vale para as vendas novas: cada pedido guarda a taxa usada na venda. Uma operadora pode ser inativada (some da venda; o histórico fica).
 
+**Ver simulação (Operadoras de cartão):** [cadastrar uma operadora](#ajuda/operadoras-cartao/cadastrar-operadora) · [condições do crédito parcelado](#ajuda/operadoras-cartao/parcelado) · [mudar a taxa e inativar](#ajuda/operadoras-cartao/mudar-inativar)
+
 ## 8. Administração
 
 ### 8.1. Empresas
