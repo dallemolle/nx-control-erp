@@ -4,6 +4,9 @@ import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { FornecedorFormValues } from "@/lib/schemas/fornecedor";
 import { SEM_VALOR } from "@/lib/schemas/enums";
+import { comMensagemDeDuplicidade } from "./duplicidade";
+
+const MSG_DOCUMENTO_DUPLICADO = "Já existe um fornecedor com este CPF/CNPJ";
 
 function normalizarOpcional<T extends string>(valor: T | typeof SEM_VALOR | undefined): T | null {
   return valor && valor.length > 0 && valor !== SEM_VALOR ? valor : null;
@@ -44,9 +47,10 @@ export async function criarFornecedor(sessao: SessaoAtiva, dados: FornecedorForm
     ...camposBancariosNormalizados(dados),
     classificacaoFiscalPadrao: normalizarOpcional(dados.classificacaoFiscalPadrao),
   };
-  const fornecedor = await prisma.fornecedor.create({
-    data: { ...dadosNormalizados, empresaId: sessao.empresaId },
-  });
+  const fornecedor = await comMensagemDeDuplicidade(
+    () => prisma.fornecedor.create({ data: { ...dadosNormalizados, empresaId: sessao.empresaId } }),
+    MSG_DOCUMENTO_DUPLICADO,
+  );
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
@@ -78,7 +82,10 @@ export async function atualizarFornecedor(
     ...camposBancariosNormalizados(dados),
     classificacaoFiscalPadrao: normalizarOpcional(dados.classificacaoFiscalPadrao),
   };
-  const fornecedor = await prisma.fornecedor.update({ where: { id }, data: dadosNormalizados });
+  const fornecedor = await comMensagemDeDuplicidade(
+    () => prisma.fornecedor.update({ where: { id }, data: dadosNormalizados }),
+    MSG_DOCUMENTO_DUPLICADO,
+  );
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
