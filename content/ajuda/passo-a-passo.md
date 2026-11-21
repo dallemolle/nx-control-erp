@@ -513,7 +513,11 @@ Mudar a taxa vale para as vendas novas: cada pedido guarda a taxa usada na venda
 
 ### 8.1. Empresas
 
-Cadastro das empresas atendidas pelo sistema. Ao criar uma empresa, o sistema já cria automaticamente uma filial "Matriz" e vincula quem criou como Administrador dela.
+Cadastro das empresas atendidas pelo sistema. A lista mostra só as empresas em que você é Administrador; as de outros clientes não aparecem nem podem ser alteradas. Ao criar uma empresa, o sistema já cria automaticamente uma filial "Matriz" (com o mesmo CNPJ) e vincula quem criou como Administrador dela. A empresa nova nasce vazia: entre nela por **Trocar empresa**.
+
+**Inativar:** a empresa inativa não abre mais para ninguém, nem para quem já estava nela, e as chaves de API param; os dados ficam guardados. A empresa em que você está não tem **Inativar**: troque de empresa antes. Os campos de cor e logo do formulário são antigos: a cor só vale sem tema salvo, então prefira o **Tema e marca**.
+
+**Ver simulação (Empresas):** [cadastrar uma empresa](#ajuda/empresas/cadastrar-empresa) · [aprovação por outra pessoa e inativar](#ajuda/empresas/editar-inativar-empresa) · [tema e marca](#ajuda/empresas/tema-marca)
 
 **Exigir que a baixa seja aprovada por outra pessoa:** vem marcada. Com ela, quem registra uma baixa não pode aprová-la (seção 3.2). Desmarque só se a empresa tem uma pessoa só no financeiro; a mudança fica registrada na auditoria.
 
@@ -530,6 +534,10 @@ Cadastro das empresas atendidas pelo sistema. Ao criar uma empresa, o sistema j�
 ### 8.2. Filiais
 
 Cadastro das filiais (unidades operacionais) de cada empresa. Cada filial tem seu próprio conjunto de cadastros (categorias, centros de custo/lucro, safras, projetos, contas bancárias) e seus próprios títulos e lançamentos.
+
+A filial nova nasce sem ninguém com acesso, nem quem a criou: marque Leitura e Alteração em **Usuários** para ela aparecer em **Trocar filial**. O CNPJ da filial é o que a API usa no cabeçalho `X-Filial-CnpjCpf` e não pode repetir. A filial em que você está não tem **Inativar**: troque de filial antes.
+
+**Ver simulação (Filiais):** [cadastrar uma filial](#ajuda/filiais/cadastrar-filial)
 
 ### 8.3. Usuários
 
