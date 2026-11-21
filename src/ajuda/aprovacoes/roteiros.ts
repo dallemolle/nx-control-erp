@@ -28,30 +28,42 @@ export const ROTEIROS: readonly Roteiro[] = [
       {
         cena: "lista",
         alvo: "lista.l1.documento",
-        instrucao: "Ache a baixa pelo documento e pela contraparte",
+        instrucao: "Ache a baixa pelo título",
         explicacao:
-          "Documento é o do título (a nota, o boleto, o recibo). Contraparte é o fornecedor, quando é um " +
-          "pagamento, ou o cliente, quando é um recebimento. No exemplo, o pagamento da parcela 1 do adubo da " +
-          "Agro Insumos.",
+          "Documento é o do título (a nota, o boleto, o recibo). Embaixo vêm a contraparte (o fornecedor, quando é " +
+          "um pagamento, ou o cliente, quando é um recebimento) e qual parcela está sendo baixada. No exemplo, o " +
+          "pagamento da parcela 1 de 3 do adubo da Agro Insumos.",
+        dica:
+          "O nome da contraparte é um link: abre Contas a pagar ou Contas a receber só com os títulos dela, onde " +
+          "estão as parcelas e os anexos (a nota, o boleto).",
+      },
+      {
+        cena: "lista",
+        alvo: "lista.l1.baixa",
+        instrucao: "Confira a data e a conta",
+        explicacao:
+          "A data é o dia em que o dinheiro saiu ou entrou, e vira a data do lançamento na conta. Embaixo, a conta " +
+          "bancária onde ele vai ser lançado. Compare as duas com o comprovante do banco. No exemplo, 15/10/2026, " +
+          "no Banco do Brasil.",
       },
       {
         cena: "lista",
         alvo: "lista.l1.valor",
-        instrucao: "Confira o valor com o comprovante",
+        instrucao: "Confira o valor",
         explicacao:
-          "Valor pago é o total que saiu ou entrou na conta, já com juros e multa. No exemplo, R$ 1.000,00 da " +
-          "parcela mais R$ 12,00 de juros. Compare com o comprovante do banco.",
+          "Valor pago é o total que saiu ou entrou na conta, já com juros e multa. Embaixo vêm o valor da parcela e " +
+          "os ajustes: no exemplo, parcela de R$ 1.000,00 mais R$ 12,00 de juros dá R$ 1.012,00.",
         dica:
-          "A tela não mostra a data nem a conta bancária da baixa. Na dúvida, pergunte a quem registrou antes de " +
-          "aprovar: depois de aprovada, a baixa não pode ser desfeita.",
+          "Algo não bate com o comprovante? Rejeite com o motivo em vez de aprovar: depois de aprovada, a baixa não " +
+          "pode ser desfeita.",
       },
       {
         cena: "lista",
         alvo: "lista.l1.registradoPor",
         instrucao: "Veja quem registrou",
         explicacao:
-          "É a pessoa que lançou a baixa. Se a empresa exige aprovação por outra pessoa (o padrão), você só aprova " +
-          "baixas registradas por outra pessoa.",
+          "É a pessoa que lançou a baixa, com o dia e a hora do registro. Se a empresa exige aprovação por outra " +
+          "pessoa (o padrão), você só aprova baixas registradas por outra pessoa.",
       },
       {
         cena: "lista",
@@ -66,6 +78,53 @@ export const ROTEIROS: readonly Roteiro[] = [
         "escolhida na baixa, com a data da baixa, e a parcela fica PAGO, ou PARCIALMENTE_PAGO se o valor foi menor " +
         "que o da parcela. Numa conta Caixa, o lançamento já entra conciliado. Numa conta de banco, ele espera o " +
         "extrato na Conciliação. A aprovação não pode ser desfeita.",
+      proximoRoteiro: "entender-avisos",
+    },
+  }),
+
+  roteiro({
+    id: "entender-avisos",
+    titulo: "Quando a baixa tem um aviso",
+    quandoUsar:
+      "Quando aparece um triângulo amarelo com um aviso embaixo do título da baixa. O aviso aponta o que costuma " +
+      "ser erro de digitação ou baixa em dobro, mas não impede a aprovação: quem decide é você.",
+    quemPode: QUEM_APROVA,
+    passos: [
+      {
+        cena: "lista",
+        alvo: "lista.l4.avisos",
+        instrucao: "Veja o aviso de data",
+        explicacao:
+          "A Fatura 556 foi registrada em 16/10/2026 com a data 16/01/2026: 273 dias antes. O sistema avisa quando " +
+          "a data da baixa fica mais de 30 dias antes do dia do registro, e também quando ela é depois de hoje.",
+      },
+      {
+        cena: "lista",
+        alvo: "lista.l4.baixa",
+        instrucao: "Compare com o comprovante",
+        explicacao:
+          "A conta de energia foi paga em 16/10, e a Maria digitou o mês errado. Aprovada assim, a saída entraria " +
+          "na conta com data de janeiro, e o Fluxo de caixa e a Conciliação ficariam errados.",
+        dica: "Rejeite com o motivo (por exemplo, “Data errada: pago em 16/10”) para a Maria lançar de novo.",
+      },
+      {
+        cena: "lista",
+        alvo: "lista.l2.avisos",
+        instrucao: "Veja o aviso de valor",
+        explicacao:
+          "O Recibo 88 já tinha sido pago e aprovado: não sobra nada a pagar, e esta baixa é repetida. Os outros " +
+          "avisos de valor comparam o valor pago com o que falta da parcela, mais juros e multa, menos o desconto: " +
+          "“Pagamento parcial: faltam R$ …” (ou Recebimento parcial) e “Acima do saldo em R$ …”.",
+        dica:
+          "Pagamento parcial pode estar certo, quando foi combinado pagar em partes. “Há outra baixa pendente nesta " +
+          "parcela” aparece quando a mesma parcela tem duas baixas esperando: confira se não é a mesma lançada duas " +
+          "vezes.",
+      },
+    ],
+    eDepois: {
+      texto:
+        "Se o aviso aponta um erro, rejeite a baixa com o motivo, como no próximo roteiro. Se está tudo certo (um " +
+        "pagamento parcial combinado, por exemplo), aprove normalmente.",
       proximoRoteiro: "rejeitar-baixa",
     },
   }),
@@ -85,7 +144,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Escreva o motivo na linha da baixa",
         explicacao:
           "O campo fica ao lado do botão Rejeitar, na mesma linha. O motivo é obrigatório, com pelo menos 3 " +
-          "letras. No exemplo, o Recibo 88 já tinha sido pago e aprovado: a baixa nova é repetida.",
+          "letras. No exemplo, o Recibo 88 tem o aviso “A parcela já está paga”: ela foi paga e aprovada em 05/10, " +
+          "e a baixa nova é repetida.",
         preenche: { "lista.l2.motivo": MOTIVO_REJEICAO },
       },
       {
