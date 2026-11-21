@@ -3,6 +3,7 @@ import { requirePermission, podeConfigurarProducao } from "@/server/auth/permiss
 import { obterConfiguracaoProducao } from "@/server/services/configuracaoProducao";
 import { prisma } from "@/server/db/client";
 import { nomeDaContaBancaria } from "@/lib/contaBancaria";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { ConfiguracaoForm } from "./configuracao-form";
 
 export default async function ConfiguracaoProducaoPage() {
@@ -33,7 +34,10 @@ export default async function ConfiguracaoProducaoPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <div>
-        <h1 className="text-lg font-semibold">Configuração de produção</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Configuração de produção</h1>
+          <BotaoAjuda tela="configuracao-producao" />
+        </div>
         <p className="text-sm text-muted-foreground">
           Parâmetros da filial ativa usados na recepção, no processamento e nos alertas de estoque.
         </p>

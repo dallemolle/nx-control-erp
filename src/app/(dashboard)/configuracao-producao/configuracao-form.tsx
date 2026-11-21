@@ -236,7 +236,7 @@ export function ConfiguracaoForm({
             />
             <SelectConfiguracao
               id="contaRecebimentoPadraoId"
-              rotulo="Conta de recebimento (Pix, transferência, cartão)"
+              rotulo="Conta de recebimento (Pix e transferência)"
               valor={valores.contaRecebimentoPadraoId}
               opcoes={contas.filter((c) => c.tipo !== "CAIXA")}
             />

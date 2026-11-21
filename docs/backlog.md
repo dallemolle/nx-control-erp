@@ -1027,6 +1027,60 @@ Mesma numeração das seções acima.
   `cadastrar-filial` (`src/ajuda/filiais/index.tsx`) e a seção 8.2 do
   manual.
 
+### 50. Rótulo da conta de recebimento citava o cartão
+
+- **Status:** feito na branch `feat/ajuda-configuracao-producao`.
+- **Problema:** o campo se chamava "Conta de recebimento (Pix,
+  transferência, cartão)", mas a venda na maquininha usa a conta de
+  depósito da operadora e nem mostra a escolha de conta no pedido.
+- **Correção:** rótulo "Conta de recebimento (Pix e transferência)" em
+  `configuracao-producao/configuracao-form.tsx`.
+
+### 51. Categoria e conta inativadas continuam na Configuração de produção
+
+- **Problema:** a tela só lista categorias e contas ativas. Se a escolhida
+  for inativada depois, o campo mostra o código interno em vez do nome, não
+  há aviso, e a conta inativa faz o Salvar ser recusado ("Conta de
+  recebimento padrão inválida") mesmo quando só se mudou outro campo. A
+  categoria inativa continua sendo usada na conta a pagar da recepção e na
+  conta a receber do pedido.
+- **Exemplo:** "Insumos Agrícolas" é inativada; as compras do José da Silva
+  continuam caindo nela, e quem abre a configuração vê um código no lugar
+  do nome.
+- **Onde:** `configuracao-producao/page.tsx` (listas com `ativo: true`),
+  `salvarConfiguracaoProducao` em `configuracaoProducao.ts` (confere `ativo`
+  só nas contas), `recepcaoFruto.ts` e `pedidoVenda.ts` (usam a categoria
+  sem conferir `ativo`).
+- **Impacto:** o inativar não faz o que promete, e a tela de configuração
+  fica travada sem explicar por quê.
+- **Caminhos:** junto com os itens 31 e 35: na configuração, mostrar a
+  escolhida mesmo inativa, marcada "(inativa)", e avisar no topo; ao
+  inativar uma categoria ou conta em uso na configuração, avisar ou
+  recusar.
+- **Ao corrigir:** dica do passo "Confira a mensagem" do roteiro
+  `preparar-recepcao-vendas` (`src/ajuda/configuracao-producao/index.tsx`).
+
+### 52. Mudar os limites da produção muda o passado
+
+- **Problema:** o "Verificar" do balanço de massa e do branqueamento e o
+  "vencendo" do estoque não são gravados: são recalculados com a
+  configuração atual. Subir a tolerância tira o "Verificar" de OPs já
+  encerradas, inclusive no Relatório de processamento e na
+  Rastreabilidade.
+- **Exemplo:** a OP-261119-01 (acerola, diferença de 10%) marca
+  "Verificar" com 3%; com a tolerância em 10%, passa a OK, como se tivesse
+  sido conferida.
+- **Onde:** `resumirOP`/`balancoMassa`/`statusBranqueamento` em
+  `src/lib/producao/op.ts`, chamados com `obterConfiguracaoProducao` em
+  `ordemProducao.ts`, `rastreabilidade.ts` e no detalhe da OP.
+- **Impacto:** o registro de controle de qualidade de uma OP pode mudar
+  depois do fato; a única pista é a Auditoria da configuração.
+- **Caminhos:** gravar na OP, ao encerrar, a tolerância e os mínimos usados
+  (ou o próprio status) e calcular as OPs encerradas com eles.
+- **Ao corrigir:** passo "Mudou algum número?" do roteiro
+  `alertas-controles` (`src/ajuda/configuracao-producao/index.tsx`) e a
+  seção 8.5 do manual.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -1071,8 +1125,10 @@ Mesma numeração das seções acima.
   Dashboard executivo, da Gestão): Usuários feito (2026-11-21, 4 roteiros;
   lacunas 40 a 42 corrigidas, 43 no backlog). Empresas + Filiais feitos
   (2026-11-21, 3 + 1 roteiros; lacunas 44 a 47 corrigidas, a 44 uma falha de
-  isolamento entre clientes; 48 e 49 no backlog). Faltam Configuração de
-  produção, Auditoria e o Dashboard executivo.
+  isolamento entre clientes; 48 e 49 no backlog). Configuração de produção
+  feita (2026-11-21, 3 roteiros; lacuna 50 corrigida, 51 e 52 no backlog;
+  manual 8.5 ganhou o card Compra de fruto). Faltam Auditoria e o Dashboard
+  executivo.
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
   (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,

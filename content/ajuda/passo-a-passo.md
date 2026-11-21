@@ -559,9 +559,13 @@ Registra automaticamente toda alteração relevante feita no sistema — quem fe
 
 ### 8.5. Configuração de produção
 
-Parâmetros da filial atual usados pela produção: registro na ADEPARA e endereço (vão para a etiqueta do lote), com quantos dias de antecedência um lote congelado ou resfriado aparece como "vencendo", temperatura e tempo mínimos do branqueamento, e a tolerância do balanço de massa (em %). Enquanto nada for salvo, valem os padrões: 30 dias (congelado), 1 dia (in natura e resfriado), 80 °C, 10 segundos e 3%. Só o Administrador altera esta tela.
+Parâmetros da filial atual usados pela produção: registro na ADEPARA e endereço (vão para a etiqueta do lote), com quantos dias de antecedência um lote congelado ou resfriado aparece como "vencendo", temperatura e tempo mínimos do branqueamento, e a tolerância do balanço de massa (em %). Enquanto nada for salvo, valem os padrões: 30 dias (congelado), 1 dia (in natura e resfriado), 80 °C, 10 segundos e 3%. Os avisos de "vencendo" e de "Verificar" são recalculados com os números atuais, também para lotes e OPs antigos. Só o Administrador altera esta tela.
+
+O card **Compra de fruto** define a **categoria financeira** (uma categoria de despesa, usada na conta a pagar que a recepção de fruto de terceiro cria) e o **prazo de pagamento ao produtor** (em dias depois da recepção; o vencimento pode ser mudado em cada recepção). Sem a categoria, a recepção de terceiro com valor é recusada.
 
 O card **Vendas** define a **categoria de venda** (uma categoria de receita, usada na conta a receber de cada pedido), a **conta de recebimento** (usada nas vendas em Pix e transferência; não pode ser uma conta Caixa; a maquininha usa a conta de depósito da operadora) e a **conta Caixa** (usada nas vendas em dinheiro). Sem a categoria de venda, nenhum pedido é aceito.
+
+**Ver simulação:** [preparar a recepção e as vendas](#ajuda/configuracao-producao/preparar-recepcao-vendas) · [dados da etiqueta do lote](#ajuda/configuracao-producao/dados-etiqueta) · [alertas de vencimento e controles da OP](#ajuda/configuracao-producao/alertas-controles)
 
 ## 9. Gestão
 
