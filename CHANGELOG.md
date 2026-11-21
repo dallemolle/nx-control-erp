@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.41](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.40...nx-control-erp-v0.1.41) (2026-11-21)
+
+
+### Novidades
+
+* **producao:** ajuda com simulação em Ajustes de estoque ([6e02728](https://github.com/dallemolle/nx-control-erp/commit/6e0272899c4a586e0c96ff8a0763a114b63217bd))
+* **producao:** ajuda com simulação em Estoque ([0dd2c2f](https://github.com/dallemolle/nx-control-erp/commit/0dd2c2ff71f7bef6c27c762e43d7b95ec3f38870))
+* **producao:** ajuda com simulação em Processamento ([652034e](https://github.com/dallemolle/nx-control-erp/commit/652034e46584b68f881c87a500f2bb54d49cf372))
+* **producao:** ajuda com simulação em Rastreabilidade ([e88b35f](https://github.com/dallemolle/nx-control-erp/commit/e88b35fd777e3f62ef98854959a3bf5e3b6bdd70))
+* **producao:** ajuda com simulação em Recepção de fruto ([cc818a2](https://github.com/dallemolle/nx-control-erp/commit/cc818a23d0a54b1536d49a0a0a1075d3b3b3363d))
+* **producao:** ajuda com simulação no Painel de produção ([9be8f7a](https://github.com/dallemolle/nx-control-erp/commit/9be8f7adb36953010900e8f0d35a96921befb7a3))
+* **producao:** ajuda com simulação no Relatório de origem ([0f55184](https://github.com/dallemolle/nx-control-erp/commit/0f55184fb34da8df61df7ad5cb742870c615eed0))
+* **producao:** ajuda com simulação no Relatório de processamento ([46f2a4e](https://github.com/dallemolle/nx-control-erp/commit/46f2a4ede796549ff9fb3a46f1316bb6fd740116))
+* **producao:** ajuda com simulação no Relatório de vendas ([f0ec27d](https://github.com/dallemolle/nx-control-erp/commit/f0ec27db0d70e3a82e9cdfcc338bcf79e9d030cf))
+* **producao:** ajuda com simulação no Relatório mensal ([a82c469](https://github.com/dallemolle/nx-control-erp/commit/a82c46976ff205777e810595a797877a4f2e02e5))
+
 ## [0.1.40](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.39...nx-control-erp-v0.1.40) (2026-11-20)
 
 
