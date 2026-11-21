@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Alvo, BotaoSimulado, CampoSimulado, SelectSimulado } from "@/components/ajuda/campos-simulados";
 import type { PropsCena } from "@/ajuda/tipos";
 import { formatarMoeda } from "@/lib/formatacao";
+import { ROTULOS_STATUS_SAFRA_PROJETO } from "@/lib/schemas/enums";
 import { SAFRAS, variacao, type SafraExemplo } from "./exemplo";
 
 // Espelho de src/app/(dashboard)/controladoria/comparacao-safras/*. Mudou um rótulo ou coluna lá? Ajuste aqui também.
@@ -80,7 +81,7 @@ export function CenaPainel({ valores }: PropsCena) {
                       {safra.nome}
                     </Alvo>
                   </TableCell>
-                  <TableCell>{safra.status}</TableCell>
+                  <TableCell>{ROTULOS_STATUS_SAFRA_PROJETO[safra.status]}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <CampoSimulado

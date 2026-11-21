@@ -9,6 +9,7 @@ import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 import { formatarMoeda } from "@/lib/formatacao";
+import { ROTULOS_STATUS_SAFRA_PROJETO } from "@/lib/schemas/enums";
 
 export default async function ComparacaoSafrasPage({
   searchParams,
@@ -71,7 +72,7 @@ export default async function ComparacaoSafrasPage({
           {linhas.map((linha) => (
             <TableRow key={linha.safraId}>
               <TableCell className="font-medium">{linha.safraNome}</TableCell>
-              <TableCell>{linha.status}</TableCell>
+              <TableCell>{ROTULOS_STATUS_SAFRA_PROJETO[linha.status]}</TableCell>
               <TableCell>
                 <LinhaSafraForm safraId={linha.safraId} valorOrcado={linha.orcado} somenteLeitura={somenteLeitura} />
               </TableCell>

@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { ROTULOS_STATUS_SAFRA_PROJETO } from "@/lib/schemas/enums";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
@@ -39,7 +40,7 @@ export default async function ProjetosPage() {
             <TableRow key={projeto.id}>
               <TableCell>{projeto.codigo}</TableCell>
               <TableCell className="font-medium">{projeto.nome}</TableCell>
-              <TableCell>{projeto.status}</TableCell>
+              <TableCell>{ROTULOS_STATUS_SAFRA_PROJETO[projeto.status]}</TableCell>
               <TableCell>
                 <Badge variant={projeto.ativo ? "default" : "secondary"}>
                   {projeto.ativo ? "Ativo" : "Inativo"}

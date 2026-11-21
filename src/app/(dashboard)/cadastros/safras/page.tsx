@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { ROTULOS_STATUS_SAFRA_PROJETO } from "@/lib/schemas/enums";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
@@ -45,7 +46,7 @@ export default async function SafrasPage() {
               <TableCell className="font-medium">{safra.nome}</TableCell>
               <TableCell>{formatarData(safra.dataInicio)}</TableCell>
               <TableCell>{formatarData(safra.dataFim)}</TableCell>
-              <TableCell>{safra.status}</TableCell>
+              <TableCell>{ROTULOS_STATUS_SAFRA_PROJETO[safra.status]}</TableCell>
               <TableCell>
                 <Badge variant={safra.ativo ? "default" : "secondary"}>
                   {safra.ativo ? "Ativo" : "Inativo"}

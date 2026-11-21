@@ -1,4 +1,9 @@
 export const STATUS_SAFRA_PROJETO = ["PLANEJADO", "EM_ANDAMENTO", "ENCERRADO"] as const;
+export const ROTULOS_STATUS_SAFRA_PROJETO: Record<(typeof STATUS_SAFRA_PROJETO)[number], string> = {
+  PLANEJADO: "Planejado",
+  EM_ANDAMENTO: "Em andamento",
+  ENCERRADO: "Encerrado",
+};
 
 export const TIPO_CONTA_BANCARIA = [
   "CORRENTE",
