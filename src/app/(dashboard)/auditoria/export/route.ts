@@ -11,7 +11,7 @@ import type { SessaoAtiva } from "@/server/auth/sessao";
 import { type ColunaExport } from "@/lib/export/csv";
 import { formatoExportDaUrl, responderExport } from "@/lib/export/responder";
 import { cabecalhoDoRelatorio } from "@/server/export/cabecalhoDoRelatorio";
-import { formatarData } from "@/lib/formatacao";
+import { rotuloAcaoAuditoria, rotuloEntidadeAuditoria } from "@/lib/auditoria/rotulos";
 import { filtroAuditoriaDaUrl } from "../filtro-auditoria-url";
 
 type LogAuditoria = Awaited<ReturnType<typeof listarAuditoriaParaExport>>["logs"][number];
@@ -25,14 +25,17 @@ const DATA_HORA = new Intl.DateTimeFormat("pt-BR", {
   timeZone: "America/Sao_Paulo",
 });
 
+/** O dia do filtro é o de Brasília (o "até" termina às 02:59 UTC do dia seguinte). */
+const DIA = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" });
+
 /** Valores anterior/novo em JSON completo — na tela eles aparecem truncados. */
 const COLUNAS: ColunaExport<LogAuditoria>[] = [
   { rotulo: "Data/hora", valor: (l) => DATA_HORA.format(l.criadoEm) },
   { rotulo: "Usuário", valor: (l) => l.usuario?.nome ?? "" },
   { rotulo: "Filial", valor: (l) => l.filial?.nome ?? "" },
-  { rotulo: "Entidade", valor: (l) => l.entidade },
+  { rotulo: "Entidade", valor: (l) => rotuloEntidadeAuditoria(l.entidade) },
   { rotulo: "ID do registro", valor: (l) => l.entidadeId },
-  { rotulo: "Ação", valor: (l) => l.acao },
+  { rotulo: "Ação", valor: (l) => rotuloAcaoAuditoria(l.acao) },
   { rotulo: "Valor anterior", valor: (l) => (l.valorAnterior ? JSON.stringify(l.valorAnterior) : "") },
   { rotulo: "Valor novo", valor: (l) => (l.valorNovo ? JSON.stringify(l.valorNovo) : "") },
 ];
@@ -76,11 +79,11 @@ async function descreverFiltro(sessao: SessaoAtiva, filtro: FiltroAuditoria): Pr
     lista?.find((item) => item.id === id)?.nome ?? id;
 
   return [
-    filtro.entidade ? `Entidade: ${filtro.entidade}` : null,
-    filtro.acao ? `Ação: ${filtro.acao}` : null,
+    filtro.entidade ? `Entidade: ${rotuloEntidadeAuditoria(filtro.entidade)}` : null,
+    filtro.acao ? `Ação: ${rotuloAcaoAuditoria(filtro.acao)}` : null,
     filtro.usuarioId ? `Usuário: ${nomeDe(opcoes?.usuarios, filtro.usuarioId)}` : null,
     filtro.filialId ? `Filial: ${nomeDe(opcoes?.filiais, filtro.filialId)}` : null,
-    filtro.dataDe ? `De: ${formatarData(filtro.dataDe)}` : null,
-    filtro.dataAte ? `Até: ${formatarData(filtro.dataAte)}` : null,
+    filtro.dataDe ? `De: ${DIA.format(filtro.dataDe)}` : null,
+    filtro.dataAte ? `Até: ${DIA.format(filtro.dataAte)}` : null,
   ];
 }

@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SEM_VALOR } from "@/lib/schemas/enums";
+import { rotuloAcaoAuditoria, rotuloEntidadeAuditoria } from "@/lib/auditoria/rotulos";
 
 export type OpcoesFiltroAuditoria = {
   entidades: string[];
@@ -13,6 +14,11 @@ export type OpcoesFiltroAuditoria = {
   usuarios: { id: string; nome: string }[];
   filiais: { id: string; nome: string }[];
 };
+
+/** Os códigos vêm do banco em ordem de código; a lista mostra o rótulo, então ordena por ele. */
+export function emOrdemDeRotulo(codigos: string[], rotulo: (codigo: string) => string): string[] {
+  return [...codigos].sort((a, b) => rotulo(a).localeCompare(rotulo(b), "pt-BR"));
+}
 
 export function construirUrlComFiltro(
   searchParamsAtual: URLSearchParams,
@@ -71,9 +77,9 @@ export function BarraDeFiltrosAuditoria({ opcoes }: { opcoes: OpcoesFiltroAudito
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={SEM_VALOR}>Todas</SelectItem>
-            {opcoes.entidades.map((entidade) => (
+            {emOrdemDeRotulo(opcoes.entidades, rotuloEntidadeAuditoria).map((entidade) => (
               <SelectItem key={entidade} value={entidade}>
-                {entidade}
+                {rotuloEntidadeAuditoria(entidade)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -88,9 +94,9 @@ export function BarraDeFiltrosAuditoria({ opcoes }: { opcoes: OpcoesFiltroAudito
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={SEM_VALOR}>Todas</SelectItem>
-            {opcoes.acoes.map((acao) => (
+            {emOrdemDeRotulo(opcoes.acoes, rotuloAcaoAuditoria).map((acao) => (
               <SelectItem key={acao} value={acao}>
-                {acao}
+                {rotuloAcaoAuditoria(acao)}
               </SelectItem>
             ))}
           </SelectContent>
