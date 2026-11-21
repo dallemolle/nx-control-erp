@@ -1081,6 +1081,49 @@ Mesma numeração das seções acima.
   `alertas-controles` (`src/ajuda/configuracao-producao/index.tsx`) e a
   seção 8.5 do manual.
 
+### 53. Filtro de datas da Auditoria contava o dia em UTC
+
+- **Status:** feito na branch `feat/ajuda-auditoria`.
+- **Problema:** a coluna Data/hora mostra o horário de Brasília, mas o
+  filtro "Data de"/"Data até" ia de 00:00 a 23:59 UTC. O que acontecia
+  depois das 21h aparecia com o dia certo na tela, mas saía do "até" desse
+  dia e entrava no "de" do dia seguinte (também no export).
+- **Correção:** `filtroAuditoriaDaUrl` (`auditoria/filtro-auditoria-url.ts`)
+  usa o dia de Brasília (UTC-3); o cabeçalho do PDF escreve as datas no
+  mesmo fuso.
+
+### 54. Entidade e ação da Auditoria apareciam como código
+
+- **Status:** feito na branch `feat/ajuda-auditoria`.
+- **Problema:** filtros, tabela e export mostravam `CategoriaFinanceira`,
+  `UsuarioEmpresaFilial`, `CRIAR_LANCAMENTO_E_CONCILIAR`.
+- **Correção:** `src/lib/auditoria/rotulos.ts` com os nomes em português
+  (código desconhecido aparece como está); os filtros ordenam pelo nome. O
+  teste lê `src/server` e falha se uma entidade ou ação nova ficar sem
+  rótulo.
+
+### 55. Valor anterior e novo da Auditoria são difíceis de ler
+
+- **Problema:** na tela, os valores aparecem cortados, em JSON, com o nome
+  interno do campo (`custoPadraoKg`, `statusAprovacao`) e, nos campos que
+  apontam para outro registro, o código dele (`contaBancariaId`,
+  `parentId`). Não há como abrir a linha, nem saber qual título ou cliente
+  foi alterado: o "ID do registro" só sai no export.
+- **Exemplo:** a troca da taxa de débito da Cartões Rurais aparece como
+  `{"condicoes":[{"modalidade":"DEBITO",...` cortado; para ver 1,5% → 1,4%
+  é preciso exportar e ler o JSON.
+- **Onde:** `auditoria/page.tsx` (colunas Valor anterior/novo com
+  `truncate`); os nomes de campo vêm de cada `registrarAuditoria`.
+- **Impacto:** a tela responde "quem e quando", mas o "o quê" pede export e
+  conhecimento técnico; o Auditor (contador) não tem esse conhecimento.
+- **Caminhos:** abrir a linha num painel com campo a campo (rótulo em
+  português, valores formatados, nome no lugar do código, só o que mudou
+  nas listas) e o nome do registro alterado (ex.: "Fruta Açaí"), com link
+  para ele.
+- **Ao corrigir:** passos "Leia o valor anterior"/"Leia o valor novo" do
+  roteiro `quem-alterou` e o passo "Escolha o formato" de `exportar`
+  (`src/ajuda/auditoria/index.tsx`), e a seção 8.4 do manual.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -1127,7 +1170,8 @@ Mesma numeração das seções acima.
   (2026-11-21, 3 + 1 roteiros; lacunas 44 a 47 corrigidas, a 44 uma falha de
   isolamento entre clientes; 48 e 49 no backlog). Configuração de produção
   feita (2026-11-21, 3 roteiros; lacuna 50 corrigida, 51 e 52 no backlog;
-  manual 8.5 ganhou o card Compra de fruto). Faltam Auditoria e o Dashboard
+  manual 8.5 ganhou o card Compra de fruto). Auditoria feita (2026-11-21,
+  3 roteiros; lacunas 53 e 54 corrigidas, 55 no backlog). Falta o Dashboard
   executivo.
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
