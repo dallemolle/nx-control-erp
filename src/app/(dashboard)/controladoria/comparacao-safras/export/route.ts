@@ -4,17 +4,12 @@ import { listarComparativoSafras, type LinhaComparativoSafra } from "@/server/se
 import { type ColunaExport } from "@/lib/export/csv";
 import { responderExport } from "@/lib/export/responder";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
+import { ROTULOS_STATUS_SAFRA_PROJETO } from "@/lib/schemas/enums";
 import { cabecalhoDoRelatorio, filtroDeClassificacao } from "@/server/export/cabecalhoDoRelatorio";
-
-const STATUS_LABEL: Record<LinhaComparativoSafra["status"], string> = {
-  PLANEJADO: "Planejado",
-  EM_ANDAMENTO: "Em andamento",
-  ENCERRADO: "Encerrado",
-};
 
 const COLUNAS: ColunaExport<LinhaComparativoSafra>[] = [
   { rotulo: "Safra", valor: (l) => l.safraNome },
-  { rotulo: "Status", valor: (l) => STATUS_LABEL[l.status] ?? l.status },
+  { rotulo: "Status", valor: (l) => ROTULOS_STATUS_SAFRA_PROJETO[l.status] },
   { rotulo: "Orçado", valor: (l) => l.orcado },
   { rotulo: "Realizado", valor: (l) => l.realizado },
   { rotulo: "Projetado", valor: (l) => l.projetado },

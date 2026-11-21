@@ -1,4 +1,6 @@
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Badge } from "@/components/ui/badge";
+import { ROTULOS_STATUS_SAFRA_PROJETO } from "@/lib/schemas/enums";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
@@ -18,7 +20,10 @@ export default async function ProjetosPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Projetos</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-lg font-semibold">Projetos</h1>
+            <BotaoAjuda tela="projetos" />
+          </div>
           <p className="text-sm text-muted-foreground">Cadastro de projetos da filial.</p>
         </div>
         {podeEscrever && <ProjetoDialogForm />}
@@ -39,7 +44,7 @@ export default async function ProjetosPage() {
             <TableRow key={projeto.id}>
               <TableCell>{projeto.codigo}</TableCell>
               <TableCell className="font-medium">{projeto.nome}</TableCell>
-              <TableCell>{projeto.status}</TableCell>
+              <TableCell>{ROTULOS_STATUS_SAFRA_PROJETO[projeto.status]}</TableCell>
               <TableCell>
                 <Badge variant={projeto.ativo ? "default" : "secondary"}>
                   {projeto.ativo ? "Ativo" : "Inativo"}

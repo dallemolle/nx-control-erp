@@ -118,7 +118,7 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "cab.status",
         instrucao: "Status: em que fase está a safra",
         explicacao:
-          "Aparece como PLANEJADO, EM_ANDAMENTO ou ENCERRADO. Quem muda o status é o cadastro da safra, em " +
+          "Planejado, Em andamento ou Encerrado. Quem muda o status é o cadastro da safra, em " +
           "Cadastros → Safras; esta tela só mostra.",
       },
     ],
@@ -157,8 +157,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "painel.exportar",
         instrucao: "Exporte, se precisar de um arquivo",
         explicacao:
-          "PDF, CSV ou Excel, com todas as safras da tela e o filtro de classificação. No arquivo, o status sai " +
-          "por extenso (Em andamento) e a variação percentual tem coluna própria.",
+          "PDF, CSV ou Excel, com todas as safras da tela e o filtro de classificação. No arquivo, a variação " +
+          "percentual tem coluna própria.",
       },
     ],
     eDepois: {

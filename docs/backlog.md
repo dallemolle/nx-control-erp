@@ -545,24 +545,11 @@ continua, para cada item ter um número único). Prioridade a definir.
 
 ### 20. Status de safra e projeto aparece como código (EM_ANDAMENTO)
 
-- **Problema:** o status de safra e de projeto aparece como o valor do banco
-  (PLANEJADO, EM_ANDAMENTO, ENCERRADO) na Comparação entre safras, nas listas
-  de Cadastros → Safras e Projetos e nas opções do formulário de cadastro. Só
-  a exportação da Comparação traduz ("Em andamento").
-- **Exemplo:** na Comparação, a 2025/26 mostra "EM_ANDAMENTO"; o PDF exportado
-  da mesma tela mostra "Em andamento".
-- **Onde:** `controladoria/comparacao-safras/page.tsx`,
-  `cadastros/safras/page.tsx` e `safra-dialog-form.tsx`,
-  `cadastros/projetos/page.tsx` (e o formulário de projeto, conferir); o
-  rótulo certo já existe em `comparacao-safras/export/route.ts`
-  (`STATUS_LABEL`).
-- **Impacto:** acabamento: texto técnico na tela de quem não é da TI.
-- **Caminhos:** mover o `STATUS_LABEL` para `src/lib` e usar em todos os
-  lugares; no formulário, só o rótulo muda (o valor enviado continua o código).
-- **Cuidados:** a ajuda de Cadastros, quando existir, deve usar o rótulo novo.
-- **Ao corrigir:** passo "Status" do roteiro `comparar-safras` (cita os
-  códigos) e a réplica (`src/ajuda/comparacao-safras/cenas.tsx`); a frase do
-  `filtrar-exportar` que diz que só o arquivo traz o status por extenso.
+- **Feito (2026-11-21), na branch da ajuda de Safras e Projetos:** o rótulo
+  foi para `ROTULOS_STATUS_SAFRA_PROJETO` (`src/lib/schemas/enums.ts`) e é
+  usado nas listas e nos formulários de Safras e Projetos, na Comparação entre
+  safras e na sua exportação. A ajuda da Comparação (réplica, passo "Status" e
+  a frase do `filtrar-exportar`) foi ajustada junto. Histórico.
 
 ### 21. Pendência fiscal: o link não abre o título
 
@@ -730,6 +717,204 @@ Numeração continua a da Produção.
 - **Ao corrigir:** dica do passo "Clique em “Confirmar entrega”" do roteiro
   `confirmar-entrega` em `src/ajuda/entregas/roteiros.ts`.
 
+## Cadastros — lacunas achadas ao escrever a ajuda contextual
+
+Numeração continua a de Vendas.
+
+### 28. Cliente e fornecedor inativos continuam nos títulos
+
+- **Problema:** inativar um cliente tira ele do Novo pedido (a tela e o
+  serviço filtram `ativo`), mas o Contas a receber continua oferecendo o
+  cliente inativo e aceita lançar título para ele. O mesmo vale para
+  fornecedor inativo no Contas a pagar.
+- **Exemplo:** a Lanchonete Tucumã fechou e foi inativada; ela some do Novo
+  pedido, mas aparece na escolha do cliente de uma conta a receber nova.
+- **Onde:** `financeiro/contas-a-receber/page.tsx` e
+  `financeiro/contas-a-pagar/page.tsx` (usam `listarClientes` e
+  `listarFornecedores`, sem filtro) e `validarReferenciasDoTitulo` em
+  `src/server/services/titulo.ts` (não confere `ativo`).
+- **Impacto:** o inativar não faz o que promete fora de Vendas; título novo
+  para quem não deveria mais comprar nem fornecer.
+- **Caminhos:** oferecer só os ativos no título novo e recusar inativo no
+  serviço; na edição, manter o já escolhido mesmo inativo.
+- **Cuidados:** a lista do cadastro, os filtros e os relatórios continuam
+  mostrando os inativos; a operadora de cartão usa cliente e fornecedor pelo
+  CNPJ (a seção 7.7 do manual já pede reativar antes).
+- **Ao corrigir:** dica do passo "Confira o status" do roteiro
+  `inativar-cliente` em `src/ajuda/clientes/roteiros.ts`.
+
+### 29. Dados bancários do cliente e do fornecedor não aparecem em nenhuma tela
+
+- **Problema:** o cadastro guarda Pix (tipo e chave) ou depósito (banco,
+  agência, conta, tipo e titular), mas nenhuma outra tela mostra esses dados:
+  nem a lista do cadastro, nem o título, nem a baixa. Para ver, só abrindo o
+  "Editar" do cadastro.
+- **Exemplo:** para pagar o José da Silva, a tesouraria abre o título, não
+  acha a chave Pix e tem de ir a Cadastros → Fornecedores → Editar.
+- **Onde:** `meioPagamento`, `chavePix` e os demais só são lidos em
+  `cadastros/clientes/` e `cadastros/fornecedores/` (formulário e serviço).
+- **Impacto:** o dado existe mas não ajuda na hora de pagar; risco de pagar
+  na conta errada copiando de outro lugar.
+- **Caminhos:** mostrar os dados bancários do fornecedor no título a pagar e
+  na baixa (e os do cliente no título a receber, para devolução);
+  opcionalmente uma coluna na lista do cadastro.
+- **Ao corrigir:** passo "Dados bancários: opcionais" do roteiro
+  `cadastrar-cliente` e passo "A lista não muda" do `editar-cliente` em
+  `src/ajuda/clientes/roteiros.ts`.
+
+### 30. CNPJ/CPF repetido no fornecedor mostrava o erro do banco
+
+- **Feito (2026-11-21), na mesma branch da ajuda de Fornecedores:** o
+  serviço de fornecedor não usava `comMensagemDeDuplicidade`, e repetir um
+  documento mostrava "Unique constraint failed…". Agora, ao criar e ao
+  editar, aparece "Já existe um fornecedor com este CPF/CNPJ" (teste em
+  `src/server/services/fornecedor.test.ts`). Item mantido só como histórico.
+
+### 31. Conta bancária inativa: some do Fluxo (até no passado) e continua nos títulos
+
+- **Problema:** inativar uma conta tira o saldo inicial e todos os
+  lançamentos dela da Tesouraria e do Fluxo de caixa, também nos meses
+  passados, sem aviso e mesmo com saldo diferente de zero. E o Contas a
+  pagar e o Contas a receber continuam oferecendo a conta inativa (conta
+  prevista e baixa): o que for lançado nela fica fora da Tesouraria e do
+  Fluxo.
+- **Exemplo:** a conta do Santander começou 2026 com R$ 1.500 e foi zerada
+  por transferência em outubro. Inativada, o Fluxo de caixa de janeiro a
+  setembro perde R$ 1.500. Se uma baixa cair nela por engano, o dinheiro
+  "some".
+- **Onde:** `buscarSaldoEmCaixaAteDasFiliais` em
+  `src/server/services/fluxoDeCaixa.ts` e `listarResumoContas` em
+  `lancamentoBancario.ts` (filtram `ativo`); `contas-a-pagar/page.tsx` e
+  `contas-a-receber/page.tsx` (usam `listarContasBancarias` sem filtro);
+  `definirAtivoContaBancaria` em `contaBancaria.ts` (não confere saldo).
+- **Impacto:** o Fluxo de caixa de meses fechados muda depois do fato; e
+  dinheiro lançado em conta inativa não aparece em nenhum saldo.
+- **Caminhos:** recusar inativar conta com saldo contábil diferente de zero
+  (ou pedir confirmação mostrando o saldo); no Fluxo, contar a conta inativa
+  até a data em que foi inativada; oferecer só contas ativas no título novo
+  e na baixa, e recusar no serviço.
+- **Ao corrigir:** dica do passo "Confira o status" do roteiro
+  `corrigir-inativar` em `src/ajuda/contas-bancarias/roteiros.ts`.
+
+### 32. Saldo inicial das contas bancárias aparecia sem formato
+
+- **Feito (2026-11-21), na mesma branch da ajuda de Contas bancárias:** a
+  lista mostrava o Decimal cru (`48000`, `1350.5`); agora mostra em reais
+  com `formatarMoeda`. Item mantido só como histórico.
+
+### 33. Código repetido em bancos e centros mostrava o erro do banco de dados
+
+- **Feito (2026-11-21), na branch da ajuda dos cadastros financeiros:**
+  banco, centro de custo e centro de lucro não usavam
+  `comMensagemDeDuplicidade`; repetir o código mostrava "Unique constraint
+  failed…". Agora aparece "Já existe um banco (centro de custo, centro de
+  lucro) com este código" (teste em
+  `src/server/services/duplicidadeCadastros.test.ts`). Histórico.
+
+### 34. Tipo da categoria aparecia como código (RECEITA, DESPESA)
+
+- **Feito (2026-11-21), na mesma branch:** a lista e o formulário de
+  categorias mostram "Receita" e "Despesa" (`ROTULOS_TIPO_CATEGORIA_FINANCEIRA`).
+  Histórico. O item 20 (status de safra e projeto como código), o mesmo
+  problema em outra tela, também foi feito.
+
+### 35. Categoria, centros, safra e projeto inativos continuam nos títulos (e a categoria, na Tesouraria)
+
+- **Problema:** inativar uma categoria tira ela do Orçamento e da operadora
+  de cartão; inativar um centro de custo ou de lucro, uma safra ou um projeto
+  tira ele da Tesouraria e da Conciliação (a safra sai também da Recepção).
+  Mas o Contas a pagar e o Contas a receber continuam oferecendo todos, e a
+  Tesouraria continua oferecendo a categoria inativa (ela filtra só centros,
+  safras e projetos).
+- **Exemplo:** "Venda de bens usados" foi inativada depois da venda do
+  trator, mas continua na escolha de categoria do título novo e do
+  lançamento da Tesouraria.
+- **Onde:** `contas-a-pagar/page.tsx`, `contas-a-receber/page.tsx` e
+  `tesouraria/page.tsx` (listas sem filtro de `ativo`) e
+  `validarReferenciasDoTitulo` em `src/server/services/titulo.ts`.
+- **Impacto:** o inativar não faz o que promete; lançamentos novos em
+  categorias e centros que deviam ter saído de uso.
+- **Caminhos:** a mesma correção dos itens 28 (cliente e fornecedor) e 31
+  (conta bancária): oferecer só os ativos no título e no lançamento novos,
+  manter o já escolhido na edição, e recusar inativo no serviço. Vale fazer
+  os três itens juntos.
+- **Ao corrigir:** dicas dos passos "Confira o status" dos roteiros
+  `inativar-categoria`, `inativar-centro-custo` e do último passo de
+  `cadastrar-centro-lucro` (`src/ajuda/categorias`, `centros-de-custo`,
+  `centros-de-lucro`); dica do último passo de `encerrar-safra` e de
+  `cadastrar-projeto` (`src/ajuda/safras`, `projetos`).
+
+### 36. O "pai" das categorias e dos centros de custo não é usado
+
+- **Problema:** categorias e centros de custo têm um campo "pai" (e a tela
+  de centros diz "Empresa → Unidade → Departamento → Centro de custo"), mas
+  nenhum relatório usa a hierarquia: o Orçamento, o Fluxo por dimensão e o
+  dashboard mostram cada item separado, sem somar os filhos no pai.
+- **Exemplo:** "Taxas de cartão" dentro de "Despesas bancárias": o
+  Orçamento mostra as duas linhas soltas, sem um total de "Despesas
+  bancárias" com as filhas.
+- **Onde:** `parentId` só é lido em `categoriaFinanceira.ts`,
+  `centroCusto.ts` e `hierarquia.ts` (cadastro e checagem de ciclo).
+- **Impacto:** quem monta a hierarquia esperando relatórios agrupados não
+  vê diferença; o manual prometia o agrupamento (corrigido em 2026-11-21).
+- **Caminhos:** no Orçamento e no Fluxo por dimensão, mostrar os pais com o
+  total dos filhos (linhas recolhíveis); ou, se a hierarquia não for
+  necessária, tirar o campo para não criar expectativa.
+- **Ao corrigir:** dicas dos passos sobre o pai em
+  `src/ajuda/categorias/index.tsx` e `src/ajuda/centros-de-custo/index.tsx`,
+  e as seções 7.2 e 7.3 do manual.
+
+### 37. Código de projeto repetido mostrava o erro do banco de dados
+
+- **Feito (2026-11-21), na branch da ajuda de Safras e Projetos:** o projeto
+  não usava `comMensagemDeDuplicidade`; agora aparece "Já existe um projeto
+  com este código" (teste em
+  `src/server/services/duplicidadeCadastros.test.ts`). Histórico.
+
+### 38. Safra e projeto Encerrados não bloqueiam nada, e a safra pode repetir o nome
+
+- **Problema:** o status (Planejado, Em andamento, Encerrado) só é exibido:
+  uma safra ou projeto Encerrado continua aceitando títulos, lançamentos e,
+  no caso da safra, recepções. E a safra não tem nome único na filial: dá
+  para cadastrar duas "2025/26", que aparecem iguais em todas as listas.
+- **Exemplo:** a 2024/25 está Encerrada, mas uma recepção de hoje pode ser
+  marcada nela por engano; duas "2026/27" cadastradas por duas pessoas
+  dividem os valores sem ninguém perceber.
+- **Onde:** `safraSchema`/`projetoSchema` e os serviços de título,
+  lançamento e recepção (nenhum lê `status`); `model Safra` em
+  `prisma/schema.prisma` (sem `@@unique([filialId, nome])`, o projeto tem
+  por código).
+- **Impacto:** o status não protege o fechamento da safra; nome repetido
+  embaralha a Comparação entre safras e o Fluxo por dimensão.
+- **Caminhos:** decidir se Encerrado deve bloquear lançamentos novos (ou só
+  avisar, já que uma venda pode chegar depois da colheita); criar o índice
+  único de nome da safra por filial (migração, conferindo duplicadas
+  existentes) e usar `comMensagemDeDuplicidade`.
+- **Ao corrigir:** passo "Informe o nome" de `cadastrar-safra`, passo
+  "Confira o status" de `encerrar-safra` e passo "Escolha o status" de
+  `cadastrar-projeto` (`src/ajuda/safras`, `projetos`).
+
+### 39. Local com lotes pode ser inativado, e os lotes somem da ocupação
+
+- **Problema:** `definirAtivoLocalArmazenamento` não confere se há lotes com
+  saldo no local. Inativado, o local sai do quadro "Ocupação dos locais" e do
+  filtro de local do Estoque, mas os lotes continuam lá dentro.
+- **Exemplo:** a Câmara da loja é inativada com 200 kg do AMC-261120-01/1; o
+  quadro de ocupação deixa de mostrar esses 200 kg, e não dá mais para filtrar
+  o Estoque por esse local para achá-los.
+- **Onde:** `src/server/services/localArmazenamento.ts`
+  (`definirAtivoLocalArmazenamento`); `resumoProdutoLocal` em
+  `src/server/services/estoque.ts` e `producao/estoque/page.tsx` (só locais
+  ativos).
+- **Impacto:** estoque "escondido": o saldo total continua certo, mas a
+  visão por local fica incompleta e o lote é difícil de achar.
+- **Caminhos:** recusar a inativação enquanto houver lote com saldo no local
+  ("Transfira os lotes antes de inativar"); ou permitir e manter o local
+  inativo com saldo no quadro e no filtro, marcado como inativo.
+- **Ao corrigir:** dica do último passo de `cadastrar-local`
+  (`src/ajuda/locais-armazenamento/index.tsx`) e a frase do item 4 da seção
+  7.6 do manual.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -756,8 +941,20 @@ Numeração continua a da Produção.
   3 roteiros, sem lacuna nova). **Toda a Produção tem ajuda.** Vendas:
   Pedidos feito (2026-11-20, 6 roteiros, lacuna 26; a venda na maquininha é
   simulada sem salvar, para não mudar os números de novembro); Entregas feito
-  (2026-11-21, 3 roteiros, lacuna 27). **Todo o Vendas tem ajuda.** Faltam
-  Cadastros e Administração.
+  (2026-11-21, 3 roteiros, lacuna 27). **Todo o Vendas tem ajuda.** Cadastros
+  (telas ricas sozinhas, as simples em grupos): Clientes feito (2026-11-21,
+  4 roteiros, lacunas 28 e 29); Fornecedores feito (2026-11-21, 3 roteiros,
+  lacuna 30 já corrigida); Contas bancárias feito (2026-11-21, 3
+  roteiros, lacuna 31 e lacuna 32 já corrigida); Produtos feito
+  (2026-11-21, 3 roteiros, sem lacuna nova); Operadoras de cartão feito
+  (2026-11-21, 3 roteiros, sem lacuna nova). Todas as telas ricas de
+  Cadastros têm ajuda. Bancos, Categorias, Centros de custo e Centros de
+  lucro feitos (2026-11-21, um grupo só, 7 roteiros; lacunas 33 e 34 já
+  corrigidas, 35 e 36 no backlog). Safras e Projetos feitos (2026-11-21,
+  3 roteiros; lacunas 20 e 37 corrigidas, 35 ampliada, 38 no backlog).
+  Frutas, Talhões, Locais de armazenamento e Insumos feitos (2026-11-21,
+  6 roteiros; lacuna 39 no backlog; manual 7.6 atualizado). **Todo o
+  Cadastros tem ajuda.** Falta a Administração.
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
   (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,

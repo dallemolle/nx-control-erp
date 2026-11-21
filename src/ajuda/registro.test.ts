@@ -137,4 +137,45 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("entregas")).toBe("Entregas");
     expect((await carregarAjuda("entregas")).roteiros.length).toBe(3);
   });
+
+  test("clientes tem ajuda", async () => {
+    expect(tituloDaAjuda("clientes")).toBe("Clientes");
+    expect((await carregarAjuda("clientes")).roteiros.length).toBe(4);
+  });
+
+  test("fornecedores tem ajuda", async () => {
+    expect(tituloDaAjuda("fornecedores")).toBe("Fornecedores");
+    expect((await carregarAjuda("fornecedores")).roteiros.length).toBe(3);
+  });
+
+  test("contas bancárias tem ajuda", async () => {
+    expect(tituloDaAjuda("contas-bancarias")).toBe("Contas bancárias");
+    expect((await carregarAjuda("contas-bancarias")).roteiros.length).toBe(3);
+  });
+
+  test("produtos tem ajuda", async () => {
+    expect(tituloDaAjuda("produtos")).toBe("Produtos");
+    expect((await carregarAjuda("produtos")).roteiros.length).toBe(3);
+  });
+
+  test("operadoras de cartão tem ajuda", async () => {
+    expect(tituloDaAjuda("operadoras-cartao")).toBe("Operadoras de cartão");
+    expect((await carregarAjuda("operadoras-cartao")).roteiros.length).toBe(3);
+  });
+
+  test.each([
+    ["bancos", "Bancos", 2],
+    ["categorias", "Categorias financeiras", 2],
+    ["centros-de-custo", "Centros de custo", 2],
+    ["centros-de-lucro", "Centros de lucro", 1],
+    ["safras", "Safras", 2],
+    ["projetos", "Projetos", 1],
+    ["frutas", "Frutas", 2],
+    ["talhoes", "Talhões", 1],
+    ["locais-armazenamento", "Locais de armazenamento", 1],
+    ["insumos", "Insumos", 2],
+  ])("%s tem ajuda", async (tela, titulo, roteiros) => {
+    expect(tituloDaAjuda(tela)).toBe(titulo);
+    expect((await carregarAjuda(tela)).roteiros.length).toBe(roteiros);
+  });
 });

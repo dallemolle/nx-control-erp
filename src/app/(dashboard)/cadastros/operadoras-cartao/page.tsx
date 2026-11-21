@@ -1,3 +1,4 @@
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -38,7 +39,10 @@ export default async function OperadorasCartaoPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Operadoras de cartão</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-lg font-semibold">Operadoras de cartão</h1>
+            <BotaoAjuda tela="operadoras-cartao" />
+          </div>
           <p className="text-sm text-muted-foreground">
             Maquininhas da filial: onde depositam e a taxa e o prazo de cada modalidade.
           </p>

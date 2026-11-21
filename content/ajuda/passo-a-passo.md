@@ -435,33 +435,66 @@ Cadastro de nome, CNPJ/CPF, contato e, opcionalmente, dados bancários para paga
 
 No cliente, o **CNPJ/CPF é opcional**: deixe em branco para consumidor final ou "Clientes diversos" (quando preenchido, não pode repetir). A seção **Vendas** do cliente guarda o canal de venda, o município, o endereço de entrega e se o cliente **retira na propriedade** (nesse caso o pedido não gera entrega). Além do Administrador, Financeiro e Tesouraria, o perfil Vendas também pode cadastrar e editar clientes.
 
+**Ver simulação (Clientes):** [cadastrar um cliente](#ajuda/clientes/cadastrar-cliente) · [cliente sem documento](#ajuda/clientes/cadastrar-sem-documento) · [mudar o cadastro](#ajuda/clientes/editar-cliente) · [inativar e reativar](#ajuda/clientes/inativar-cliente)
+
+**Ver simulação (Fornecedores):** [cadastrar um fornecedor](#ajuda/fornecedores/cadastrar-fornecedor) · [produtor sem nota](#ajuda/fornecedores/cadastrar-produtor) · [mudar, inativar e reativar](#ajuda/fornecedores/inativar-fornecedor)
+
 ### 7.2. Categorias financeiras
 
-Classificam cada título/lançamento como Receita ou Despesa, com hierarquia opcional (uma categoria pode ter uma categoria "pai", para agrupar categorias relacionadas em relatórios).
+Classificam cada título/lançamento como Receita ou Despesa, com hierarquia opcional (uma categoria pode ter uma categoria "pai", que hoje só organiza a lista: os relatórios e o Orçamento mostram cada categoria separada).
+
+**Ver simulação (Categorias financeiras):** [cadastrar uma categoria](#ajuda/categorias/cadastrar-categoria) · [inativar uma categoria](#ajuda/categorias/inativar-categoria)
 
 ### 7.3. Centros de custo e Centros de lucro
 
-Dimensões analíticas opcionais para títulos e lançamentos, usadas nos relatórios de fluxo de caixa por dimensão e no dashboard executivo. Centro de custo tem hierarquia própria (pode agrupar sub-centros); centro de lucro não.
+Dimensões analíticas opcionais para títulos e lançamentos, usadas nos relatórios de fluxo de caixa por dimensão e no dashboard executivo. Centro de custo tem hierarquia própria (um centro pode ficar dentro de outro, o que hoje só organiza a lista); centro de lucro não.
+
+**Ver simulação (Centros de custo):** [cadastrar um centro de custo](#ajuda/centros-de-custo/cadastrar-centro-custo) · [inativar um centro de custo](#ajuda/centros-de-custo/inativar-centro-custo)
+
+**Ver simulação (Centros de lucro):** [cadastrar um centro de lucro](#ajuda/centros-de-lucro/cadastrar-centro-lucro)
 
 ### 7.4. Safras e Projetos
 
 Safra representa um ciclo de produção, com data de início e fim próprias (podendo atravessar a virada do ano civil) e status (Planejado, Em andamento, Encerrado). Projeto é uma dimensão livre para acompanhar iniciativas específicas (por exemplo, uma obra de irrigação), com código e status próprios.
 
+O status só informa a fase: uma safra ou um projeto Encerrado continua aceitando títulos e lançamentos. As datas da safra também não limitam o que entra nela. Para tirar uma safra ou um projeto de uso, inative: some da Recepção (safra), da Tesouraria, da Conciliação e da Comparação entre safras; no Fluxo por dimensão, continua aparecendo enquanto tiver valores no período.
+
+**Ver simulação (Safras):** [cadastrar uma safra](#ajuda/safras/cadastrar-safra) · [encerrar ou inativar uma safra](#ajuda/safras/encerrar-safra)
+
+**Ver simulação (Projetos):** [cadastrar um projeto](#ajuda/projetos/cadastrar-projeto)
+
 ### 7.5. Bancos e Contas bancárias
 
 Bancos é uma lista de referência (código e nome do banco). Contas bancárias pertencem à filial e trazem agência, conta, tipo (corrente, aplicação, investimento, empréstimo/financiamento ou caixa), moeda e saldo inicial — é a partir daqui que as baixas, lançamentos e conciliação bancária operam.
 
+**Ver simulação (Bancos):** [cadastrar um banco](#ajuda/bancos/cadastrar-banco) · [corrigir o nome de um banco](#ajuda/bancos/corrigir-banco)
+
 O tipo **Caixa (dinheiro em espécie)** é para o dinheiro guardado na empresa. Ele não pede banco nem agência: basta uma identificação (por exemplo, "Escritório" ou "Fazenda"), e dá para ter mais de um caixa. Uma conta Caixa não aparece na importação de extrato. Uma conta só pode mudar de ou para o tipo Caixa enquanto não tiver lançamentos.
+
+**Ver simulação (Contas bancárias):** [cadastrar uma conta no banco](#ajuda/contas-bancarias/cadastrar-conta) · [cadastrar um caixa](#ajuda/contas-bancarias/cadastrar-caixa) · [corrigir ou inativar](#ajuda/contas-bancarias/corrigir-inativar)
 
 ### 7.6. Cadastros de produção
 
-Base para a recepção de fruto, as vendas por lote e o processamento (este nas próximas versões). Podem ser editados pelo Administrador e pelo perfil Produção. Cadastre nesta ordem:
+Base para a recepção de fruto, o processamento e as vendas por lote. Podem ser editados pelo Administrador e pelo perfil Produção. Cadastre nesta ordem:
 
-1. **Frutas** (da empresa): nome, **custo-padrão do fruto próprio** (R$/kg, usado no custo e na margem do fruto colhido nos talhões; deixe 0 se ainda não souber) e se a fruta **exige branqueamento** no processamento (o açaí exige).
+1. **Frutas** (da empresa): nome, **custo-padrão do fruto próprio** (R$/kg, usado no custo e na margem do fruto colhido nos talhões; deixe 0 se ainda não souber) e se a fruta **exige branqueamento** no processamento (o açaí exige). Mudar o custo-padrão vale para as próximas recepções: os lotes já recebidos ficam com o custo do dia.
+
+   **Ver simulação (Frutas):** [cadastrar uma fruta](#ajuda/frutas/cadastrar-fruta) · [mudar o custo-padrão ou inativar](#ajuda/frutas/mudar-custo-fruta)
 2. **Produtos** (da empresa): código, descrição, fruta, categoria (fruto ou polpa), conservação (in natura, resfriado ou congelado), validade em dias, **preço de referência** (sugerido na venda e usado para dividir o custo da OP entre as polpas; obrigatório para encerrar uma OP com mais de um produto), texto de armazenamento e texto livre da etiqueta (ingredientes e outros dizeres). O **código** (ex.: FA, AGC) vira o início do número de lote (FA-260927-01). A **unidade comercial** é opcional: para o açaí, "rasa = 14 kg" permite lançar quantidade e preço por rasa. **Dias de liberação após vencimento** (opcional) é a tolerância máxima para o Gestor liberar um lote vencido do produto (seção 5.3); vazio, o produto não pode ser liberado.
+
+   **Ver simulação (Produtos):** [cadastrar uma polpa](#ajuda/produtos/cadastrar-polpa) · [o fruto e a rasa](#ajuda/produtos/fruto-rasa) · [liberação, mudanças e inativar](#ajuda/produtos/liberar-inativar)
+
 3. **Talhões** (da filial): áreas de cultivo próprias, com cultura, área (ha) e ano de plantio. São a origem do fruto colhido.
-4. **Locais de armazenamento** (da filial): câmaras, freezers e áreas de recepção, com temperatura e capacidade (opcional, usada para mostrar a ocupação no estoque).
-5. **Insumos** (da empresa): embalagens, energia e mão de obra, com unidade e custo unitário de referência.
+
+   **Ver simulação (Talhões):** [cadastrar um talhão](#ajuda/talhoes/cadastrar-talhao)
+
+4. **Locais de armazenamento** (da filial): câmaras, freezers e áreas de recepção, com temperatura e capacidade (opcional, usada para mostrar a ocupação no estoque). Antes de inativar um local, transfira os lotes que estão nele.
+
+   **Ver simulação (Locais de armazenamento):** [cadastrar um local](#ajuda/locais-armazenamento/cadastrar-local)
+
+5. **Insumos** (da empresa): embalagens, energia e mão de obra, com unidade e custo unitário de referência. Cada linha de insumo da OP grava o custo do momento em que foi lançada.
+
+   **Ver simulação (Insumos):** [cadastrar um insumo](#ajuda/insumos/cadastrar-insumo) · [atualizar o custo](#ajuda/insumos/atualizar-custo-insumo)
 
 ### 7.7. Operadoras de cartão
 
@@ -473,6 +506,8 @@ Cada maquininha da filial (Stone, Cielo, etc.) é cadastrada em Cadastros → Op
 - as **condições**: para cada modalidade (débito, crédito à vista, crédito parcelado, Pix na maquininha), a **taxa** (% sobre o valor da venda) e o **prazo** do primeiro repasse, em dias corridos. No crédito parcelado, informe a faixa de parcelas (de 2 a 12, sem sobrepor faixas — por exemplo 2–6x e 7–12x com taxas diferentes) e marque **Antecipado** se a operadora paga tudo de uma vez no prazo; sem antecipação, os repasses vêm um por mês.
 
 Mudar a taxa vale para as vendas novas: cada pedido guarda a taxa usada na venda. Uma operadora pode ser inativada (some da venda; o histórico fica).
+
+**Ver simulação (Operadoras de cartão):** [cadastrar uma operadora](#ajuda/operadoras-cartao/cadastrar-operadora) · [condições do crédito parcelado](#ajuda/operadoras-cartao/parcelado) · [mudar a taxa e inativar](#ajuda/operadoras-cartao/mudar-inativar)
 
 ## 8. Administração
 

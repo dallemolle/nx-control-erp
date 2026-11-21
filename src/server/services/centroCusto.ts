@@ -4,6 +4,9 @@ import { registrarAuditoria } from "@/server/audit/registrar";
 import { assertSemCiclo } from "@/server/services/hierarquia";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { CentroCustoFormValues } from "@/lib/schemas/centroCusto";
+import { comMensagemDeDuplicidade } from "./duplicidade";
+
+const MSG_CODIGO_DUPLICADO = "Já existe um centro de custo com este código";
 
 export async function listarCentrosCusto(filialId: string) {
   return prisma.centroCusto.findMany({ where: { filialId }, orderBy: { codigo: "asc" } });
@@ -30,9 +33,13 @@ export async function criarCentroCusto(sessao: SessaoAtiva, dados: CentroCustoFo
   const parentId = normalizarParentId(dados.parentId);
   await validarParentMesmaFilial(sessao.filialId, parentId);
 
-  const centro = await prisma.centroCusto.create({
-    data: { nome: dados.nome, codigo: dados.codigo, parentId, filialId: sessao.filialId },
-  });
+  const centro = await comMensagemDeDuplicidade(
+    () =>
+      prisma.centroCusto.create({
+        data: { nome: dados.nome, codigo: dados.codigo, parentId, filialId: sessao.filialId },
+      }),
+    MSG_CODIGO_DUPLICADO,
+  );
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
@@ -68,10 +75,10 @@ export async function atualizarCentroCusto(
   const anterior = await prisma.centroCusto.findUniqueOrThrow({
     where: { id, filialId: sessao.filialId },
   });
-  const centro = await prisma.centroCusto.update({
-    where: { id },
-    data: { nome: dados.nome, codigo: dados.codigo, parentId },
-  });
+  const centro = await comMensagemDeDuplicidade(
+    () => prisma.centroCusto.update({ where: { id }, data: { nome: dados.nome, codigo: dados.codigo, parentId } }),
+    MSG_CODIGO_DUPLICADO,
+  );
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,

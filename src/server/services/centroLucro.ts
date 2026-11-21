@@ -3,6 +3,9 @@ import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permiss
 import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { CentroLucroFormValues } from "@/lib/schemas/centroLucro";
+import { comMensagemDeDuplicidade } from "./duplicidade";
+
+const MSG_CODIGO_DUPLICADO = "Já existe um centro de lucro com este código";
 
 export async function listarCentrosLucro(filialId: string) {
   return prisma.centroLucro.findMany({ where: { filialId }, orderBy: { codigo: "asc" } });
@@ -12,9 +15,10 @@ export async function criarCentroLucro(sessao: SessaoAtiva, dados: CentroLucroFo
   requirePermission(sessao.perfil, "cadastro:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
-  const centro = await prisma.centroLucro.create({
-    data: { ...dados, filialId: sessao.filialId },
-  });
+  const centro = await comMensagemDeDuplicidade(
+    () => prisma.centroLucro.create({ data: { ...dados, filialId: sessao.filialId } }),
+    MSG_CODIGO_DUPLICADO,
+  );
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
@@ -41,7 +45,10 @@ export async function atualizarCentroLucro(
   const anterior = await prisma.centroLucro.findUniqueOrThrow({
     where: { id, filialId: sessao.filialId },
   });
-  const centro = await prisma.centroLucro.update({ where: { id }, data: dados });
+  const centro = await comMensagemDeDuplicidade(
+    () => prisma.centroLucro.update({ where: { id }, data: dados }),
+    MSG_CODIGO_DUPLICADO,
+  );
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,

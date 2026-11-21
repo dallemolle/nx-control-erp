@@ -1,4 +1,9 @@
 export const STATUS_SAFRA_PROJETO = ["PLANEJADO", "EM_ANDAMENTO", "ENCERRADO"] as const;
+export const ROTULOS_STATUS_SAFRA_PROJETO: Record<(typeof STATUS_SAFRA_PROJETO)[number], string> = {
+  PLANEJADO: "Planejado",
+  EM_ANDAMENTO: "Em andamento",
+  ENCERRADO: "Encerrado",
+};
 
 export const TIPO_CONTA_BANCARIA = [
   "CORRENTE",
@@ -17,6 +22,10 @@ export const ROTULOS_TIPO_CONTA_BANCARIA: Record<(typeof TIPO_CONTA_BANCARIA)[nu
 };
 
 export const TIPO_CATEGORIA_FINANCEIRA = ["RECEITA", "DESPESA"] as const;
+export const ROTULOS_TIPO_CATEGORIA_FINANCEIRA: Record<(typeof TIPO_CATEGORIA_FINANCEIRA)[number], string> = {
+  RECEITA: "Receita",
+  DESPESA: "Despesa",
+};
 
 export const TIPO_TITULO = ["PAGAR", "RECEBER"] as const;
 

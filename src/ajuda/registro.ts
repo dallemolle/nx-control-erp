@@ -104,6 +104,66 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Entregas",
     carregar: () => import("./entregas").then((modulo) => modulo.ajudaEntregas),
   },
+  clientes: {
+    titulo: "Clientes",
+    carregar: () => import("./clientes").then((modulo) => modulo.ajudaClientes),
+  },
+  fornecedores: {
+    titulo: "Fornecedores",
+    carregar: () => import("./fornecedores").then((modulo) => modulo.ajudaFornecedores),
+  },
+  "contas-bancarias": {
+    titulo: "Contas bancárias",
+    carregar: () => import("./contas-bancarias").then((modulo) => modulo.ajudaContasBancarias),
+  },
+  produtos: {
+    titulo: "Produtos",
+    carregar: () => import("./produtos").then((modulo) => modulo.ajudaProdutos),
+  },
+  "operadoras-cartao": {
+    titulo: "Operadoras de cartão",
+    carregar: () => import("./operadoras-cartao").then((modulo) => modulo.ajudaOperadorasCartao),
+  },
+  bancos: {
+    titulo: "Bancos",
+    carregar: () => import("./bancos").then((modulo) => modulo.ajudaBancos),
+  },
+  categorias: {
+    titulo: "Categorias financeiras",
+    carregar: () => import("./categorias").then((modulo) => modulo.ajudaCategorias),
+  },
+  "centros-de-custo": {
+    titulo: "Centros de custo",
+    carregar: () => import("./centros-de-custo").then((modulo) => modulo.ajudaCentrosDeCusto),
+  },
+  "centros-de-lucro": {
+    titulo: "Centros de lucro",
+    carregar: () => import("./centros-de-lucro").then((modulo) => modulo.ajudaCentrosDeLucro),
+  },
+  safras: {
+    titulo: "Safras",
+    carregar: () => import("./safras").then((modulo) => modulo.ajudaSafras),
+  },
+  projetos: {
+    titulo: "Projetos",
+    carregar: () => import("./projetos").then((modulo) => modulo.ajudaProjetos),
+  },
+  frutas: {
+    titulo: "Frutas",
+    carregar: () => import("./frutas").then((modulo) => modulo.ajudaFrutas),
+  },
+  talhoes: {
+    titulo: "Talhões",
+    carregar: () => import("./talhoes").then((modulo) => modulo.ajudaTalhoes),
+  },
+  "locais-armazenamento": {
+    titulo: "Locais de armazenamento",
+    carregar: () => import("./locais-armazenamento").then((modulo) => modulo.ajudaLocaisArmazenamento),
+  },
+  insumos: {
+    titulo: "Insumos",
+    carregar: () => import("./insumos").then((modulo) => modulo.ajudaInsumos),
+  },
 };
 
 export function temAjuda(tela: string): boolean {
