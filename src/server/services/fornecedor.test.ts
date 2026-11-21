@@ -293,4 +293,18 @@ describe("fornecedor - dados bancários", () => {
     fornecedoresCriados.push(criado.id);
     expect(criado.classificacaoFiscalPadrao).toBeNull();
   });
+
+  test("CNPJ/CPF repetido na empresa dá mensagem para o usuário, ao criar e ao editar", async () => {
+    const primeiro = await criarFornecedor(sessao, { ...dadosBase, nome: "Fornecedor A", cnpjCpf: "77.777.777/0001-77" });
+    fornecedoresCriados.push(primeiro.id);
+    await expect(
+      criarFornecedor(sessao, { ...dadosBase, nome: "Fornecedor B", cnpjCpf: "77.777.777/0001-77" }),
+    ).rejects.toThrow("Já existe um fornecedor com este CPF/CNPJ");
+
+    const outro = await criarFornecedor(sessao, { ...dadosBase, nome: "Fornecedor C", cnpjCpf: "88.888.888/0001-88" });
+    fornecedoresCriados.push(outro.id);
+    await expect(
+      atualizarFornecedor(sessao, outro.id, { ...dadosBase, nome: "Fornecedor C", cnpjCpf: "77.777.777/0001-77" }),
+    ).rejects.toThrow("Já existe um fornecedor com este CPF/CNPJ");
+  });
 });

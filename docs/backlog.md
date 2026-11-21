@@ -775,6 +775,14 @@ Numeração continua a de Vendas.
   `cadastrar-cliente` e passo "A lista não muda" do `editar-cliente` em
   `src/ajuda/clientes/roteiros.ts`.
 
+### 30. CNPJ/CPF repetido no fornecedor mostrava o erro do banco
+
+- **Feito (2026-11-21), na mesma branch da ajuda de Fornecedores:** o
+  serviço de fornecedor não usava `comMensagemDeDuplicidade`, e repetir um
+  documento mostrava "Unique constraint failed…". Agora, ao criar e ao
+  editar, aparece "Já existe um fornecedor com este CPF/CNPJ" (teste em
+  `src/server/services/fornecedor.test.ts`). Item mantido só como histórico.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -803,7 +811,8 @@ Numeração continua a de Vendas.
   simulada sem salvar, para não mudar os números de novembro); Entregas feito
   (2026-11-21, 3 roteiros, lacuna 27). **Todo o Vendas tem ajuda.** Cadastros
   (telas ricas sozinhas, as simples em grupos): Clientes feito (2026-11-21,
-  4 roteiros, lacunas 28 e 29). Faltam as demais telas de Cadastros e a
+  4 roteiros, lacunas 28 e 29); Fornecedores feito (2026-11-21, 3 roteiros,
+  lacuna 30 já corrigida). Faltam as demais telas de Cadastros e a
   Administração.
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
