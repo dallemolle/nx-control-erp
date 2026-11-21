@@ -180,6 +180,10 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Configuração de produção",
     carregar: () => import("./configuracao-producao").then((modulo) => modulo.ajudaConfiguracaoProducao),
   },
+  auditoria: {
+    titulo: "Auditoria",
+    carregar: () => import("./auditoria").then((modulo) => modulo.ajudaAuditoria),
+  },
 };
 
 export function temAjuda(tela: string): boolean {
