@@ -95,4 +95,18 @@ describe("gestão de chaves de API", () => {
     const persistida = await prisma.apiKey.findUniqueOrThrow({ where: { id: chaveDaOutraEmpresa.id } });
     expect(persistida.revogadaEm).toBeNull();
   });
+
+  test("gerar e revogar ficam na auditoria, sem a chave completa", async () => {
+    const criada = await gerarChave(fixture.sessaoAdmin, fixture.usuarioId, "Chave auditada", 90);
+    await revogarChave(fixture.sessaoAdmin, criada.id);
+
+    const registros = await prisma.auditLog.findMany({
+      where: { empresaId: fixture.empresaId, entidade: "ApiKey", entidadeId: criada.id },
+      orderBy: { criadoEm: "asc" },
+    });
+    expect(registros.map((r) => r.acao)).toEqual(["CRIAR", "REVOGAR"]);
+    expect(registros[0].usuarioId).toBe(fixture.usuarioAdminId);
+    expect(registros[0].valorNovo).toMatchObject({ nome: "Chave auditada", prefixo: criada.prefixo, usuarioId: fixture.usuarioId });
+    expect(JSON.stringify(registros)).not.toContain(criada.chaveCompleta);
+  });
 });

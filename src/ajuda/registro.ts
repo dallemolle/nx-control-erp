@@ -164,6 +164,10 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Insumos",
     carregar: () => import("./insumos").then((modulo) => modulo.ajudaInsumos),
   },
+  usuarios: {
+    titulo: "Usuários",
+    carregar: () => import("./usuarios").then((modulo) => modulo.ajudaUsuarios),
+  },
 };
 
 export function temAjuda(tela: string): boolean {

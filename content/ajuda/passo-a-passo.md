@@ -533,11 +533,15 @@ Cadastro das filiais (unidades operacionais) de cada empresa. Cada filial tem se
 
 ### 8.3. Usuários
 
-Um Administrador cadastra aqui os usuários da empresa, define o perfil de cada um (seção 2.4) e concede ou remove o acesso a cada filial individualmente, incluindo se o acesso é de alteração ou somente leitura.
+Um Administrador cadastra aqui os usuários da empresa, define o perfil de cada um (seção 2.4) e concede ou remove o acesso a cada filial individualmente, incluindo se o acesso é de alteração ou somente leitura. Ao cadastrar, **Verificar** confere se o email já tem login no sistema (por outra empresa): nesse caso não se pede nome nem senha, só o perfil desta empresa.
+
+Ninguém muda o próprio perfil, desativa o próprio acesso ou tira a própria leitura da filial em que está: na sua linha, o perfil aparece só como texto. Assim a empresa nunca fica sem administrador. Hoje a senha é definida no cadastro e não há troca nem redefinição de senha.
+
+**Ver simulação (Usuários):** [cadastrar um usuário](#ajuda/usuarios/cadastrar-usuario) · [dar acesso a quem já tem login](#ajuda/usuarios/usuario-existente) · [perfil, acesso por filial e desativar](#ajuda/usuarios/perfil-acesso) · [chaves de API](#ajuda/usuarios/chaves-api)
 
 **Chaves de API**
 
-Cada usuário também pode ter uma ou mais chaves de API, usadas para autenticar chamadas na API REST do sistema — útil para automações e integrações externas. Ao gerar uma chave, o Administrador escolhe um nome para identificá-la; a chave completa só é mostrada uma única vez, no momento da criação, e depois disso só o prefixo fica visível, junto com a data de criação e a do último uso. Uma chave pode ser revogada a qualquer momento, e chaves de usuários inativos param de funcionar automaticamente.
+Cada usuário também pode ter uma ou mais chaves de API, usadas para autenticar chamadas na API REST do sistema — útil para automações e integrações externas. Ao gerar uma chave, o Administrador escolhe um nome para identificá-la; a chave completa só é mostrada uma única vez, no momento da criação, e depois disso só o prefixo fica visível, junto com a data de criação e a do último uso. Uma chave pode ser revogada a qualquer momento, e chaves de usuários inativos param de funcionar automaticamente. A chave age com o perfil e os acessos por filial do usuário dono dela; gerar e revogar ficam na Auditoria.
 
 ### 8.4. Auditoria
 

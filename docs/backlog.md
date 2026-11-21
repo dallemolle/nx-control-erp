@@ -915,6 +915,57 @@ Numeração continua a de Vendas.
   (`src/ajuda/locais-armazenamento/index.tsx`) e a frase do item 4 da seção
   7.6 do manual.
 
+## Administração — lacunas achadas ao escrever a ajuda contextual
+
+Mesma numeração das seções acima.
+
+### 40. Administrador podia mudar o próprio perfil
+
+- **Feito (2026-11-21), na branch da ajuda de Usuários:** o serviço já
+  recusava desativar o próprio acesso, mas não mudar o próprio perfil: um
+  Administrador que se rebaixava perdia a tela Usuários na hora e, se fosse o
+  único, a empresa ficava sem administrador. Agora aparece "Você não pode
+  mudar seu próprio perfil", e a própria linha mostra o perfil como texto,
+  sem o "Desativar" (que antes quebrava a página com o erro do servidor).
+  Teste em `src/server/services/usuario.test.ts`. Histórico.
+
+### 41. Administrador podia tirar o próprio acesso à filial ativa
+
+- **Feito (2026-11-21), na mesma branch:** desmarcar a própria Leitura na
+  filial em que está mandava a pessoa para "Selecionar filial" (ou de volta
+  à escolha de empresa, se não tivesse outra). Agora o serviço recusa ("Você
+  não pode remover seu próprio acesso à filial ativa") e a caixinha fica
+  travada. Tirar só a Alteração continua permitido. Teste em
+  `src/server/services/usuarioEmpresaFilial.test.ts`. Histórico.
+
+### 42. Gerar e revogar chave de API não ficavam na auditoria
+
+- **Feito (2026-11-21), na mesma branch:** uma credencial da API nascia ou
+  era revogada sem rastro. Agora as duas ações ficam na Auditoria (entidade
+  `ApiKey`, com usuário, nome, prefixo e validade; nunca a chave nem o hash).
+  Teste em `src/server/services/apiKey.test.ts`. Histórico.
+
+### 43. Não há troca nem redefinição de senha
+
+- **Problema:** a senha é definida pelo Administrador ao cadastrar o usuário
+  e nunca mais muda: a pessoa não troca a própria senha e o Administrador não
+  consegue redefinir. Também não há "Esqueci minha senha" no login.
+- **Exemplo:** a Joana esquece a senha inicial; a única saída hoje é mexer
+  direto no banco de dados. Uma senha que vazou não tem como ser trocada.
+- **Onde:** `src/server/services/usuario.ts` (só `criarUsuarioEVincular` grava
+  `senhaHash`); a tela de login e a de Usuários.
+- **Impacto:** segurança (senha vazada não se troca; a senha inicial é
+  conhecida por quem cadastrou) e operação (quem esquece fica sem acesso).
+- **Caminhos:** (1) "Minha conta" para a pessoa trocar a própria senha,
+  pedindo a atual; (2) "Redefinir senha" na linha de Usuários, gerando uma
+  senha temporária com troca obrigatória no próximo login; (3) depois,
+  "Esqueci minha senha" por email. Registrar na auditoria sem a senha.
+- **Cuidados:** a pessoa pode estar em várias empresas: quem redefine é o
+  Administrador de qualquer uma delas? Definir a regra antes.
+- **Ao corrigir:** dica do passo "Defina a senha inicial" do roteiro
+  `cadastrar-usuario` (`src/ajuda/usuarios/roteiros.ts`) e a seção 8.3 do
+  manual.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -954,7 +1005,11 @@ Numeração continua a de Vendas.
   3 roteiros; lacunas 20 e 37 corrigidas, 35 ampliada, 38 no backlog).
   Frutas, Talhões, Locais de armazenamento e Insumos feitos (2026-11-21,
   6 roteiros; lacuna 39 no backlog; manual 7.6 atualizado). **Todo o
-  Cadastros tem ajuda.** Falta a Administração.
+  Cadastros tem ajuda.** Administração (ordem escolhida pelo usuário:
+  Usuários; Empresas + Filiais; Configuração de produção; Auditoria; e o
+  Dashboard executivo, da Gestão): Usuários feito (2026-11-21, 4 roteiros;
+  lacunas 40 a 42 corrigidas, 43 no backlog). Faltam Empresas + Filiais,
+  Configuração de produção, Auditoria e o Dashboard executivo.
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
   (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,
