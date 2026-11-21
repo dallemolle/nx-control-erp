@@ -457,6 +457,12 @@ Dimensões analíticas opcionais para títulos e lançamentos, usadas nos relat�
 
 Safra representa um ciclo de produção, com data de início e fim próprias (podendo atravessar a virada do ano civil) e status (Planejado, Em andamento, Encerrado). Projeto é uma dimensão livre para acompanhar iniciativas específicas (por exemplo, uma obra de irrigação), com código e status próprios.
 
+O status só informa a fase: uma safra ou um projeto Encerrado continua aceitando títulos e lançamentos. As datas da safra também não limitam o que entra nela. Para tirar uma safra ou um projeto de uso, inative: some da Recepção (safra), da Tesouraria, da Conciliação e da Comparação entre safras; no Fluxo por dimensão, continua aparecendo enquanto tiver valores no período.
+
+**Ver simulação (Safras):** [cadastrar uma safra](#ajuda/safras/cadastrar-safra) · [encerrar ou inativar uma safra](#ajuda/safras/encerrar-safra)
+
+**Ver simulação (Projetos):** [cadastrar um projeto](#ajuda/projetos/cadastrar-projeto)
+
 ### 7.5. Bancos e Contas bancárias
 
 Bancos é uma lista de referência (código e nome do banco). Contas bancárias pertencem à filial e trazem agência, conta, tipo (corrente, aplicação, investimento, empréstimo/financiamento ou caixa), moeda e saldo inicial — é a partir daqui que as baixas, lançamentos e conciliação bancária operam.
