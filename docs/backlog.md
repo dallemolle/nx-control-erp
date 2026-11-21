@@ -783,6 +783,38 @@ Numeração continua a de Vendas.
   editar, aparece "Já existe um fornecedor com este CPF/CNPJ" (teste em
   `src/server/services/fornecedor.test.ts`). Item mantido só como histórico.
 
+### 31. Conta bancária inativa: some do Fluxo (até no passado) e continua nos títulos
+
+- **Problema:** inativar uma conta tira o saldo inicial e todos os
+  lançamentos dela da Tesouraria e do Fluxo de caixa, também nos meses
+  passados, sem aviso e mesmo com saldo diferente de zero. E o Contas a
+  pagar e o Contas a receber continuam oferecendo a conta inativa (conta
+  prevista e baixa): o que for lançado nela fica fora da Tesouraria e do
+  Fluxo.
+- **Exemplo:** a conta do Santander começou 2026 com R$ 1.500 e foi zerada
+  por transferência em outubro. Inativada, o Fluxo de caixa de janeiro a
+  setembro perde R$ 1.500. Se uma baixa cair nela por engano, o dinheiro
+  "some".
+- **Onde:** `buscarSaldoEmCaixaAteDasFiliais` em
+  `src/server/services/fluxoDeCaixa.ts` e `listarResumoContas` em
+  `lancamentoBancario.ts` (filtram `ativo`); `contas-a-pagar/page.tsx` e
+  `contas-a-receber/page.tsx` (usam `listarContasBancarias` sem filtro);
+  `definirAtivoContaBancaria` em `contaBancaria.ts` (não confere saldo).
+- **Impacto:** o Fluxo de caixa de meses fechados muda depois do fato; e
+  dinheiro lançado em conta inativa não aparece em nenhum saldo.
+- **Caminhos:** recusar inativar conta com saldo contábil diferente de zero
+  (ou pedir confirmação mostrando o saldo); no Fluxo, contar a conta inativa
+  até a data em que foi inativada; oferecer só contas ativas no título novo
+  e na baixa, e recusar no serviço.
+- **Ao corrigir:** dica do passo "Confira o status" do roteiro
+  `corrigir-inativar` em `src/ajuda/contas-bancarias/roteiros.ts`.
+
+### 32. Saldo inicial das contas bancárias aparecia sem formato
+
+- **Feito (2026-11-21), na mesma branch da ajuda de Contas bancárias:** a
+  lista mostrava o Decimal cru (`48000`, `1350.5`); agora mostra em reais
+  com `formatarMoeda`. Item mantido só como histórico.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -812,7 +844,8 @@ Numeração continua a de Vendas.
   (2026-11-21, 3 roteiros, lacuna 27). **Todo o Vendas tem ajuda.** Cadastros
   (telas ricas sozinhas, as simples em grupos): Clientes feito (2026-11-21,
   4 roteiros, lacunas 28 e 29); Fornecedores feito (2026-11-21, 3 roteiros,
-  lacuna 30 já corrigida). Faltam as demais telas de Cadastros e a
+  lacuna 30 já corrigida); Contas bancárias feito (2026-11-21, 3
+  roteiros, lacuna 31 e lacuna 32 já corrigida). Faltam as demais telas de Cadastros e a
   Administração.
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
