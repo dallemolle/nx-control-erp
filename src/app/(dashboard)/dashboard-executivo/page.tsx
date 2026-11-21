@@ -119,7 +119,7 @@ export default async function DashboardExecutivoPage() {
           <EvolucaoSaldoChart dados={graficos.evolucaoSaldo} />
         </section>
         <section className="space-y-2 lg:col-span-2">
-          <h2 className="text-base font-semibold">Aging de contas a pagar/receber</h2>
+          <h2 className="text-base font-semibold">Aging de contas a pagar/receber (vencidas, por dias de atraso)</h2>
           <AgingChart dados={graficos.aging} />
         </section>
       </div>

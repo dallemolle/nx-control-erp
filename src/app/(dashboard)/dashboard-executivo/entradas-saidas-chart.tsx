@@ -3,6 +3,7 @@
 import { Bar, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import type { PontoEntradasSaidas } from "@/server/services/dashboardExecutivo";
+import { dicaEmReais, eixoEmReais } from "./formatos";
 
 export function EntradasSaidasChart({ dados }: { dados: PontoEntradasSaidas[] }) {
   return (
@@ -10,8 +11,8 @@ export function EntradasSaidasChart({ dados }: { dados: PontoEntradasSaidas[] })
       <BarChart data={dados}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="mes" />
-        <YAxis />
-        <Tooltip />
+        <YAxis tickFormatter={eixoEmReais} />
+        <Tooltip formatter={dicaEmReais} />
         <Legend />
         <Bar dataKey="entradas" fill="var(--chart-2)" name="Entradas" />
         <Bar dataKey="saidas" fill="var(--chart-4)" name="Saídas" />
