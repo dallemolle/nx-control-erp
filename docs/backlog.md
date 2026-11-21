@@ -815,6 +815,66 @@ Numeração continua a de Vendas.
   lista mostrava o Decimal cru (`48000`, `1350.5`); agora mostra em reais
   com `formatarMoeda`. Item mantido só como histórico.
 
+### 33. Código repetido em bancos e centros mostrava o erro do banco de dados
+
+- **Feito (2026-11-21), na branch da ajuda dos cadastros financeiros:**
+  banco, centro de custo e centro de lucro não usavam
+  `comMensagemDeDuplicidade`; repetir o código mostrava "Unique constraint
+  failed…". Agora aparece "Já existe um banco (centro de custo, centro de
+  lucro) com este código" (teste em
+  `src/server/services/duplicidadeCadastros.test.ts`). Histórico.
+
+### 34. Tipo da categoria aparecia como código (RECEITA, DESPESA)
+
+- **Feito (2026-11-21), na mesma branch:** a lista e o formulário de
+  categorias mostram "Receita" e "Despesa" (`ROTULOS_TIPO_CATEGORIA_FINANCEIRA`).
+  Histórico. O item 20 (status de safra e projeto como código) é o mesmo
+  problema em outra tela.
+
+### 35. Categoria e centros inativos continuam nos títulos (e a categoria, na Tesouraria)
+
+- **Problema:** inativar uma categoria tira ela do Orçamento e da operadora
+  de cartão; inativar um centro de custo ou de lucro tira ele da Tesouraria.
+  Mas o Contas a pagar e o Contas a receber continuam oferecendo os três, e a
+  Tesouraria continua oferecendo a categoria inativa (ela filtra só centros,
+  safras e projetos).
+- **Exemplo:** "Venda de bens usados" foi inativada depois da venda do
+  trator, mas continua na escolha de categoria do título novo e do
+  lançamento da Tesouraria.
+- **Onde:** `contas-a-pagar/page.tsx`, `contas-a-receber/page.tsx` e
+  `tesouraria/page.tsx` (listas sem filtro de `ativo`) e
+  `validarReferenciasDoTitulo` em `src/server/services/titulo.ts`.
+- **Impacto:** o inativar não faz o que promete; lançamentos novos em
+  categorias e centros que deviam ter saído de uso.
+- **Caminhos:** a mesma correção dos itens 28 (cliente e fornecedor) e 31
+  (conta bancária): oferecer só os ativos no título e no lançamento novos,
+  manter o já escolhido na edição, e recusar inativo no serviço. Vale fazer
+  os três itens juntos.
+- **Ao corrigir:** dicas dos passos "Confira o status" dos roteiros
+  `inativar-categoria`, `inativar-centro-custo` e do último passo de
+  `cadastrar-centro-lucro` (`src/ajuda/categorias`, `centros-de-custo`,
+  `centros-de-lucro`).
+
+### 36. O "pai" das categorias e dos centros de custo não é usado
+
+- **Problema:** categorias e centros de custo têm um campo "pai" (e a tela
+  de centros diz "Empresa → Unidade → Departamento → Centro de custo"), mas
+  nenhum relatório usa a hierarquia: o Orçamento, o Fluxo por dimensão e o
+  dashboard mostram cada item separado, sem somar os filhos no pai.
+- **Exemplo:** "Taxas de cartão" dentro de "Despesas bancárias": o
+  Orçamento mostra as duas linhas soltas, sem um total de "Despesas
+  bancárias" com as filhas.
+- **Onde:** `parentId` só é lido em `categoriaFinanceira.ts`,
+  `centroCusto.ts` e `hierarquia.ts` (cadastro e checagem de ciclo).
+- **Impacto:** quem monta a hierarquia esperando relatórios agrupados não
+  vê diferença; o manual prometia o agrupamento (corrigido em 2026-11-21).
+- **Caminhos:** no Orçamento e no Fluxo por dimensão, mostrar os pais com o
+  total dos filhos (linhas recolhíveis); ou, se a hierarquia não for
+  necessária, tirar o campo para não criar expectativa.
+- **Ao corrigir:** dicas dos passos sobre o pai em
+  `src/ajuda/categorias/index.tsx` e `src/ajuda/centros-de-custo/index.tsx`,
+  e as seções 7.2 e 7.3 do manual.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -848,8 +908,10 @@ Numeração continua a de Vendas.
   roteiros, lacuna 31 e lacuna 32 já corrigida); Produtos feito
   (2026-11-21, 3 roteiros, sem lacuna nova); Operadoras de cartão feito
   (2026-11-21, 3 roteiros, sem lacuna nova). Todas as telas ricas de
-  Cadastros têm ajuda; faltam as simples (em grupos) e a
-  Administração.
+  Cadastros têm ajuda. Bancos, Categorias, Centros de custo e Centros de
+  lucro feitos (2026-11-21, um grupo só, 7 roteiros; lacunas 33 e 34 já
+  corrigidas, 35 e 36 no backlog). Faltam Safras e Projetos; Frutas,
+  Talhões, Locais e Insumos; e a Administração.
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
   (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,
