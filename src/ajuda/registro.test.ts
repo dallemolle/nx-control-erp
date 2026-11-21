@@ -177,6 +177,7 @@ describe("registro da ajuda", () => {
     ["usuarios", "Usuários", 4],
     ["empresas", "Empresas", 3],
     ["filiais", "Filiais", 1],
+    ["configuracao-producao", "Configuração de produção", 3],
   ])("%s tem ajuda", async (tela, titulo, roteiros) => {
     expect(tituloDaAjuda(tela)).toBe(titulo);
     expect((await carregarAjuda(tela)).roteiros.length).toBe(roteiros);
