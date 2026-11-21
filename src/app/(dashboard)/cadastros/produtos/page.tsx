@@ -1,3 +1,4 @@
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -29,7 +30,10 @@ export default async function ProdutosPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Produtos</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-lg font-semibold">Produtos</h1>
+            <BotaoAjuda tela="produtos" />
+          </div>
           <p className="text-sm text-muted-foreground">
             Frutos e polpas vendidos ou estocados. O código vira o início do número de lote.
           </p>

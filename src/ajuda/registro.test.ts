@@ -152,4 +152,9 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("contas-bancarias")).toBe("Contas bancárias");
     expect((await carregarAjuda("contas-bancarias")).roteiros.length).toBe(3);
   });
+
+  test("produtos tem ajuda", async () => {
+    expect(tituloDaAjuda("produtos")).toBe("Produtos");
+    expect((await carregarAjuda("produtos")).roteiros.length).toBe(3);
+  });
 });
