@@ -966,6 +966,67 @@ Mesma numeração das seções acima.
   `cadastrar-usuario` (`src/ajuda/usuarios/roteiros.ts`) e a seção 8.3 do
   manual.
 
+### 44. Empresas mostrava e alterava as empresas de todos os clientes
+
+- **Feito (2026-11-21), na branch da ajuda de Empresas e Filiais (decisão do
+  usuário: "só as minhas"):** `listarEmpresas()` devolvia todas as empresas
+  do banco, e editar, inativar e o Tema e marca aceitavam qualquer `id`,
+  conferindo só o perfil. O Administrador de qualquer empresa via e alterava
+  (ou inativava) as dos outros clientes. Agora tudo passa por
+  `empresaAdministrada`: só valem empresas em que a pessoa é Administrador
+  com vínculo ativo; as outras dão "Empresa não encontrada" (e 404 na página
+  do tema). Criar empresa continua livre: quem cria vira Administrador.
+  Teste em `src/server/services/empresaEscopo.test.ts`. Histórico.
+
+### 45. Empresa inativa continuava aberta para quem já estava nela
+
+- **Feito (2026-11-21), na mesma branch:** inativar tirava a empresa de
+  "Trocar empresa", mas `requireVinculoAtivo` não olhava se a empresa estava
+  ativa: quem já estava dentro, e as chaves de API, continuavam usando. Agora
+  a sessão e a API exigem empresa ativa, e ninguém inativa a empresa em que
+  está ("Troque de empresa antes de inativar esta"; a linha não mostra
+  "Inativar"). Histórico.
+
+### 46. Inativar a filial em que se está tirava a pessoa dela
+
+- **Feito (2026-11-21), na mesma branch:** agora o serviço recusa ("Troque de
+  filial antes de inativar esta") e a linha não mostra "Inativar". Histórico.
+
+### 47. CNPJ/CPF repetido em empresa e filial mostrava o erro do banco
+
+- **Feito (2026-11-21), na mesma branch:** "Já existe uma empresa com este
+  CNPJ/CPF" e "Já existe uma filial com este CNPJ/CPF". Histórico.
+
+### 48. Cor e logo da empresa em dois lugares
+
+- **Problema:** o formulário "Editar empresa" ainda tem "Usar cor
+  personalizada" e "Logo". A cor só pinta a barra lateral e só vale enquanto
+  a empresa não tem tema salvo; o logo é o mesmo "Logo para fundo claro" do
+  Tema e marca. Quem troca a cor ali com tema salvo não vê efeito nenhum.
+- **Onde:** `empresas/empresa-dialog-form.tsx` (`corPrimaria`, `logo`),
+  `src/app/(dashboard)/layout.tsx` (usa `corPrimaria` sem tema).
+- **Impacto:** confusão: dois lugares para a mesma coisa, um que às vezes
+  não funciona.
+- **Caminhos:** tirar cor e logo do formulário e deixar só o Tema e marca
+  (a cor antiga pode virar a primária/barra lateral de um tema inicial,
+  numa migração); ou mostrar no formulário "Esta empresa tem tema: a cor
+  daqui não vale".
+- **Ao corrigir:** passo "Cor e logo: deixe para o Tema e marca" do roteiro
+  `cadastrar-empresa` (`src/ajuda/empresas/roteiros.ts`) e a réplica do
+  formulário em `src/ajuda/empresas/cenas.tsx`.
+
+### 49. Filial nova não dá acesso a ninguém
+
+- **Problema:** `criarFilial` não cria acesso para quem cadastrou. A filial
+  não aparece em "Trocar filial" de ninguém até o Administrador marcar o
+  acesso em Usuários. Já a empresa nova dá acesso ao criador na Matriz.
+- **Impacto:** quem cria a filial acha que não deu certo; passo esquecido.
+- **Caminhos:** dar Leitura e Alteração a quem criou, como na empresa nova;
+  ou, ao salvar, mostrar "Dê acesso em Usuários" com o link.
+- **Ao corrigir:** passo "Agora, dê acesso a ela" do roteiro
+  `cadastrar-filial` (`src/ajuda/filiais/index.tsx`) e a seção 8.2 do
+  manual.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -1008,8 +1069,10 @@ Mesma numeração das seções acima.
   Cadastros tem ajuda.** Administração (ordem escolhida pelo usuário:
   Usuários; Empresas + Filiais; Configuração de produção; Auditoria; e o
   Dashboard executivo, da Gestão): Usuários feito (2026-11-21, 4 roteiros;
-  lacunas 40 a 42 corrigidas, 43 no backlog). Faltam Empresas + Filiais,
-  Configuração de produção, Auditoria e o Dashboard executivo.
+  lacunas 40 a 42 corrigidas, 43 no backlog). Empresas + Filiais feitos
+  (2026-11-21, 3 + 1 roteiros; lacunas 44 a 47 corrigidas, a 44 uma falha de
+  isolamento entre clientes; 48 e 49 no backlog). Faltam Configuração de
+  produção, Auditoria e o Dashboard executivo.
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
   (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,

@@ -1,22 +1,17 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/server/db/client";
-import { requirePermission } from "@/server/auth/permissions";
 import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { Tema } from "@/lib/tema/schema";
 import { analisarTexto, validarTema } from "@/lib/tema/validar";
-import { processarImagemEmpresa } from "./empresa";
+import { empresaAdministrada, processarImagemEmpresa } from "./empresa";
 
 export const MSG_CONFIRMAR_AVISOS = "O tema tem avisos de contraste: confirme para aplicar";
 
 export { analisarTexto };
 
-async function empresaGerenciavel(sessao: SessaoAtiva, empresaId: string) {
-  requirePermission(sessao.perfil, "empresa:gerenciar");
-  const empresa = await prisma.empresa.findUnique({ where: { id: empresaId } });
-  if (!empresa) throw new Error("Empresa não encontrada");
-  return empresa;
-}
+/** Só a empresa que a pessoa administra (ver `empresaAdministrada`). */
+const empresaGerenciavel = empresaAdministrada;
 
 type Registro = Record<string, unknown> | null;
 
