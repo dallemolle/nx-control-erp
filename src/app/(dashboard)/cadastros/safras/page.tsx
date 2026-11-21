@@ -1,4 +1,6 @@
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Badge } from "@/components/ui/badge";
+import { ROTULOS_STATUS_SAFRA_PROJETO } from "@/lib/schemas/enums";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
@@ -22,7 +24,10 @@ export default async function SafrasPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Safras</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-lg font-semibold">Safras</h1>
+            <BotaoAjuda tela="safras" />
+          </div>
           <p className="text-sm text-muted-foreground">Cadastro de safras da filial.</p>
         </div>
         {podeEscrever && <SafraDialogForm />}
@@ -45,7 +50,7 @@ export default async function SafrasPage() {
               <TableCell className="font-medium">{safra.nome}</TableCell>
               <TableCell>{formatarData(safra.dataInicio)}</TableCell>
               <TableCell>{formatarData(safra.dataFim)}</TableCell>
-              <TableCell>{safra.status}</TableCell>
+              <TableCell>{ROTULOS_STATUS_SAFRA_PROJETO[safra.status]}</TableCell>
               <TableCell>
                 <Badge variant={safra.ativo ? "default" : "secondary"}>
                   {safra.ativo ? "Ativo" : "Inativo"}

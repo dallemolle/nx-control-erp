@@ -168,6 +168,8 @@ describe("registro da ajuda", () => {
     ["categorias", "Categorias financeiras", 2],
     ["centros-de-custo", "Centros de custo", 2],
     ["centros-de-lucro", "Centros de lucro", 1],
+    ["safras", "Safras", 2],
+    ["projetos", "Projetos", 1],
   ])("%s tem ajuda", async (tela, titulo, roteiros) => {
     expect(tituloDaAjuda(tela)).toBe(titulo);
     expect((await carregarAjuda(tela)).roteiros.length).toBe(roteiros);

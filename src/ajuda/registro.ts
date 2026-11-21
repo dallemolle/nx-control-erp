@@ -140,6 +140,14 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Centros de lucro",
     carregar: () => import("./centros-de-lucro").then((modulo) => modulo.ajudaCentrosDeLucro),
   },
+  safras: {
+    titulo: "Safras",
+    carregar: () => import("./safras").then((modulo) => modulo.ajudaSafras),
+  },
+  projetos: {
+    titulo: "Projetos",
+    carregar: () => import("./projetos").then((modulo) => modulo.ajudaProjetos),
+  },
 };
 
 export function temAjuda(tela: string): boolean {

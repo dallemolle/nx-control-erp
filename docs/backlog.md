@@ -545,24 +545,11 @@ continua, para cada item ter um número único). Prioridade a definir.
 
 ### 20. Status de safra e projeto aparece como código (EM_ANDAMENTO)
 
-- **Problema:** o status de safra e de projeto aparece como o valor do banco
-  (PLANEJADO, EM_ANDAMENTO, ENCERRADO) na Comparação entre safras, nas listas
-  de Cadastros → Safras e Projetos e nas opções do formulário de cadastro. Só
-  a exportação da Comparação traduz ("Em andamento").
-- **Exemplo:** na Comparação, a 2025/26 mostra "EM_ANDAMENTO"; o PDF exportado
-  da mesma tela mostra "Em andamento".
-- **Onde:** `controladoria/comparacao-safras/page.tsx`,
-  `cadastros/safras/page.tsx` e `safra-dialog-form.tsx`,
-  `cadastros/projetos/page.tsx` (e o formulário de projeto, conferir); o
-  rótulo certo já existe em `comparacao-safras/export/route.ts`
-  (`STATUS_LABEL`).
-- **Impacto:** acabamento: texto técnico na tela de quem não é da TI.
-- **Caminhos:** mover o `STATUS_LABEL` para `src/lib` e usar em todos os
-  lugares; no formulário, só o rótulo muda (o valor enviado continua o código).
-- **Cuidados:** a ajuda de Cadastros, quando existir, deve usar o rótulo novo.
-- **Ao corrigir:** passo "Status" do roteiro `comparar-safras` (cita os
-  códigos) e a réplica (`src/ajuda/comparacao-safras/cenas.tsx`); a frase do
-  `filtrar-exportar` que diz que só o arquivo traz o status por extenso.
+- **Feito (2026-11-21), na branch da ajuda de Safras e Projetos:** o rótulo
+  foi para `ROTULOS_STATUS_SAFRA_PROJETO` (`src/lib/schemas/enums.ts`) e é
+  usado nas listas e nos formulários de Safras e Projetos, na Comparação entre
+  safras e na sua exportação. A ajuda da Comparação (réplica, passo "Status" e
+  a frase do `filtrar-exportar`) foi ajustada junto. Histórico.
 
 ### 21. Pendência fiscal: o link não abre o título
 
@@ -828,14 +815,15 @@ Numeração continua a de Vendas.
 
 - **Feito (2026-11-21), na mesma branch:** a lista e o formulário de
   categorias mostram "Receita" e "Despesa" (`ROTULOS_TIPO_CATEGORIA_FINANCEIRA`).
-  Histórico. O item 20 (status de safra e projeto como código) é o mesmo
-  problema em outra tela.
+  Histórico. O item 20 (status de safra e projeto como código), o mesmo
+  problema em outra tela, também foi feito.
 
-### 35. Categoria e centros inativos continuam nos títulos (e a categoria, na Tesouraria)
+### 35. Categoria, centros, safra e projeto inativos continuam nos títulos (e a categoria, na Tesouraria)
 
 - **Problema:** inativar uma categoria tira ela do Orçamento e da operadora
-  de cartão; inativar um centro de custo ou de lucro tira ele da Tesouraria.
-  Mas o Contas a pagar e o Contas a receber continuam oferecendo os três, e a
+  de cartão; inativar um centro de custo ou de lucro, uma safra ou um projeto
+  tira ele da Tesouraria e da Conciliação (a safra sai também da Recepção).
+  Mas o Contas a pagar e o Contas a receber continuam oferecendo todos, e a
   Tesouraria continua oferecendo a categoria inativa (ela filtra só centros,
   safras e projetos).
 - **Exemplo:** "Venda de bens usados" foi inativada depois da venda do
@@ -853,7 +841,8 @@ Numeração continua a de Vendas.
 - **Ao corrigir:** dicas dos passos "Confira o status" dos roteiros
   `inativar-categoria`, `inativar-centro-custo` e do último passo de
   `cadastrar-centro-lucro` (`src/ajuda/categorias`, `centros-de-custo`,
-  `centros-de-lucro`).
+  `centros-de-lucro`); dica do último passo de `encerrar-safra` e de
+  `cadastrar-projeto` (`src/ajuda/safras`, `projetos`).
 
 ### 36. O "pai" das categorias e dos centros de custo não é usado
 
@@ -874,6 +863,36 @@ Numeração continua a de Vendas.
 - **Ao corrigir:** dicas dos passos sobre o pai em
   `src/ajuda/categorias/index.tsx` e `src/ajuda/centros-de-custo/index.tsx`,
   e as seções 7.2 e 7.3 do manual.
+
+### 37. Código de projeto repetido mostrava o erro do banco de dados
+
+- **Feito (2026-11-21), na branch da ajuda de Safras e Projetos:** o projeto
+  não usava `comMensagemDeDuplicidade`; agora aparece "Já existe um projeto
+  com este código" (teste em
+  `src/server/services/duplicidadeCadastros.test.ts`). Histórico.
+
+### 38. Safra e projeto Encerrados não bloqueiam nada, e a safra pode repetir o nome
+
+- **Problema:** o status (Planejado, Em andamento, Encerrado) só é exibido:
+  uma safra ou projeto Encerrado continua aceitando títulos, lançamentos e,
+  no caso da safra, recepções. E a safra não tem nome único na filial: dá
+  para cadastrar duas "2025/26", que aparecem iguais em todas as listas.
+- **Exemplo:** a 2024/25 está Encerrada, mas uma recepção de hoje pode ser
+  marcada nela por engano; duas "2026/27" cadastradas por duas pessoas
+  dividem os valores sem ninguém perceber.
+- **Onde:** `safraSchema`/`projetoSchema` e os serviços de título,
+  lançamento e recepção (nenhum lê `status`); `model Safra` em
+  `prisma/schema.prisma` (sem `@@unique([filialId, nome])`, o projeto tem
+  por código).
+- **Impacto:** o status não protege o fechamento da safra; nome repetido
+  embaralha a Comparação entre safras e o Fluxo por dimensão.
+- **Caminhos:** decidir se Encerrado deve bloquear lançamentos novos (ou só
+  avisar, já que uma venda pode chegar depois da colheita); criar o índice
+  único de nome da safra por filial (migração, conferindo duplicadas
+  existentes) e usar `comMensagemDeDuplicidade`.
+- **Ao corrigir:** passo "Informe o nome" de `cadastrar-safra`, passo
+  "Confira o status" de `encerrar-safra` e passo "Escolha o status" de
+  `cadastrar-projeto` (`src/ajuda/safras`, `projetos`).
 
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
@@ -910,8 +929,9 @@ Numeração continua a de Vendas.
   (2026-11-21, 3 roteiros, sem lacuna nova). Todas as telas ricas de
   Cadastros têm ajuda. Bancos, Categorias, Centros de custo e Centros de
   lucro feitos (2026-11-21, um grupo só, 7 roteiros; lacunas 33 e 34 já
-  corrigidas, 35 e 36 no backlog). Faltam Safras e Projetos; Frutas,
-  Talhões, Locais e Insumos; e a Administração.
+  corrigidas, 35 e 36 no backlog). Safras e Projetos feitos (2026-11-21,
+  3 roteiros; lacunas 20 e 37 corrigidas, 35 ampliada, 38 no backlog).
+  Faltam Frutas, Talhões, Locais e Insumos; e a Administração.
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
   (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,

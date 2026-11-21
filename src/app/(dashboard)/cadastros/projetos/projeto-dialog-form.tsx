@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { STATUS_SAFRA_PROJETO } from "@/lib/schemas/enums";
+import { ROTULOS_STATUS_SAFRA_PROJETO, STATUS_SAFRA_PROJETO } from "@/lib/schemas/enums";
 import { criarProjetoAction, atualizarProjetoAction, type FormState } from "./actions";
 import { useAcaoDoDialogo } from "../../_shared/use-acao-do-dialogo";
 
@@ -58,7 +58,7 @@ export function ProjetoDialogForm({ projeto }: { projeto?: Projeto }) {
               <SelectContent>
                 {STATUS_SAFRA_PROJETO.map((opcao) => (
                   <SelectItem key={opcao} value={opcao}>
-                    {opcao}
+                    {ROTULOS_STATUS_SAFRA_PROJETO[opcao]}
                   </SelectItem>
                 ))}
               </SelectContent>
