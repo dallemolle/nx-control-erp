@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.1.43](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.42...nx-control-erp-v0.1.43) (2026-11-21)
+
+
+### Novidades
+
+* **cadastros:** ajuda com simulação em Bancos, Categorias e Centros ([c9c92c6](https://github.com/dallemolle/nx-control-erp/commit/c9c92c6dff0d298e0460892b4f8f02807bdebca5))
+* **cadastros:** ajuda com simulação em Clientes ([00dd639](https://github.com/dallemolle/nx-control-erp/commit/00dd6394afb9ce6d2abdc82a1e45ee94869ed34f))
+* **cadastros:** ajuda com simulação em Contas bancárias ([3c41fe1](https://github.com/dallemolle/nx-control-erp/commit/3c41fe1df1cd72430e78de2644ef04faa6a09586))
+* **cadastros:** ajuda com simulação em Fornecedores ([a0fb9d8](https://github.com/dallemolle/nx-control-erp/commit/a0fb9d8712eeb9542b0ee69a3ff4acc757a23b00))
+* **cadastros:** ajuda com simulação em Frutas, Talhões, Locais e Insumos ([4ad112b](https://github.com/dallemolle/nx-control-erp/commit/4ad112b71b45eb841a5e0f6c1750548afc0ca835))
+* **cadastros:** ajuda com simulação em Operadoras de cartão ([32aa580](https://github.com/dallemolle/nx-control-erp/commit/32aa58032582cd6538bdb5c2cd3a1cdaa3136b6a))
+* **cadastros:** ajuda com simulação em Produtos ([f35358d](https://github.com/dallemolle/nx-control-erp/commit/f35358db0f58700f8637c73bdb7097e1cde37a1d))
+* **cadastros:** ajuda com simulação em Safras e Projetos ([d248093](https://github.com/dallemolle/nx-control-erp/commit/d24809334ad0df22a8437f6f0af48daf44f22d9f))
+
+
+### Correções
+
+* **cadastros:** mensagem clara para CNPJ/CPF repetido no fornecedor ([7ac6f2d](https://github.com/dallemolle/nx-control-erp/commit/7ac6f2de931692c3a2808b5b4ef96b025cbab065))
+* **cadastros:** mensagem clara para código de projeto repetido ([ba7d152](https://github.com/dallemolle/nx-control-erp/commit/ba7d15228aa8f75e1d2d6867550a3e0b595e6a1d))
+* **cadastros:** mensagem clara para código repetido em bancos e centros ([0da9301](https://github.com/dallemolle/nx-control-erp/commit/0da9301b035c5657c7047a1c7bbebd11d22ae914))
+* **cadastros:** saldo inicial das contas bancárias em reais ([6e7ebda](https://github.com/dallemolle/nx-control-erp/commit/6e7ebdab6007271934bc876cd8f7231738ac156f))
+* **cadastros:** status de safra e projeto como Planejado, Em andamento e Encerrado ([f793e7c](https://github.com/dallemolle/nx-control-erp/commit/f793e7c6efa0fed581e409820295205da65e18d1))
+* **cadastros:** tipo da categoria como Receita e Despesa ([b408084](https://github.com/dallemolle/nx-control-erp/commit/b408084df200da89b489cab754cfc710d0fb7fea))
+
 ## [0.1.42](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.41...nx-control-erp-v0.1.42) (2026-11-21)
 
 
