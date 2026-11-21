@@ -680,6 +680,33 @@ Numeração continua a do Financeiro e da Controladoria.
   `src/ajuda/ajustes/roteiros.ts` (ensina o ajuste contrário) e o "E depois?"
   dele.
 
+## Vendas — lacunas achadas ao escrever a ajuda contextual
+
+Numeração continua a da Produção.
+
+### 26. Lista de lotes do pedido não diz qual vencido está liberado
+
+- **Problema:** no Novo pedido, todo lote com validade anterior à data do
+  pedido aparece com "· VENCIDO", liberado pelo gestor ou não. Só depois de
+  escolher o lote o formulário diz "Liberado até ..." ou "Lote vencido: peça a
+  liberação ao gestor".
+- **Exemplo:** em 21/11 a lista mostra FC-261117-01 e AMR-261118-01, os dois
+  "VENCIDO". O FC foi liberado até 21/11 e pode sair; o AMR não. A vendedora
+  precisa escolher cada um para descobrir.
+- **Onde:** rótulo do lote em `vendas/pedidos/novo/pedido-form.tsx` (o
+  `liberadoAte` já chega em `opcoes.lotes`).
+- **Impacto:** tentativa e erro no balcão; e lote liberado (que o gestor quer
+  escoar primeiro) parece proibido e fica para trás.
+- **Caminhos:** mostrar "· VENCIDO · liberado até dd/mm" quando a liberação
+  cobre a data do pedido; ou separar os vencidos não liberados no fim da lista
+  (ou escondê-los).
+- **Cuidados:** a liberação vale pela data do pedido, que pode ser mudada
+  depois de escolher o lote (o rótulo tem de acompanhar a data).
+- **Ao corrigir:** passos "Lote vencido não sai" e "A não ser que o gestor
+  tenha liberado" do roteiro `lancar-a-vista` em
+  `src/ajuda/pedidos/roteiros.ts` e a cena `CenaLotes` em
+  `src/ajuda/pedidos/cenas.tsx`.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -703,8 +730,10 @@ Numeração continua a do Financeiro e da Controladoria.
   roteiros, sem lacuna nova); Relatório de vendas feito (2026-11-20, 3
   roteiros, sem lacuna nova); Relatório de origem feito (2026-11-20, 3
   roteiros, sem lacuna nova); Relatório de processamento feito (2026-11-20,
-  3 roteiros, sem lacuna nova). **Toda a Produção tem ajuda.** Faltam
-  Vendas, Cadastros e Administração.
+  3 roteiros, sem lacuna nova). **Toda a Produção tem ajuda.** Vendas:
+  Pedidos feito (2026-11-20, 6 roteiros, lacuna 26; a venda na maquininha é
+  simulada sem salvar, para não mudar os números de novembro). Faltam
+  Entregas, Cadastros e Administração.
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
   (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,
