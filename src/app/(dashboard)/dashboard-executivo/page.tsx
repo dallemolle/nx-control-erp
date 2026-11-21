@@ -13,6 +13,8 @@ import { AgingChart } from "./aging-chart";
 import { formatarMoeda } from "@/lib/formatacao";
 import { filiaisDesativadasComPendencia } from "@/server/services/filiaisConsolidadas";
 import { AvisoFiliaisDesativadas } from "../_shared/aviso-filiais-desativadas";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
+import { percentualComVirgula } from "./formatos";
 
 export default async function DashboardExecutivoPage() {
   const sessao = await requireSessaoAtiva();
@@ -40,7 +42,10 @@ export default async function DashboardExecutivoPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-lg font-semibold">Dashboard executivo</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Dashboard executivo</h1>
+          <BotaoAjuda tela="dashboard-executivo" />
+        </div>
         <p className="text-sm text-muted-foreground">
           Consolidado das filiais ativas da empresa. Restrito a Administrador, Gestor e Auditor.
         </p>
@@ -93,7 +98,7 @@ export default async function DashboardExecutivoPage() {
               <p className="text-2xl font-semibold">
                 {resumoFiscal.percentualGerencialEntradas === null
                   ? "—"
-                  : `${resumoFiscal.percentualGerencialEntradas.toFixed(1)}%`}
+                  : percentualComVirgula(resumoFiscal.percentualGerencialEntradas)}
               </p>
             </CardContent>
           </Card>
@@ -119,7 +124,7 @@ export default async function DashboardExecutivoPage() {
           <EvolucaoSaldoChart dados={graficos.evolucaoSaldo} />
         </section>
         <section className="space-y-2 lg:col-span-2">
-          <h2 className="text-base font-semibold">Aging de contas a pagar/receber</h2>
+          <h2 className="text-base font-semibold">Aging de contas a pagar/receber (vencidas, por dias de atraso)</h2>
           <AgingChart dados={graficos.aging} />
         </section>
       </div>

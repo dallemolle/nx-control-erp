@@ -164,6 +164,30 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Insumos",
     carregar: () => import("./insumos").then((modulo) => modulo.ajudaInsumos),
   },
+  usuarios: {
+    titulo: "Usuários",
+    carregar: () => import("./usuarios").then((modulo) => modulo.ajudaUsuarios),
+  },
+  empresas: {
+    titulo: "Empresas",
+    carregar: () => import("./empresas").then((modulo) => modulo.ajudaEmpresas),
+  },
+  filiais: {
+    titulo: "Filiais",
+    carregar: () => import("./filiais").then((modulo) => modulo.ajudaFiliais),
+  },
+  "configuracao-producao": {
+    titulo: "Configuração de produção",
+    carregar: () => import("./configuracao-producao").then((modulo) => modulo.ajudaConfiguracaoProducao),
+  },
+  auditoria: {
+    titulo: "Auditoria",
+    carregar: () => import("./auditoria").then((modulo) => modulo.ajudaAuditoria),
+  },
+  "dashboard-executivo": {
+    titulo: "Dashboard executivo",
+    carregar: () => import("./dashboard-executivo").then((modulo) => modulo.ajudaDashboardExecutivo),
+  },
 };
 
 export function temAjuda(tela: string): boolean {

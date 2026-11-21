@@ -1,3 +1,4 @@
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,7 +18,10 @@ export default async function FiliaisPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Filiais</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-lg font-semibold">Filiais</h1>
+            <BotaoAjuda tela="filiais" />
+          </div>
           <p className="text-sm text-muted-foreground">
             Cadastro de filiais da empresa ativa. Cada filial é um contexto operacional dentro da empresa.
           </p>
@@ -46,13 +50,16 @@ export default async function FiliaisPage() {
               </TableCell>
               <TableCell className="flex justify-end gap-2">
                 <FilialDialogForm filial={filial} />
-                <form action={alternarAtivoFilialAction}>
-                  <input type="hidden" name="id" value={filial.id} />
-                  <input type="hidden" name="ativo" value={(!filial.ativo).toString()} />
-                  <Button type="submit" variant="outline" size="sm">
-                    {filial.ativo ? "Inativar" : "Reativar"}
-                  </Button>
-                </form>
+                {/* A filial em que você está não se inativa daqui: o serviço recusa. */}
+                {filial.id === sessao.filialId ? null : (
+                  <form action={alternarAtivoFilialAction}>
+                    <input type="hidden" name="id" value={filial.id} />
+                    <input type="hidden" name="ativo" value={(!filial.ativo).toString()} />
+                    <Button type="submit" variant="outline" size="sm">
+                      {filial.ativo ? "Inativar" : "Reativar"}
+                    </Button>
+                  </form>
+                )}
               </TableCell>
             </TableRow>
           ))}

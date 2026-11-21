@@ -28,8 +28,16 @@ describe("filtroAuditoriaDaUrl", () => {
     expect(filtro.acao).toBe("CRIAR");
     expect(filtro.usuarioId).toBe("usr-1");
     expect(filtro.filialId).toBe("fil-1");
-    expect(filtro.dataDe?.toISOString()).toBe("2026-01-01T00:00:00.000Z");
-    expect(filtro.dataAte?.toISOString()).toBe("2026-01-31T23:59:59.999Z");
+    expect(filtro.dataDe?.toISOString()).toBe("2026-01-01T03:00:00.000Z");
+    expect(filtro.dataAte?.toISOString()).toBe("2026-02-01T02:59:59.999Z");
+  });
+
+  test("o dia é o de Brasília: 21h30 de 21/11 entra em “até 21/11”, não em “de 22/11”", () => {
+    const as21h30 = new Date("2026-11-22T00:30:00.000Z"); // 21/11, 21h30 em Brasília
+    const ate21 = filtroAuditoriaDaUrl((campo) => (campo === "dataAte" ? "2026-11-21" : undefined)).dataAte!;
+    const de22 = filtroAuditoriaDaUrl((campo) => (campo === "dataDe" ? "2026-11-22" : undefined)).dataDe!;
+    expect(as21h30 <= ate21).toBe(true);
+    expect(as21h30 >= de22).toBe(false);
   });
 
   test('sentinela "__nenhum__" vira undefined', () => {

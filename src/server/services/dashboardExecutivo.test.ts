@@ -3,7 +3,75 @@ import { prisma } from "@/server/db/client";
 import { PermissionError } from "@/server/auth/permissions";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
 import { criarTitulo } from "./titulo";
-import { buscarIndicadoresExecutivos, buscarGraficosExecutivos } from "./dashboardExecutivo";
+import {
+  buscarIndicadoresExecutivos,
+  buscarGraficosExecutivos,
+  calcularAging,
+  calcularIndicadoresExecutivos,
+  diaDeHoje,
+} from "./dashboardExecutivo";
+
+describe("diaDeHoje", () => {
+  test("às 22h de Brasília ainda é o mesmo dia (antes, em UTC, já era o seguinte)", () => {
+    const agora = new Date("2026-11-30T01:00:00.000Z"); // 29/11, 22h em Brasília
+    const { hoje, fimDeHoje, inicioMesAtual } = diaDeHoje(agora);
+    expect(hoje.toISOString()).toBe("2026-11-29T00:00:00.000Z");
+    expect(fimDeHoje.toISOString()).toBe("2026-11-29T23:59:59.999Z");
+    expect(inicioMesAtual.toISOString()).toBe("2026-11-01T00:00:00.000Z");
+  });
+});
+
+describe("calcularIndicadoresExecutivos e calcularAging", () => {
+  const hoje = new Date("2026-11-22T00:00:00.000Z");
+  const dia = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
+
+  test("inadimplência é a receber vencida pela data, também a paga em parte; vencendo hoje não conta", () => {
+    const indicadores = calcularIndicadoresExecutivos({
+      hoje,
+      caixaDisponivel: 1000,
+      entradasMes: 500,
+      saidasMes: 200,
+      parcelas: [
+        { tipo: "RECEBER", dataVencimento: dia("2026-11-21"), saldo: 300 },
+        { tipo: "RECEBER", dataVencimento: dia("2026-10-20"), saldo: 150 }, // paga em parte: só o saldo
+        { tipo: "RECEBER", dataVencimento: dia("2026-11-22"), saldo: 80 },
+        { tipo: "PAGAR", dataVencimento: dia("2026-11-22"), saldo: 40 },
+        { tipo: "PAGAR", dataVencimento: dia("2026-11-29"), saldo: 60 },
+        { tipo: "PAGAR", dataVencimento: dia("2026-12-22"), saldo: 100 },
+        { tipo: "PAGAR", dataVencimento: dia("2026-12-23"), saldo: 999 },
+      ],
+    });
+    expect(indicadores).toEqual({
+      caixaDisponivel: 1000,
+      contasAPagarEmAberto: 1199,
+      contasAReceberEmAberto: 530,
+      inadimplencia: 450,
+      geracaoDeCaixaMesAtual: 300,
+      obrigacoes7Dias: 100,
+      obrigacoes30Dias: 200,
+      recebimentosEsperados30Dias: 80,
+      saldoProjetado30Dias: 880,
+    });
+  });
+
+  test("aging conta só as vencidas, por dias de atraso", () => {
+    const aging = calcularAging(
+      [
+        { tipo: "RECEBER", dataVencimento: dia("2026-11-21"), saldo: 300 },
+        { tipo: "RECEBER", dataVencimento: dia("2026-10-20"), saldo: 150 },
+        { tipo: "PAGAR", dataVencimento: dia("2026-08-01"), saldo: 70 },
+        { tipo: "PAGAR", dataVencimento: dia("2026-11-22"), saldo: 40 },
+      ],
+      hoje,
+    );
+    expect(aging).toEqual([
+      { faixa: "0-30", contasAPagar: 0, contasAReceber: 300 },
+      { faixa: "31-60", contasAPagar: 0, contasAReceber: 150 },
+      { faixa: "61-90", contasAPagar: 0, contasAReceber: 0 },
+      { faixa: "90+", contasAPagar: 70, contasAReceber: 0 },
+    ]);
+  });
+});
 
 describe("buscarIndicadoresExecutivos (integração)", () => {
   let fixture: FixtureFinanceiro;
@@ -154,8 +222,9 @@ describe("buscarIndicadoresExecutivos (integração)", () => {
     expect(indicadores.obrigacoes30Dias).toBeGreaterThanOrEqual(150);
   });
 
-  test("inadimplencia só soma parcelas RECEBER com status VENCIDO", async () => {
+  test("inadimplencia soma parcela RECEBER vencida pela data, mesmo com o status gravado desatualizado", async () => {
     const ontem = new Date(hoje.getTime() - 24 * 60 * 60 * 1000);
+    const antes = (await buscarIndicadoresExecutivos(sessaoGestor)).inadimplencia;
     const titulo = await criarTitulo(fixture.sessaoAdmin, "RECEBER", {
       contraparteId: fixture.clienteId,
       documento: `DASH-VENC-${Date.now()}`,
@@ -170,10 +239,11 @@ describe("buscarIndicadoresExecutivos (integração)", () => {
       formaPagamento: "",
       parcelas: [{ numero: 1, dataVencimento: ontem, valorOriginal: 300 }],
     });
-    await prisma.parcela.update({ where: { id: titulo.parcelas[0].id }, data: { status: "VENCIDO" } });
+    // Ninguém abriu a lista de títulos: o status gravado continua o de antes do vencimento.
+    await prisma.parcela.update({ where: { id: titulo.parcelas[0].id }, data: { status: "A_VENCER" } });
 
     const indicadores = await buscarIndicadoresExecutivos(sessaoGestor);
-    expect(indicadores.inadimplencia).toBeGreaterThanOrEqual(300);
+    expect(indicadores.inadimplencia - antes).toBe(300);
   });
 
   test("recebimentosEsperados30Dias só considera parcelas RECEBER dentro da janela", async () => {

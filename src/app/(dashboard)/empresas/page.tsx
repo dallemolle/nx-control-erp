@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,15 +13,18 @@ export default async function EmpresasPage() {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "empresa:gerenciar");
 
-  const empresas = await listarEmpresas();
+  const empresas = await listarEmpresas(sessao);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Empresas</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-lg font-semibold">Empresas</h1>
+            <BotaoAjuda tela="empresas" />
+          </div>
           <p className="text-sm text-muted-foreground">
-            Cadastro de empresas do grupo. Cada empresa é um contexto isolado de dados.
+            Empresas que você administra. Cada empresa é um contexto isolado de dados.
           </p>
         </div>
         <EmpresaDialogForm />
@@ -59,13 +63,16 @@ export default async function EmpresasPage() {
                 >
                   Tema e marca
                 </Button>
-                <form action={alternarAtivoEmpresaAction}>
-                  <input type="hidden" name="id" value={empresa.id} />
-                  <input type="hidden" name="ativo" value={(!empresa.ativo).toString()} />
-                  <Button type="submit" variant="outline" size="sm">
-                    {empresa.ativo ? "Inativar" : "Reativar"}
-                  </Button>
-                </form>
+                {/* A empresa em que você está não se inativa daqui: o serviço recusa. */}
+                {empresa.id === sessao.empresaId ? null : (
+                  <form action={alternarAtivoEmpresaAction}>
+                    <input type="hidden" name="id" value={empresa.id} />
+                    <input type="hidden" name="ativo" value={(!empresa.ativo).toString()} />
+                    <Button type="submit" variant="outline" size="sm">
+                      {empresa.ativo ? "Inativar" : "Reativar"}
+                    </Button>
+                  </form>
+                )}
               </TableCell>
             </TableRow>
           ))}

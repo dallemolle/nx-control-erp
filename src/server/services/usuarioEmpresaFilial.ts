@@ -59,6 +59,11 @@ export async function definirAcessoFilial(
 ) {
   requirePermission(sessao.perfil, "usuario:gerenciar");
 
+  // Sem leitura na filial em que está, a próxima página já seria negada.
+  if (usuarioId === sessao.usuarioId && filialId === sessao.filialId && !dados.temAcesso) {
+    throw new Error("Você não pode remover seu próprio acesso à filial ativa");
+  }
+
   await prisma.filial.findUniqueOrThrow({
     where: { id: filialId, empresaId: sessao.empresaId },
   });

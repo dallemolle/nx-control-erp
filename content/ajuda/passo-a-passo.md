@@ -513,7 +513,11 @@ Mudar a taxa vale para as vendas novas: cada pedido guarda a taxa usada na venda
 
 ### 8.1. Empresas
 
-Cadastro das empresas atendidas pelo sistema. Ao criar uma empresa, o sistema já cria automaticamente uma filial "Matriz" e vincula quem criou como Administrador dela.
+Cadastro das empresas atendidas pelo sistema. A lista mostra só as empresas em que você é Administrador; as de outros clientes não aparecem nem podem ser alteradas. Ao criar uma empresa, o sistema já cria automaticamente uma filial "Matriz" (com o mesmo CNPJ) e vincula quem criou como Administrador dela. A empresa nova nasce vazia: entre nela por **Trocar empresa**.
+
+**Inativar:** a empresa inativa não abre mais para ninguém, nem para quem já estava nela, e as chaves de API param; os dados ficam guardados. A empresa em que você está não tem **Inativar**: troque de empresa antes. Os campos de cor e logo do formulário são antigos: a cor só vale sem tema salvo, então prefira o **Tema e marca**.
+
+**Ver simulação (Empresas):** [cadastrar uma empresa](#ajuda/empresas/cadastrar-empresa) · [aprovação por outra pessoa e inativar](#ajuda/empresas/editar-inativar-empresa) · [tema e marca](#ajuda/empresas/tema-marca)
 
 **Exigir que a baixa seja aprovada por outra pessoa:** vem marcada. Com ela, quem registra uma baixa não pode aprová-la (seção 3.2). Desmarque só se a empresa tem uma pessoa só no financeiro; a mudança fica registrada na auditoria.
 
@@ -531,33 +535,53 @@ Cadastro das empresas atendidas pelo sistema. Ao criar uma empresa, o sistema j�
 
 Cadastro das filiais (unidades operacionais) de cada empresa. Cada filial tem seu próprio conjunto de cadastros (categorias, centros de custo/lucro, safras, projetos, contas bancárias) e seus próprios títulos e lançamentos.
 
+A filial nova nasce sem ninguém com acesso, nem quem a criou: marque Leitura e Alteração em **Usuários** para ela aparecer em **Trocar filial**. O CNPJ da filial é o que a API usa no cabeçalho `X-Filial-CnpjCpf` e não pode repetir. A filial em que você está não tem **Inativar**: troque de filial antes.
+
+**Ver simulação (Filiais):** [cadastrar uma filial](#ajuda/filiais/cadastrar-filial)
+
 ### 8.3. Usuários
 
-Um Administrador cadastra aqui os usuários da empresa, define o perfil de cada um (seção 2.4) e concede ou remove o acesso a cada filial individualmente, incluindo se o acesso é de alteração ou somente leitura.
+Um Administrador cadastra aqui os usuários da empresa, define o perfil de cada um (seção 2.4) e concede ou remove o acesso a cada filial individualmente, incluindo se o acesso é de alteração ou somente leitura. Ao cadastrar, **Verificar** confere se o email já tem login no sistema (por outra empresa): nesse caso não se pede nome nem senha, só o perfil desta empresa.
+
+Ninguém muda o próprio perfil, desativa o próprio acesso ou tira a própria leitura da filial em que está: na sua linha, o perfil aparece só como texto. Assim a empresa nunca fica sem administrador. Hoje a senha é definida no cadastro e não há troca nem redefinição de senha.
+
+**Ver simulação (Usuários):** [cadastrar um usuário](#ajuda/usuarios/cadastrar-usuario) · [dar acesso a quem já tem login](#ajuda/usuarios/usuario-existente) · [perfil, acesso por filial e desativar](#ajuda/usuarios/perfil-acesso) · [chaves de API](#ajuda/usuarios/chaves-api)
 
 **Chaves de API**
 
-Cada usuário também pode ter uma ou mais chaves de API, usadas para autenticar chamadas na API REST do sistema — útil para automações e integrações externas. Ao gerar uma chave, o Administrador escolhe um nome para identificá-la; a chave completa só é mostrada uma única vez, no momento da criação, e depois disso só o prefixo fica visível, junto com a data de criação e a do último uso. Uma chave pode ser revogada a qualquer momento, e chaves de usuários inativos param de funcionar automaticamente.
+Cada usuário também pode ter uma ou mais chaves de API, usadas para autenticar chamadas na API REST do sistema — útil para automações e integrações externas. Ao gerar uma chave, o Administrador escolhe um nome para identificá-la; a chave completa só é mostrada uma única vez, no momento da criação, e depois disso só o prefixo fica visível, junto com a data de criação e a do último uso. Uma chave pode ser revogada a qualquer momento, e chaves de usuários inativos param de funcionar automaticamente. A chave age com o perfil e os acessos por filial do usuário dono dela; gerar e revogar ficam na Auditoria.
 
 ### 8.4. Auditoria
 
 Registra automaticamente toda alteração relevante feita no sistema — quem fez, quando, em qual filial, o que mudou (valor anterior e valor novo). A tela permite filtrar por entidade (o tipo de registro alterado — Título, Baixa, Conciliação etc.), ação (Criar, Atualizar, Aprovar, Rejeitar etc.), usuário, filial e período, com paginação para navegar entre muitos registros.
 
-> Só os perfis Administrador, Gestor e Auditor têm acesso a esta tela.
+Só os campos que mudaram são gravados. Na tela, os valores aparecem cortados; o Excel e o CSV trazem os valores inteiros e a coluna "ID do registro". O dia dos filtros de data é o de Brasília, o mesmo da coluna Data/hora. Ninguém altera nem apaga um registro da auditoria.
+
+> Só os perfis Administrador, Gestor e Auditor têm acesso a esta tela. Ela mostra todas as filiais da empresa.
+
+**Ver simulação:** [descobrir quem alterou um registro](#ajuda/auditoria/quem-alterou) · [ver o que uma pessoa fez num período](#ajuda/auditoria/o-que-fez) · [exportar para o contador](#ajuda/auditoria/exportar)
 
 ### 8.5. Configuração de produção
 
-Parâmetros da filial atual usados pela produção: registro na ADEPARA e endereço (vão para a etiqueta do lote), com quantos dias de antecedência um lote congelado ou resfriado aparece como "vencendo", temperatura e tempo mínimos do branqueamento, e a tolerância do balanço de massa (em %). Enquanto nada for salvo, valem os padrões: 30 dias (congelado), 1 dia (in natura e resfriado), 80 °C, 10 segundos e 3%. Só o Administrador altera esta tela.
+Parâmetros da filial atual usados pela produção: registro na ADEPARA e endereço (vão para a etiqueta do lote), com quantos dias de antecedência um lote congelado ou resfriado aparece como "vencendo", temperatura e tempo mínimos do branqueamento, e a tolerância do balanço de massa (em %). Enquanto nada for salvo, valem os padrões: 30 dias (congelado), 1 dia (in natura e resfriado), 80 °C, 10 segundos e 3%. Os avisos de "vencendo" e de "Verificar" são recalculados com os números atuais, também para lotes e OPs antigos. Só o Administrador altera esta tela.
+
+O card **Compra de fruto** define a **categoria financeira** (uma categoria de despesa, usada na conta a pagar que a recepção de fruto de terceiro cria) e o **prazo de pagamento ao produtor** (em dias depois da recepção; o vencimento pode ser mudado em cada recepção). Sem a categoria, a recepção de terceiro com valor é recusada.
 
 O card **Vendas** define a **categoria de venda** (uma categoria de receita, usada na conta a receber de cada pedido), a **conta de recebimento** (usada nas vendas em Pix e transferência; não pode ser uma conta Caixa; a maquininha usa a conta de depósito da operadora) e a **conta Caixa** (usada nas vendas em dinheiro). Sem a categoria de venda, nenhum pedido é aceito.
+
+**Ver simulação:** [preparar a recepção e as vendas](#ajuda/configuracao-producao/preparar-recepcao-vendas) · [dados da etiqueta do lote](#ajuda/configuracao-producao/dados-etiqueta) · [alertas de vencimento e controles da OP](#ajuda/configuracao-producao/alertas-controles)
 
 ## 9. Gestão
 
 ### 9.1. Dashboard executivo
 
-Visão consolidada das filiais ativas da empresa, pensada para quem acompanha o negócio como um todo (Administrador, Gestor, Auditor). Reúne os principais indicadores financeiros (caixa disponível, contas a pagar/receber em aberto, inadimplência, geração de caixa do mês, obrigações dos próximos 7/30 dias, recebimentos esperados e saldo projetado), um bloco **Fiscal × gerencial** do mês (entradas fiscais e gerenciais, percentual gerencial e número de pendências fiscais) e três gráficos: entradas x saídas dos últimos 6 meses, evolução do saldo, e aging (distribuição por faixa de atraso/vencimento) das contas a pagar e a receber.
+Visão consolidada das filiais ativas da empresa, pensada para quem acompanha o negócio como um todo (Administrador, Gestor, Auditor). Reúne os principais indicadores financeiros (caixa disponível, contas a pagar/receber em aberto, inadimplência, geração de caixa do mês, obrigações dos próximos 7/30 dias, recebimentos esperados e saldo projetado), um bloco **Fiscal × gerencial** do mês (entradas fiscais e gerenciais, percentual gerencial e número de pendências fiscais) e três gráficos: entradas x saídas dos últimos 6 meses, evolução do saldo, e aging (só as parcelas vencidas, por faixa de dias de atraso) das contas a pagar e a receber.
+
+O caixa, a geração de caixa e os gráficos contam só lançamentos **conciliados**. A inadimplência é o que falta receber das parcelas com vencimento antes de hoje (a paga em parte entra pelo que falta). As obrigações e os recebimentos esperados vão de hoje até daqui a 7 ou 30 dias, sem as atrasadas; o saldo projetado é caixa + recebimentos esperados − obrigações de 30 dias. "Hoje" e "mês atual" seguem o horário de Brasília.
 
 Filiais desativadas não entram nesses números (nem no Fluxo de caixa estratégico). Se alguma delas ainda tiver parcelas em aberto ou saldo em caixa, um aviso no topo da tela mostra quais e quanto — para tratar essas pendências, um administrador pode reativar a filial em Administração → Filiais.
+
+**Ver simulação:** [ler os indicadores](#ajuda/dashboard-executivo/ler-indicadores) · [fiscal × gerencial do mês](#ajuda/dashboard-executivo/fiscal-gerencial) · [ler os gráficos](#ajuda/dashboard-executivo/ler-graficos)
 
 ## 10. Glossário
 

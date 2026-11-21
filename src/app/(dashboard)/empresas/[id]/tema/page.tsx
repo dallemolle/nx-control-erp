@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma } from "@/server/db/client";
+import { empresaAdministrada } from "@/server/services/empresa";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission } from "@/server/auth/permissions";
 import { temaInicial } from "@/lib/tema/editor";
@@ -11,7 +11,8 @@ export default async function TemaEmpresaPage({ params }: { params: Promise<{ id
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "empresa:gerenciar");
   const { id } = await params;
-  const empresa = await prisma.empresa.findUnique({ where: { id } });
+  // Só a empresa que você administra; a de outro cliente dá 404, como se não existisse.
+  const empresa = await empresaAdministrada(sessao, id).catch(() => null);
   if (!empresa) notFound();
   const inicial = temaInicial(empresa.tema, empresa.nomeFantasia);
 

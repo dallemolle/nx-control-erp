@@ -915,6 +915,251 @@ Numeração continua a de Vendas.
   (`src/ajuda/locais-armazenamento/index.tsx`) e a frase do item 4 da seção
   7.6 do manual.
 
+## Administração — lacunas achadas ao escrever a ajuda contextual
+
+Mesma numeração das seções acima.
+
+### 40. Administrador podia mudar o próprio perfil
+
+- **Feito (2026-11-21), na branch da ajuda de Usuários:** o serviço já
+  recusava desativar o próprio acesso, mas não mudar o próprio perfil: um
+  Administrador que se rebaixava perdia a tela Usuários na hora e, se fosse o
+  único, a empresa ficava sem administrador. Agora aparece "Você não pode
+  mudar seu próprio perfil", e a própria linha mostra o perfil como texto,
+  sem o "Desativar" (que antes quebrava a página com o erro do servidor).
+  Teste em `src/server/services/usuario.test.ts`. Histórico.
+
+### 41. Administrador podia tirar o próprio acesso à filial ativa
+
+- **Feito (2026-11-21), na mesma branch:** desmarcar a própria Leitura na
+  filial em que está mandava a pessoa para "Selecionar filial" (ou de volta
+  à escolha de empresa, se não tivesse outra). Agora o serviço recusa ("Você
+  não pode remover seu próprio acesso à filial ativa") e a caixinha fica
+  travada. Tirar só a Alteração continua permitido. Teste em
+  `src/server/services/usuarioEmpresaFilial.test.ts`. Histórico.
+
+### 42. Gerar e revogar chave de API não ficavam na auditoria
+
+- **Feito (2026-11-21), na mesma branch:** uma credencial da API nascia ou
+  era revogada sem rastro. Agora as duas ações ficam na Auditoria (entidade
+  `ApiKey`, com usuário, nome, prefixo e validade; nunca a chave nem o hash).
+  Teste em `src/server/services/apiKey.test.ts`. Histórico.
+
+### 43. Não há troca nem redefinição de senha
+
+- **Problema:** a senha é definida pelo Administrador ao cadastrar o usuário
+  e nunca mais muda: a pessoa não troca a própria senha e o Administrador não
+  consegue redefinir. Também não há "Esqueci minha senha" no login.
+- **Exemplo:** a Joana esquece a senha inicial; a única saída hoje é mexer
+  direto no banco de dados. Uma senha que vazou não tem como ser trocada.
+- **Onde:** `src/server/services/usuario.ts` (só `criarUsuarioEVincular` grava
+  `senhaHash`); a tela de login e a de Usuários.
+- **Impacto:** segurança (senha vazada não se troca; a senha inicial é
+  conhecida por quem cadastrou) e operação (quem esquece fica sem acesso).
+- **Caminhos:** (1) "Minha conta" para a pessoa trocar a própria senha,
+  pedindo a atual; (2) "Redefinir senha" na linha de Usuários, gerando uma
+  senha temporária com troca obrigatória no próximo login; (3) depois,
+  "Esqueci minha senha" por email. Registrar na auditoria sem a senha.
+- **Cuidados:** a pessoa pode estar em várias empresas: quem redefine é o
+  Administrador de qualquer uma delas? Definir a regra antes.
+- **Ao corrigir:** dica do passo "Defina a senha inicial" do roteiro
+  `cadastrar-usuario` (`src/ajuda/usuarios/roteiros.ts`) e a seção 8.3 do
+  manual.
+
+### 44. Empresas mostrava e alterava as empresas de todos os clientes
+
+- **Feito (2026-11-21), na branch da ajuda de Empresas e Filiais (decisão do
+  usuário: "só as minhas"):** `listarEmpresas()` devolvia todas as empresas
+  do banco, e editar, inativar e o Tema e marca aceitavam qualquer `id`,
+  conferindo só o perfil. O Administrador de qualquer empresa via e alterava
+  (ou inativava) as dos outros clientes. Agora tudo passa por
+  `empresaAdministrada`: só valem empresas em que a pessoa é Administrador
+  com vínculo ativo; as outras dão "Empresa não encontrada" (e 404 na página
+  do tema). Criar empresa continua livre: quem cria vira Administrador.
+  Teste em `src/server/services/empresaEscopo.test.ts`. Histórico.
+
+### 45. Empresa inativa continuava aberta para quem já estava nela
+
+- **Feito (2026-11-21), na mesma branch:** inativar tirava a empresa de
+  "Trocar empresa", mas `requireVinculoAtivo` não olhava se a empresa estava
+  ativa: quem já estava dentro, e as chaves de API, continuavam usando. Agora
+  a sessão e a API exigem empresa ativa, e ninguém inativa a empresa em que
+  está ("Troque de empresa antes de inativar esta"; a linha não mostra
+  "Inativar"). Histórico.
+
+### 46. Inativar a filial em que se está tirava a pessoa dela
+
+- **Feito (2026-11-21), na mesma branch:** agora o serviço recusa ("Troque de
+  filial antes de inativar esta") e a linha não mostra "Inativar". Histórico.
+
+### 47. CNPJ/CPF repetido em empresa e filial mostrava o erro do banco
+
+- **Feito (2026-11-21), na mesma branch:** "Já existe uma empresa com este
+  CNPJ/CPF" e "Já existe uma filial com este CNPJ/CPF". Histórico.
+
+### 48. Cor e logo da empresa em dois lugares
+
+- **Problema:** o formulário "Editar empresa" ainda tem "Usar cor
+  personalizada" e "Logo". A cor só pinta a barra lateral e só vale enquanto
+  a empresa não tem tema salvo; o logo é o mesmo "Logo para fundo claro" do
+  Tema e marca. Quem troca a cor ali com tema salvo não vê efeito nenhum.
+- **Onde:** `empresas/empresa-dialog-form.tsx` (`corPrimaria`, `logo`),
+  `src/app/(dashboard)/layout.tsx` (usa `corPrimaria` sem tema).
+- **Impacto:** confusão: dois lugares para a mesma coisa, um que às vezes
+  não funciona.
+- **Caminhos:** tirar cor e logo do formulário e deixar só o Tema e marca
+  (a cor antiga pode virar a primária/barra lateral de um tema inicial,
+  numa migração); ou mostrar no formulário "Esta empresa tem tema: a cor
+  daqui não vale".
+- **Ao corrigir:** passo "Cor e logo: deixe para o Tema e marca" do roteiro
+  `cadastrar-empresa` (`src/ajuda/empresas/roteiros.ts`) e a réplica do
+  formulário em `src/ajuda/empresas/cenas.tsx`.
+
+### 49. Filial nova não dá acesso a ninguém
+
+- **Problema:** `criarFilial` não cria acesso para quem cadastrou. A filial
+  não aparece em "Trocar filial" de ninguém até o Administrador marcar o
+  acesso em Usuários. Já a empresa nova dá acesso ao criador na Matriz.
+- **Impacto:** quem cria a filial acha que não deu certo; passo esquecido.
+- **Caminhos:** dar Leitura e Alteração a quem criou, como na empresa nova;
+  ou, ao salvar, mostrar "Dê acesso em Usuários" com o link.
+- **Ao corrigir:** passo "Agora, dê acesso a ela" do roteiro
+  `cadastrar-filial` (`src/ajuda/filiais/index.tsx`) e a seção 8.2 do
+  manual.
+
+### 50. Rótulo da conta de recebimento citava o cartão
+
+- **Status:** feito na branch `feat/ajuda-configuracao-producao`.
+- **Problema:** o campo se chamava "Conta de recebimento (Pix,
+  transferência, cartão)", mas a venda na maquininha usa a conta de
+  depósito da operadora e nem mostra a escolha de conta no pedido.
+- **Correção:** rótulo "Conta de recebimento (Pix e transferência)" em
+  `configuracao-producao/configuracao-form.tsx`.
+
+### 51. Categoria e conta inativadas continuam na Configuração de produção
+
+- **Problema:** a tela só lista categorias e contas ativas. Se a escolhida
+  for inativada depois, o campo mostra o código interno em vez do nome, não
+  há aviso, e a conta inativa faz o Salvar ser recusado ("Conta de
+  recebimento padrão inválida") mesmo quando só se mudou outro campo. A
+  categoria inativa continua sendo usada na conta a pagar da recepção e na
+  conta a receber do pedido.
+- **Exemplo:** "Insumos Agrícolas" é inativada; as compras do José da Silva
+  continuam caindo nela, e quem abre a configuração vê um código no lugar
+  do nome.
+- **Onde:** `configuracao-producao/page.tsx` (listas com `ativo: true`),
+  `salvarConfiguracaoProducao` em `configuracaoProducao.ts` (confere `ativo`
+  só nas contas), `recepcaoFruto.ts` e `pedidoVenda.ts` (usam a categoria
+  sem conferir `ativo`).
+- **Impacto:** o inativar não faz o que promete, e a tela de configuração
+  fica travada sem explicar por quê.
+- **Caminhos:** junto com os itens 31 e 35: na configuração, mostrar a
+  escolhida mesmo inativa, marcada "(inativa)", e avisar no topo; ao
+  inativar uma categoria ou conta em uso na configuração, avisar ou
+  recusar.
+- **Ao corrigir:** dica do passo "Confira a mensagem" do roteiro
+  `preparar-recepcao-vendas` (`src/ajuda/configuracao-producao/index.tsx`).
+
+### 52. Mudar os limites da produção muda o passado
+
+- **Problema:** o "Verificar" do balanço de massa e do branqueamento e o
+  "vencendo" do estoque não são gravados: são recalculados com a
+  configuração atual. Subir a tolerância tira o "Verificar" de OPs já
+  encerradas, inclusive no Relatório de processamento e na
+  Rastreabilidade.
+- **Exemplo:** a OP-261119-01 (acerola, diferença de 10%) marca
+  "Verificar" com 3%; com a tolerância em 10%, passa a OK, como se tivesse
+  sido conferida.
+- **Onde:** `resumirOP`/`balancoMassa`/`statusBranqueamento` em
+  `src/lib/producao/op.ts`, chamados com `obterConfiguracaoProducao` em
+  `ordemProducao.ts`, `rastreabilidade.ts` e no detalhe da OP.
+- **Impacto:** o registro de controle de qualidade de uma OP pode mudar
+  depois do fato; a única pista é a Auditoria da configuração.
+- **Caminhos:** gravar na OP, ao encerrar, a tolerância e os mínimos usados
+  (ou o próprio status) e calcular as OPs encerradas com eles.
+- **Ao corrigir:** passo "Mudou algum número?" do roteiro
+  `alertas-controles` (`src/ajuda/configuracao-producao/index.tsx`) e a
+  seção 8.5 do manual.
+
+### 53. Filtro de datas da Auditoria contava o dia em UTC
+
+- **Status:** feito na branch `feat/ajuda-auditoria`.
+- **Problema:** a coluna Data/hora mostra o horário de Brasília, mas o
+  filtro "Data de"/"Data até" ia de 00:00 a 23:59 UTC. O que acontecia
+  depois das 21h aparecia com o dia certo na tela, mas saía do "até" desse
+  dia e entrava no "de" do dia seguinte (também no export).
+- **Correção:** `filtroAuditoriaDaUrl` (`auditoria/filtro-auditoria-url.ts`)
+  usa o dia de Brasília (UTC-3); o cabeçalho do PDF escreve as datas no
+  mesmo fuso.
+
+### 54. Entidade e ação da Auditoria apareciam como código
+
+- **Status:** feito na branch `feat/ajuda-auditoria`.
+- **Problema:** filtros, tabela e export mostravam `CategoriaFinanceira`,
+  `UsuarioEmpresaFilial`, `CRIAR_LANCAMENTO_E_CONCILIAR`.
+- **Correção:** `src/lib/auditoria/rotulos.ts` com os nomes em português
+  (código desconhecido aparece como está); os filtros ordenam pelo nome. O
+  teste lê `src/server` e falha se uma entidade ou ação nova ficar sem
+  rótulo.
+
+### 55. Valor anterior e novo da Auditoria são difíceis de ler
+
+- **Problema:** na tela, os valores aparecem cortados, em JSON, com o nome
+  interno do campo (`custoPadraoKg`, `statusAprovacao`) e, nos campos que
+  apontam para outro registro, o código dele (`contaBancariaId`,
+  `parentId`). Não há como abrir a linha, nem saber qual título ou cliente
+  foi alterado: o "ID do registro" só sai no export.
+- **Exemplo:** a troca da taxa de débito da Cartões Rurais aparece como
+  `{"condicoes":[{"modalidade":"DEBITO",...` cortado; para ver 1,5% → 1,4%
+  é preciso exportar e ler o JSON.
+- **Onde:** `auditoria/page.tsx` (colunas Valor anterior/novo com
+  `truncate`); os nomes de campo vêm de cada `registrarAuditoria`.
+- **Impacto:** a tela responde "quem e quando", mas o "o quê" pede export e
+  conhecimento técnico; o Auditor (contador) não tem esse conhecimento.
+- **Caminhos:** abrir a linha num painel com campo a campo (rótulo em
+  português, valores formatados, nome no lugar do código, só o que mudou
+  nas listas) e o nome do registro alterado (ex.: "Fruta Açaí"), com link
+  para ele.
+- **Ao corrigir:** passos "Leia o valor anterior"/"Leia o valor novo" do
+  roteiro `quem-alterou` e o passo "Escolha o formato" de `exportar`
+  (`src/ajuda/auditoria/index.tsx`), e a seção 8.4 do manual.
+
+## Gestão — lacunas achadas ao escrever a ajuda contextual
+
+Numeração continua a das seções anteriores.
+
+### 56. Inadimplência do Dashboard executivo dependia do status gravado
+
+- **Status:** feito na branch `feat/ajuda-dashboard-executivo`.
+- **Problema:** o card somava as parcelas a receber com status `VENCIDO`,
+  que só é recalculado quando alguém abre a lista de títulos. Uma parcela
+  que venceu ontem ficava fora até alguém abrir Contas a receber, e a
+  vencida paga em parte (`PARCIALMENTE_PAGO`) nunca entrava. O aging, na
+  mesma tela, já usava a data de vencimento: os dois se contradiziam.
+- **Correção:** inadimplência = saldo das parcelas a receber com vencimento
+  antes de hoje (`calcularIndicadoresExecutivos` em
+  `dashboardExecutivo.ts`, função pura, testada sem banco).
+
+### 57. Dashboard executivo calculava "hoje" e o mês em UTC
+
+- **Status:** feito na branch `feat/ajuda-dashboard-executivo`.
+- **Problema:** depois das 21h de Brasília, o dashboard já estava no dia
+  seguinte: a parcela que vence hoje virava atrasada no aging e saía das
+  obrigações de 7 dias; no último dia do mês, a geração de caixa e o
+  fiscal × gerencial passavam ao mês seguinte.
+- **Correção:** `diaDeHoje` usa `hojeDeCalendario` (o dia de Brasília),
+  como a Produção.
+
+### 58. Gráficos do Dashboard executivo sem formato de moeda
+
+- **Status:** feito na branch `feat/ajuda-dashboard-executivo`.
+- **Problema:** eixos e dicas mostravam o número cru (38000), e as faixas do
+  aging apareciam como "0-30", sem dizer que são dias de atraso de parcelas
+  vencidas. O "% gerencial nas entradas" saía com ponto ("19.0%").
+- **Correção:** `dashboard-executivo/formatos.ts` (eixo "38 mil", dica
+  "R$ 38.000,00", faixas "1–30 dias" … "Mais de 90 dias", percentual
+  "19,0%"); título do aging diz "vencidas, por dias de atraso".
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -954,7 +1199,18 @@ Numeração continua a de Vendas.
   3 roteiros; lacunas 20 e 37 corrigidas, 35 ampliada, 38 no backlog).
   Frutas, Talhões, Locais de armazenamento e Insumos feitos (2026-11-21,
   6 roteiros; lacuna 39 no backlog; manual 7.6 atualizado). **Todo o
-  Cadastros tem ajuda.** Falta a Administração.
+  Cadastros tem ajuda.** Administração (ordem escolhida pelo usuário:
+  Usuários; Empresas + Filiais; Configuração de produção; Auditoria; e o
+  Dashboard executivo, da Gestão): Usuários feito (2026-11-21, 4 roteiros;
+  lacunas 40 a 42 corrigidas, 43 no backlog). Empresas + Filiais feitos
+  (2026-11-21, 3 + 1 roteiros; lacunas 44 a 47 corrigidas, a 44 uma falha de
+  isolamento entre clientes; 48 e 49 no backlog). Configuração de produção
+  feita (2026-11-21, 3 roteiros; lacuna 50 corrigida, 51 e 52 no backlog;
+  manual 8.5 ganhou o card Compra de fruto). Auditoria feita (2026-11-21,
+  3 roteiros; lacunas 53 e 54 corrigidas, 55 no backlog). Dashboard
+  executivo feito (2026-11-21, 3 roteiros; lacunas 56 a 58 corrigidas).
+  **Todas as telas têm ajuda com simulação**: o próximo passo é aposentar o
+  Passo a passo (item abaixo).
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
   (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,

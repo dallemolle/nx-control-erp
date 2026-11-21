@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { prisma } from "@/server/db/client";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { PermissionError } from "@/server/auth/permissions";
-import { buscarUsuarioPorEmail, criarUsuarioEVincular } from "./usuario";
+import { atualizarPerfilVinculo, buscarUsuarioPorEmail, criarUsuarioEVincular } from "./usuario";
 
 describe("usuario", () => {
   let empresaId: string;
@@ -191,6 +191,35 @@ describe("usuario", () => {
           podeAlterarFilialAtiva: false,
         }),
       ).rejects.toThrow("Este usuário já tem acesso a esta empresa");
+    });
+  });
+
+  describe("atualizarPerfilVinculo", () => {
+    test("muda o perfil de outra pessoa", async () => {
+      const email = `perfil-${Math.random().toString(36).slice(2, 10)}@teste.local`;
+      const { usuario } = await criarUsuarioEVincular(sessaoAdministrador, {
+        nome: "Pessoa Perfil",
+        email,
+        senha: "senha-segura",
+        perfil: "CONSULTA",
+        concederAcessoFilialAtiva: false,
+        podeAlterarFilialAtiva: false,
+      });
+      usuariosCriadosIds.push(usuario.id);
+
+      const vinculo = await atualizarPerfilVinculo(sessaoAdministrador, usuario.id, "PRODUCAO");
+      expect(vinculo.perfil).toBe("PRODUCAO");
+    });
+
+    test("recusa mudar o próprio perfil, para o administrador não perder o acesso", async () => {
+      await expect(
+        atualizarPerfilVinculo(sessaoAdministrador, sessaoAdministrador.usuarioId, "FINANCEIRO"),
+      ).rejects.toThrow("Você não pode mudar seu próprio perfil");
+
+      const vinculo = await prisma.usuarioEmpresa.findUniqueOrThrow({
+        where: { usuarioId_empresaId: { usuarioId: sessaoAdministrador.usuarioId, empresaId } },
+      });
+      expect(vinculo.perfil).toBe("ADMINISTRADOR");
     });
   });
 });

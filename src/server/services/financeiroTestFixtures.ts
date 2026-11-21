@@ -131,7 +131,8 @@ export async function limparFixtureFinanceiro(fixture: FixtureFinanceiro): Promi
   await prisma.baixa.deleteMany({ where: { parcela: { titulo: { filialId: fixture.filialId } } } });
   await prisma.parcela.deleteMany({ where: { titulo: { filialId: fixture.filialId } } });
   await prisma.titulo.deleteMany({ where: { filialId: fixture.filialId } });
-  await prisma.auditLog.deleteMany({ where: { filialId: fixture.filialId } });
+  // Por empresa também: registros sem filial (chave de API, usuário) ficam só com a empresa.
+  await prisma.auditLog.deleteMany({ where: { OR: [{ filialId: fixture.filialId }, { empresaId: fixture.empresaId }] } });
   await prisma.contaBancaria.deleteMany({ where: { filialId: fixture.filialId } });
   await prisma.banco.delete({ where: { id: fixture.bancoId } });
   await prisma.orcamento.deleteMany({ where: { filialId: fixture.filialId } });

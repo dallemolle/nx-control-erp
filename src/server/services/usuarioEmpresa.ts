@@ -10,7 +10,8 @@ export class AcessoNegadoError extends Error {
 
 export async function requireVinculoAtivo(usuarioId: string, empresaId: string): Promise<Perfil> {
   const vinculo = await prisma.usuarioEmpresa.findFirst({
-    where: { usuarioId, empresaId, ativo: true },
+    // Empresa inativa não abre sessão nem atende a API, mesmo para quem já estava dentro.
+    where: { usuarioId, empresaId, ativo: true, empresa: { ativo: true } },
   });
 
   if (!vinculo) {
