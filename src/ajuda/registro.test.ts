@@ -122,4 +122,9 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("relatorio-origem")).toBe("Relatório de origem");
     expect((await carregarAjuda("relatorio-origem")).roteiros.length).toBe(3);
   });
+
+  test("relatório de processamento tem ajuda", async () => {
+    expect(tituloDaAjuda("relatorio-processamento")).toBe("Relatório de processamento");
+    expect((await carregarAjuda("relatorio-processamento")).roteiros.length).toBe(3);
+  });
 });
