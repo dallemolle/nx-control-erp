@@ -1,3 +1,4 @@
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -19,7 +20,10 @@ export default async function CentrosDeCustoPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Centros de custo</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-lg font-semibold">Centros de custo</h1>
+            <BotaoAjuda tela="centros-de-custo" />
+          </div>
           <p className="text-sm text-muted-foreground">
             Estrutura hierárquica: Empresa → Unidade → Departamento → Centro de custo.
           </p>

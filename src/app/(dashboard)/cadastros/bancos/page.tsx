@@ -1,3 +1,4 @@
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeExecutar } from "@/server/auth/permissions";
@@ -15,7 +16,10 @@ export default async function BancosPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Bancos</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-lg font-semibold">Bancos</h1>
+            <BotaoAjuda tela="bancos" />
+          </div>
           <p className="text-sm text-muted-foreground">Cadastro global de bancos.</p>
         </div>
         {podeEscrever && <BancoDialogForm />}

@@ -1,3 +1,4 @@
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -18,7 +19,10 @@ export default async function CentrosDeLucroPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Centros de lucro</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-lg font-semibold">Centros de lucro</h1>
+            <BotaoAjuda tela="centros-de-lucro" />
+          </div>
           <p className="text-sm text-muted-foreground">Cadastro de centros de lucro da filial.</p>
         </div>
         {podeEscrever && <CentroLucroDialogForm />}
