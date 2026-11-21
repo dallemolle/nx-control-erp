@@ -1,6 +1,6 @@
 # Aprovações pendentes com os dados da baixa
 
-Data: 2026-11-21 · Status: aprovada para plano
+Data: 2026-11-21 · Status: implementada (2026-11-21)
 
 Item 2 do [backlog](../../backlog.md), seção "Financeiro — lacunas achadas ao
 escrever a ajuda contextual" ("Aprovação às cegas", prioridade alta).
@@ -104,17 +104,19 @@ A ajuda espelha a tela, então muda junto:
   linha para mostrar o aviso de data:
   1. NF-e 1234 · Agro Insumos · Pagamento · parcela 1/3 · 15/10/2026 ·
      Banco do Brasil — CC 12345-6 · R$ 1.012,00 (parcela R$ 1.000,00 + juros
-     R$ 12,00) · Maria Souza, 15/10/2026 · sem aviso (é a baixa do roteiro
+     R$ 12,00) · Maria Souza, 15/10/2026 10:20 · sem aviso (é a baixa do roteiro
      `pagar-parcela` de Contas a pagar).
   2. Recibo 88 · José da Silva · Pagamento · parcela 1/1 · R$ 1.200,00 ·
-     Maria Souza · aviso "A parcela já está paga" (a baixa em dobro que o
-     roteiro `rejeitar-baixa` rejeita).
+     Maria Souza, 15/10/2026 14:05 · aviso "A parcela já está paga" (a baixa
+     em dobro que o roteiro `rejeitar-baixa` rejeita, com o motivo "Em dobro:
+     parcela já paga em 05/10").
   3. NF-e 321 · Fazenda Santa Luzia · Recebimento · parcela 1/3 · 15/10/2026 ·
-     R$ 15.060,00 (parcela R$ 15.000,00 + juros R$ 60,00) · Carlos Lima (você)
-     · sem aviso (a baixa do roteiro `receber-parcela`).
-  4. Fatura 556 · Energia Rural S.A. · Pagamento · parcela 1/1 · 15/01/2026
-     (digitado no lugar de 15/11/2026) · Maria Souza, 15/11/2026 · aviso
-     "Data da baixa 304 dias antes do registro".
+     R$ 15.060,00 (parcela R$ 15.000,00 + juros R$ 60,00) · Carlos Lima (você),
+     15/10/2026 16:45 · sem aviso (a baixa do roteiro `receber-parcela`).
+  4. Fatura 556 · Energia Rural S.A. · Pagamento · parcela 1/1 · 16/01/2026
+     (digitado no lugar de 16/10/2026) · Maria Souza, 16/10/2026 · aviso
+     "Data da baixa 273 dias antes do registro". O hoje do exemplo é
+     16/10/2026.
   Os valores e textos dos avisos do exemplo são calculados com
   `avisosDaBaixa`, não escritos à mão, para a ajuda não mentir se a regra
   mudar.
@@ -161,12 +163,15 @@ A ajuda espelha a tela, então muda junto:
 
 ## Fora do escopo
 
-- Impedir a baixa duplicada (item 4 do backlog): aqui só avisa.
+- Impedir a baixa duplicada (item 4 do backlog): aqui só avisa. **Destino:**
+  backlog (item 4).
 - Desconto que não abate o saldo da parcela (item 1): o aviso usa o esperado
   com desconto, mas a parcela continua ficando PARCIALMENTE_PAGO depois da
-  aprovação, como hoje.
-- Página de detalhe do título.
-- Confirmação antes de aprovar.
+  aprovação, como hoje. **Destino:** backlog (item 1).
+- Página de detalhe do título. **Destino:** descartado (o link da contraparte
+  abre a lista filtrada, com o título e os anexos).
+- Confirmação antes de aprovar. **Destino:** descartado aqui (o risco é o do
+  item 3 do backlog: baixa aprovada não pode ser desfeita).
 
 ## Ao concluir
 
