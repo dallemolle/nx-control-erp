@@ -397,6 +397,8 @@ O perfil Vendas faz tudo isso sem acessar o financeiro.
 
 **Lote vencido:** um lote com a validade anterior à data do pedido é bloqueado ("O lote … venceu em …"). Ele só sai se o Gestor o tiver liberado na tela de Estoque (seção 5.3) e a liberação cobrir a data do pedido; o formulário mostra "Liberado até dd/mm/aaaa" e o motivo da liberação fica gravado no item.
 
+**Ver simulação (Pedidos):** [pedido à vista](#ajuda/pedidos/lancar-a-vista) · [pedido a prazo](#ajuda/pedidos/lancar-a-prazo) · [venda na maquininha](#ajuda/pedidos/vender-maquininha)
+
 ### 6.2. Consultar e cancelar pedidos
 
 A lista de pedidos mostra número, data, cliente, canal, forma, valor, margem, a situação do pagamento (Pago, Em aberto, Vencido, Cancelado — lida da conta a receber) e a entrega. Filtre por período (padrão: mês atual), cliente, status e pagamento, e exporte em CSV, Excel ou PDF. O rodapé soma os pedidos confirmados.
@@ -411,9 +413,13 @@ Clique no número para abrir o pedido: itens com margem, pagamento (com link par
 
 Quando não dá para cancelar, o botão fica desabilitado e o motivo aparece ao lado.
 
+**Ver simulação (Pedidos):** [consultar e exportar](#ajuda/pedidos/consultar-pedidos) · [abrir o pedido e o recibo](#ajuda/pedidos/abrir-pedido) · [corrigir um pedido](#ajuda/pedidos/corrigir-pedido)
+
 ### 6.3. Entregas
 
 Vendas → Entregas lista as entregas pendentes e em rota (mude o filtro de status para ver as entregues, as canceladas ou todas), com data prevista, cliente, endereço, responsável e o **atraso** em dias, destacado quando passa da data prevista. Em cada linha: **Em rota**, **Entregue** (informe a data e quem recebeu) e **Editar** (data prevista, endereço, responsável e observação). As mesmas ações aparecem no pedido. A entrega de um pedido cancelado fica cancelada e não muda mais. Marque **Só atrasadas** para ver apenas as entregas que passaram da data prevista. Exporte em CSV, Excel ou PDF.
+
+**Ver simulação (Entregas):** [sair para uma entrega](#ajuda/entregas/sair-entrega) · [confirmar a entrega](#ajuda/entregas/confirmar-entrega) · [consultar e exportar](#ajuda/entregas/consultar-entregas)
 
 ### 6.4. Recibo
 
