@@ -7,6 +7,8 @@ import {
   LIMITE_EXPORT_AUDITORIA,
   LIMITE_PDF_AUDITORIA,
 } from "@/server/services/auditoria";
+import { rotuloAcaoAuditoria, rotuloEntidadeAuditoria } from "@/lib/auditoria/rotulos";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { filtroAuditoriaDaUrl, paginaDaUrl, queryStringDoFiltroAuditoria } from "./filtro-auditoria-url";
 import { ExportarLinks } from "../_shared/exportar-links";
 import { BarraDeFiltrosAuditoria } from "./barra-de-filtros";
@@ -55,7 +57,10 @@ export default async function AuditoriaPage({ searchParams }: { searchParams: Pr
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold">Auditoria</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Auditoria</h1>
+          <BotaoAjuda tela="auditoria" />
+        </div>
         <p className="text-sm text-muted-foreground">Alterações registradas nesta empresa.</p>
       </div>
 
@@ -87,8 +92,8 @@ export default async function AuditoriaPage({ searchParams }: { searchParams: Pr
               <TableCell className="whitespace-nowrap text-xs">{formatarData(log.criadoEm)}</TableCell>
               <TableCell className="text-xs">{log.usuario?.nome ?? "—"}</TableCell>
               <TableCell className="text-xs">{log.filial?.nome ?? "—"}</TableCell>
-              <TableCell className="text-xs">{log.entidade}</TableCell>
-              <TableCell className="text-xs">{log.acao}</TableCell>
+              <TableCell className="text-xs">{rotuloEntidadeAuditoria(log.entidade)}</TableCell>
+              <TableCell className="text-xs">{rotuloAcaoAuditoria(log.acao)}</TableCell>
               <TableCell className="max-w-56 truncate text-xs text-muted-foreground">
                 {log.valorAnterior ? JSON.stringify(log.valorAnterior) : "—"}
               </TableCell>

@@ -555,7 +555,11 @@ Cada usuário também pode ter uma ou mais chaves de API, usadas para autenticar
 
 Registra automaticamente toda alteração relevante feita no sistema — quem fez, quando, em qual filial, o que mudou (valor anterior e valor novo). A tela permite filtrar por entidade (o tipo de registro alterado — Título, Baixa, Conciliação etc.), ação (Criar, Atualizar, Aprovar, Rejeitar etc.), usuário, filial e período, com paginação para navegar entre muitos registros.
 
-> Só os perfis Administrador, Gestor e Auditor têm acesso a esta tela.
+Só os campos que mudaram são gravados. Na tela, os valores aparecem cortados; o Excel e o CSV trazem os valores inteiros e a coluna "ID do registro". O dia dos filtros de data é o de Brasília, o mesmo da coluna Data/hora. Ninguém altera nem apaga um registro da auditoria.
+
+> Só os perfis Administrador, Gestor e Auditor têm acesso a esta tela. Ela mostra todas as filiais da empresa.
+
+**Ver simulação:** [descobrir quem alterou um registro](#ajuda/auditoria/quem-alterou) · [ver o que uma pessoa fez num período](#ajuda/auditoria/o-que-fez) · [exportar para o contador](#ajuda/auditoria/exportar)
 
 ### 8.5. Configuração de produção
 

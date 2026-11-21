@@ -1,5 +1,16 @@
 import { describe, expect, test } from "vitest";
-import { construirUrlComFiltro } from "./barra-de-filtros";
+import { rotuloEntidadeAuditoria } from "@/lib/auditoria/rotulos";
+import { construirUrlComFiltro, emOrdemDeRotulo } from "./barra-de-filtros";
+
+describe("emOrdemDeRotulo", () => {
+  test("ordena pelo nome em português, não pelo código", () => {
+    expect(emOrdemDeRotulo(["ApiKey", "Banco", "UsuarioEmpresaFilial"], rotuloEntidadeAuditoria)).toEqual([
+      "UsuarioEmpresaFilial",
+      "Banco",
+      "ApiKey",
+    ]);
+  });
+});
 
 describe("construirUrlComFiltro", () => {
   test("adiciona um novo filtro preservando os demais params da URL", () => {
