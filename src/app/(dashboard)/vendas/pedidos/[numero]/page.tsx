@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,10 +65,13 @@ export default async function PedidoPage({ params }: { params: Promise<{ numero:
               Pedidos
             </Link>
           </p>
-          <h1 className="flex flex-wrap items-center gap-2 text-lg font-semibold">
-            Pedido {pedido.numero}
-            {cancelado ? <Badge variant="destructive">Cancelado</Badge> : null}
-          </h1>
+          <div className="flex items-center gap-1">
+            <h1 className="flex flex-wrap items-center gap-2 text-lg font-semibold">
+              Pedido {pedido.numero}
+              {cancelado ? <Badge variant="destructive">Cancelado</Badge> : null}
+            </h1>
+            <BotaoAjuda tela="pedidos" />
+          </div>
           <p className="text-sm text-muted-foreground">
             {formatarData(pedido.data)} · {pedido.cliente.nome}
           </p>

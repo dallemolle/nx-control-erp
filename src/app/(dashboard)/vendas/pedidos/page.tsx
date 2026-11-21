@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -58,7 +59,10 @@ export default async function PedidosPage({ searchParams }: { searchParams: Prom
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Pedidos de venda</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-lg font-semibold">Pedidos de venda</h1>
+            <BotaoAjuda tela="pedidos" />
+          </div>
           <p className="text-sm text-muted-foreground">
             Cada pedido baixa o estoque por lote e cria a conta a receber; à vista, já recebida.
           </p>

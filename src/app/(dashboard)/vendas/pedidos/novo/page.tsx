@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { prisma } from "@/server/db/client";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { podeExecutar, requirePermission } from "@/server/auth/permissions";
@@ -65,7 +66,10 @@ export default async function NovoPedidoPage() {
   return (
     <div className="max-w-4xl space-y-6">
       <div>
-        <h1 className="text-lg font-semibold">Novo pedido</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Novo pedido</h1>
+          <BotaoAjuda tela="pedidos" />
+        </div>
         <p className="text-sm text-muted-foreground">
           Os lotes aparecem na ordem de saída (vence primeiro, sai primeiro).
         </p>
