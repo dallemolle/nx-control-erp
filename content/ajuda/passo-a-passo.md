@@ -437,6 +437,8 @@ No cliente, o **CNPJ/CPF é opcional**: deixe em branco para consumidor final ou
 
 **Ver simulação (Clientes):** [cadastrar um cliente](#ajuda/clientes/cadastrar-cliente) · [cliente sem documento](#ajuda/clientes/cadastrar-sem-documento) · [mudar o cadastro](#ajuda/clientes/editar-cliente) · [inativar e reativar](#ajuda/clientes/inativar-cliente)
 
+**Ver simulação (Fornecedores):** [cadastrar um fornecedor](#ajuda/fornecedores/cadastrar-fornecedor) · [produtor sem nota](#ajuda/fornecedores/cadastrar-produtor) · [mudar, inativar e reativar](#ajuda/fornecedores/inativar-fornecedor)
+
 ### 7.2. Categorias financeiras
 
 Classificam cada título/lançamento como Receita ou Despesa, com hierarquia opcional (uma categoria pode ter uma categoria "pai", para agrupar categorias relacionadas em relatórios).
