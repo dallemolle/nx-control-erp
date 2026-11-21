@@ -6,6 +6,7 @@ import { requirePermission, podeAlterarFilialAtiva } from "@/server/auth/permiss
 import { listarBancos } from "@/server/services/banco";
 import { listarContasBancarias } from "@/server/services/contaBancaria";
 import { ROTULOS_TIPO_CONTA_BANCARIA } from "@/lib/schemas/enums";
+import { formatarMoeda } from "@/lib/formatacao";
 import { ContaBancariaDialogForm } from "./conta-bancaria-dialog-form";
 import { alternarAtivoContaBancariaAction } from "./actions";
 
@@ -52,7 +53,7 @@ export default async function ContasBancariasPage() {
               <TableCell>{conta.conta}</TableCell>
               <TableCell>{ROTULOS_TIPO_CONTA_BANCARIA[conta.tipo]}</TableCell>
               <TableCell>{conta.moeda}</TableCell>
-              <TableCell className="text-right">{conta.saldoInicial.toString()}</TableCell>
+              <TableCell className="text-right tabular-nums">{formatarMoeda(conta.saldoInicial)}</TableCell>
               <TableCell>
                 <Badge variant={conta.ativo ? "default" : "secondary"}>
                   {conta.ativo ? "Ativo" : "Inativo"}
