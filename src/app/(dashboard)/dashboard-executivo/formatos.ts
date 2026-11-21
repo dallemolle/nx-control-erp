@@ -13,6 +13,13 @@ export function dicaEmReais(valor: unknown): string {
   return formatarMoeda(Number(valor));
 }
 
+const PERCENTUAL = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+/** "19,0%" (com `toFixed` saía "19.0%"). */
+export function percentualComVirgula(valor: number): string {
+  return `${PERCENTUAL.format(valor)}%`;
+}
+
 /** O aging só tem parcelas vencidas: a faixa "0-30" começa em 1 dia de atraso. */
 export const ROTULOS_FAIXA_AGING: Readonly<Record<FaixaAging, string>> = {
   "0-30": "1–30 dias",
