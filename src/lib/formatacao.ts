@@ -18,3 +18,20 @@ export function formatarMoeda(valor: number | string | { toString(): string }): 
 export function formatarData(data: Date | string): string {
   return DATA.format(new Date(data));
 }
+
+const DATA_BRASILIA = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: "America/Sao_Paulo",
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
+const HORA_BRASILIA = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: "America/Sao_Paulo",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+/** Formata um instante (criadoEm, avaliadoEm) como "dd/mm/aaaa hh:mm" no horário de Brasília. */
+export function formatarDataHora(instante: Date): string {
+  return `${DATA_BRASILIA.format(instante)} ${HORA_BRASILIA.format(instante)}`;
+}
