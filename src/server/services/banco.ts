@@ -5,6 +5,9 @@ import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { Prisma } from "@prisma/client";
 import type { BancoFormValues } from "@/lib/schemas/banco";
 import { CODIGO_BANCO_CAIXA } from "@/lib/schemas/contaBancaria";
+import { comMensagemDeDuplicidade } from "./duplicidade";
+
+const MSG_CODIGO_DUPLICADO = "Já existe um banco com este código";
 
 // Banco é um catálogo global (sem filialId/empresaId, sem ativo). Não chamar
 // requireAlteracaoFilial aqui: esse guard trava alteração de dado
@@ -35,7 +38,7 @@ export async function criarBanco(sessao: SessaoAtiva, dados: BancoFormValues) {
   requirePermission(sessao.perfil, "cadastro:escrever");
   garantirCodigoNaoReservado(dados.codigo);
 
-  const banco = await prisma.banco.create({ data: dados });
+  const banco = await comMensagemDeDuplicidade(() => prisma.banco.create({ data: dados }), MSG_CODIGO_DUPLICADO);
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
@@ -57,7 +60,10 @@ export async function atualizarBanco(sessao: SessaoAtiva, id: string, dados: Ban
   garantirCodigoNaoReservado(dados.codigo);
   const anterior = await prisma.banco.findUniqueOrThrow({ where: { id } });
   garantirCodigoNaoReservado(anterior.codigo);
-  const banco = await prisma.banco.update({ where: { id }, data: dados });
+  const banco = await comMensagemDeDuplicidade(
+    () => prisma.banco.update({ where: { id }, data: dados }),
+    MSG_CODIGO_DUPLICADO,
+  );
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
