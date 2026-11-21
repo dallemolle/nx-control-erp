@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.42](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.41...nx-control-erp-v0.1.42) (2026-11-21)
+
+
+### Novidades
+
+* **vendas:** ajuda com simulação em Entregas ([0ff73f4](https://github.com/dallemolle/nx-control-erp/commit/0ff73f49773481a6b969c3e14df7dd07a5bab44a))
+* **vendas:** ajuda com simulação em Pedidos ([bcc1faa](https://github.com/dallemolle/nx-control-erp/commit/bcc1faa0423b2e196d2487eaffbc2af1b129fea3))
+
 ## [0.1.41](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.40...nx-control-erp-v0.1.41) (2026-11-21)
 
 
