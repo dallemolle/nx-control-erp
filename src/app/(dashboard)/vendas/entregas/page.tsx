@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { podeExecutar, requirePermission } from "@/server/auth/permissions";
@@ -33,7 +34,10 @@ export default async function EntregasPage({ searchParams }: { searchParams: Pro
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold">Entregas</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Entregas</h1>
+          <BotaoAjuda tela="entregas" />
+        </div>
         <p className="text-sm text-muted-foreground">
           Pedidos que não são retirados na propriedade. O atraso conta a partir da data prevista.
         </p>
