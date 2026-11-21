@@ -1124,6 +1124,42 @@ Mesma numeração das seções acima.
   roteiro `quem-alterou` e o passo "Escolha o formato" de `exportar`
   (`src/ajuda/auditoria/index.tsx`), e a seção 8.4 do manual.
 
+## Gestão — lacunas achadas ao escrever a ajuda contextual
+
+Numeração continua a das seções anteriores.
+
+### 56. Inadimplência do Dashboard executivo dependia do status gravado
+
+- **Status:** feito na branch `feat/ajuda-dashboard-executivo`.
+- **Problema:** o card somava as parcelas a receber com status `VENCIDO`,
+  que só é recalculado quando alguém abre a lista de títulos. Uma parcela
+  que venceu ontem ficava fora até alguém abrir Contas a receber, e a
+  vencida paga em parte (`PARCIALMENTE_PAGO`) nunca entrava. O aging, na
+  mesma tela, já usava a data de vencimento: os dois se contradiziam.
+- **Correção:** inadimplência = saldo das parcelas a receber com vencimento
+  antes de hoje (`calcularIndicadoresExecutivos` em
+  `dashboardExecutivo.ts`, função pura, testada sem banco).
+
+### 57. Dashboard executivo calculava "hoje" e o mês em UTC
+
+- **Status:** feito na branch `feat/ajuda-dashboard-executivo`.
+- **Problema:** depois das 21h de Brasília, o dashboard já estava no dia
+  seguinte: a parcela que vence hoje virava atrasada no aging e saía das
+  obrigações de 7 dias; no último dia do mês, a geração de caixa e o
+  fiscal × gerencial passavam ao mês seguinte.
+- **Correção:** `diaDeHoje` usa `hojeDeCalendario` (o dia de Brasília),
+  como a Produção.
+
+### 58. Gráficos do Dashboard executivo sem formato de moeda
+
+- **Status:** feito na branch `feat/ajuda-dashboard-executivo`.
+- **Problema:** eixos e dicas mostravam o número cru (38000), e as faixas do
+  aging apareciam como "0-30", sem dizer que são dias de atraso de parcelas
+  vencidas. O "% gerencial nas entradas" saía com ponto ("19.0%").
+- **Correção:** `dashboard-executivo/formatos.ts` (eixo "38 mil", dica
+  "R$ 38.000,00", faixas "1–30 dias" … "Mais de 90 dias", percentual
+  "19,0%"); título do aging diz "vencidas, por dias de atraso".
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -1171,8 +1207,10 @@ Mesma numeração das seções acima.
   isolamento entre clientes; 48 e 49 no backlog). Configuração de produção
   feita (2026-11-21, 3 roteiros; lacuna 50 corrigida, 51 e 52 no backlog;
   manual 8.5 ganhou o card Compra de fruto). Auditoria feita (2026-11-21,
-  3 roteiros; lacunas 53 e 54 corrigidas, 55 no backlog). Falta o Dashboard
-  executivo.
+  3 roteiros; lacunas 53 e 54 corrigidas, 55 no backlog). Dashboard
+  executivo feito (2026-11-21, 3 roteiros; lacunas 56 a 58 corrigidas).
+  **Todas as telas têm ajuda com simulação**: o próximo passo é aposentar o
+  Passo a passo (item abaixo).
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
   (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,
