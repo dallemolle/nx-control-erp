@@ -112,6 +112,10 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Fornecedores",
     carregar: () => import("./fornecedores").then((modulo) => modulo.ajudaFornecedores),
   },
+  "contas-bancarias": {
+    titulo: "Contas bancárias",
+    carregar: () => import("./contas-bancarias").then((modulo) => modulo.ajudaContasBancarias),
+  },
 };
 
 export function temAjuda(tela: string): boolean {

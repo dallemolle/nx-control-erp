@@ -457,6 +457,8 @@ Bancos é uma lista de referência (código e nome do banco). Contas bancárias 
 
 O tipo **Caixa (dinheiro em espécie)** é para o dinheiro guardado na empresa. Ele não pede banco nem agência: basta uma identificação (por exemplo, "Escritório" ou "Fazenda"), e dá para ter mais de um caixa. Uma conta Caixa não aparece na importação de extrato. Uma conta só pode mudar de ou para o tipo Caixa enquanto não tiver lançamentos.
 
+**Ver simulação (Contas bancárias):** [cadastrar uma conta no banco](#ajuda/contas-bancarias/cadastrar-conta) · [cadastrar um caixa](#ajuda/contas-bancarias/cadastrar-caixa) · [corrigir ou inativar](#ajuda/contas-bancarias/corrigir-inativar)
+
 ### 7.6. Cadastros de produção
 
 Base para a recepção de fruto, as vendas por lote e o processamento (este nas próximas versões). Podem ser editados pelo Administrador e pelo perfil Produção. Cadastre nesta ordem:
