@@ -10,7 +10,11 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/*": ["src/generated/versao.json"],
     "/ajuda/novidades": ["CHANGELOG.md"],
-    "/ajuda/passo-a-passo": ["content/ajuda/passo-a-passo.md"],
+    "/ajuda/primeiros-passos": ["content/ajuda/primeiros-passos.md"],
+  },
+  // O manual "Passo a passo" foi aposentado: cada tela tem a sua ajuda (ícone ?).
+  redirects() {
+    return [{ source: "/ajuda/passo-a-passo", destination: "/ajuda/primeiros-passos", permanent: true }];
   },
   experimental: {
     serverActions: {
