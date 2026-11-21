@@ -132,4 +132,9 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("pedidos")).toBe("Pedidos de venda");
     expect((await carregarAjuda("pedidos")).roteiros.length).toBe(6);
   });
+
+  test("entregas tem ajuda", async () => {
+    expect(tituloDaAjuda("entregas")).toBe("Entregas");
+    expect((await carregarAjuda("entregas")).roteiros.length).toBe(3);
+  });
 });

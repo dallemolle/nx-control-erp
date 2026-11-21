@@ -419,6 +419,8 @@ Quando não dá para cancelar, o botão fica desabilitado e o motivo aparece ao 
 
 Vendas → Entregas lista as entregas pendentes e em rota (mude o filtro de status para ver as entregues, as canceladas ou todas), com data prevista, cliente, endereço, responsável e o **atraso** em dias, destacado quando passa da data prevista. Em cada linha: **Em rota**, **Entregue** (informe a data e quem recebeu) e **Editar** (data prevista, endereço, responsável e observação). As mesmas ações aparecem no pedido. A entrega de um pedido cancelado fica cancelada e não muda mais. Marque **Só atrasadas** para ver apenas as entregas que passaram da data prevista. Exporte em CSV, Excel ou PDF.
 
+**Ver simulação (Entregas):** [sair para uma entrega](#ajuda/entregas/sair-entrega) · [confirmar a entrega](#ajuda/entregas/confirmar-entrega) · [consultar e exportar](#ajuda/entregas/consultar-entregas)
+
 ### 6.4. Recibo
 
 PDF A4 com a empresa, o número e a data do pedido, o cliente, os itens (produto, lote, kg, preço por kg e valor), o total, a forma e a situação do pagamento. O recibo de um pedido cancelado sai com "CANCELADO" em destaque.
