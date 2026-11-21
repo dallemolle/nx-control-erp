@@ -435,6 +435,8 @@ Cadastro de nome, CNPJ/CPF, contato e, opcionalmente, dados bancários para paga
 
 No cliente, o **CNPJ/CPF é opcional**: deixe em branco para consumidor final ou "Clientes diversos" (quando preenchido, não pode repetir). A seção **Vendas** do cliente guarda o canal de venda, o município, o endereço de entrega e se o cliente **retira na propriedade** (nesse caso o pedido não gera entrega). Além do Administrador, Financeiro e Tesouraria, o perfil Vendas também pode cadastrar e editar clientes.
 
+**Ver simulação (Clientes):** [cadastrar um cliente](#ajuda/clientes/cadastrar-cliente) · [cliente sem documento](#ajuda/clientes/cadastrar-sem-documento) · [mudar o cadastro](#ajuda/clientes/editar-cliente) · [inativar e reativar](#ajuda/clientes/inativar-cliente)
+
 ### 7.2. Categorias financeiras
 
 Classificam cada título/lançamento como Receita ou Despesa, com hierarquia opcional (uma categoria pode ter uma categoria "pai", para agrupar categorias relacionadas em relatórios).

@@ -730,6 +730,51 @@ Numeração continua a da Produção.
 - **Ao corrigir:** dica do passo "Clique em “Confirmar entrega”" do roteiro
   `confirmar-entrega` em `src/ajuda/entregas/roteiros.ts`.
 
+## Cadastros — lacunas achadas ao escrever a ajuda contextual
+
+Numeração continua a de Vendas.
+
+### 28. Cliente e fornecedor inativos continuam nos títulos
+
+- **Problema:** inativar um cliente tira ele do Novo pedido (a tela e o
+  serviço filtram `ativo`), mas o Contas a receber continua oferecendo o
+  cliente inativo e aceita lançar título para ele. O mesmo vale para
+  fornecedor inativo no Contas a pagar.
+- **Exemplo:** a Lanchonete Tucumã fechou e foi inativada; ela some do Novo
+  pedido, mas aparece na escolha do cliente de uma conta a receber nova.
+- **Onde:** `financeiro/contas-a-receber/page.tsx` e
+  `financeiro/contas-a-pagar/page.tsx` (usam `listarClientes` e
+  `listarFornecedores`, sem filtro) e `validarReferenciasDoTitulo` em
+  `src/server/services/titulo.ts` (não confere `ativo`).
+- **Impacto:** o inativar não faz o que promete fora de Vendas; título novo
+  para quem não deveria mais comprar nem fornecer.
+- **Caminhos:** oferecer só os ativos no título novo e recusar inativo no
+  serviço; na edição, manter o já escolhido mesmo inativo.
+- **Cuidados:** a lista do cadastro, os filtros e os relatórios continuam
+  mostrando os inativos; a operadora de cartão usa cliente e fornecedor pelo
+  CNPJ (a seção 7.7 do manual já pede reativar antes).
+- **Ao corrigir:** dica do passo "Confira o status" do roteiro
+  `inativar-cliente` em `src/ajuda/clientes/roteiros.ts`.
+
+### 29. Dados bancários do cliente e do fornecedor não aparecem em nenhuma tela
+
+- **Problema:** o cadastro guarda Pix (tipo e chave) ou depósito (banco,
+  agência, conta, tipo e titular), mas nenhuma outra tela mostra esses dados:
+  nem a lista do cadastro, nem o título, nem a baixa. Para ver, só abrindo o
+  "Editar" do cadastro.
+- **Exemplo:** para pagar o José da Silva, a tesouraria abre o título, não
+  acha a chave Pix e tem de ir a Cadastros → Fornecedores → Editar.
+- **Onde:** `meioPagamento`, `chavePix` e os demais só são lidos em
+  `cadastros/clientes/` e `cadastros/fornecedores/` (formulário e serviço).
+- **Impacto:** o dado existe mas não ajuda na hora de pagar; risco de pagar
+  na conta errada copiando de outro lugar.
+- **Caminhos:** mostrar os dados bancários do fornecedor no título a pagar e
+  na baixa (e os do cliente no título a receber, para devolução);
+  opcionalmente uma coluna na lista do cadastro.
+- **Ao corrigir:** passo "Dados bancários: opcionais" do roteiro
+  `cadastrar-cliente` e passo "A lista não muda" do `editar-cliente` em
+  `src/ajuda/clientes/roteiros.ts`.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -756,8 +801,10 @@ Numeração continua a da Produção.
   3 roteiros, sem lacuna nova). **Toda a Produção tem ajuda.** Vendas:
   Pedidos feito (2026-11-20, 6 roteiros, lacuna 26; a venda na maquininha é
   simulada sem salvar, para não mudar os números de novembro); Entregas feito
-  (2026-11-21, 3 roteiros, lacuna 27). **Todo o Vendas tem ajuda.** Faltam
-  Cadastros e Administração.
+  (2026-11-21, 3 roteiros, lacuna 27). **Todo o Vendas tem ajuda.** Cadastros
+  (telas ricas sozinhas, as simples em grupos): Clientes feito (2026-11-21,
+  4 roteiros, lacunas 28 e 29). Faltam as demais telas de Cadastros e a
+  Administração.
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
   (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,

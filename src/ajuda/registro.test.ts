@@ -137,4 +137,9 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("entregas")).toBe("Entregas");
     expect((await carregarAjuda("entregas")).roteiros.length).toBe(3);
   });
+
+  test("clientes tem ajuda", async () => {
+    expect(tituloDaAjuda("clientes")).toBe("Clientes");
+    expect((await carregarAjuda("clientes")).roteiros.length).toBe(4);
+  });
 });
