@@ -475,16 +475,26 @@ O tipo **Caixa (dinheiro em espécie)** é para o dinheiro guardado na empresa. 
 
 ### 7.6. Cadastros de produção
 
-Base para a recepção de fruto, as vendas por lote e o processamento (este nas próximas versões). Podem ser editados pelo Administrador e pelo perfil Produção. Cadastre nesta ordem:
+Base para a recepção de fruto, o processamento e as vendas por lote. Podem ser editados pelo Administrador e pelo perfil Produção. Cadastre nesta ordem:
 
-1. **Frutas** (da empresa): nome, **custo-padrão do fruto próprio** (R$/kg, usado no custo e na margem do fruto colhido nos talhões; deixe 0 se ainda não souber) e se a fruta **exige branqueamento** no processamento (o açaí exige).
+1. **Frutas** (da empresa): nome, **custo-padrão do fruto próprio** (R$/kg, usado no custo e na margem do fruto colhido nos talhões; deixe 0 se ainda não souber) e se a fruta **exige branqueamento** no processamento (o açaí exige). Mudar o custo-padrão vale para as próximas recepções: os lotes já recebidos ficam com o custo do dia.
+
+   **Ver simulação (Frutas):** [cadastrar uma fruta](#ajuda/frutas/cadastrar-fruta) · [mudar o custo-padrão ou inativar](#ajuda/frutas/mudar-custo-fruta)
 2. **Produtos** (da empresa): código, descrição, fruta, categoria (fruto ou polpa), conservação (in natura, resfriado ou congelado), validade em dias, **preço de referência** (sugerido na venda e usado para dividir o custo da OP entre as polpas; obrigatório para encerrar uma OP com mais de um produto), texto de armazenamento e texto livre da etiqueta (ingredientes e outros dizeres). O **código** (ex.: FA, AGC) vira o início do número de lote (FA-260927-01). A **unidade comercial** é opcional: para o açaí, "rasa = 14 kg" permite lançar quantidade e preço por rasa. **Dias de liberação após vencimento** (opcional) é a tolerância máxima para o Gestor liberar um lote vencido do produto (seção 5.3); vazio, o produto não pode ser liberado.
 
    **Ver simulação (Produtos):** [cadastrar uma polpa](#ajuda/produtos/cadastrar-polpa) · [o fruto e a rasa](#ajuda/produtos/fruto-rasa) · [liberação, mudanças e inativar](#ajuda/produtos/liberar-inativar)
 
 3. **Talhões** (da filial): áreas de cultivo próprias, com cultura, área (ha) e ano de plantio. São a origem do fruto colhido.
-4. **Locais de armazenamento** (da filial): câmaras, freezers e áreas de recepção, com temperatura e capacidade (opcional, usada para mostrar a ocupação no estoque).
-5. **Insumos** (da empresa): embalagens, energia e mão de obra, com unidade e custo unitário de referência.
+
+   **Ver simulação (Talhões):** [cadastrar um talhão](#ajuda/talhoes/cadastrar-talhao)
+
+4. **Locais de armazenamento** (da filial): câmaras, freezers e áreas de recepção, com temperatura e capacidade (opcional, usada para mostrar a ocupação no estoque). Antes de inativar um local, transfira os lotes que estão nele.
+
+   **Ver simulação (Locais de armazenamento):** [cadastrar um local](#ajuda/locais-armazenamento/cadastrar-local)
+
+5. **Insumos** (da empresa): embalagens, energia e mão de obra, com unidade e custo unitário de referência. Cada linha de insumo da OP grava o custo do momento em que foi lançada.
+
+   **Ver simulação (Insumos):** [cadastrar um insumo](#ajuda/insumos/cadastrar-insumo) · [atualizar o custo](#ajuda/insumos/atualizar-custo-insumo)
 
 ### 7.7. Operadoras de cartão
 
