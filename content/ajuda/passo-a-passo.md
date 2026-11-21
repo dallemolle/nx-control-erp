@@ -356,6 +356,8 @@ Por último, a polpa produzida de cada produto mês a mês. A planilha (CSV/Exce
 
 O "ano" dessas duas últimas tabelas é o ano da data **Até** do período.
 
+**Ver simulação (Relatório de processamento):** [resumo por fruta](#ajuda/relatorio-processamento/resumo-fruta) · [balanço de massa e custo](#ajuda/relatorio-processamento/balanco-custo) · [ver as OPs e exportar](#ajuda/relatorio-processamento/ops-exportar)
+
 **Relatório de processamento** (Produção → Relatório de processamento): escolha o período. As tabelas:
 
 - **Resumo por fruta:** nº de OPs, fruto processado, polpa produzida e rendimento médio, contando OPs abertas e encerradas (os mesmos números do painel). O rendimento mínimo e máximo e o custo médio da polpa usam só OPs encerradas, porque uma OP ainda aberta pode ter o fruto lançado e a polpa não.
