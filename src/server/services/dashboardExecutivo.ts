@@ -6,6 +6,7 @@ import { buscarSaldoEmCaixaAteDasFiliais, fimDoDiaUTC } from "./fluxoDeCaixa";
 import { saldoRemanescenteParcela } from "./fluxoDeCaixaProjetado";
 import { buscarPendenciasFiscaisDaFilial, percentualGerencial } from "./relatorioFiscalGerencial";
 import { idsDasFiliaisAtivas } from "./filiaisConsolidadas";
+import { hojeDeCalendario } from "@/lib/producao/periodo";
 
 export type IndicadoresExecutivos = {
   caixaDisponivel: number;
@@ -21,10 +22,6 @@ export type IndicadoresExecutivos = {
 
 const STATUS_ABERTO: StatusParcela[] = ["EM_ABERTO", "A_VENCER", "VENCIDO", "PARCIALMENTE_PAGO"];
 
-function inicioDoMes(ano: number, mes: number): Date {
-  return new Date(Date.UTC(ano, mes - 1, 1));
-}
-
 /** Parcelas em aberto das filiais, só com os campos que o dashboard usa. */
 function buscarParcelasEmAbertoDasFiliais(filialIds: string[], venceAntesDe?: Date) {
   return prisma.parcela.findMany({
@@ -36,7 +33,6 @@ function buscarParcelasEmAbertoDasFiliais(filialIds: string[], venceAntesDe?: Da
     select: {
       valorAtualizado: true,
       dataVencimento: true,
-      status: true,
       titulo: { select: { tipo: true } },
       baixas: { where: { statusAprovacao: "APROVADO" }, select: { valorPago: true } },
     },
@@ -61,25 +57,35 @@ function totalDoTipo(somas: { tipo: string; _sum: { valor: unknown } }[], tipo: 
 }
 
 /**
- * Consolida por empresa (soma todas as filiais). Todas as somas são aditivas,
- * então cada indicador é uma query só com `filialId: { in: [...] }` — não um
- * loop por filial — e as queries independentes rodam em paralelo.
+ * O "hoje" do dashboard é o dia de Brasília, como data de calendário (meia-noite UTC, igual a vencimentos e datas
+ * de lançamento). Antes era o dia UTC: depois das 21h, a parcela que vence hoje já contava como atrasada.
  */
-export async function buscarIndicadoresExecutivos(sessao: SessaoAtiva): Promise<IndicadoresExecutivos> {
-  requirePermission(sessao.perfil, "dashboardExecutivo:ler");
+export function diaDeHoje(agora: Date = new Date()) {
+  const hoje = hojeDeCalendario(agora);
+  const ano = hoje.getUTCFullYear();
+  const mes = hoje.getUTCMonth();
+  const dia = hoje.getUTCDate();
+  return { hoje, fimDeHoje: fimDoDiaUTC(ano, mes, dia), inicioMesAtual: new Date(Date.UTC(ano, mes, 1)) };
+}
 
-  const filialIds = await idsDasFiliaisAtivas(sessao.empresaId);
-  const hoje = new Date();
-  const inicioDeHoje = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()));
+/** Uma parcela em aberto já reduzida ao que falta pagar ou receber. */
+export type ParcelaParaIndicadores = { tipo: "PAGAR" | "RECEBER"; dataVencimento: Date; saldo: number };
+
+/**
+ * Os cards do dashboard a partir do caixa, das parcelas em aberto e do movimento conciliado do mês. `hoje` é a data
+ * de calendário (meia-noite UTC). Inadimplência = a receber com vencimento antes de hoje, pela data (o `status`
+ * gravado só é recalculado quando alguém abre a lista de títulos, e a parcela vencida paga em parte também conta).
+ */
+export function calcularIndicadoresExecutivos(dados: {
+  hoje: Date;
+  caixaDisponivel: number;
+  parcelas: readonly ParcelaParaIndicadores[];
+  entradasMes: number;
+  saidasMes: number;
+}): IndicadoresExecutivos {
+  const { hoje } = dados;
   const em7Dias = fimDoDiaUTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate() + 7);
   const em30Dias = fimDoDiaUTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate() + 30);
-  const inicioMesAtual = inicioDoMes(hoje.getUTCFullYear(), hoje.getUTCMonth() + 1);
-
-  const [caixaDisponivel, parcelasEmAberto, somasMes] = await Promise.all([
-    buscarSaldoEmCaixaAteDasFiliais(filialIds, hoje),
-    buscarParcelasEmAbertoDasFiliais(filialIds),
-    somasConciliadasNoPeriodo(filialIds, inicioMesAtual, hoje),
-  ]);
 
   let contasAPagarEmAberto = 0;
   let contasAReceberEmAberto = 0;
@@ -88,40 +94,73 @@ export async function buscarIndicadoresExecutivos(sessao: SessaoAtiva): Promise<
   let obrigacoes30Dias = 0;
   let recebimentosEsperados30Dias = 0;
 
-  for (const parcela of parcelasEmAberto) {
-    const saldo = saldoRemanescenteParcela(
-      Number(parcela.valorAtualizado),
-      parcela.baixas.map((baixa) => ({ valorPago: Number(baixa.valorPago) })),
-    );
-    const dentroDe7Dias = parcela.dataVencimento >= inicioDeHoje && parcela.dataVencimento <= em7Dias;
-    const dentroDe30Dias = parcela.dataVencimento >= inicioDeHoje && parcela.dataVencimento <= em30Dias;
+  for (const { tipo, dataVencimento, saldo } of dados.parcelas) {
+    if (saldo <= 0) continue;
+    const vencida = dataVencimento < hoje;
+    const dentroDe7Dias = !vencida && dataVencimento <= em7Dias;
+    const dentroDe30Dias = !vencida && dataVencimento <= em30Dias;
 
-    if (parcela.titulo.tipo === "PAGAR") {
+    if (tipo === "PAGAR") {
       contasAPagarEmAberto += saldo;
       if (dentroDe7Dias) obrigacoes7Dias += saldo;
       if (dentroDe30Dias) obrigacoes30Dias += saldo;
     } else {
       contasAReceberEmAberto += saldo;
-      if (parcela.status === "VENCIDO") inadimplencia += saldo;
+      if (vencida) inadimplencia += saldo;
       if (dentroDe30Dias) recebimentosEsperados30Dias += saldo;
     }
   }
 
-  const geracaoDeCaixaMesAtual = totalDoTipo(somasMes, "ENTRADA") - totalDoTipo(somasMes, "SAIDA");
-
-  const saldoProjetado30Dias = caixaDisponivel + recebimentosEsperados30Dias - obrigacoes30Dias;
-
   return {
-    caixaDisponivel,
+    caixaDisponivel: dados.caixaDisponivel,
     contasAPagarEmAberto,
     contasAReceberEmAberto,
     inadimplencia,
-    geracaoDeCaixaMesAtual,
+    geracaoDeCaixaMesAtual: dados.entradasMes - dados.saidasMes,
     obrigacoes7Dias,
     obrigacoes30Dias,
     recebimentosEsperados30Dias,
-    saldoProjetado30Dias,
+    saldoProjetado30Dias: dados.caixaDisponivel + recebimentosEsperados30Dias - obrigacoes30Dias,
   };
+}
+
+function paraIndicadores(
+  parcelas: Awaited<ReturnType<typeof buscarParcelasEmAbertoDasFiliais>>,
+): ParcelaParaIndicadores[] {
+  return parcelas.map((parcela) => ({
+    tipo: parcela.titulo.tipo,
+    dataVencimento: parcela.dataVencimento,
+    saldo: saldoRemanescenteParcela(
+      Number(parcela.valorAtualizado),
+      parcela.baixas.map((baixa) => ({ valorPago: Number(baixa.valorPago) })),
+    ),
+  }));
+}
+
+/**
+ * Consolida por empresa (soma todas as filiais). Todas as somas são aditivas,
+ * então cada indicador é uma query só com `filialId: { in: [...] }` — não um
+ * loop por filial — e as queries independentes rodam em paralelo.
+ */
+export async function buscarIndicadoresExecutivos(sessao: SessaoAtiva): Promise<IndicadoresExecutivos> {
+  requirePermission(sessao.perfil, "dashboardExecutivo:ler");
+
+  const filialIds = await idsDasFiliaisAtivas(sessao.empresaId);
+  const { hoje, fimDeHoje, inicioMesAtual } = diaDeHoje();
+
+  const [caixaDisponivel, parcelasEmAberto, somasMes] = await Promise.all([
+    buscarSaldoEmCaixaAteDasFiliais(filialIds, fimDeHoje),
+    buscarParcelasEmAbertoDasFiliais(filialIds),
+    somasConciliadasNoPeriodo(filialIds, inicioMesAtual, fimDeHoje),
+  ]);
+
+  return calcularIndicadoresExecutivos({
+    hoje,
+    caixaDisponivel,
+    parcelas: paraIndicadores(parcelasEmAberto),
+    entradasMes: totalDoTipo(somasMes, "ENTRADA"),
+    saidasMes: totalDoTipo(somasMes, "SAIDA"),
+  });
 }
 
 export type FaixaAging = "0-30" | "31-60" | "61-90" | "90+";
@@ -149,21 +188,22 @@ function rotuloMes(data: Date): string {
  * `fluxoDeCaixaProjetado.ts`/`fluxoDeCaixaPorDimensao.ts`: `status` só é
  * recalculado quando `listarTitulos` é chamado).
  *
- * Usa `inicioDeHoje` (início do dia em UTC) como referência, e não o
- * instante exato — mesmo motivo do `inicioDeHoje` de
- * `buscarIndicadoresExecutivos`: uma parcela vencendo hoje não pode ser
+ * Usa `hoje` (a data de calendário de Brasília, ver `diaDeHoje`) como
+ * referência, e não o instante exato: uma parcela vencendo hoje não pode ser
  * "já vencida" no aging enquanto ainda conta como obrigação futura nos
- * cards de 7/30 dias do mesmo dashboard.
+ * cards de 7/30 dias do mesmo dashboard. A faixa "0-30" vai de 1 a 30 dias
+ * de atraso.
  */
-function faixaAging(inicioDeHoje: Date, dataVencimento: Date): FaixaAging {
-  const diasAtraso = Math.floor((inicioDeHoje.getTime() - dataVencimento.getTime()) / (24 * 60 * 60 * 1000));
+function faixaAging(hoje: Date, dataVencimento: Date): FaixaAging {
+  const diasAtraso = Math.floor((hoje.getTime() - dataVencimento.getTime()) / (24 * 60 * 60 * 1000));
   if (diasAtraso <= 30) return "0-30";
   if (diasAtraso <= 60) return "31-60";
   if (diasAtraso <= 90) return "61-90";
   return "90+";
 }
 
-async function buscarAgingConsolidado(filialIds: string[], inicioDeHoje: Date): Promise<PontoAging[]> {
+/** O aging a partir das parcelas em aberto: só as vencidas antes de `hoje` (data de calendário), por dias de atraso. */
+export function calcularAging(parcelas: readonly ParcelaParaIndicadores[], hoje: Date): PontoAging[] {
   const buckets: Record<FaixaAging, { contasAPagar: number; contasAReceber: number }> = {
     "0-30": { contasAPagar: 0, contasAReceber: 0 },
     "31-60": { contasAPagar: 0, contasAReceber: 0 },
@@ -171,20 +211,19 @@ async function buscarAgingConsolidado(filialIds: string[], inicioDeHoje: Date): 
     "90+": { contasAPagar: 0, contasAReceber: 0 },
   };
 
-  const parcelasVencidas = await buscarParcelasEmAbertoDasFiliais(filialIds, inicioDeHoje);
-  for (const parcela of parcelasVencidas) {
-    const saldo = saldoRemanescenteParcela(
-      Number(parcela.valorAtualizado),
-      parcela.baixas.map((baixa) => ({ valorPago: Number(baixa.valorPago) })),
-    );
-    if (saldo <= 0) continue;
-
-    const faixa = faixaAging(inicioDeHoje, parcela.dataVencimento);
-    if (parcela.titulo.tipo === "PAGAR") buckets[faixa].contasAPagar += saldo;
+  for (const { tipo, dataVencimento, saldo } of parcelas) {
+    if (saldo <= 0 || dataVencimento >= hoje) continue;
+    const faixa = faixaAging(hoje, dataVencimento);
+    if (tipo === "PAGAR") buckets[faixa].contasAPagar += saldo;
     else buckets[faixa].contasAReceber += saldo;
   }
 
   return (["0-30", "31-60", "61-90", "90+"] as const).map((faixa) => ({ faixa, ...buckets[faixa] }));
+}
+
+async function buscarAgingConsolidado(filialIds: string[], hoje: Date): Promise<PontoAging[]> {
+  const parcelasVencidas = await buscarParcelasEmAbertoDasFiliais(filialIds, hoje);
+  return calcularAging(paraIndicadores(parcelasVencidas), hoje);
 }
 
 /**
@@ -198,8 +237,7 @@ export async function buscarGraficosExecutivos(sessao: SessaoAtiva): Promise<Gra
   requirePermission(sessao.perfil, "dashboardExecutivo:ler");
 
   const filialIds = await idsDasFiliaisAtivas(sessao.empresaId);
-  const hoje = new Date();
-  const inicioDeHoje = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()));
+  const { hoje } = diaDeHoje();
 
   const meses = [5, 4, 3, 2, 1, 0].map((mesesAtras) => {
     const ano = hoje.getUTCFullYear();
@@ -211,7 +249,7 @@ export async function buscarGraficosExecutivos(sessao: SessaoAtiva): Promise<Gra
   const [saldoAntesDaJanela, somasPorMes, aging] = await Promise.all([
     buscarSaldoEmCaixaAteDasFiliais(filialIds, new Date(meses[0].inicio.getTime() - 1)),
     Promise.all(meses.map(({ inicio, fim }) => somasConciliadasNoPeriodo(filialIds, inicio, fim))),
-    buscarAgingConsolidado(filialIds, inicioDeHoje),
+    buscarAgingConsolidado(filialIds, hoje),
   ]);
 
   const entradasSaidas: PontoEntradasSaidas[] = [];
@@ -246,8 +284,7 @@ export async function buscarResumoFiscalGerencial(sessao: SessaoAtiva): Promise<
   requirePermission(sessao.perfil, "dashboardExecutivo:ler");
 
   const filialIds = await idsDasFiliaisAtivas(sessao.empresaId);
-  const hoje = new Date();
-  const inicioMesAtual = inicioDoMes(hoje.getUTCFullYear(), hoje.getUTCMonth() + 1);
+  const { fimDeHoje, inicioMesAtual } = diaDeHoje();
 
   const [somas, pendenciasPorFilial] = await Promise.all([
     prisma.lancamentoBancario.groupBy({
@@ -256,7 +293,7 @@ export async function buscarResumoFiscalGerencial(sessao: SessaoAtiva): Promise<
         filialId: { in: filialIds },
         conciliado: true,
         classificacaoFiscal: { not: null },
-        data: { gte: inicioMesAtual, lte: hoje },
+        data: { gte: inicioMesAtual, lte: fimDeHoje },
         contaBancaria: { ativo: true },
       },
       _sum: { valor: true },
