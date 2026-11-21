@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission } from "@/server/auth/permissions";
 import { buscarRelatorioOrigem } from "@/server/services/relatorioProducao/origem";
@@ -35,7 +36,10 @@ export default async function RelatorioOrigemPage({ searchParams }: { searchPara
   return (
     <div className="space-y-8">
       <div className="space-y-1">
-        <h1 className="text-lg font-semibold">Relatório de origem</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Relatório de origem</h1>
+          <BotaoAjuda tela="relatorio-origem" />
+        </div>
         <p className="text-sm text-muted-foreground">
           {formatarData(periodo.inicio)} a {formatarData(periodo.fim)}. Recepções canceladas ficam fora; peso
           líquido (bruto − descarte). Produtividade e preço por mês: ano de {r.ano}.

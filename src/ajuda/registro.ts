@@ -56,6 +56,46 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Fiscal × gerencial",
     carregar: () => import("./fiscal-gerencial").then((modulo) => modulo.ajudaFiscalGerencial),
   },
+  recepcao: {
+    titulo: "Recepção de fruto",
+    carregar: () => import("./recepcao").then((modulo) => modulo.ajudaRecepcao),
+  },
+  processamento: {
+    titulo: "Processamento",
+    carregar: () => import("./processamento").then((modulo) => modulo.ajudaProcessamento),
+  },
+  estoque: {
+    titulo: "Estoque",
+    carregar: () => import("./estoque").then((modulo) => modulo.ajudaEstoque),
+  },
+  ajustes: {
+    titulo: "Ajustes de estoque",
+    carregar: () => import("./ajustes").then((modulo) => modulo.ajudaAjustes),
+  },
+  rastreabilidade: {
+    titulo: "Rastreabilidade",
+    carregar: () => import("./rastreabilidade").then((modulo) => modulo.ajudaRastreabilidade),
+  },
+  painel: {
+    titulo: "Painel de produção",
+    carregar: () => import("./painel").then((modulo) => modulo.ajudaPainel),
+  },
+  "relatorio-mensal": {
+    titulo: "Relatório mensal",
+    carregar: () => import("./relatorio-mensal").then((modulo) => modulo.ajudaRelatorioMensal),
+  },
+  "relatorio-vendas": {
+    titulo: "Relatório de vendas",
+    carregar: () => import("./relatorio-vendas").then((modulo) => modulo.ajudaRelatorioVendas),
+  },
+  "relatorio-origem": {
+    titulo: "Relatório de origem",
+    carregar: () => import("./relatorio-origem").then((modulo) => modulo.ajudaRelatorioOrigem),
+  },
+  "relatorio-processamento": {
+    titulo: "Relatório de processamento",
+    carregar: () => import("./relatorio-processamento").then((modulo) => modulo.ajudaRelatorioProcessamento),
+  },
 };
 
 export function temAjuda(tela: string): boolean {

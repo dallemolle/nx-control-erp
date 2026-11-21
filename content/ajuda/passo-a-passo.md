@@ -216,6 +216,8 @@ O módulo de produção substitui a planilha de controle da agroindústria. Ante
 
 ### 5.1. Recepção de fruto
 
+**Ver simulação (Recepção de fruto):** [registrar fruto comprado](#ajuda/recepcao/registrar-compra) · [registrar fruto colhido](#ajuda/recepcao/registrar-colheita) · [corrigir ou excluir](#ajuda/recepcao/corrigir-excluir) · [consultar, rastrear e exportar](#ajuda/recepcao/consultar-exportar)
+
 Cada carga de fruto recebida vira um **lote**. Em Produção → Recepção de fruto → **Nova recepção**, informe:
 
 - data e produto (só fruto);
@@ -231,6 +233,8 @@ O quadro de resumo mostra na hora o peso líquido, o % de descarte, o preço por
 **Corrigir uma recepção:** qualidade, documento e observação podem ser editados a qualquer momento. Para corrigir peso, preço, produto ou origem, use **Excluir** e lance de novo. A exclusão só é possível enquanto o lote não teve saída (ajuste, venda ou processamento) e a conta a pagar não foi paga. O lote excluído fica zerado e o número dele não é reaproveitado.
 
 ### 5.2. Processamento (OP)
+
+**Ver simulação (Processamento):** [abrir uma OP](#ajuda/processamento/abrir-op) · [lançar o fruto e a polpa](#ajuda/processamento/lancar-fruto-polpa) · [lançar insumos e o processo](#ajuda/processamento/insumos-processo) · [encerrar a OP](#ajuda/processamento/encerrar-op) · [corrigir, reabrir ou cancelar](#ajuda/processamento/corrigir-op) · [consultar e exportar](#ajuda/processamento/consultar-ops)
 
 Cada batelada de fruto processado em polpa é uma **ordem de produção (OP)**. Em Produção → Processamento → **Nova OP**, informe a data, a fruta e o responsável. A OP recebe um número (ex.: OP-261110-01: data e sequência do dia) e abre o detalhe, com quatro abas:
 
@@ -254,6 +258,8 @@ Na lista de OPs, o filtro **A verificar** mostra só as OPs (não canceladas) co
 
 ### 5.3. Estoque
 
+**Ver simulação (Estoque):** [ler o estoque](#ajuda/estoque/ler-estoque) · [filtrar e ver o que vence em outro dia](#ajuda/estoque/filtrar-referencia) · [transferir um lote de local](#ajuda/estoque/transferir) · [liberar um lote vencido](#ajuda/estoque/liberar-vencido) · [ver por produto e local](#ajuda/estoque/produto-local)
+
 Mostra os lotes com saldo, em ordem de validade (o que vence primeiro aparece primeiro). Cada lote tem um status:
 
 | Status | Quando |
@@ -263,7 +269,7 @@ Mostra os lotes com saldo, em ordem de validade (o que vence primeiro aparece pr
 | Vencido | Passou da validade. |
 | Zerado | Sem saldo. |
 
-Filtre por produto, local e status, ou mude a **data de referência** para ver como estava (ou estará) o estoque em outro dia. A aba **Por produto e local** soma o saldo e o valor a custo, e mostra a ocupação de cada local que tem capacidade cadastrada.
+Filtre por produto, local e status, ou mude a **data de referência** para ver o que estará vencendo ou vencido em outro dia: os dias e o status passam a ser contados nessa data, mas o saldo é sempre o de hoje (a tela não mostra o estoque de um dia passado). A aba **Por produto e local** soma o saldo e o valor a custo, e mostra a ocupação de cada local que tem capacidade cadastrada.
 
 O botão **Transferir** leva o lote, ou parte dele, para outro local: escolha o local e a quantidade em kg (já vem com o saldo inteiro). Com o saldo inteiro, o lote só muda de local. Com parte dele, a parte vira um lote novo no destino com o mesmo código e uma barra no fim (`FA-261110-01/1`, `/2`…), com a mesma validade, custo e origem; se já existe um lote dessa família no destino, a quantidade é somada nele (devolver para o local de origem junta de volta). Polpa de OP aberta só pode mudar de local inteira.
 
@@ -272,6 +278,8 @@ No topo, três cartões contam os lotes com saldo e os kg em cada situação (OK
 **Liberar lote vencido:** lote vencido não sai em pedido nem em OP. Quando ele ainda pode ser aproveitado, o Gestor (ou o Administrador) clica em **Liberar** no lote e informa o motivo. A liberação vale até a validade mais os **dias de liberação após vencimento** do produto (cadastro do produto, seção 7.6): com 5 dias, um lote que venceu em 10/11 pode sair até 15/11. Se o produto não tiver esse prazo, a tela pede para configurá-lo; se o prazo já passou, o lote não pode mais ser liberado. Enquanto valer, o lote mostra "Movimentação liberada até dd/mm/aaaa" (passe o mouse para ver quem liberou e o motivo), e qualquer pessoa que lança pedido ou OP pode usá-lo; o motivo é copiado para o item. **Revogar** desfaz a liberação. As duas ações ficam na auditoria. Num lote dividido por transferência, liberar ou revogar vale para todos os lotes da família.
 
 ### 5.4. Ajustes de estoque
+
+**Ver simulação (Ajustes de estoque):** [dar baixa no estoque](#ajuda/ajustes/dar-baixa) · [acertar depois de uma contagem](#ajuda/ajustes/inventario) · [corrigir um ajuste errado](#ajuda/ajustes/corrigir-ajuste) · [consultar e exportar](#ajuda/ajustes/consultar-ajustes)
 
 Use para tudo que sai ou entra no estoque sem ser recepção ou venda: lote vencido, avaria/quebra, amostra para a ADEPARA ou laboratório, consumo interno ou acerto de inventário. Escolha o lote (a lista vem em ordem de validade, com o saldo de cada um), se é saída ou entrada, a quantidade em kg e o motivo. Uma saída maior que o saldo do lote é recusada. Só o Administrador e o perfil Produção lançam ajustes.
 
@@ -285,6 +293,8 @@ O endereço é configurado em Administração → Configuração de produção. 
 
 ### 5.6. Rastreabilidade (recall)
 
+**Ver simulação (Rastreabilidade):** [recall: do fruto até os clientes](#ajuda/rastreabilidade/recall-fruto) · [da polpa até o produtor](#ajuda/rastreabilidade/origem-polpa) · [lote dividido por transferência](#ajuda/rastreabilidade/familia) · [achar, ver cancelados e exportar](#ajuda/rastreabilidade/buscar-exportar)
+
 Em **Produção → Rastreabilidade**, digite o código do lote e clique em **Rastrear**. Também dá para clicar no código do lote no estoque, na recepção, na OP ou no pedido. Se digitar só parte do código (ex.: `FA-2611`), aparece a lista de lotes que batem.
 
 - **Lote de polpa:** mostra a OP que o produziu (branqueamento, rendimento, balanço), os lotes de fruto usados, com a origem de cada um, e os clientes que compraram a polpa.
@@ -295,6 +305,8 @@ Em **Produção → Rastreabilidade**, digite o código do lote e clique em **Ra
 Pedidos e OPs cancelados e linhas removidas ficam ocultos. Use **Mostrar cancelados** para vê-los. O **PDF** traz o relatório completo para a fiscalização; **CSV** e **Excel** trazem a lista de clientes com contato.
 
 ### 5.7. Painel de produção
+
+**Ver simulação (Painel):** [ler a recepção e o processamento](#ajuda/painel/recepcao-processamento) · [ler as vendas e o estoque](#ajuda/painel/vendas-estoque) · [usar os alertas e exportar](#ajuda/painel/alertas-exportar)
 
 Produção → **Painel** resume o período escolhido (padrão: o mês atual; atalhos Mês atual, Mês anterior e Ano) em três blocos:
 
@@ -314,6 +326,8 @@ Cada alerta com ocorrência fica destacado e abre a lista já filtrada: lotes ve
 
 Os relatórios seguem as mesmas regras do painel: cancelados ficam fora, OP aberta entra no volume, o custo da polpa usa só OPs encerradas e o a receber é a posição de hoje. Todos exportam PDF, CSV e Excel.
 
+**Ver simulação (Relatório mensal):** [ver o ano mês a mês](#ajuda/relatorio-mensal/ver-ano) · [ler as tabelas](#ajuda/relatorio-mensal/ler-tabelas) · [exportar](#ajuda/relatorio-mensal/exportar-mensal)
+
 **Relatório mensal** (Produção → Relatório mensal): escolha o ano pelas setas. No topo, dois gráficos: recebido × processado × vendido (kg) e faturamento com a margem por mês. Abaixo, quatro tabelas com os doze meses e o total:
 
 - **Recepção:** kg próprio e de terceiros de cada fruta (peso líquido) e o total recebido.
@@ -323,12 +337,16 @@ Os relatórios seguem as mesmas regras do painel: cancelados ficam fora, OP aber
 
 Por último, a polpa produzida de cada produto mês a mês. A planilha (CSV/Excel) traz um indicador por linha, com as colunas Bloco, Indicador, Fruta, Mês e Valor, pronta para tabela dinâmica.
 
+**Ver simulação (Relatório de vendas):** [período e gráficos](#ajuda/relatorio-vendas/periodo-graficos) · [ler as tabelas](#ajuda/relatorio-vendas/ler-tabelas) · [exportar](#ajuda/relatorio-vendas/exportar-vendas)
+
 **Relatório de vendas** (Produção → Relatório de vendas): escolha o período (padrão: o mês atual). Os gráficos mostram o faturamento por canal e os dez clientes que mais compraram. As tabelas:
 
 - **Vendas por cliente:** todos os clientes em ordem de faturamento, com kg, % do total, preço médio, margem, **canal principal** (o canal que mais faturou com o cliente no período) e o **a receber de hoje**. Clientes sem compra no período mas com saldo em aberto aparecem no fim, para a cobrança.
 - **Por produto:** kg, faturamento, preço médio, custo médio e margem.
 - **Por canal:** kg, faturamento e participação; pedidos sem canal aparecem como "Sem canal".
 - **Por forma de pagamento:** faturamento do período e o que falta receber hoje.
+
+**Ver simulação (Relatório de origem):** [de onde veio o fruto](#ajuda/relatorio-origem/por-origem) · [produtividade dos talhões](#ajuda/relatorio-origem/produtividade) · [preço pago a terceiros e exportar](#ajuda/relatorio-origem/preco-exportar)
 
 **Relatório de origem** (Produção → Relatório de origem): escolha o período (padrão: o mês atual). O gráfico mostra as dez origens que mais entregaram fruto. As tabelas:
 
@@ -337,6 +355,8 @@ Por último, a polpa produzida de cada produto mês a mês. A planilha (CSV/Exce
 - **Preço médio pago a terceiros por mês:** quanto foi pago por kg líquido de cada fruta, mês a mês e no ano. Mês sem compra fica "—".
 
 O "ano" dessas duas últimas tabelas é o ano da data **Até** do período.
+
+**Ver simulação (Relatório de processamento):** [resumo por fruta](#ajuda/relatorio-processamento/resumo-fruta) · [balanço de massa e custo](#ajuda/relatorio-processamento/balanco-custo) · [ver as OPs e exportar](#ajuda/relatorio-processamento/ops-exportar)
 
 **Relatório de processamento** (Produção → Relatório de processamento): escolha o período. As tabelas:
 

@@ -587,6 +587,99 @@ continua, para cada item ter um número único). Prioridade a definir.
   `src/ajuda/fiscal-gerencial/roteiros.ts` (diz que o link não abre o título
   direto).
 
+## Produção — lacunas achadas ao escrever a ajuda contextual
+
+Numeração continua a do Financeiro e da Controladoria.
+
+### 22. Romaneio corrigido na recepção não chega à conta a pagar
+
+- **Problema:** na criação, o "Romaneio / NF" da recepção vira o documento da
+  conta a pagar (ou `RF-<lote>`, se vazio). O "Editar" da recepção muda o
+  romaneio só na recepção (`atualizarDadosRecepcao`); o título continua com o
+  documento antigo, sem aviso.
+- **Exemplo:** o José da Silva entrega açaí sem romaneio; a conta nasce como
+  "RF-FA-261120-01". No dia seguinte o romaneio 152 chega e é lançado pelo
+  Editar: a recepção mostra 152, Contas a pagar continua "RF-FA-261120-01".
+- **Onde:** `src/server/services/recepcaoFruto.ts` (`atualizarDadosRecepcao`);
+  o formulário em `producao/recepcao/recepcao-acoes.tsx`.
+- **Impacto:** o financeiro procura o pagamento pelo romaneio e não acha; os
+  dois registros da mesma carga discordam.
+- **Caminhos:** ao editar o romaneio, atualizar também o documento do título
+  enquanto ele não tiver baixa (e registrar na auditoria); ou avisar no
+  diálogo que o título precisa ser editado em Contas a pagar.
+- **Cuidados:** título com baixa ou já conciliado; título com documento já
+  mudado à mão em Contas a pagar (não sobrescrever sem perguntar).
+- **Ao corrigir:** passo "Corrija e salve" do roteiro `corrigir-excluir` em
+  `src/ajuda/recepcao/roteiros.ts` (diz que o documento da conta não muda).
+
+### 23. Aba Processo da OP perde o que não foi salvo, sem aviso
+
+- **Problema:** na OP, a aba Processo (branqueamento, água, caroço, perda,
+  observação) só grava com "Salvar processo". As abas são links: trocar de
+  aba, ou sair da tela, descarta o que foi digitado, sem aviso.
+- **Exemplo:** a operadora digita 85 °C, 10 s, 400 L, 450 kg e 20 kg e clica
+  em "Produção" para conferir a polpa; volta e os campos estão como antes. O
+  balanço continua "Verificar" e ela não sabe por quê.
+- **Onde:** `producao/processamento/[numero]/processo-form.tsx` e as abas em
+  `[numero]/page.tsx`.
+- **Impacto:** retrabalho e OP encerrada com "Verificar" confirmado por
+  engano (a confirmação parece só burocracia quando o número "foi digitado").
+- **Caminhos:** avisar ao sair com alterações não salvas (o editor de tema já
+  faz isso com `beforeunload`; as abas precisam de um aviso próprio, porque são
+  navegação do Next); ou salvar ao sair do campo.
+- **Cuidados:** não salvar sozinho valores parciais que mudem o status de
+  "Verificar" sem a pessoa ver; OP encerrada não tem formulário.
+- **Ao corrigir:** dica do passo "Salvar processo" do roteiro
+  `insumos-processo` em `src/ajuda/processamento/roteiros.ts`.
+
+### 24. Estoque: data de referência não mostra o estoque de outro dia
+
+- **Problema:** a "Data de referência" do Estoque muda só a conta dos dias e
+  do status (OK, Vencendo, Vencido). O saldo é sempre o atual. O manual dizia
+  que ela mostrava "como estava (ou estará) o estoque em outro dia" (texto
+  corrigido em 2026-11-20).
+- **Exemplo:** um lote de 300 kg vendido inteiro ontem; com a data de
+  referência de anteontem, ele não aparece (está zerado), e os cartões não
+  contam esses 300 kg.
+- **Onde:** `src/server/services/estoque.ts` (`listarLotes` e
+  `resumoPorStatus` leem `saldoKg` do lote); `producao/estoque/page.tsx`.
+- **Impacto:** quem precisa do estoque de fim de mês (inventário,
+  contabilidade) não tem como tirar depois do dia; e quem confia no rótulo
+  pode tomar a foto atual por histórica.
+- **Caminhos:** calcular o saldo na data somando os movimentos até ela (a
+  tabela de movimentos já existe), com valor a custo na data; ou renomear o
+  campo para "Calcular vencimento em" e criar uma posição de estoque por data
+  no Relatório mensal.
+- **Cuidados:** lotes filhos de transferência, estornos e OPs reabertas
+  (custo do lote muda); desempenho com muitos movimentos.
+- **Ao corrigir:** dica do passo "Mude a data de referência" do roteiro
+  `filtrar-referencia` em `src/ajuda/estoque/roteiros.ts` e o parágrafo da
+  seção 5.3 do Passo a passo.
+
+### 25. Ajuste de estoque errado não tem estorno
+
+- **Problema:** ajuste lançado não pode ser editado nem excluído. Para
+  corrigir, é preciso lançar o ajuste contrário, com motivo "Outro" ou
+  "Inventário", sem nenhum vínculo com o ajuste errado.
+- **Exemplo:** a Maria lança saída de 10 kg no AMC-261120-01 quando era no
+  AMC-261118-01. A lista passa a ter três linhas (a errada, a entrada que a
+  desfaz e a certa) e o filtro por motivo mostra "perdas" que não existiram.
+- **Onde:** `src/server/services/ajusteEstoque.ts` (só `criarAjuste`);
+  `producao/ajustes/page.tsx` (lista sem ações).
+- **Impacto:** relatório de perdas inflado e histórico difícil de ler. Pior:
+  o ajuste conta como movimento do lote mesmo desfeito, então a recepção
+  daquele lote não pode mais ser excluída e a OP da polpa não pode mais ser
+  reaberta nem cancelada.
+- **Caminhos:** "Estornar" no ajuste (com motivo, gera o movimento contrário
+  ligado ao original e some dos totais de perda); ou excluir ajuste do mesmo
+  dia, enquanto o lote não teve outro movimento depois.
+- **Cuidados:** saldo não pode ficar negativo ao estornar uma entrada;
+  auditoria; a regra de "lote com movimento" da recepção e da OP deveria
+  ignorar o par ajuste/estorno.
+- **Ao corrigir:** roteiro `corrigir-ajuste` em
+  `src/ajuda/ajustes/roteiros.ts` (ensina o ajuste contrário) e o "E depois?"
+  dele.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -600,4 +693,21 @@ continua, para cada item ter um número único). Prioridade a definir.
   Comparação entre safras feita (2026-11-20, 3 roteiros, lacuna 20 e
   atualização do item de sinal do orçado da Fase 5); Fiscal × gerencial feita
   (2026-11-20, 3 roteiros, lacuna 21). **Toda a Controladoria tem ajuda.**
-  Faltam Produção, Vendas, Cadastros e Administração.
+  Produção, na ordem do trabalho (recepção, processamento, estoque, ajustes,
+  rastreabilidade, painel, relatórios): Recepção de fruto feita (2026-11-20,
+  4 roteiros, lacuna 22); Processamento feito (2026-11-20, 6 roteiros,
+  lacuna 23); Estoque feito (2026-11-20, 5 roteiros, lacuna 24); Ajustes de
+  estoque feito (2026-11-20, 4 roteiros, lacuna 25); Rastreabilidade feita
+  (2026-11-20, 4 roteiros, sem lacuna nova); Painel feito (2026-11-20, 3
+  roteiros, sem lacuna nova); Relatório mensal feito (2026-11-20, 3
+  roteiros, sem lacuna nova); Relatório de vendas feito (2026-11-20, 3
+  roteiros, sem lacuna nova); Relatório de origem feito (2026-11-20, 3
+  roteiros, sem lacuna nova); Relatório de processamento feito (2026-11-20,
+  3 roteiros, sem lacuna nova). **Toda a Produção tem ajuda.** Faltam
+  Vendas, Cadastros e Administração.
+- **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
+  as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
+  (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,
+  conferir se algum conteúdo do manual (seções sem tela, como Primeiros
+  acessos e Perfis) não ficou sem lugar na ajuda; depois, tirar o item do
+  menu, a página e os links `#ajuda/...` do manual.

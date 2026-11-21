@@ -77,4 +77,54 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("fiscal-gerencial")).toBe("Fiscal × gerencial");
     expect((await carregarAjuda("fiscal-gerencial")).roteiros.length).toBe(3);
   });
+
+  test("recepção de fruto tem ajuda", async () => {
+    expect(tituloDaAjuda("recepcao")).toBe("Recepção de fruto");
+    expect((await carregarAjuda("recepcao")).roteiros.length).toBe(4);
+  });
+
+  test("processamento tem ajuda", async () => {
+    expect(tituloDaAjuda("processamento")).toBe("Processamento");
+    expect((await carregarAjuda("processamento")).roteiros.length).toBe(6);
+  });
+
+  test("estoque tem ajuda", async () => {
+    expect(tituloDaAjuda("estoque")).toBe("Estoque");
+    expect((await carregarAjuda("estoque")).roteiros.length).toBe(5);
+  });
+
+  test("ajustes de estoque tem ajuda", async () => {
+    expect(tituloDaAjuda("ajustes")).toBe("Ajustes de estoque");
+    expect((await carregarAjuda("ajustes")).roteiros.length).toBe(4);
+  });
+
+  test("rastreabilidade tem ajuda", async () => {
+    expect(tituloDaAjuda("rastreabilidade")).toBe("Rastreabilidade");
+    expect((await carregarAjuda("rastreabilidade")).roteiros.length).toBe(4);
+  });
+
+  test("painel de produção tem ajuda", async () => {
+    expect(tituloDaAjuda("painel")).toBe("Painel de produção");
+    expect((await carregarAjuda("painel")).roteiros.length).toBe(3);
+  });
+
+  test("relatório mensal tem ajuda", async () => {
+    expect(tituloDaAjuda("relatorio-mensal")).toBe("Relatório mensal");
+    expect((await carregarAjuda("relatorio-mensal")).roteiros.length).toBe(3);
+  });
+
+  test("relatório de vendas tem ajuda", async () => {
+    expect(tituloDaAjuda("relatorio-vendas")).toBe("Relatório de vendas");
+    expect((await carregarAjuda("relatorio-vendas")).roteiros.length).toBe(3);
+  });
+
+  test("relatório de origem tem ajuda", async () => {
+    expect(tituloDaAjuda("relatorio-origem")).toBe("Relatório de origem");
+    expect((await carregarAjuda("relatorio-origem")).roteiros.length).toBe(3);
+  });
+
+  test("relatório de processamento tem ajuda", async () => {
+    expect(tituloDaAjuda("relatorio-processamento")).toBe("Relatório de processamento");
+    expect((await carregarAjuda("relatorio-processamento")).roteiros.length).toBe(3);
+  });
 });

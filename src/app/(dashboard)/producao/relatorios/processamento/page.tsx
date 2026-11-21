@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission } from "@/server/auth/permissions";
 import { buscarRelatorioProcessamento } from "@/server/services/relatorioProducao/processamento";
@@ -32,7 +33,10 @@ export default async function RelatorioProcessamentoPage({ searchParams }: { sea
   return (
     <div className="space-y-8">
       <div className="space-y-1">
-        <h1 className="text-lg font-semibold">Relatório de processamento</h1>
+        <div className="flex items-center gap-1">
+          <h1 className="text-lg font-semibold">Relatório de processamento</h1>
+          <BotaoAjuda tela="relatorio-processamento" />
+        </div>
         <p className="text-sm text-muted-foreground">
           {formatarData(periodo.inicio)} a {formatarData(periodo.fim)}. OPs canceladas ficam fora. Volumes com OPs
           abertas e encerradas; mínimo, máximo, balanço e custo só com OPs encerradas.

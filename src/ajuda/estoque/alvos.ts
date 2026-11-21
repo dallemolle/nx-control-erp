@@ -1,0 +1,27 @@
+/** Alvos que cada cena desenha. Os roteiros só podem apontar para estes (ver `construtorDeRoteiros`). */
+export const ALVOS = {
+  estoque: [
+    "est.cards",
+    "est.cardVencido",
+    "est.abas",
+    "est.filtros",
+    "est.status",
+    "est.referencia",
+    "est.zerados",
+    "est.exportar",
+    "est.tabela",
+    "est.lote",
+    "est.dias",
+    "est.statusLote",
+    "est.total",
+    "est.transferir",
+    "est.filho",
+    "est.liberar",
+    "est.liberado",
+    "est.revogar",
+    "est.produtoLocal",
+    "est.ocupacao",
+  ],
+  transferir: ["transf.aviso", "transf.local", "transf.kg", "transf.confirmar"],
+  liberar: ["lib.prazo", "lib.motivo", "lib.confirmar"],
+} as const;
