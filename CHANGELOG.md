@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.1.44](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.43...nx-control-erp-v0.1.44) (2026-11-21)
+
+
+### Novidades
+
+* **administracao:** ajuda com simulação em Empresas e Filiais ([b16beee](https://github.com/dallemolle/nx-control-erp/commit/b16beee7459e9d5d7e6d83162db6387ce42b2a22))
+* **administracao:** ajuda com simulação em Usuários ([36bc542](https://github.com/dallemolle/nx-control-erp/commit/36bc542e5db5a3c2a566999f2c343274e8376e83))
+* **administracao:** ajuda com simulação na Auditoria ([46951c6](https://github.com/dallemolle/nx-control-erp/commit/46951c628bececab1b8822cb09072f9fe59756af))
+* **administracao:** ajuda com simulação na Configuração de produção ([d9687fb](https://github.com/dallemolle/nx-control-erp/commit/d9687fb0719bfe661b78da9d73d3f047844e3ddc))
+* **gestao:** ajuda com simulação no Dashboard executivo ([cf14982](https://github.com/dallemolle/nx-control-erp/commit/cf14982c4aba4b9f25f83b455a67db47a690cea3))
+
+
+### Correções
+
+* **auditoria:** entidade e ação com nome em português ([8a51389](https://github.com/dallemolle/nx-control-erp/commit/8a5138985addc10da279981b4d548c3642fcb9eb))
+* **auditoria:** filtro de datas usa o dia de Brasília ([f23a4e4](https://github.com/dallemolle/nx-control-erp/commit/f23a4e4bda71f1af06e1792755e5e1dfb6ae2811))
+* **configuracao-producao:** conta de recebimento é só de Pix e transferência ([4cb79b4](https://github.com/dallemolle/nx-control-erp/commit/4cb79b4b3fc529ba09aa7fedad4adeaa1a9ca893))
+* **dashboard-executivo:** % gerencial com vírgula decimal ([75850e5](https://github.com/dallemolle/nx-control-erp/commit/75850e52e12b5811096ecd306a5807dfb086fe15))
+* **dashboard-executivo:** gráficos em reais e faixas do aging em dias de atraso ([a3d62f9](https://github.com/dallemolle/nx-control-erp/commit/a3d62f97e7d51718ad3decd1a934feab48091d52))
+* **dashboard-executivo:** inadimplência pela data de vencimento e "hoje" no dia de Brasília ([aa9ccb9](https://github.com/dallemolle/nx-control-erp/commit/aa9ccb9437184a69ac1439a5248fc9fd55165693))
+* **empresas:** cada Administrador só vê e altera as próprias empresas ([2260a15](https://github.com/dallemolle/nx-control-erp/commit/2260a15fa9615b3cc08d6b557a4e6cbc4df983f7))
+* **usuarios:** administrador não muda o próprio perfil nem tira o próprio acesso à filial ativa ([01677bb](https://github.com/dallemolle/nx-control-erp/commit/01677bbc4ba32d25fcd584748b29c4b6a53a9500))
+* **usuarios:** gerar e revogar chave de API ficam na auditoria ([97b0b20](https://github.com/dallemolle/nx-control-erp/commit/97b0b208267dc4077b1116673f8462ab68539320))
+
 ## [0.1.43](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.42...nx-control-erp-v0.1.43) (2026-11-21)
 
 
