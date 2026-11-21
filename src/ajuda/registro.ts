@@ -148,6 +148,22 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Projetos",
     carregar: () => import("./projetos").then((modulo) => modulo.ajudaProjetos),
   },
+  frutas: {
+    titulo: "Frutas",
+    carregar: () => import("./frutas").then((modulo) => modulo.ajudaFrutas),
+  },
+  talhoes: {
+    titulo: "Talhões",
+    carregar: () => import("./talhoes").then((modulo) => modulo.ajudaTalhoes),
+  },
+  "locais-armazenamento": {
+    titulo: "Locais de armazenamento",
+    carregar: () => import("./locais-armazenamento").then((modulo) => modulo.ajudaLocaisArmazenamento),
+  },
+  insumos: {
+    titulo: "Insumos",
+    carregar: () => import("./insumos").then((modulo) => modulo.ajudaInsumos),
+  },
 };
 
 export function temAjuda(tela: string): boolean {

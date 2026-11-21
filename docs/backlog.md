@@ -894,6 +894,27 @@ Numeração continua a de Vendas.
   "Confira o status" de `encerrar-safra` e passo "Escolha o status" de
   `cadastrar-projeto` (`src/ajuda/safras`, `projetos`).
 
+### 39. Local com lotes pode ser inativado, e os lotes somem da ocupação
+
+- **Problema:** `definirAtivoLocalArmazenamento` não confere se há lotes com
+  saldo no local. Inativado, o local sai do quadro "Ocupação dos locais" e do
+  filtro de local do Estoque, mas os lotes continuam lá dentro.
+- **Exemplo:** a Câmara da loja é inativada com 200 kg do AMC-261120-01/1; o
+  quadro de ocupação deixa de mostrar esses 200 kg, e não dá mais para filtrar
+  o Estoque por esse local para achá-los.
+- **Onde:** `src/server/services/localArmazenamento.ts`
+  (`definirAtivoLocalArmazenamento`); `resumoProdutoLocal` em
+  `src/server/services/estoque.ts` e `producao/estoque/page.tsx` (só locais
+  ativos).
+- **Impacto:** estoque "escondido": o saldo total continua certo, mas a
+  visão por local fica incompleta e o lote é difícil de achar.
+- **Caminhos:** recusar a inativação enquanto houver lote com saldo no local
+  ("Transfira os lotes antes de inativar"); ou permitir e manter o local
+  inativo com saldo no quadro e no filtro, marcado como inativo.
+- **Ao corrigir:** dica do último passo de `cadastrar-local`
+  (`src/ajuda/locais-armazenamento/index.tsx`) e a frase do item 4 da seção
+  7.6 do manual.
+
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):
@@ -931,7 +952,9 @@ Numeração continua a de Vendas.
   lucro feitos (2026-11-21, um grupo só, 7 roteiros; lacunas 33 e 34 já
   corrigidas, 35 e 36 no backlog). Safras e Projetos feitos (2026-11-21,
   3 roteiros; lacunas 20 e 37 corrigidas, 35 ampliada, 38 no backlog).
-  Faltam Frutas, Talhões, Locais e Insumos; e a Administração.
+  Frutas, Talhões, Locais de armazenamento e Insumos feitos (2026-11-21,
+  6 roteiros; lacuna 39 no backlog; manual 7.6 atualizado). **Todo o
+  Cadastros tem ajuda.** Falta a Administração.
 - **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
   as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
   (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,
