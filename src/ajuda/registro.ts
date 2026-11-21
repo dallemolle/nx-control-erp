@@ -184,6 +184,10 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Auditoria",
     carregar: () => import("./auditoria").then((modulo) => modulo.ajudaAuditoria),
   },
+  "dashboard-executivo": {
+    titulo: "Dashboard executivo",
+    carregar: () => import("./dashboard-executivo").then((modulo) => modulo.ajudaDashboardExecutivo),
+  },
 };
 
 export function temAjuda(tela: string): boolean {
