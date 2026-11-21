@@ -4,6 +4,7 @@ import { requirePermission } from "@/server/auth/permissions";
 import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { EmpresaFormValues } from "@/lib/schemas/empresa";
+import { comMensagemDeDuplicidade } from "./duplicidade";
 
 export const TAMANHO_MAXIMO_LOGO_BYTES = 1 * 1024 * 1024;
 const TIPOS_LOGO_ACEITOS = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"];
@@ -69,9 +70,28 @@ export async function processarImagemEmpresa(
   return undefined;
 }
 
-export async function listarEmpresas() {
-  return prisma.empresa.findMany({ orderBy: { razaoSocial: "asc" } });
+/** Empresas em que a pessoa é Administrador com vínculo ativo: só estas aparecem e podem ser alteradas. */
+function ondeAdministra(usuarioId: string) {
+  return { usuarios: { some: { usuarioId, ativo: true, perfil: "ADMINISTRADOR" as const } } };
 }
+
+export async function listarEmpresas(sessao: SessaoAtiva) {
+  requirePermission(sessao.perfil, "empresa:gerenciar");
+  return prisma.empresa.findMany({ where: ondeAdministra(sessao.usuarioId), orderBy: { razaoSocial: "asc" } });
+}
+
+/**
+ * A empresa, se a pessoa a administra. Empresa de outro cliente dá o mesmo erro de inexistente, para não revelar
+ * que ela existe.
+ */
+export async function empresaAdministrada(sessao: SessaoAtiva, empresaId: string) {
+  requirePermission(sessao.perfil, "empresa:gerenciar");
+  const empresa = await prisma.empresa.findFirst({ where: { id: empresaId, ...ondeAdministra(sessao.usuarioId) } });
+  if (!empresa) throw new Error("Empresa não encontrada");
+  return empresa;
+}
+
+const MSG_CNPJ_DUPLICADO = "Já existe uma empresa com este CNPJ/CPF";
 
 export async function criarEmpresa(sessao: SessaoAtiva, dados: EmpresaFormValues, logo: File | null = null) {
   requirePermission(sessao.perfil, "empresa:gerenciar");
@@ -79,7 +99,8 @@ export async function criarEmpresa(sessao: SessaoAtiva, dados: EmpresaFormValues
   // Valida ANTES da transação — um arquivo inválido não deve deixar uma empresa órfã pra trás.
   if (logo && logo.size > 0) validarArquivoLogo(logo);
 
-  let empresa = await prisma.$transaction(async (tx) => {
+  // A Matriz nasce com o CNPJ da empresa: o repetido pode estar em qualquer das duas tabelas.
+  let empresa = await comMensagemDeDuplicidade(() => prisma.$transaction(async (tx) => {
     const novaEmpresa = await tx.empresa.create({ data: dados });
     const vinculo = await tx.usuarioEmpresa.create({
       data: { usuarioId: sessao.usuarioId, empresaId: novaEmpresa.id, perfil: "ADMINISTRADOR" },
@@ -91,7 +112,7 @@ export async function criarEmpresa(sessao: SessaoAtiva, dados: EmpresaFormValues
       data: { usuarioEmpresaId: vinculo.id, filialId: matriz.id, podeAlterar: true, ativo: true },
     });
     return novaEmpresa;
-  });
+  }), MSG_CNPJ_DUPLICADO);
 
   if (logo && logo.size > 0) {
     try {
@@ -125,15 +146,17 @@ export async function atualizarEmpresa(
   logo: File | null = null,
   removerLogo = false,
 ) {
-  requirePermission(sessao.perfil, "empresa:gerenciar");
-
-  const anterior = await prisma.empresa.findUniqueOrThrow({ where: { id } });
+  const anterior = await empresaAdministrada(sessao, id);
   const novoLogoUrl = await processarLogo(id, anterior.logoUrl, logo, removerLogo);
 
-  const empresa = await prisma.empresa.update({
-    where: { id },
-    data: { ...dados, ...(novoLogoUrl !== undefined ? { logoUrl: novoLogoUrl } : {}) },
-  });
+  const empresa = await comMensagemDeDuplicidade(
+    () =>
+      prisma.empresa.update({
+        where: { id },
+        data: { ...dados, ...(novoLogoUrl !== undefined ? { logoUrl: novoLogoUrl } : {}) },
+      }),
+    MSG_CNPJ_DUPLICADO,
+  );
 
   await registrarAuditoria({
     empresaId: id,
@@ -158,7 +181,11 @@ export async function atualizarEmpresa(
 }
 
 export async function definirAtivoEmpresa(sessao: SessaoAtiva, id: string, ativo: boolean) {
-  requirePermission(sessao.perfil, "empresa:gerenciar");
+  await empresaAdministrada(sessao, id);
+  // Inativa, a empresa não abre sessão: quem está nela seria jogado para fora na próxima tela.
+  if (!ativo && id === sessao.empresaId) {
+    throw new Error("Troque de empresa antes de inativar esta");
+  }
 
   const empresa = await prisma.empresa.update({ where: { id }, data: { ativo } });
 

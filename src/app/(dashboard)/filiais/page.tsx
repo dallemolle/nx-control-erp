@@ -46,13 +46,16 @@ export default async function FiliaisPage() {
               </TableCell>
               <TableCell className="flex justify-end gap-2">
                 <FilialDialogForm filial={filial} />
-                <form action={alternarAtivoFilialAction}>
-                  <input type="hidden" name="id" value={filial.id} />
-                  <input type="hidden" name="ativo" value={(!filial.ativo).toString()} />
-                  <Button type="submit" variant="outline" size="sm">
-                    {filial.ativo ? "Inativar" : "Reativar"}
-                  </Button>
-                </form>
+                {/* A filial em que você está não se inativa daqui: o serviço recusa. */}
+                {filial.id === sessao.filialId ? null : (
+                  <form action={alternarAtivoFilialAction}>
+                    <input type="hidden" name="id" value={filial.id} />
+                    <input type="hidden" name="ativo" value={(!filial.ativo).toString()} />
+                    <Button type="submit" variant="outline" size="sm">
+                      {filial.ativo ? "Inativar" : "Reativar"}
+                    </Button>
+                  </form>
+                )}
               </TableCell>
             </TableRow>
           ))}

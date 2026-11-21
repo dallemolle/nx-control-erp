@@ -12,7 +12,7 @@ export default async function EmpresasPage() {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "empresa:gerenciar");
 
-  const empresas = await listarEmpresas();
+  const empresas = await listarEmpresas(sessao);
 
   return (
     <div className="space-y-6">
@@ -20,7 +20,7 @@ export default async function EmpresasPage() {
         <div>
           <h1 className="text-lg font-semibold">Empresas</h1>
           <p className="text-sm text-muted-foreground">
-            Cadastro de empresas do grupo. Cada empresa é um contexto isolado de dados.
+            Empresas que você administra. Cada empresa é um contexto isolado de dados.
           </p>
         </div>
         <EmpresaDialogForm />
@@ -59,13 +59,16 @@ export default async function EmpresasPage() {
                 >
                   Tema e marca
                 </Button>
-                <form action={alternarAtivoEmpresaAction}>
-                  <input type="hidden" name="id" value={empresa.id} />
-                  <input type="hidden" name="ativo" value={(!empresa.ativo).toString()} />
-                  <Button type="submit" variant="outline" size="sm">
-                    {empresa.ativo ? "Inativar" : "Reativar"}
-                  </Button>
-                </form>
+                {/* A empresa em que você está não se inativa daqui: o serviço recusa. */}
+                {empresa.id === sessao.empresaId ? null : (
+                  <form action={alternarAtivoEmpresaAction}>
+                    <input type="hidden" name="id" value={empresa.id} />
+                    <input type="hidden" name="ativo" value={(!empresa.ativo).toString()} />
+                    <Button type="submit" variant="outline" size="sm">
+                      {empresa.ativo ? "Inativar" : "Reativar"}
+                    </Button>
+                  </form>
+                )}
               </TableCell>
             </TableRow>
           ))}

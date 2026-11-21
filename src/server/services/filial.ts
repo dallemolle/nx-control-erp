@@ -3,6 +3,9 @@ import { requirePermission } from "@/server/auth/permissions";
 import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { FilialFormValues } from "@/lib/schemas/filial";
+import { comMensagemDeDuplicidade } from "./duplicidade";
+
+const MSG_CNPJ_DUPLICADO = "Já existe uma filial com este CNPJ/CPF";
 
 export async function listarFiliais(empresaId: string) {
   return prisma.filial.findMany({ where: { empresaId }, orderBy: { nome: "asc" } });
@@ -11,9 +14,10 @@ export async function listarFiliais(empresaId: string) {
 export async function criarFilial(sessao: SessaoAtiva, dados: FilialFormValues) {
   requirePermission(sessao.perfil, "filial:gerenciar");
 
-  const filial = await prisma.filial.create({
-    data: { ...dados, empresaId: sessao.empresaId },
-  });
+  const filial = await comMensagemDeDuplicidade(
+    () => prisma.filial.create({ data: { ...dados, empresaId: sessao.empresaId } }),
+    MSG_CNPJ_DUPLICADO,
+  );
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
@@ -35,7 +39,10 @@ export async function atualizarFilial(sessao: SessaoAtiva, id: string, dados: Fi
   const anterior = await prisma.filial.findUniqueOrThrow({
     where: { id, empresaId: sessao.empresaId },
   });
-  const filial = await prisma.filial.update({ where: { id }, data: dados });
+  const filial = await comMensagemDeDuplicidade(
+    () => prisma.filial.update({ where: { id }, data: dados }),
+    MSG_CNPJ_DUPLICADO,
+  );
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
@@ -53,6 +60,11 @@ export async function atualizarFilial(sessao: SessaoAtiva, id: string, dados: Fi
 
 export async function definirAtivoFilial(sessao: SessaoAtiva, id: string, ativo: boolean) {
   requirePermission(sessao.perfil, "filial:gerenciar");
+
+  // Inativa, a filial não abre sessão: quem está nela seria jogado para "Selecionar filial".
+  if (!ativo && id === sessao.filialId) {
+    throw new Error("Troque de filial antes de inativar esta");
+  }
 
   await prisma.filial.findUniqueOrThrow({
     where: { id, empresaId: sessao.empresaId },
