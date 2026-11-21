@@ -108,6 +108,12 @@ export async function atualizarPerfilVinculo(
 ) {
   requirePermission(sessao.perfil, "usuario:gerenciar");
 
+  // Mesmo motivo de definirAtivoVinculo: o administrador que se rebaixa perde esta tela e, se for o único, a empresa
+  // fica sem administrador.
+  if (usuarioId === sessao.usuarioId) {
+    throw new Error("Você não pode mudar seu próprio perfil");
+  }
+
   const anterior = await prisma.usuarioEmpresa.findUniqueOrThrow({
     where: { usuarioId_empresaId: { usuarioId, empresaId: sessao.empresaId } },
   });

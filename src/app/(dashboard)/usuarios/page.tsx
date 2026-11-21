@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission } from "@/server/auth/permissions";
 import { listarUsuariosDaEmpresa } from "@/server/services/usuario";
+import { ROTULOS_PERFIL } from "@/lib/schemas/usuario";
 import { listarAcessosFiliaisDoUsuario } from "@/server/services/usuarioEmpresaFilial";
 import { NovoUsuarioDialog } from "./novo-usuario-dialog";
 import { PerfilForm } from "./perfil-form";
@@ -47,32 +48,45 @@ export default async function UsuariosPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {vinculos.map((vinculo) => (
-            <TableRow key={vinculo.id}>
-              <TableCell className="font-medium">{vinculo.usuario.nome}</TableCell>
-              <TableCell>{vinculo.usuario.email}</TableCell>
-              <TableCell>
-                <PerfilForm usuarioId={vinculo.usuarioId} perfil={vinculo.perfil} />
-              </TableCell>
-              <TableCell>
-                <Badge variant={vinculo.ativo ? "default" : "secondary"}>
-                  {vinculo.ativo ? "Ativo" : "Inativo"}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <ChavesApiDialog usuarioId={vinculo.usuarioId} />
-                  <form action={alternarAtivoUsuarioAction}>
-                    <input type="hidden" name="usuarioId" value={vinculo.usuarioId} />
-                    <input type="hidden" name="ativo" value={(!vinculo.ativo).toString()} />
-                    <Button type="submit" variant="outline" size="sm">
-                      {vinculo.ativo ? "Desativar" : "Reativar"}
-                    </Button>
-                  </form>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+          {vinculos.map((vinculo) => {
+            // A própria linha não tem perfil nem desativar: o serviço recusa os dois, para ninguém se trancar fora.
+            const eVoce = vinculo.usuarioId === sessao.usuarioId;
+            return (
+              <TableRow key={vinculo.id}>
+                <TableCell className="font-medium">
+                  {vinculo.usuario.nome}
+                  {eVoce ? <span className="ml-1 text-xs font-normal text-muted-foreground">(você)</span> : null}
+                </TableCell>
+                <TableCell>{vinculo.usuario.email}</TableCell>
+                <TableCell>
+                  {eVoce ? (
+                    <span className="text-sm">{ROTULOS_PERFIL[vinculo.perfil]}</span>
+                  ) : (
+                    <PerfilForm usuarioId={vinculo.usuarioId} perfil={vinculo.perfil} />
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={vinculo.ativo ? "default" : "secondary"}>
+                    {vinculo.ativo ? "Ativo" : "Inativo"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <ChavesApiDialog usuarioId={vinculo.usuarioId} />
+                    {eVoce ? null : (
+                      <form action={alternarAtivoUsuarioAction}>
+                        <input type="hidden" name="usuarioId" value={vinculo.usuarioId} />
+                        <input type="hidden" name="ativo" value={(!vinculo.ativo).toString()} />
+                        <Button type="submit" variant="outline" size="sm">
+                          {vinculo.ativo ? "Desativar" : "Reativar"}
+                        </Button>
+                      </form>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
 
@@ -107,6 +121,7 @@ export default async function UsuariosPage() {
                         filialNome={filial.nome}
                         temAcesso={filial.usuariosFiliais[0]?.ativo ?? false}
                         podeAlterar={filial.usuariosFiliais[0]?.podeAlterar ?? false}
+                        leituraTravada={usuarioId === sessao.usuarioId && filial.id === sessao.filialId}
                       />
                     ))}
                   </div>

@@ -17,6 +17,7 @@ describe("usuarioEmpresaFilial", () => {
   let filialEmpresaBId: string;
   let usuarioId: string;
   let usuarioEmpresaAId: string;
+  let adminId: string;
 
   let sessaoAdministrador: SessaoAtiva;
   let sessaoFinanceiro: SessaoAtiva;
@@ -62,9 +63,15 @@ describe("usuarioEmpresaFilial", () => {
     });
     usuarioEmpresaAId = usuarioEmpresaA.id;
 
+    // Quem altera é outro administrador: a pessoa não pode tirar o próprio acesso à filial ativa.
+    const admin = await prisma.usuario.create({
+      data: { nome: "Admin UEF", email: `uef-admin-${randomSuffix}@teste.local`, senhaHash: "x" },
+    });
+    adminId = admin.id;
+
     sessaoAdministrador = {
-      usuarioId,
-      nome: "Usuario UEF",
+      usuarioId: adminId,
+      nome: "Admin UEF",
       empresaId: empresaAId,
       perfil: "ADMINISTRADOR",
       filialId: filialEmpresaAId,
@@ -83,6 +90,7 @@ describe("usuarioEmpresaFilial", () => {
     await prisma.usuarioEmpresa.delete({ where: { id: usuarioEmpresaAId } });
     await prisma.filial.deleteMany({ where: { empresaId: { in: [empresaAId, empresaBId] } } });
     await prisma.usuario.delete({ where: { id: usuarioId } });
+    await prisma.usuario.delete({ where: { id: adminId } });
     await prisma.empresa.deleteMany({ where: { id: { in: [empresaAId, empresaBId] } } });
     await prisma.$disconnect();
   });
@@ -160,6 +168,22 @@ describe("usuarioEmpresaFilial", () => {
       },
     });
     expect(persistido.podeAlterar).toBe(false);
+  });
+
+  test("definirAcessoFilial recusa que a pessoa tire o próprio acesso à filial ativa", async () => {
+    const sessaoDoProprio: SessaoAtiva = { ...sessaoAdministrador, usuarioId };
+    await definirAcessoFilial(sessaoAdministrador, usuarioId, filialEmpresaAId, { temAcesso: true, podeAlterar: true });
+
+    await expect(
+      definirAcessoFilial(sessaoDoProprio, usuarioId, filialEmpresaAId, { temAcesso: false, podeAlterar: false }),
+    ).rejects.toThrow("Você não pode remover seu próprio acesso à filial ativa");
+
+    // Tirar só a alteração continua permitido.
+    const soLeitura = await definirAcessoFilial(sessaoDoProprio, usuarioId, filialEmpresaAId, {
+      temAcesso: true,
+      podeAlterar: false,
+    });
+    expect(soLeitura.ativo).toBe(true);
   });
 });
 
