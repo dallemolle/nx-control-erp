@@ -1,3 +1,4 @@
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,7 +30,10 @@ export default async function UsuariosPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Usuários</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-lg font-semibold">Usuários</h1>
+            <BotaoAjuda tela="usuarios" />
+          </div>
           <p className="text-sm text-muted-foreground">
             Pessoas com acesso a esta empresa e o perfil de cada uma.
           </p>
