@@ -124,6 +124,22 @@ const REGISTRO: Readonly<Record<string, EntradaRegistro>> = {
     titulo: "Operadoras de cartão",
     carregar: () => import("./operadoras-cartao").then((modulo) => modulo.ajudaOperadorasCartao),
   },
+  bancos: {
+    titulo: "Bancos",
+    carregar: () => import("./bancos").then((modulo) => modulo.ajudaBancos),
+  },
+  categorias: {
+    titulo: "Categorias financeiras",
+    carregar: () => import("./categorias").then((modulo) => modulo.ajudaCategorias),
+  },
+  "centros-de-custo": {
+    titulo: "Centros de custo",
+    carregar: () => import("./centros-de-custo").then((modulo) => modulo.ajudaCentrosDeCusto),
+  },
+  "centros-de-lucro": {
+    titulo: "Centros de lucro",
+    carregar: () => import("./centros-de-lucro").then((modulo) => modulo.ajudaCentrosDeLucro),
+  },
 };
 
 export function temAjuda(tela: string): boolean {

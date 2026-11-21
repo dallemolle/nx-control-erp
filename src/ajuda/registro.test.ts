@@ -162,4 +162,14 @@ describe("registro da ajuda", () => {
     expect(tituloDaAjuda("operadoras-cartao")).toBe("Operadoras de cartão");
     expect((await carregarAjuda("operadoras-cartao")).roteiros.length).toBe(3);
   });
+
+  test.each([
+    ["bancos", "Bancos", 2],
+    ["categorias", "Categorias financeiras", 2],
+    ["centros-de-custo", "Centros de custo", 2],
+    ["centros-de-lucro", "Centros de lucro", 1],
+  ])("%s tem ajuda", async (tela, titulo, roteiros) => {
+    expect(tituloDaAjuda(tela)).toBe(titulo);
+    expect((await carregarAjuda(tela)).roteiros.length).toBe(roteiros);
+  });
 });

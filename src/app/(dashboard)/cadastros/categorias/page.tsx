@@ -1,9 +1,11 @@
+import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeAlterarFilialAtiva } from "@/server/auth/permissions";
 import { listarCategoriasFinanceiras } from "@/server/services/categoriaFinanceira";
+import { ROTULOS_TIPO_CATEGORIA_FINANCEIRA } from "@/lib/schemas/enums";
 import { CategoriaFinanceiraDialogForm } from "./categoria-financeira-dialog-form";
 import { alternarAtivoCategoriaFinanceiraAction } from "./actions";
 
@@ -19,7 +21,10 @@ export default async function CategoriasFinanceirasPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Categorias financeiras</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-lg font-semibold">Categorias financeiras</h1>
+            <BotaoAjuda tela="categorias" />
+          </div>
           <p className="text-sm text-muted-foreground">
             Estrutura hierárquica de receitas e despesas.
           </p>
@@ -43,7 +48,7 @@ export default async function CategoriasFinanceirasPage() {
               <TableCell className="font-medium">{categoria.nome}</TableCell>
               <TableCell>
                 <Badge variant={categoria.tipo === "RECEITA" ? "default" : "secondary"}>
-                  {categoria.tipo}
+                  {ROTULOS_TIPO_CATEGORIA_FINANCEIRA[categoria.tipo]}
                 </Badge>
               </TableCell>
               <TableCell className="text-muted-foreground">

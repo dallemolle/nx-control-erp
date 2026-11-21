@@ -441,11 +441,17 @@ No cliente, o **CNPJ/CPF é opcional**: deixe em branco para consumidor final ou
 
 ### 7.2. Categorias financeiras
 
-Classificam cada título/lançamento como Receita ou Despesa, com hierarquia opcional (uma categoria pode ter uma categoria "pai", para agrupar categorias relacionadas em relatórios).
+Classificam cada título/lançamento como Receita ou Despesa, com hierarquia opcional (uma categoria pode ter uma categoria "pai", que hoje só organiza a lista: os relatórios e o Orçamento mostram cada categoria separada).
+
+**Ver simulação (Categorias financeiras):** [cadastrar uma categoria](#ajuda/categorias/cadastrar-categoria) · [inativar uma categoria](#ajuda/categorias/inativar-categoria)
 
 ### 7.3. Centros de custo e Centros de lucro
 
-Dimensões analíticas opcionais para títulos e lançamentos, usadas nos relatórios de fluxo de caixa por dimensão e no dashboard executivo. Centro de custo tem hierarquia própria (pode agrupar sub-centros); centro de lucro não.
+Dimensões analíticas opcionais para títulos e lançamentos, usadas nos relatórios de fluxo de caixa por dimensão e no dashboard executivo. Centro de custo tem hierarquia própria (um centro pode ficar dentro de outro, o que hoje só organiza a lista); centro de lucro não.
+
+**Ver simulação (Centros de custo):** [cadastrar um centro de custo](#ajuda/centros-de-custo/cadastrar-centro-custo) · [inativar um centro de custo](#ajuda/centros-de-custo/inativar-centro-custo)
+
+**Ver simulação (Centros de lucro):** [cadastrar um centro de lucro](#ajuda/centros-de-lucro/cadastrar-centro-lucro)
 
 ### 7.4. Safras e Projetos
 
@@ -454,6 +460,8 @@ Safra representa um ciclo de produção, com data de início e fim próprias (po
 ### 7.5. Bancos e Contas bancárias
 
 Bancos é uma lista de referência (código e nome do banco). Contas bancárias pertencem à filial e trazem agência, conta, tipo (corrente, aplicação, investimento, empréstimo/financiamento ou caixa), moeda e saldo inicial — é a partir daqui que as baixas, lançamentos e conciliação bancária operam.
+
+**Ver simulação (Bancos):** [cadastrar um banco](#ajuda/bancos/cadastrar-banco) · [corrigir o nome de um banco](#ajuda/bancos/corrigir-banco)
 
 O tipo **Caixa (dinheiro em espécie)** é para o dinheiro guardado na empresa. Ele não pede banco nem agência: basta uma identificação (por exemplo, "Escritório" ou "Fazenda"), e dá para ter mais de um caixa. Uma conta Caixa não aparece na importação de extrato. Uma conta só pode mudar de ou para o tipo Caixa enquanto não tiver lançamentos.
 
