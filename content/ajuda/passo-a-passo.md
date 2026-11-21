@@ -346,6 +346,8 @@ Por último, a polpa produzida de cada produto mês a mês. A planilha (CSV/Exce
 - **Por canal:** kg, faturamento e participação; pedidos sem canal aparecem como "Sem canal".
 - **Por forma de pagamento:** faturamento do período e o que falta receber hoje.
 
+**Ver simulação (Relatório de origem):** [de onde veio o fruto](#ajuda/relatorio-origem/por-origem) · [produtividade dos talhões](#ajuda/relatorio-origem/produtividade) · [preço pago a terceiros e exportar](#ajuda/relatorio-origem/preco-exportar)
+
 **Relatório de origem** (Produção → Relatório de origem): escolha o período (padrão: o mês atual). O gráfico mostra as dez origens que mais entregaram fruto. As tabelas:
 
 - **Por origem:** cada talhão próprio e cada fornecedor, com o kg líquido de cada fruta, o total, o valor pago, o preço médio por kg, o descarte e o nº de cargas. Valor pago e preço médio aparecem só para fornecedores; nos talhões ficam "—", porque o fruto próprio é lançado pelo custo-padrão da fruta, não por um pagamento.
