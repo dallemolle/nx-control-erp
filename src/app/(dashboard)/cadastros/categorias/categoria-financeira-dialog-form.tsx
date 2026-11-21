@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TIPO_CATEGORIA_FINANCEIRA } from "@/lib/schemas/enums";
+import { ROTULOS_TIPO_CATEGORIA_FINANCEIRA, TIPO_CATEGORIA_FINANCEIRA } from "@/lib/schemas/enums";
 import {
   criarCategoriaFinanceiraAction,
   atualizarCategoriaFinanceiraAction,
@@ -67,7 +67,7 @@ export function CategoriaFinanceiraDialogForm({
               <SelectContent>
                 {TIPO_CATEGORIA_FINANCEIRA.map((opcao) => (
                   <SelectItem key={opcao} value={opcao}>
-                    {opcao}
+                    {ROTULOS_TIPO_CATEGORIA_FINANCEIRA[opcao]}
                   </SelectItem>
                 ))}
               </SelectContent>

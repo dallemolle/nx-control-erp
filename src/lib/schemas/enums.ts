@@ -17,6 +17,10 @@ export const ROTULOS_TIPO_CONTA_BANCARIA: Record<(typeof TIPO_CONTA_BANCARIA)[nu
 };
 
 export const TIPO_CATEGORIA_FINANCEIRA = ["RECEITA", "DESPESA"] as const;
+export const ROTULOS_TIPO_CATEGORIA_FINANCEIRA: Record<(typeof TIPO_CATEGORIA_FINANCEIRA)[number], string> = {
+  RECEITA: "Receita",
+  DESPESA: "Despesa",
+};
 
 export const TIPO_TITULO = ["PAGAR", "RECEBER"] as const;
 

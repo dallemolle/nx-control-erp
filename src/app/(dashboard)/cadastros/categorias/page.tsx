@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeAlterarFilialAtiva } from "@/server/auth/permissions";
 import { listarCategoriasFinanceiras } from "@/server/services/categoriaFinanceira";
+import { ROTULOS_TIPO_CATEGORIA_FINANCEIRA } from "@/lib/schemas/enums";
 import { CategoriaFinanceiraDialogForm } from "./categoria-financeira-dialog-form";
 import { alternarAtivoCategoriaFinanceiraAction } from "./actions";
 
@@ -43,7 +44,7 @@ export default async function CategoriasFinanceirasPage() {
               <TableCell className="font-medium">{categoria.nome}</TableCell>
               <TableCell>
                 <Badge variant={categoria.tipo === "RECEITA" ? "default" : "secondary"}>
-                  {categoria.tipo}
+                  {ROTULOS_TIPO_CATEGORIA_FINANCEIRA[categoria.tipo]}
                 </Badge>
               </TableCell>
               <TableCell className="text-muted-foreground">
