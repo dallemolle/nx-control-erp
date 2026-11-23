@@ -25,7 +25,7 @@ describe("registro da ajuda", () => {
 
   test("aprovações pendentes tem ajuda", async () => {
     expect(tituloDaAjuda("aprovacoes")).toBe("Aprovações pendentes");
-    expect((await carregarAjuda("aprovacoes")).roteiros.length).toBe(3);
+    expect((await carregarAjuda("aprovacoes")).roteiros.length).toBe(4);
   });
 
   test("repasses de cartão tem ajuda", async () => {

@@ -130,6 +130,11 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 
 ### 2. Aprovação às cegas (prioridade alta)
 
+- **Status:** feito na branch `feat/aprovacao-com-detalhes` (2026-11-21, spec
+  `2026-11-21-aprovacao-com-detalhes-design.md`): a linha mostra data, conta,
+  parcela n/total, valor da parcela e ajustes, com avisos de data fora do
+  normal, valor diferente do saldo e outra baixa pendente; ajuda com o roteiro
+  novo `entender-avisos`.
 - **Problema:** Aprovações pendentes
   (`src/app/(dashboard)/financeiro/aprovacoes/page.tsx`) mostra só documento,
   contraparte, valor pago e quem registrou.

@@ -64,8 +64,14 @@ export async function listarBaixasPendentes(filialId: string) {
   return prisma.baixa.findMany({
     where: { statusAprovacao: "PENDENTE", parcela: { titulo: { filialId } } },
     include: {
-      parcela: { include: { titulo: { include: { fornecedor: true, cliente: true } } } },
-      contaBancaria: true,
+      parcela: {
+        include: {
+          titulo: { include: { fornecedor: true, cliente: true, _count: { select: { parcelas: true } } } },
+          // Todas as baixas da parcela: a tela soma as aprovadas (saldo) e conta as outras pendentes (em dobro).
+          baixas: { select: { id: true, valorPago: true, statusAprovacao: true } },
+        },
+      },
+      contaBancaria: { include: { banco: true } },
       usuario: true,
     },
     orderBy: { criadoEm: "asc" },

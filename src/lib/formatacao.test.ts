@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatarData, formatarMoeda } from "./formatacao";
+import { formatarData, formatarDataHora, formatarMoeda } from "./formatacao";
 
 // Intl usa espaço não separável entre "R$" e o número.
 const semNbsp = (texto: string) => texto.replace(/ /g, " ");
@@ -26,5 +26,15 @@ describe("formatarData", () => {
 
   it("aceita string ISO", () => {
     expect(formatarData("2026-01-01T00:00:00.000Z")).toBe("01/01/2026");
+  });
+});
+
+describe("formatarDataHora", () => {
+  it("mostra o instante no horário de Brasília", () => {
+    expect(formatarDataHora(new Date("2026-10-15T13:20:00.000Z"))).toBe("15/10/2026 10:20");
+  });
+
+  it("perto da meia-noite UTC ainda é o dia anterior em Brasília", () => {
+    expect(formatarDataHora(new Date("2026-10-16T02:30:00.000Z"))).toBe("15/10/2026 23:30");
   });
 });

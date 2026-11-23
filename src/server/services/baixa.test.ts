@@ -4,6 +4,7 @@ import { PermissionError } from "@/server/auth/permissions";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
 import { criarTitulo } from "./titulo";
 import type { TipoTitulo } from "@prisma/client";
+import { resumirBaixasDaParcela } from "@/lib/financeiro/avisosDaBaixa";
 import { registrarBaixa, aprovarBaixa, rejeitarBaixa, listarBaixasPendentes, efetivarBaixa } from "./baixa";
 
 describe("baixa (fluxo de aprovação)", () => {
@@ -164,6 +165,48 @@ describe("baixa (fluxo de aprovação)", () => {
   test("listarBaixasPendentes só retorna baixas PENDENTE da filial", async () => {
     const pendentes = await listarBaixasPendentes(fixtureTesouraria.filialId);
     expect(pendentes.every((baixa) => baixa.statusAprovacao === "PENDENTE")).toBe(true);
+  });
+
+  test("listarBaixasPendentes traz banco da conta, total de parcelas e as baixas da parcela", async () => {
+    const parcela = await criarParcelaDeTeste(fixtureTesouraria, 300);
+    const dados = {
+      data: new Date(),
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fixtureTesouraria.contaBancariaId,
+    };
+    const aprovada = await registrarBaixa(fixtureTesouraria.sessao, parcela.id, { ...dados, valorPago: 100 });
+    await aprovarBaixa(fixtureTesouraria.sessao, aprovada.id);
+    const primeira = await registrarBaixa(fixtureTesouraria.sessao, parcela.id, { ...dados, valorPago: 200 });
+    await registrarBaixa(fixtureTesouraria.sessao, parcela.id, { ...dados, valorPago: 200 });
+    const parcelaOutraFilial = await criarParcelaDeTeste(fixture, 50);
+    const deOutraFilial = await registrarBaixa(fixture.sessao, parcelaOutraFilial.id, {
+      ...dados,
+      valorPago: 50,
+      contaBancariaId: fixture.contaBancariaId,
+    });
+
+    const pendentes = await listarBaixasPendentes(fixtureTesouraria.filialId);
+    const linha = pendentes.find((b) => b.id === primeira.id);
+
+    expect(linha).toBeDefined();
+    expect(linha!.contaBancaria.banco.nome).not.toBe("");
+    expect(linha!.parcela.titulo._count.parcelas).toBe(1);
+    expect(
+      resumirBaixasDaParcela(
+        linha!.id,
+        linha!.parcela.baixas.map((b) => ({
+          id: b.id,
+          valorPago: Number(b.valorPago),
+          statusAprovacao: b.statusAprovacao,
+        })),
+      ),
+    ).toEqual({ totalAprovado: 100, outrasPendentes: 1 });
+    expect(pendentes.some((b) => b.id === aprovada.id)).toBe(false);
+    // Baixa pendente de outra filial não aparece.
+    expect(pendentes.some((b) => b.id === deOutraFilial.id)).toBe(false);
+    expect(pendentes.every((b) => b.parcela.titulo.filialId === fixtureTesouraria.filialId)).toBe(true);
   });
 
   test("não é possível aprovar uma baixa já rejeitada", async () => {
