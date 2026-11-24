@@ -25,6 +25,8 @@ export type ExemploTitulos = {
   parcelas: readonly [ParcelaExemplo, ParcelaExemplo, ParcelaExemplo];
   /** As duas parcelas novas da renegociação. */
   renegociacao: readonly [ParcelaNova, ParcelaNova];
+  /** Baixa aprovada da parcela 1, lançada na conta errada: a história do roteiro de estorno. */
+  baixa: BaixaExemplo;
   /** Outros títulos da lista, para a réplica não parecer vazia. */
   outrosTitulos: readonly OutroTitulo[];
 };
@@ -40,6 +42,21 @@ type ParcelaExemplo = {
 };
 
 type ParcelaNova = { vencimento: string; valor: string };
+
+type BaixaExemplo = {
+  data: string;
+  /** A conta errada, onde a baixa foi lançada. */
+  conta: string;
+  valorFormatado: string;
+  /** Como a tela mostra os ajustes: "+ juros R$ 12,00". */
+  ajuste: string;
+  registradaPor: string;
+  aprovadaPor: string;
+  estornadaPor: string;
+  /** Data e hora no horário de Brasília: "16/10/2026 09:40". */
+  estornadaEm: string;
+  motivoEstorno: string;
+};
 
 type OutroTitulo = {
   documento: string;

@@ -7,6 +7,10 @@ const roteiro = construtorDeRoteiros<typeof ALVOS>();
 const QUEM_LANCA = "Quem pode: perfis Administrador e Financeiro, com permissão de alteração na filial.";
 const QUEM_BAIXA = "Quem pode: perfis Administrador, Financeiro e Tesouraria, com permissão de alteração na filial.";
 
+const QUEM_ESTORNA =
+  "Quem pode: perfis Administrador e Tesouraria, com permissão de alteração na filial. Se a empresa exige " +
+  "aprovação por outra pessoa (o padrão), quem registrou a baixa não pode estorná-la.";
+
 const ABRIR_TITULO = {
   cena: "lista",
   alvo: "lista.linhaExemplo",
@@ -278,7 +282,80 @@ export const ROTEIROS: readonly Roteiro[] = [
         "A baixa vai para Financeiro → Aprovações pendentes. Quem tem permissão de aprovar confere e clica em " +
         "Aprovar. Se a empresa exige aprovação por outra pessoa (o padrão), quem registrou a baixa não pode " +
         "aprová-la. Depois de aprovada, o sistema lança a saída na conta escolhida e a parcela fica PAGO. Se for " +
-        "rejeitada, a parcela continua em aberto e nenhum lançamento é feito.",
+        "rejeitada, a parcela continua em aberto e nenhum lançamento é feito." +
+        " Baixa aprovada com erro (conta, valor ou data) é estornada na própria parcela.",
+      proximoRoteiro: "estornar-baixa",
+    },
+  }),
+
+  roteiro({
+    id: "estornar-baixa",
+    titulo: "Estornar uma baixa aprovada",
+    quandoUsar:
+      "Quando uma baixa já aprovada está errada: foi lançada na conta errada, com o valor ou a data errados, ou o " +
+      "pagamento nem aconteceu. O estorno tira o lançamento da conta e devolve a parcela para em aberto; a baixa " +
+      "fica no histórico como estornada.",
+    quemPode: QUEM_ESTORNA,
+    passos: [
+      { ...ABRIR_TITULO, preenche: { "lista.linhaExemplo": "expandida", "lista.p1.baixa": "aprovada" } },
+      {
+        cena: "lista",
+        alvo: "lista.p1.baixa",
+        instrucao: "Confira a baixa que vai estornar",
+        explicacao:
+          "Embaixo da parcela aparecem as baixas aprovadas, com data, conta, valor e quem registrou e aprovou. No " +
+          `exemplo, a parcela 1 foi paga em ${EXEMPLO.baixa.data}, mas a baixa foi lançada em ` +
+          `${EXEMPLO.baixa.conta}, e o dinheiro saiu de ${EXEMPLO.conta}.`,
+      },
+      {
+        cena: "lista",
+        alvo: "lista.p1.estornar",
+        instrucao: "Clique em “Estornar”",
+        explicacao: "O botão só aparece para quem pode estornar e só em baixa aprovada.",
+        dica:
+          "No lugar do botão aparece “Conciliada: desconcilie antes de estornar” quando o lançamento já foi " +
+          "conciliado com o extrato: desfaça a conciliação na tela Conciliação e volte aqui. Em título de venda " +
+          "na maquininha aparece “Repasse de cartão: desfaça em Repasses de cartão”.",
+      },
+      {
+        cena: "estornar",
+        alvo: "estorno.resumo",
+        instrucao: "Confira o resumo",
+        explicacao:
+          "A janela repete a data, a conta e o valor da baixa e avisa o que vai acontecer: o lançamento sai da " +
+          "conta e a parcela volta a ficar em aberto.",
+      },
+      {
+        cena: "estornar",
+        alvo: "estorno.motivo",
+        instrucao: "Informe o motivo",
+        explicacao:
+          "O motivo é obrigatório e fica registrado na baixa e na Auditoria. Diga o que estava errado, para quem " +
+          "ler depois entender.",
+        preenche: { "estorno.motivo": EXEMPLO.baixa.motivoEstorno },
+      },
+      {
+        cena: "estornar",
+        alvo: "estorno.confirmar",
+        instrucao: "Clique em “Estornar baixa”",
+        explicacao:
+          "Se a empresa exige aprovação por outra pessoa (o padrão) e foi você quem registrou a baixa, o sistema " +
+          "recusa: peça a outra pessoa da Tesouraria ou ao Administrador.",
+      },
+      {
+        cena: "lista",
+        alvo: "lista.p1.baixa",
+        instrucao: "Veja a baixa estornada",
+        explicacao:
+          "A baixa continua embaixo da parcela, apagada, com quem estornou, quando e o motivo. A parcela 1 voltou " +
+          "a VENCIDO, com o botão Baixar.",
+        preenche: { "lista.p1.baixa": "estornada" },
+      },
+    ],
+    eDepois: {
+      texto:
+        "O lançamento saiu da conta (confira na Tesouraria) e a parcela voltou a ficar em aberto. Agora registre a " +
+        "baixa de novo, com a conta, o valor e a data certos: ela passa outra vez pela aprovação.",
       proximoRoteiro: "mudar-vencimento",
     },
   }),

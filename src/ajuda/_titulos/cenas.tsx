@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -93,8 +94,46 @@ function Detalhe({ rotulo, valor }: { rotulo: string; valor: string }) {
   );
 }
 
+/** A baixa da parcela 1 no roteiro de estorno: aprovada (com Estornar) ou já estornada. */
+function BaixaDoExemplo({ estado, exemplo }: { estado: string; exemplo: ExemploTitulos }) {
+  const { baixa } = exemplo;
+  const estornada = estado === "estornada";
+  return (
+    <div className="space-y-1 text-sm">
+      <div className="text-xs font-medium text-muted-foreground">Baixas</div>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <Alvo nome="lista.p1.baixa" className={estornada ? "p-1 text-muted-foreground" : "p-1"}>
+          <p>
+            {`Baixa de ${baixa.data} · ${baixa.conta} · `}
+            <span className={estornada ? "line-through" : "font-medium"}>{baixa.valorFormatado}</span>
+            {` (${baixa.ajuste})`}
+            {estornada && (
+              <Badge variant="secondary" className="ml-2">
+                Estornada
+              </Badge>
+            )}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {`registrada por ${baixa.registradaPor} · aprovada por ${baixa.aprovadaPor}`}
+          </p>
+          {estornada && (
+            <p className="text-xs">{`estornada por ${baixa.estornadaPor} em ${baixa.estornadaEm}: ${baixa.motivoEstorno}`}</p>
+          )}
+        </Alvo>
+        {!estornada && (
+          <BotaoSimulado alvo="lista.p1.estornar" variant="outline" size="sm">
+            Estornar
+          </BotaoSimulado>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function LinhasDoExemplo({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exemplo">) {
   const expandido = valores["lista.linhaExemplo"] === "expandida";
+  // Só o roteiro de estorno define: "aprovada" (parcela 1 paga) ou "estornada" (volta ao status do exemplo).
+  const estadoBaixa = valores["lista.p1.baixa"];
   return (
     <>
       <TableRow className={expandido ? "bg-muted/50" : undefined}>
@@ -138,40 +177,53 @@ function LinhasDoExemplo({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exe
           </TableRow>
           {exemplo.parcelas.map((parcela) => {
             const p = `lista.p${parcela.numero}`;
+            const paga = parcela.numero === 1 && estadoBaixa === "aprovada";
+            const status = paga ? "PAGO" : parcela.status;
             return (
-              <TableRow key={parcela.numero} className="bg-muted/30">
-                <TableCell colSpan={3} className="pl-8">
-                  Parcela {parcela.numero} — venc. {parcela.vencimento} — valor {parcela.valorFormatado}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={VARIANTE_STATUS[parcela.status] ?? "secondary"}>{parcela.status}</Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap items-center justify-end gap-2">
-                    <div className="flex items-center gap-1">
-                      <CampoSimulado
-                        alvo={`${p}.vencimento`}
-                        valor={valores[`${p}.vencimento`] ?? parcela.vencimento}
-                        className="w-32"
-                      />
-                      <BotaoSimulado alvo={`${p}.alterar`} variant="outline" size="sm">
-                        Alterar vencimento
-                      </BotaoSimulado>
-                    </div>
-                    <BotaoSimulado alvo={`${p}.baixar`} size="sm">
-                      Baixar
-                    </BotaoSimulado>
-                    {parcela.status === "VENCIDO" && (
-                      <BotaoSimulado alvo={`${p}.renegociar`} variant="outline" size="sm">
-                        Renegociar
-                      </BotaoSimulado>
+              <Fragment key={parcela.numero}>
+                <TableRow className="bg-muted/30">
+                  <TableCell colSpan={3} className="pl-8">
+                    Parcela {parcela.numero} — venc. {parcela.vencimento} — valor {parcela.valorFormatado}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={VARIANTE_STATUS[status] ?? "secondary"}>{status}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    {!paga && (
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <div className="flex items-center gap-1">
+                          <CampoSimulado
+                            alvo={`${p}.vencimento`}
+                            valor={valores[`${p}.vencimento`] ?? parcela.vencimento}
+                            className="w-32"
+                          />
+                          <BotaoSimulado alvo={`${p}.alterar`} variant="outline" size="sm">
+                            Alterar vencimento
+                          </BotaoSimulado>
+                        </div>
+                        <BotaoSimulado alvo={`${p}.baixar`} size="sm">
+                          Baixar
+                        </BotaoSimulado>
+                        {parcela.status === "VENCIDO" && (
+                          <BotaoSimulado alvo={`${p}.renegociar`} variant="outline" size="sm">
+                            Renegociar
+                          </BotaoSimulado>
+                        )}
+                        <BotaoSimulado alvo={`${p}.cancelar`} variant="outline" size="sm">
+                          Cancelar
+                        </BotaoSimulado>
+                      </div>
                     )}
-                    <BotaoSimulado alvo={`${p}.cancelar`} variant="outline" size="sm">
-                      Cancelar
-                    </BotaoSimulado>
-                  </div>
-                </TableCell>
-              </TableRow>
+                  </TableCell>
+                </TableRow>
+                {parcela.numero === 1 && estadoBaixa && (
+                  <TableRow className="bg-muted/30">
+                    <TableCell colSpan={5} className="pl-12">
+                      <BaixaDoExemplo estado={estadoBaixa} exemplo={exemplo} />
+                    </TableCell>
+                  </TableRow>
+                )}
+              </Fragment>
             );
           })}
           <TableRow className="bg-muted/30">
@@ -421,6 +473,30 @@ function CenaRenegociar({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exem
   );
 }
 
+function CenaEstornar({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exemplo">) {
+  const { baixa } = exemplo;
+  return (
+    <JanelaSimulada titulo="Estornar baixa">
+      <Alvo nome="estorno.resumo" className="space-y-2 p-1">
+        <p>{`Baixa de ${baixa.data} · ${baixa.conta} · ${baixa.valorFormatado}`}</p>
+        <p className="text-muted-foreground">
+          {`O lançamento sai da conta ${baixa.conta} e a parcela volta a ficar em aberto. ` +
+            "A baixa continua no histórico como estornada."}
+        </p>
+      </Alvo>
+      <CampoSimulado
+        alvo="estorno.motivo"
+        rotulo="Motivo"
+        valor={valores["estorno.motivo"]}
+        placeholder="Ex.: lançada na conta errada"
+      />
+      <BotaoSimulado alvo="estorno.confirmar" variant="destructive" largo>
+        Estornar baixa
+      </BotaoSimulado>
+    </JanelaSimulada>
+  );
+}
+
 /** As cenas de uma tela de títulos (pagar ou receber), preenchidas com o exemplo dela. */
 export function criarCenas(tipo: TipoTela, exemplo: ExemploTitulos) {
   return {
@@ -433,6 +509,9 @@ export function criarCenas(tipo: TipoTela, exemplo: ExemploTitulos) {
     baixa: CenaBaixa,
     renegociar: function Renegociar(props: PropsCena) {
       return <CenaRenegociar {...props} exemplo={exemplo} />;
+    },
+    estornar: function Estornar(props: PropsCena) {
+      return <CenaEstornar {...props} exemplo={exemplo} />;
     },
   };
 }

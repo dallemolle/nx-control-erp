@@ -5,8 +5,13 @@ import type { PropsCena } from "@/ajuda/tipos";
 import { EXEMPLO } from "@/ajuda/contas-a-pagar/exemplo";
 import { criarCenas } from "./cenas";
 
-const { lista: CenaLista, novoTitulo: CenaNovoTitulo, baixa: CenaBaixa, renegociar: CenaRenegociar } =
-  criarCenas("PAGAR", EXEMPLO);
+const {
+  lista: CenaLista,
+  novoTitulo: CenaNovoTitulo,
+  baixa: CenaBaixa,
+  renegociar: CenaRenegociar,
+  estornar: CenaEstornar,
+} = criarCenas("PAGAR", EXEMPLO);
 
 const html = (componente: ComponentType<PropsCena>, valores: Record<string, string> = {}) =>
   renderToStaticMarkup(createElement(componente, { valores }));
@@ -58,5 +63,33 @@ describe("cenas de títulos (exemplo de Contas a pagar)", () => {
   test("baixa e renegociação têm os títulos da tela real", () => {
     expect(html(CenaBaixa)).toContain("Registrar baixa (fica pendente de aprovação)");
     expect(html(CenaRenegociar)).toContain("Confirmar renegociação");
+  });
+
+  test("baixa aprovada aparece embaixo da parcela 1, que fica PAGO e sem Baixar", () => {
+    const saida = html(CenaLista, { "lista.linhaExemplo": "expandida", "lista.p1.baixa": "aprovada" });
+    expect(saida).toContain('data-alvo="lista.p1.baixa"');
+    expect(saida).toContain('data-alvo="lista.p1.estornar"');
+    expect(saida).toContain("Baixa de 15/10/2026 · Sicredi — CC 98765-4");
+    expect(saida).toContain("registrada por Maria · aprovada por João");
+    expect(saida).not.toContain('data-alvo="lista.p1.baixar"');
+  });
+
+  test("baixa estornada: selo e motivo, sem Estornar, e a parcela volta a ter Baixar", () => {
+    const saida = html(CenaLista, { "lista.linhaExemplo": "expandida", "lista.p1.baixa": "estornada" });
+    expect(saida).toContain("Estornada");
+    expect(saida).toContain("estornada por João em 16/10/2026 09:40: Conta errada");
+    expect(saida).not.toContain('data-alvo="lista.p1.estornar"');
+    expect(saida).toContain('data-alvo="lista.p1.baixar"');
+  });
+
+  test("sem baixa no roteiro, a parcela 1 não mostra a lista", () => {
+    expect(html(CenaLista, { "lista.linhaExemplo": "expandida" })).not.toContain('data-alvo="lista.p1.baixa"');
+  });
+
+  test("estorno tem o resumo, o aviso e o botão da tela real", () => {
+    const saida = html(CenaEstornar);
+    expect(saida).toContain("Estornar baixa");
+    expect(saida).toContain("Baixa de 15/10/2026 · Sicredi — CC 98765-4 · R$ 1.012,00");
+    expect(saida).toContain("a parcela volta a ficar em aberto");
   });
 });

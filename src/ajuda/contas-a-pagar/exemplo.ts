@@ -25,6 +25,17 @@ export const EXEMPLO = {
     { vencimento: "25/11/2026", valor: "500,00" },
     { vencimento: "25/12/2026", valor: "500,00" },
   ],
+  baixa: {
+    data: "15/10/2026",
+    conta: "Sicredi — CC 98765-4",
+    valorFormatado: "R$ 1.012,00",
+    ajuste: "+ juros R$ 12,00",
+    registradaPor: "Maria",
+    aprovadaPor: "João",
+    estornadaPor: "João",
+    estornadaEm: "16/10/2026 09:40",
+    motivoEstorno: "Conta errada: o pagamento saiu do Banco do Brasil",
+  },
   outrosTitulos: [
     {
       documento: "Fatura 556",
