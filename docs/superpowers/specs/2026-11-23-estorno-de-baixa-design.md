@@ -74,13 +74,9 @@ Fica em `src/server/services/baixa.ts`. Faz, nesta ordem:
    `requireAlteracaoFilial(sessao.podeAlterarFilial)`.
 2. Motivo sem espaços nas pontas com pelo menos 3 caracteres; se não tiver:
    "Informe o motivo do estorno".
-3. A baixa tem que ser da filial ativa (`buscarBaixaDaFilial`).
-4. Segregação: com `exigeAprovacaoPorOutro(sessao.empresaId)` ligada e
-   `baixa.usuarioId === sessao.usuarioId`, o estorno é recusado com "Quem
-   registrou a baixa não pode estorná-la. Peça a outra pessoa com permissão de
-   aprovação."
-5. Numa transação, relendo a baixa dentro dela (dois estornos simultâneos não
-   apagam duas vezes):
+3. Numa transação, nesta ordem:
+   - Lê a baixa da filial ativa, com os lançamentos e os repasses; baixa de
+     outra filial não é encontrada.
    - O status tem que ser `APROVADO`; se não for: "Só baixas aprovadas podem
      ser estornadas".
    - Se a baixa é de um repasse (`repasseRecebimento` ou `repasseTaxa` não
@@ -89,19 +85,26 @@ Fica em `src/server/services/baixa.ts`. Faz, nesta ordem:
    - Se algum lançamento da baixa tem `grupoConciliacaoId`, o estorno é
      recusado com "O lançamento desta baixa já foi conciliado. Desconcilie na
      Conciliação antes de estornar".
-   - Lê os lançamentos da baixa (para a auditoria) e os apaga
-     (`deleteMany({ where: { baixaId } })`).
-   - Atualiza a baixa: `statusAprovacao: "ESTORNADO"`, `estornadoPorId`,
-     `estornadoEm: new Date()`, `motivoEstorno`.
+   - Segregação: com `exigeAprovacaoPorOutro(sessao.empresaId)` ligada e
+     `baixa.usuarioId === sessao.usuarioId`, o estorno é recusado com "Quem
+     registrou a baixa não pode estorná-la. Peça a outra pessoa com permissão
+     de aprovação." Ela vem depois das outras checagens para que uma baixa de
+     repasse ou conciliada mostre o motivo que de fato a impede.
+   - Atualiza a baixa só se ela ainda estiver `APROVADO`
+     (`updateMany({ where: { id, statusAprovacao: "APROVADO" } })`), com
+     `statusAprovacao: "ESTORNADO"`, `estornadoPorId`, `estornadoEm: new
+     Date()` e `motivoEstorno`. Se nada for atualizado, outro estorno chegou
+     antes: "Esta baixa já foi estornada".
+   - Apaga os lançamentos da baixa que continuam fora de conciliação
+     (`deleteMany({ where: { baixaId, grupoConciliacaoId: null } })`). Se o
+     número apagado for diferente do lido, alguém conciliou no meio: a
+     transação é desfeita com a mesma mensagem de "já foi conciliado".
    - `recalcularEPersistirStatusParcela(parcelaId, tx)`.
-   - Grava a auditoria: entidade `Baixa`, ação `ESTORNAR`. No campo
-     `anterior` vão `statusAprovacao: "APROVADO"` e os lançamentos apagados
-     (id, conta, data, tipo, valor). No campo `novo` vão
-     `statusAprovacao: "ESTORNADO"` e `motivoEstorno`.
-
-A checagem da segregação fica fora da transação, como em `aprovarBaixa`: ela
-depende da configuração da empresa e de quem registrou a baixa, e nenhum dos
-dois muda numa corrida.
+   - Grava a auditoria: entidade `Baixa`, ação `ESTORNAR` (com o rótulo
+     "Estornar" em `src/lib/auditoria/rotulos.ts`). No campo `anterior` vão
+     `statusAprovacao: "APROVADO"` e os lançamentos apagados (id, conta, data,
+     tipo, valor). No campo `novo` vão `statusAprovacao: "ESTORNADO"` e
+     `motivoEstorno`.
 
 ### O que muda em outros lugares
 
@@ -110,8 +113,8 @@ dois muda numa corrida.
   lançamentos não encontram mais o lançamento apagado.
 - **`recepcaoFruto.ts`:** as duas consultas que hoje contam "baixa que não é
   `REJEITADO`" passam a contar `statusAprovacao: { in: ["PENDENTE",
-  "APROVADO"] }`. Sem isso, uma baixa estornada travaria a edição e a exclusão
-  da recepção sem motivo.
+  "APROVADO"] }`. Sem isso, uma baixa estornada travaria a exclusão da
+  recepção sem motivo.
 - **`situacaoParaCancelar` e `cancelarPedido` (`pedidoVenda.ts`):** nada. A
   contagem de "outras baixas" já é por `PENDENTE` e `APROVADO`. Com a baixa
   automática estornada, o cancelamento apaga a baixa como hoje, e o
@@ -161,7 +164,8 @@ linha "Baixas", com uma entrada por baixa:
   Quem não pode aprovar não vê nenhuma das três.
 
 A baixa estornada aparece com texto esmaecido, o selo "Estornada" e uma linha
-a mais: "estornada por João em 23/11/2026: conta errada". Ela não tem ações.
+a mais: "estornada por João em 23/11/2026 14:05: conta errada" (data e hora
+no horário de Brasília, com `formatarDataHora`). Ela não tem ações.
 
 A segregação não esconde o botão. Ela é conferida no servidor, e a mensagem
 aparece no diálogo, como na tela de Aprovações pendentes.
@@ -228,8 +232,8 @@ e em caso de erro devolve a mensagem para o diálogo.
   - baixa de outra filial não é encontrada;
   - motivo vazio ou só com espaços é recusado;
   - perfil sem `titulo:aprovar` (Financeiro) é recusado.
-- **`recepcaoFruto`:** baixa estornada no título não impede editar nem
-  excluir a recepção.
+- **`recepcaoFruto`:** baixa estornada no título não impede excluir a
+  recepção.
 - **`titulosParaCliente`:** só passam as baixas aprovadas e estornadas, com os
   valores convertidos e as flags `conciliada` e `deRepasse` certas.
 - **Ajuda:** os testes de roteiro existentes, com os roteiros novos.
