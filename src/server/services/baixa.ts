@@ -1,6 +1,6 @@
 import { prisma } from "@/server/db/client";
 import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permissions";
-import { registrarAuditoria } from "@/server/audit/registrar";
+import { registrarAuditoria, type ClientePrisma } from "@/server/audit/registrar";
 import { recalcularEPersistirStatusParcela } from "@/server/services/parcela";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { Prisma, StatusAprovacaoBaixa } from "@prisma/client";
@@ -46,8 +46,8 @@ async function garantirForaDaMaquininha(parcelaId: string) {
 }
 
 /** Segregação de funções: com a opção da empresa ligada, quem registrou a baixa não a aprova. */
-export async function exigeAprovacaoPorOutro(empresaId: string): Promise<boolean> {
-  const empresa = await prisma.empresa.findUniqueOrThrow({
+export async function exigeAprovacaoPorOutro(empresaId: string, db: ClientePrisma = prisma): Promise<boolean> {
+  const empresa = await db.empresa.findUniqueOrThrow({
     where: { id: empresaId },
     select: { exigirAprovacaoPorOutro: true },
   });
@@ -253,19 +253,20 @@ export async function estornarBaixa(sessao: SessaoAtiva, baixaId: string, motivo
   if (motivoLimpo.length < 3) throw new Error("Informe o motivo do estorno");
 
   return prisma.$transaction(async (tx) => {
+    // Leituras em sequência: um include com várias relações dispara consultas em paralelo
+    // na única conexão da transação (o pg avisa, e na versão 9 recusa).
     const anterior = await tx.baixa.findFirstOrThrow({
       where: { id: baixaId, parcela: { titulo: { filialId: sessao.filialId } } },
-      include: {
-        lancamentos: true,
-        repasseRecebimento: { select: { id: true } },
-        repasseTaxa: { select: { id: true } },
-      },
+    });
+    const lancamentos = await tx.lancamentoBancario.findMany({ where: { baixaId } });
+    const deRepasse = await tx.repasseCartaoConfirmado.count({
+      where: { OR: [{ baixaRecebimentoId: baixaId }, { baixaTaxaId: baixaId }] },
     });
     if (anterior.statusAprovacao !== "APROVADO") throw new Error("Só baixas aprovadas podem ser estornadas");
-    if (anterior.repasseRecebimento || anterior.repasseTaxa) throw new Error(MSG_ESTORNO_REPASSE);
-    if (anterior.lancamentos.some((l) => l.grupoConciliacaoId !== null)) throw new Error(MSG_ESTORNO_CONCILIADA);
+    if (deRepasse > 0) throw new Error(MSG_ESTORNO_REPASSE);
+    if (lancamentos.some((l) => l.grupoConciliacaoId !== null)) throw new Error(MSG_ESTORNO_CONCILIADA);
     // Depois das travas acima: baixa de repasse ou conciliada mostra o motivo que de fato a impede.
-    if (anterior.usuarioId === sessao.usuarioId && (await exigeAprovacaoPorOutro(sessao.empresaId))) {
+    if (anterior.usuarioId === sessao.usuarioId && (await exigeAprovacaoPorOutro(sessao.empresaId, tx))) {
       throw new Error(MSG_ESTORNO_POR_QUEM_REGISTROU);
     }
 
@@ -285,7 +286,7 @@ export async function estornarBaixa(sessao: SessaoAtiva, baixaId: string, motivo
     const { count: apagados } = await tx.lancamentoBancario.deleteMany({
       where: { baixaId, grupoConciliacaoId: null },
     });
-    if (apagados !== anterior.lancamentos.length) throw new Error(MSG_ESTORNO_CONCILIADA);
+    if (apagados !== lancamentos.length) throw new Error(MSG_ESTORNO_CONCILIADA);
 
     await recalcularEPersistirStatusParcela(anterior.parcelaId, tx);
 
@@ -299,7 +300,7 @@ export async function estornarBaixa(sessao: SessaoAtiva, baixaId: string, motivo
         acao: "ESTORNAR",
         anterior: {
           statusAprovacao: anterior.statusAprovacao,
-          lancamentos: anterior.lancamentos.map((l) => ({
+          lancamentos: lancamentos.map((l) => ({
             id: l.id,
             contaBancariaId: l.contaBancariaId,
             data: l.data,

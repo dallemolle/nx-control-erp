@@ -28,7 +28,7 @@ export const EXEMPLO = {
   ],
   baixa: {
     data: "15/10/2026",
-    conta: "Sicredi — CC 98765-4",
+    conta: "Sicredi - Ag 0101/CC 98765-4",
     valorFormatado: "R$ 15.060,00",
     ajuste: "+ juros R$ 60,00",
     registradaPor: "Maria",

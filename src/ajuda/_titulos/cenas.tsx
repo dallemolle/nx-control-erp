@@ -490,9 +490,14 @@ function CenaEstornar({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exempl
         valor={valores["estorno.motivo"]}
         placeholder="Ex.: lançada na conta errada"
       />
-      <BotaoSimulado alvo="estorno.confirmar" variant="destructive" largo>
-        Estornar baixa
-      </BotaoSimulado>
+      <div className="flex gap-2">
+        <BotaoSimulado variant="outline" largo>
+          Cancelar
+        </BotaoSimulado>
+        <BotaoSimulado alvo="estorno.confirmar" variant="destructive" largo>
+          Estornar baixa
+        </BotaoSimulado>
+      </div>
     </JanelaSimulada>
   );
 }

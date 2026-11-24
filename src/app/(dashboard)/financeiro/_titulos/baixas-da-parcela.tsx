@@ -25,7 +25,13 @@ function AcaoDoEstorno({ baixa, onEstornar }: { baixa: BaixaDaParcela; onEstorna
     return <span className="text-xs text-muted-foreground">Conciliada: desconcilie antes de estornar</span>;
   }
   return (
-    <Button type="button" variant="outline" size="sm" onClick={() => onEstornar(baixa)}>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      aria-label={`Estornar baixa de ${formatarData(baixa.data)} de ${formatarMoeda(baixa.valorPago)}`}
+      onClick={() => onEstornar(baixa)}
+    >
       Estornar
     </Button>
   );
@@ -67,8 +73,8 @@ export function BaixasDaParcela({
                 </p>
                 {estornada && baixa.estornadaEm && (
                   <p className="text-xs">
-                    {`estornada por ${baixa.estornadaPor} em ${formatarDataHora(baixa.estornadaEm)}: ` +
-                      baixa.motivoEstorno}
+                    {`estornada${baixa.estornadaPor ? ` por ${baixa.estornadaPor}` : ""} ` +
+                      `em ${formatarDataHora(baixa.estornadaEm)}: ${baixa.motivoEstorno}`}
                   </p>
                 )}
               </div>

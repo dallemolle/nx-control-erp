@@ -33,6 +33,7 @@ describe("BaixasDaParcela", () => {
     expect(saida).toContain("+ juros R$");
     expect(saida).toContain("registrada por Maria · aprovada por João");
     expect(saida).toContain(">Estornar<");
+    expect(saida).toContain('aria-label="Estornar baixa de 15/10/2026 de R$');
   });
 
   test("sem permissão, nem botão nem explicação", () => {
@@ -60,6 +61,28 @@ describe("BaixasDaParcela", () => {
     expect(saida).toContain("Estornada");
     expect(saida).toContain("estornada por João em 16/10/2026 09:40: conta errada");
     expect(saida).not.toContain(">Estornar<");
+  });
+});
+
+describe("BaixasDaParcela sem o usuário do estorno", () => {
+  test("usuário apagado: não escreve null", () => {
+    const saida = renderToStaticMarkup(
+      createElement(BaixasDaParcela, {
+        baixas: [
+          {
+            ...aprovada,
+            status: "ESTORNADO",
+            estornadaPor: null,
+            estornadaEm: new Date("2026-10-16T12:40:00.000Z"),
+            motivoEstorno: "conta errada",
+          },
+        ],
+        podeEstornar: true,
+        onEstornar: () => {},
+      }),
+    );
+    expect(saida).toContain("estornada em 16/10/2026 09:40: conta errada");
+    expect(saida).not.toContain("null");
   });
 });
 

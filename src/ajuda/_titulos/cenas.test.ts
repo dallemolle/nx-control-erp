@@ -69,7 +69,7 @@ describe("cenas de títulos (exemplo de Contas a pagar)", () => {
     const saida = html(CenaLista, { "lista.linhaExemplo": "expandida", "lista.p1.baixa": "aprovada" });
     expect(saida).toContain('data-alvo="lista.p1.baixa"');
     expect(saida).toContain('data-alvo="lista.p1.estornar"');
-    expect(saida).toContain("Baixa de 15/10/2026 · Sicredi — CC 98765-4");
+    expect(saida).toContain("Baixa de 15/10/2026 · Sicredi - Ag 0101/CC 98765-4");
     expect(saida).toContain("registrada por Maria · aprovada por João");
     expect(saida).not.toContain('data-alvo="lista.p1.baixar"');
   });
@@ -89,7 +89,8 @@ describe("cenas de títulos (exemplo de Contas a pagar)", () => {
   test("estorno tem o resumo, o aviso e o botão da tela real", () => {
     const saida = html(CenaEstornar);
     expect(saida).toContain("Estornar baixa");
-    expect(saida).toContain("Baixa de 15/10/2026 · Sicredi — CC 98765-4 · R$ 1.012,00");
+    expect(saida).toContain("Baixa de 15/10/2026 · Sicredi - Ag 0101/CC 98765-4 · R$ 1.012,00");
     expect(saida).toContain("a parcela volta a ficar em aberto");
+    expect(saida).toContain("Cancelar");
   });
 });

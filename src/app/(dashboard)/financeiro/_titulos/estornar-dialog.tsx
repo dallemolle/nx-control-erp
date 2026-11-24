@@ -71,15 +71,26 @@ export function EstornarDialog({
                 {erro}
               </p>
             ) : null}
-            <Button
-              type="button"
-              variant="destructive"
-              className="w-full"
-              disabled={pendente || motivo.trim().length < 3}
-              onClick={confirmar}
-            >
-              {pendente ? "Estornando..." : "Estornar baixa"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                disabled={pendente}
+                onClick={() => mudarAbertura(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                className="flex-1"
+                disabled={pendente || motivo.trim().length < 3}
+                onClick={confirmar}
+              >
+                {pendente ? "Estornando..." : "Estornar baixa"}
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>
