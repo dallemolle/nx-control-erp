@@ -13,6 +13,6 @@ export const ajudaContasAReceber: DefinicaoAjuda = {
       "PV-número do pedido. Venda na maquininha sai em nome da operadora e é recebida em Financeiro → Repasses " +
       "de cartão.",
     "Para cadastrar muitos títulos de uma vez a partir de uma planilha, use o botão Importar CSV, acima da " +
-      "lista. O formato do arquivo está no Passo a passo, seção 3.1.",
+      "lista. O próprio diálogo explica as colunas do arquivo e tem um modelo para baixar.",
   ],
 };

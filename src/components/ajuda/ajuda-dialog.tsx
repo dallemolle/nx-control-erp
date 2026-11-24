@@ -7,9 +7,8 @@ import type { DefinicaoAjuda } from "@/ajuda/tipos";
 import { Simulador } from "./simulador";
 
 /** Conteúdo do popup de ajuda de uma tela. Fica dentro de um `DialogContent`. */
-export function AjudaConteudo({ definicao, roteiroInicial }: { definicao: DefinicaoAjuda; roteiroInicial?: string }) {
-  const inicial = definicao.roteiros.some((r) => r.id === roteiroInicial) ? roteiroInicial : undefined;
-  const [roteiroId, setRoteiroId] = useState<string | null>(inicial ?? null);
+export function AjudaConteudo({ definicao }: { definicao: DefinicaoAjuda }) {
+  const [roteiroId, setRoteiroId] = useState<string | null>(null);
   const roteiro = definicao.roteiros.find((r) => r.id === roteiroId);
 
   return (

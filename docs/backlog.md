@@ -130,6 +130,11 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 
 ### 2. Aprovação às cegas (prioridade alta)
 
+- **Status:** feito na branch `feat/aprovacao-com-detalhes` (2026-11-21, spec
+  `2026-11-21-aprovacao-com-detalhes-design.md`): a linha mostra data, conta,
+  parcela n/total, valor da parcela e ajustes, com avisos de data fora do
+  normal, valor diferente do saldo e outra baixa pendente; ajuda com o roteiro
+  novo `entender-avisos`.
 - **Problema:** Aprovações pendentes
   (`src/app/(dashboard)/financeiro/aprovacoes/page.tsx`) mostra só documento,
   contraparte, valor pago e quem registrou.
@@ -346,6 +351,8 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 
 ### 12. Manual: tabela de status da Conciliação incompleta
 
+- **Status:** descartado em 2026-11-21: o Passo a passo foi aposentado, e os
+  6 status estão no roteiro `entender-status` da ajuda da Conciliação.
 - **Problema:** o Passo a passo, seção 3.4, lista 3 status (Conciliado,
   Sugestão, Não conciliado); a tela tem 6 (mais Divergência de valor,
   Divergência de data e Duplicado). A descrição de Sugestão também está
@@ -640,8 +647,8 @@ Numeração continua a do Financeiro e da Controladoria.
 - **Cuidados:** lotes filhos de transferência, estornos e OPs reabertas
   (custo do lote muda); desempenho com muitos movimentos.
 - **Ao corrigir:** dica do passo "Mude a data de referência" do roteiro
-  `filtrar-referencia` em `src/ajuda/estoque/roteiros.ts` e o parágrafo da
-  seção 5.3 do Passo a passo.
+  `filtrar-referencia` em `src/ajuda/estoque/roteiros.ts` (o Passo a passo,
+  que também citava o campo, foi aposentado em 2026-11-21).
 
 ### 25. Ajuste de estoque errado não tem estorno
 
@@ -1209,11 +1216,15 @@ Numeração continua a das seções anteriores.
   manual 8.5 ganhou o card Compra de fruto). Auditoria feita (2026-11-21,
   3 roteiros; lacunas 53 e 54 corrigidas, 55 no backlog). Dashboard
   executivo feito (2026-11-21, 3 roteiros; lacunas 56 a 58 corrigidas).
-  **Todas as telas têm ajuda com simulação**: o próximo passo é aposentar o
-  Passo a passo (item abaixo).
-- **Aposentar o Passo a passo.** Decisão do usuário (2026-11-20): quando todas
-  as telas tiverem ajuda com simulação, o menu Ajuda → Passo a passo
-  (`content/ajuda/passo-a-passo.md`) deixa de ser usado. Antes de retirar,
-  conferir se algum conteúdo do manual (seções sem tela, como Primeiros
-  acessos e Perfis) não ficou sem lugar na ajuda; depois, tirar o item do
-  menu, a página e os links `#ajuda/...` do manual.
+  **Todas as telas têm ajuda com simulação**, e o Passo a passo foi
+  aposentado (item abaixo).
+- **Aposentar o Passo a passo.** Feito (2026-11-21, branch
+  `feat/aposentar-passo-a-passo`). O manual saiu; o que não tinha tela
+  (Introdução, Primeiros acessos e Glossário) foi para a página curta Ajuda →
+  Primeiros passos (`content/ajuda/primeiros-passos.md`), e os Perfis apontam
+  para a ajuda de Usuários. O endereço antigo redireciona para a página nova
+  (`next.config.ts`). Saíram também os links `#ajuda/...` (`src/ajuda/link.ts`
+  e o modo link do `BotaoAjuda`). O formato do CSV de títulos já estava no
+  próprio diálogo de importação. Achado: o `MarkdownContent` não renderiza
+  tabelas (falta `remark-gfm`), então as tabelas do manual saíam como texto
+  cru; o glossário virou lista. Item mantido como histórico.
