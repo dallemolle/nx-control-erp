@@ -188,6 +188,7 @@ model Usuario {
   auditLogs                 AuditLog[]
   baixasRegistradas         Baixa[]                  @relation("BaixaRegistradaPor")
   baixasAvaliadas           Baixa[]                  @relation("BaixaAvaliadaPor")
+  baixasEstornadas          Baixa[]                  @relation("BaixaEstornadaPor")
   anexos                    Anexo[]
   lancamentosBancarios      LancamentoBancario[]
   saldosBancariosInformados SaldoBancarioInformado[]
@@ -580,6 +581,7 @@ enum StatusAprovacaoBaixa {
   PENDENTE
   APROVADO
   REJEITADO
+  ESTORNADO
 }
 
 model Titulo {
@@ -672,12 +674,16 @@ model Baixa {
   avaliadoPorId   String?
   avaliadoEm      DateTime?
   motivoRejeicao  String?
+  estornadoPorId  String?
+  estornadoEm     DateTime?
+  motivoEstorno   String?
   criadoEm        DateTime             @default(now())
 
   parcela       Parcela              @relation(fields: [parcelaId], references: [id], onDelete: Cascade)
   contaBancaria ContaBancaria        @relation(fields: [contaBancariaId], references: [id])
   usuario       Usuario              @relation("BaixaRegistradaPor", fields: [usuarioId], references: [id])
   avaliadoPor   Usuario?             @relation("BaixaAvaliadaPor", fields: [avaliadoPorId], references: [id])
+  estornadoPor  Usuario?             @relation("BaixaEstornadaPor", fields: [estornadoPorId], references: [id])
   lancamentos        LancamentoBancario[]
   pedidoVenda        PedidoVenda?
   repasseRecebimento RepasseCartaoConfirmado? @relation("RepasseRecebimento")

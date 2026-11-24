@@ -14,6 +14,8 @@ export const ALVOS = {
     "lista.tabela",
     "lista.linhaExemplo",
     "lista.p1.baixar",
+    "lista.p1.baixa",
+    "lista.p1.estornar",
     "lista.p2.renegociar",
     "lista.p3.vencimento",
     "lista.p3.alterar",
@@ -46,4 +48,5 @@ export const ALVOS = {
   ],
   baixa: ["baixa.data", "baixa.valorPago", "baixa.juros", "baixa.multa", "baixa.desconto", "baixa.conta", "baixa.registrar"],
   renegociar: ["reneg.parcela1", "reneg.parcela2", "reneg.adicionar", "reneg.confirmar"],
+  estornar: ["estorno.resumo", "estorno.motivo", "estorno.confirmar"],
 } as const;

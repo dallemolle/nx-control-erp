@@ -11,10 +11,11 @@ import { ajudaContasAPagar } from "./index";
 const { roteiros, cenas } = ajudaContasAPagar;
 
 describe("roteiros de Contas a pagar", () => {
-  test("são os 6 roteiros da spec, com ids únicos", () => {
+  test("são os 7 roteiros, com ids únicos", () => {
     expect(roteiros.map((r) => r.id)).toEqual([
       "cadastrar-titulo",
       "pagar-parcela",
+      "estornar-baixa",
       "mudar-vencimento",
       "renegociar",
       "cancelar-parcela",

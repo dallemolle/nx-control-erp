@@ -95,6 +95,31 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   tal data" (ex.: para explicar um custo antigo sem abrir a auditoria),
   criar um histórico de preços por produto.
 
+## Banco de dados — consultas paralelas na transação
+
+### Include com várias relações dentro de `prisma.$transaction`
+
+- **Problema:** dentro de `prisma.$transaction(async (tx) => …)`, um `include`
+  (ou `select`) com mais de uma relação faz o Prisma consultar as relações em
+  paralelo (`Promise.all`) na única conexão da transação. O pg 8 avisa
+  (`DeprecationWarning: Calling client.query() when the client is already
+  executing a query is deprecated`) e o pg 9 vai recusar a chamada.
+- **Exemplo:** `tx.baixa.findFirstOrThrow({ include: { lancamentos, repasseRecebimento,
+  repasseTaxa } })` no estorno de baixa emitia o aviso; corrigido lendo em
+  sequência (`findFirstOrThrow`, `findMany`, `count`).
+- **Onde:** visto nos testes de recepção ("cancelar é recusado depois de o lote
+  ser consumido numa OP", código de Ordem de Produção). Depois da correção do
+  estorno, ainda emitem o aviso (rodando cada arquivo sozinho):
+  `src/server/services/recepcaoFruto.test.ts` e
+  `src/server/services/estoque.test.ts`. Na suíte toda saem 9 avisos (um por
+  processo de teste), sem dar para atribuir cada um a um arquivo.
+- **Impacto:** quebra quando o pg for atualizado para a versão 9.
+- **Caminhos:** em transações, ler em sequência ou uma relação por consulta.
+- **Cuidados:** manter a mesma ordem de checagens e as mesmas mensagens ao
+  trocar o `include` por leituras separadas; localizar com
+  `NODE_OPTIONS=--trace-deprecation` (a pilha aponta o adaptador, não o
+  arquivo, então rode os testes um arquivo por vez).
+
 ## Financeiro — lacunas achadas ao escrever a ajuda contextual
 
 Achadas entre 2026-11-19 e 2026-11-20, conferindo os roteiros da ajuda contra o
@@ -156,6 +181,13 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   com as colunas novas.
 
 ### 3. Baixa aprovada não pode ser desfeita (prioridade alta)
+
+- **Status:** feito na branch `feat/estorno-de-baixa` (2026-11-23, spec
+  `2026-11-23-estorno-de-baixa-design.md`): "Estornar" na lista de baixas da
+  parcela (Administrador e Tesouraria, com motivo e a mesma segregação da
+  aprovação); a baixa fica ESTORNADO, o lançamento é apagado e a parcela,
+  recalculada; lançamento conciliado e baixa de repasse bloqueiam; ajuda com o
+  roteiro novo `estornar-baixa`.
 
 - **Problema:** não existe estorno de baixa. `efetivarBaixa`
   (`src/server/services/baixa.ts`) aprova, recalcula a parcela e cria o

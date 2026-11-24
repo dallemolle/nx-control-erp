@@ -49,7 +49,7 @@ export const ROTULOS_STATUS_PARCELA: Record<(typeof STATUS_PARCELA)[number], str
   RENEGOCIADO: "Renegociada",
 };
 
-export const STATUS_APROVACAO_BAIXA = ["PENDENTE", "APROVADO", "REJEITADO"] as const;
+export const STATUS_APROVACAO_BAIXA = ["PENDENTE", "APROVADO", "REJEITADO", "ESTORNADO"] as const;
 
 export const MEIO_PAGAMENTO = ["PIX", "DEPOSITO_BANCARIO"] as const;
 

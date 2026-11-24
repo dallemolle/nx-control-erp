@@ -119,6 +119,19 @@ export async function registrarBaixaAction(
   return { sucesso: true };
 }
 
+export async function estornarBaixaAction(tipo: TipoTitulo, baixaId: string, motivo: string): Promise<FormState> {
+  const sessao = await requireSessaoAtiva();
+
+  try {
+    await baixaService.estornarBaixa(sessao, baixaId, motivo);
+  } catch (erro) {
+    return { erro: mensagemErro(erro) };
+  }
+
+  revalidatePath(rotaPara(tipo));
+  return { sucesso: true };
+}
+
 export async function renegociarParcelaAction(
   tipo: TipoTitulo,
   parcelaId: string,

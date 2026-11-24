@@ -292,6 +292,28 @@ describe("recepção de fruto", () => {
     );
   });
 
+  test("baixa estornada não impede cancelar a recepção", async () => {
+    const r = await criarRecepcao(fx.sessao("PRODUCAO"), terceiro());
+    const parcela = await prisma.parcela.findFirstOrThrow({ where: { tituloId: r.tituloId! } });
+    const banco = await prisma.banco.findFirstOrThrow();
+    const conta = await prisma.contaBancaria.create({
+      data: { filialId: fx.filialAId, bancoId: banco.id, agencia: "1", conta: `E-${Date.now()}`, tipo: "CORRENTE" },
+    });
+    await prisma.baixa.create({
+      data: {
+        parcelaId: parcela.id,
+        data: new Date("2026-11-10"),
+        valorPago: 240,
+        contaBancariaId: conta.id,
+        usuarioId: fx.usuarioId,
+        statusAprovacao: "ESTORNADO",
+      },
+    });
+    await cancelarRecepcao(fx.sessao("PRODUCAO"), r.recepcaoId, "Erro");
+    const recepcao = await prisma.recepcaoFruto.findUniqueOrThrow({ where: { id: r.recepcaoId } });
+    expect(recepcao.status).toBe("CANCELADA");
+  });
+
   test("atualizarDadosRecepcao muda só qualidade, documento e observação, com auditoria", async () => {
     const r = await criarRecepcao(fx.sessao("PRODUCAO"), propria());
     await atualizarDadosRecepcao(fx.sessao("PRODUCAO"), r.recepcaoId, {

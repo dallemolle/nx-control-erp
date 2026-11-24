@@ -2,10 +2,19 @@ import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { prisma } from "@/server/db/client";
 import { PermissionError } from "@/server/auth/permissions";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
-import { criarTitulo } from "./titulo";
+import { criarTitulo, cancelarParcela } from "./titulo";
 import type { TipoTitulo } from "@prisma/client";
 import { resumirBaixasDaParcela } from "@/lib/financeiro/avisosDaBaixa";
-import { registrarBaixa, aprovarBaixa, rejeitarBaixa, listarBaixasPendentes, efetivarBaixa } from "./baixa";
+import {
+  registrarBaixa,
+  aprovarBaixa,
+  rejeitarBaixa,
+  listarBaixasPendentes,
+  efetivarBaixa,
+  estornarBaixa,
+  MSG_ESTORNO_CONCILIADA,
+  MSG_ESTORNO_POR_QUEM_REGISTROU,
+} from "./baixa";
 
 describe("baixa (fluxo de aprovação)", () => {
   let fixture: FixtureFinanceiro; // perfil FINANCEIRO: pode registrar baixa, não aprovar
@@ -429,5 +438,235 @@ describe("segregação na aprovação", () => {
     const baixa = await registrar(fx.sessao);
     const rejeitada = await rejeitarBaixa(fx.sessao, baixa.id, "desisti");
     expect(rejeitada.statusAprovacao).toBe("REJEITADO");
+  });
+});
+
+describe("estorno de baixa", () => {
+  let fx: FixtureFinanceiro; // TESOURARIA, segregação desligada (padrão da fixture)
+  let fxFinanceiro: FixtureFinanceiro; // FINANCEIRO: não estorna; também é a "outra filial"
+
+  beforeAll(async () => {
+    fx = await criarFixtureFinanceiro("BXE", "TESOURARIA");
+    fxFinanceiro = await criarFixtureFinanceiro("BXEF");
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fx);
+    await limparFixtureFinanceiro(fxFinanceiro);
+  });
+
+  async function parcela(f: FixtureFinanceiro, valor: number) {
+    const titulo = await criarTitulo(f.sessaoAdmin, "PAGAR", {
+      contraparteId: f.fornecedorId,
+      documento: `EST-${Date.now()}-${Math.random()}`,
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: f.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: f.contaBancariaId,
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: new Date(), valorOriginal: valor }],
+    });
+    return titulo.parcelas[0];
+  }
+
+  async function baixaAprovada(f: FixtureFinanceiro, parcelaId: string, valor: number, contaBancariaId = f.contaBancariaId) {
+    const baixa = await registrarBaixa(f.sessaoAdmin, parcelaId, {
+      data: new Date(),
+      valorPago: valor,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId,
+    });
+    await aprovarBaixa(f.sessaoAdmin, baixa.id);
+    return baixa;
+  }
+
+  test("estorna: apaga o lançamento, marca a baixa e reabre a parcela", async () => {
+    const p = await parcela(fx, 200);
+    const baixa = await baixaAprovada(fx, p.id, 200);
+    const lancamento = await prisma.lancamentoBancario.findFirstOrThrow({ where: { baixaId: baixa.id } });
+
+    const estornada = await estornarBaixa(fx.sessao, baixa.id, "  conta errada  ");
+
+    expect(estornada).toMatchObject({
+      statusAprovacao: "ESTORNADO",
+      estornadoPorId: fx.usuarioId,
+      motivoEstorno: "conta errada",
+    });
+    expect(estornada.estornadoEm).toBeInstanceOf(Date);
+    expect(await prisma.lancamentoBancario.count({ where: { baixaId: baixa.id } })).toBe(0);
+    const depois = await prisma.parcela.findUniqueOrThrow({ where: { id: p.id } });
+    expect(["EM_ABERTO", "A_VENCER", "VENCIDO"]).toContain(depois.status);
+
+    const auditoria = await prisma.auditLog.findFirstOrThrow({ where: { entidadeId: baixa.id, acao: "ESTORNAR" } });
+    expect(auditoria.valorAnterior).toMatchObject({
+      statusAprovacao: "APROVADO",
+      lancamentos: [{ id: lancamento.id, contaBancariaId: fx.contaBancariaId, tipo: "SAIDA", valor: "200" }],
+    });
+    expect(auditoria.valorNovo).toMatchObject({ statusAprovacao: "ESTORNADO", motivoEstorno: "conta errada" });
+  });
+
+  test("com outra baixa aprovada, a parcela fica PARCIALMENTE_PAGO", async () => {
+    const p = await parcela(fx, 200);
+    await baixaAprovada(fx, p.id, 100);
+    const segunda = await baixaAprovada(fx, p.id, 100);
+    expect((await prisma.parcela.findUniqueOrThrow({ where: { id: p.id } })).status).toBe("PAGO");
+
+    await estornarBaixa(fx.sessao, segunda.id, "lançada em dobro");
+
+    expect((await prisma.parcela.findUniqueOrThrow({ where: { id: p.id } })).status).toBe("PARCIALMENTE_PAGO");
+  });
+
+  test("só baixa aprovada: pendente, rejeitada e já estornada são recusadas", async () => {
+    const p = await parcela(fx, 300);
+    const pendente = await registrarBaixa(fx.sessaoAdmin, p.id, {
+      data: new Date(),
+      valorPago: 10,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fx.contaBancariaId,
+    });
+    await expect(estornarBaixa(fx.sessao, pendente.id, "teste")).rejects.toThrow(
+      "Só baixas aprovadas podem ser estornadas",
+    );
+
+    await rejeitarBaixa(fx.sessaoAdmin, pendente.id, "não");
+    await expect(estornarBaixa(fx.sessao, pendente.id, "teste")).rejects.toThrow(
+      "Só baixas aprovadas podem ser estornadas",
+    );
+
+    const aprovada = await baixaAprovada(fx, p.id, 20);
+    await estornarBaixa(fx.sessao, aprovada.id, "teste");
+    await expect(estornarBaixa(fx.sessao, aprovada.id, "teste")).rejects.toThrow(
+      "Só baixas aprovadas podem ser estornadas",
+    );
+  });
+
+  test("lançamento conciliado bloqueia o estorno", async () => {
+    const p = await parcela(fx, 150);
+    const baixa = await baixaAprovada(fx, p.id, 150);
+    const grupo = await prisma.grupoConciliacao.create({
+      data: { filialId: fx.filialId, contaBancariaId: fx.contaBancariaId, usuarioId: fx.usuarioId },
+    });
+    await prisma.lancamentoBancario.updateMany({
+      where: { baixaId: baixa.id },
+      data: { grupoConciliacaoId: grupo.id, conciliado: true },
+    });
+
+    await expect(estornarBaixa(fx.sessao, baixa.id, "teste")).rejects.toThrow(MSG_ESTORNO_CONCILIADA);
+    expect((await prisma.baixa.findUniqueOrThrow({ where: { id: baixa.id } })).statusAprovacao).toBe("APROVADO");
+    expect(await prisma.lancamentoBancario.count({ where: { baixaId: baixa.id } })).toBe(1);
+  });
+
+  test("conta Caixa (conciliada sem extrato) pode ser estornada", async () => {
+    const caixa = await prisma.contaBancaria.create({
+      data: {
+        filialId: fx.filialId,
+        bancoId: fx.bancoId,
+        agencia: "0000",
+        conta: `CX-${Date.now()}`,
+        tipo: "CAIXA",
+        saldoInicial: 0,
+      },
+    });
+    const p = await parcela(fx, 80);
+    const baixa = await baixaAprovada(fx, p.id, 80, caixa.id);
+    expect((await prisma.lancamentoBancario.findFirstOrThrow({ where: { baixaId: baixa.id } })).conciliado).toBe(true);
+
+    await estornarBaixa(fx.sessao, baixa.id, "não foi pago em dinheiro");
+
+    expect(await prisma.lancamentoBancario.count({ where: { baixaId: baixa.id } })).toBe(0);
+  });
+
+  test("parcela cancelada continua cancelada depois do estorno", async () => {
+    const p = await parcela(fx, 100);
+    const baixa = await baixaAprovada(fx, p.id, 50);
+    await cancelarParcela(fx.sessaoAdmin, p.id);
+
+    await estornarBaixa(fx.sessao, baixa.id, "teste");
+
+    expect((await prisma.parcela.findUniqueOrThrow({ where: { id: p.id } })).status).toBe("CANCELADO");
+    expect(await prisma.lancamentoBancario.count({ where: { baixaId: baixa.id } })).toBe(0);
+  });
+
+  test("motivo vazio, perfil sem titulo:aprovar e baixa de outra filial são recusados", async () => {
+    const p = await parcela(fx, 60);
+    const baixa = await baixaAprovada(fx, p.id, 60);
+    await expect(estornarBaixa(fx.sessao, baixa.id, "   ")).rejects.toThrow("Informe o motivo do estorno");
+    await expect(estornarBaixa(fxFinanceiro.sessao, baixa.id, "teste")).rejects.toThrow(PermissionError);
+    // fxFinanceiro.sessaoAdmin tem titulo:aprovar, mas está em outra filial.
+    await expect(estornarBaixa(fxFinanceiro.sessaoAdmin, baixa.id, "teste")).rejects.toThrow();
+    expect((await prisma.baixa.findUniqueOrThrow({ where: { id: baixa.id } })).statusAprovacao).toBe("APROVADO");
+  });
+});
+
+describe("segregação no estorno", () => {
+  let fx: FixtureFinanceiro; // TESOURARIA
+
+  beforeAll(async () => {
+    fx = await criarFixtureFinanceiro("BXES", "TESOURARIA");
+    await prisma.empresa.update({ where: { id: fx.empresaId }, data: { exigirAprovacaoPorOutro: true } });
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fx);
+  });
+
+  /** Registrada por `fx.sessao` (Tesouraria) e aprovada pelo Administrador. */
+  async function registradaPelaTesouraria() {
+    const titulo = await criarTitulo(fx.sessaoAdmin, "PAGAR", {
+      contraparteId: fx.fornecedorId,
+      documento: `ESS-${Date.now()}-${Math.random()}`,
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fx.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: fx.contaBancariaId,
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: new Date(), valorOriginal: 100 }],
+    });
+    const baixa = await registrarBaixa(fx.sessao, titulo.parcelas[0].id, {
+      data: new Date(),
+      valorPago: 100,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fx.contaBancariaId,
+    });
+    await aprovarBaixa(fx.sessaoAdmin, baixa.id);
+    return baixa;
+  }
+
+  test("quem registrou não estorna; baixa e lançamento ficam como estavam", async () => {
+    const baixa = await registradaPelaTesouraria();
+    await expect(estornarBaixa(fx.sessao, baixa.id, "teste")).rejects.toThrow(MSG_ESTORNO_POR_QUEM_REGISTROU);
+    expect((await prisma.baixa.findUniqueOrThrow({ where: { id: baixa.id } })).statusAprovacao).toBe("APROVADO");
+    expect(await prisma.lancamentoBancario.count({ where: { baixaId: baixa.id } })).toBe(1);
+  });
+
+  test("outra pessoa estorna, mesmo tendo aprovado", async () => {
+    const baixa = await registradaPelaTesouraria();
+    const estornada = await estornarBaixa(fx.sessaoAdmin, baixa.id, "teste");
+    expect(estornada.statusAprovacao).toBe("ESTORNADO");
+  });
+
+  test("com a regra desligada, quem registrou estorna", async () => {
+    await prisma.empresa.update({ where: { id: fx.empresaId }, data: { exigirAprovacaoPorOutro: false } });
+    try {
+      const baixa = await registradaPelaTesouraria();
+      const estornada = await estornarBaixa(fx.sessao, baixa.id, "teste");
+      expect(estornada.statusAprovacao).toBe("ESTORNADO");
+    } finally {
+      await prisma.empresa.update({ where: { id: fx.empresaId }, data: { exigirAprovacaoPorOutro: true } });
+    }
   });
 });

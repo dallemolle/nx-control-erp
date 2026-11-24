@@ -54,8 +54,8 @@ export const ROTEIROS: readonly Roteiro[] = [
           "Valor pago é o total que saiu ou entrou na conta, já com juros e multa. Embaixo vêm o valor da parcela e " +
           "os ajustes: no exemplo, parcela de R$ 1.000,00 mais R$ 12,00 de juros dá R$ 1.012,00.",
         dica:
-          "Algo não bate com o comprovante? Rejeite com o motivo em vez de aprovar: depois de aprovada, a baixa não " +
-          "pode ser desfeita.",
+          "Algo não bate com o comprovante? Rejeite com o motivo em vez de aprovar. Uma baixa aprovada por engano " +
+          "pode ser estornada depois, na parcela em Contas a pagar ou a receber, enquanto não estiver conciliada.",
       },
       {
         cena: "lista",
@@ -77,7 +77,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         "A linha sai da lista. O sistema lança a saída (pagamento) ou a entrada (recebimento) na conta bancária " +
         "escolhida na baixa, com a data da baixa, e a parcela fica PAGO, ou PARCIALMENTE_PAGO se o valor foi menor " +
         "que o da parcela. Numa conta Caixa, o lançamento já entra conciliado. Numa conta de banco, ele espera o " +
-        "extrato na Conciliação. A aprovação não pode ser desfeita.",
+        "extrato na Conciliação. Aprovou por engano? A baixa pode ser estornada na parcela, em Contas a pagar ou a " +
+        "receber, enquanto o lançamento não estiver conciliado.",
       proximoRoteiro: "entender-avisos",
     },
   }),
