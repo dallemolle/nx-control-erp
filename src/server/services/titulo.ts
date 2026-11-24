@@ -208,6 +208,12 @@ const INCLUDE_LISTAGEM_TITULOS = {
   safra: true,
   projeto: true,
   contaBancaria: { include: { banco: true } },
+  parcelas: { include: { baixas: true }, orderBy: { numero: "asc" } },
+} satisfies Prisma.TituloInclude;
+
+/** Só a tela: a API devolve `INCLUDE_LISTAGEM_TITULOS` cru, então estas relações não podem vazar para lá. */
+const INCLUDE_TELA_TITULOS = {
+  ...INCLUDE_LISTAGEM_TITULOS,
   parcelas: {
     include: {
       // A tela lista as baixas na parcela (aprovadas e estornadas) com conta, pessoas e se dá para estornar.
@@ -290,7 +296,7 @@ async function sincronizarStatusDasParcelas(titulos: TituloListado[]): Promise<v
 export async function listarTitulos(filialId: string, tipo: TipoTitulo, filtros: FiltroTitulos = {}) {
   const titulos = await prisma.titulo.findMany({
     where: whereListagemTitulos(filialId, tipo, filtros),
-    include: INCLUDE_LISTAGEM_TITULOS,
+    include: INCLUDE_TELA_TITULOS,
     orderBy: ORDEM_LISTAGEM_TITULOS,
   });
   await sincronizarStatusDasParcelas(titulos);
