@@ -208,7 +208,23 @@ const INCLUDE_LISTAGEM_TITULOS = {
   safra: true,
   projeto: true,
   contaBancaria: { include: { banco: true } },
-  parcelas: { include: { baixas: true }, orderBy: { numero: "asc" } },
+  parcelas: {
+    include: {
+      // A tela lista as baixas na parcela (aprovadas e estornadas) com conta, pessoas e se dá para estornar.
+      baixas: {
+        include: {
+          contaBancaria: { include: { banco: true } },
+          usuario: { select: { nome: true } },
+          avaliadoPor: { select: { nome: true } },
+          estornadoPor: { select: { nome: true } },
+          lancamentos: { select: { grupoConciliacaoId: true } },
+          repasseRecebimento: { select: { id: true } },
+          repasseTaxa: { select: { id: true } },
+        },
+      },
+    },
+    orderBy: { numero: "asc" },
+  },
 } satisfies Prisma.TituloInclude;
 
 /** `id` desempata títulos criados no mesmo instante — sem ele a paginação repete ou pula itens. */
