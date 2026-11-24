@@ -60,6 +60,13 @@ async function garantirAprovacaoPorOutraPessoa(sessao: SessaoAtiva, registradaPo
   }
 }
 
+export const MSG_ESTORNO_REPASSE =
+  "Esta baixa é de um repasse de cartão: use Desfazer repasse em Repasses de cartão";
+export const MSG_ESTORNO_CONCILIADA =
+  "O lançamento desta baixa já foi conciliado. Desconcilie na Conciliação antes de estornar";
+export const MSG_ESTORNO_POR_QUEM_REGISTROU =
+  "Quem registrou a baixa não pode estorná-la. Peça a outra pessoa com permissão de aprovação.";
+
 export async function listarBaixasPendentes(filialId: string) {
   return prisma.baixa.findMany({
     where: { statusAprovacao: "PENDENTE", parcela: { titulo: { filialId } } },
@@ -231,4 +238,80 @@ export async function rejeitarBaixa(sessao: SessaoAtiva, baixaId: string, motivo
   });
 
   return baixa;
+}
+
+/**
+ * Desfaz uma baixa aprovada (spec 2026-11-23-estorno-de-baixa): a baixa fica ESTORNADO, com
+ * motivo, e continua no histórico; o lançamento que ela gerou é apagado e a parcela,
+ * recalculada. Lançamento conciliado bloqueia (desconciliar antes), baixa de repasse
+ * de cartão é desfeita em Repasses de cartão, e a segregação é a mesma da aprovação.
+ */
+export async function estornarBaixa(sessao: SessaoAtiva, baixaId: string, motivo: string) {
+  requirePermission(sessao.perfil, "titulo:aprovar");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
+  const motivoLimpo = motivo.trim();
+  if (motivoLimpo.length < 3) throw new Error("Informe o motivo do estorno");
+
+  return prisma.$transaction(async (tx) => {
+    const anterior = await tx.baixa.findFirstOrThrow({
+      where: { id: baixaId, parcela: { titulo: { filialId: sessao.filialId } } },
+      include: {
+        lancamentos: true,
+        repasseRecebimento: { select: { id: true } },
+        repasseTaxa: { select: { id: true } },
+      },
+    });
+    if (anterior.statusAprovacao !== "APROVADO") throw new Error("Só baixas aprovadas podem ser estornadas");
+    if (anterior.repasseRecebimento || anterior.repasseTaxa) throw new Error(MSG_ESTORNO_REPASSE);
+    if (anterior.lancamentos.some((l) => l.grupoConciliacaoId !== null)) throw new Error(MSG_ESTORNO_CONCILIADA);
+    // Depois das travas acima: baixa de repasse ou conciliada mostra o motivo que de fato a impede.
+    if (anterior.usuarioId === sessao.usuarioId && (await exigeAprovacaoPorOutro(sessao.empresaId))) {
+      throw new Error(MSG_ESTORNO_POR_QUEM_REGISTROU);
+    }
+
+    // Condicional: de dois estornos simultâneos, só um passa daqui.
+    const { count: estornadas } = await tx.baixa.updateMany({
+      where: { id: baixaId, statusAprovacao: "APROVADO" },
+      data: {
+        statusAprovacao: "ESTORNADO",
+        estornadoPorId: sessao.usuarioId,
+        estornadoEm: new Date(),
+        motivoEstorno: motivoLimpo,
+      },
+    });
+    if (estornadas !== 1) throw new Error("Esta baixa já foi estornada");
+
+    // Só os que seguem fora de conciliação: se alguém conciliou no meio, a contagem não bate e tudo volta.
+    const { count: apagados } = await tx.lancamentoBancario.deleteMany({
+      where: { baixaId, grupoConciliacaoId: null },
+    });
+    if (apagados !== anterior.lancamentos.length) throw new Error(MSG_ESTORNO_CONCILIADA);
+
+    await recalcularEPersistirStatusParcela(anterior.parcelaId, tx);
+
+    await registrarAuditoria(
+      {
+        empresaId: sessao.empresaId,
+        filialId: sessao.filialId,
+        usuarioId: sessao.usuarioId,
+        entidade: "Baixa",
+        entidadeId: baixaId,
+        acao: "ESTORNAR",
+        anterior: {
+          statusAprovacao: anterior.statusAprovacao,
+          lancamentos: anterior.lancamentos.map((l) => ({
+            id: l.id,
+            contaBancariaId: l.contaBancariaId,
+            data: l.data,
+            tipo: l.tipo,
+            valor: l.valor.toString(),
+          })),
+        },
+        novo: { statusAprovacao: "ESTORNADO", motivoEstorno: motivoLimpo },
+      },
+      tx,
+    );
+
+    return tx.baixa.findUniqueOrThrow({ where: { id: baixaId } });
+  });
 }
