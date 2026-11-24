@@ -3,6 +3,7 @@ import { prisma } from "@/server/db/client";
 import { PermissionError } from "@/server/auth/permissions";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
 import { criarTitulo } from "./titulo";
+import { hojeDeCalendario } from "@/lib/producao/periodo";
 import {
   buscarIndicadoresExecutivos,
   buscarGraficosExecutivos,
@@ -85,7 +86,8 @@ describe("buscarIndicadoresExecutivos (integração)", () => {
   beforeAll(async () => {
     fixture = await criarFixtureFinanceiro("DASH", "GESTOR");
     sessaoGestor = fixture.sessao;
-    hoje = new Date();
+    // O mesmo "hoje" do código (dia de Brasília). Com `new Date()`, das 21h à meia-noite os testes caíam no dia seguinte.
+    hoje = hojeDeCalendario();
     em3Dias = new Date(hoje.getTime() + 3 * 24 * 60 * 60 * 1000);
     em15Dias = new Date(hoje.getTime() + 15 * 24 * 60 * 60 * 1000);
     em45Dias = new Date(hoje.getTime() + 45 * 24 * 60 * 60 * 1000);
@@ -201,7 +203,6 @@ describe("buscarIndicadoresExecutivos (integração)", () => {
   });
 
   test("obrigações vencendo hoje entram na janela de 7 e 30 dias, mesmo em qualquer horário do dia", async () => {
-    const hojeMeiaNoite = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()));
     await criarTitulo(fixture.sessaoAdmin, "PAGAR", {
       contraparteId: fixture.fornecedorId,
       documento: `DASH-HOJE-${Date.now()}`,
@@ -214,7 +215,7 @@ describe("buscarIndicadoresExecutivos (integração)", () => {
       projetoId: "",
       contaBancariaId: fixture.contaBancariaId,
       formaPagamento: "",
-      parcelas: [{ numero: 1, dataVencimento: hojeMeiaNoite, valorOriginal: 150 }],
+      parcelas: [{ numero: 1, dataVencimento: hoje, valorOriginal: 150 }],
     });
 
     const indicadores = await buscarIndicadoresExecutivos(sessaoGestor);
@@ -342,7 +343,7 @@ describe("buscarGraficosExecutivos (integração)", () => {
   beforeAll(async () => {
     fixture = await criarFixtureFinanceiro("DASHG", "GESTOR");
     sessaoGestor = fixture.sessao;
-    hoje = new Date();
+    hoje = hojeDeCalendario();
   });
 
   afterAll(async () => {
@@ -430,7 +431,6 @@ describe("buscarGraficosExecutivos (integração)", () => {
     const graficosAntes = await buscarGraficosExecutivos(sessaoGestor);
     const totalAgingAntes = graficosAntes.aging.reduce((soma, p) => soma + p.contasAPagar, 0);
 
-    const hojeMeiaNoite = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()));
     await criarTitulo(fixture.sessaoAdmin, "PAGAR", {
       contraparteId: fixture.fornecedorId,
       documento: `DASHG-AGING-HOJE-${Date.now()}`,
@@ -443,7 +443,7 @@ describe("buscarGraficosExecutivos (integração)", () => {
       projetoId: "",
       contaBancariaId: fixture.contaBancariaId,
       formaPagamento: "",
-      parcelas: [{ numero: 1, dataVencimento: hojeMeiaNoite, valorOriginal: 275 }],
+      parcelas: [{ numero: 1, dataVencimento: hoje, valorOriginal: 275 }],
     });
 
     // Comparação por delta (em vez de um limiar absoluto) porque testes
@@ -461,9 +461,9 @@ describe("evolucaoSaldo e entradasSaidas — valores por mês com várias filiai
   let outraFilialId: string;
   let outraContaId: string;
 
-  /** Dia 15 do mês `mesesAtras` meses antes do atual, ao meio-dia UTC. */
+  /** Dia 15 do mês `mesesAtras` meses antes do atual (mês de Brasília), ao meio-dia UTC. */
   function noMes(mesesAtras: number): Date {
-    const hoje = new Date();
+    const hoje = hojeDeCalendario();
     return new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() - mesesAtras, 15, 12));
   }
 
@@ -488,7 +488,9 @@ describe("evolucaoSaldo e entradasSaidas — valores por mês com várias filiai
     await lancar(outraFilialId, outraContaId, noMes(3), "ENTRADA", 200);
     await lancar(fixture.filialId, fixture.contaBancariaId, noMes(1), "SAIDA", 50);
     await lancar(fixture.filialId, fixture.contaBancariaId, noMes(1), "SAIDA", 999, false); // não conciliado: fora
-    await lancar(fixture.filialId, fixture.contaBancariaId, new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)), "ENTRADA", 100);
+    const hoje = hojeDeCalendario();
+    const primeiroDoMes = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), 1));
+    await lancar(fixture.filialId, fixture.contaBancariaId, primeiroDoMes, "ENTRADA", 100);
   });
 
   afterAll(async () => {

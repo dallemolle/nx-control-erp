@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { prisma } from "@/server/db/client";
 import { PermissionError } from "@/server/auth/permissions";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
+import { hojeDeCalendario } from "@/lib/producao/periodo";
 import {
   agregarComparativoMensal,
   listarPendenciasFiscais,
@@ -44,7 +45,8 @@ describe("percentualGerencial / agregarComparativoMensal (puras)", () => {
 describe("relatório Fiscal × Gerencial (integração)", () => {
   let fixture: FixtureFinanceiro;
   let fornecedorGerencialId: string;
-  const hoje = new Date();
+  // O mesmo "hoje" do código (dia de Brasília). Com `new Date()`, das 21h à meia-noite os testes caíam no dia seguinte.
+  const hoje = hojeDeCalendario();
   const ano = hoje.getUTCFullYear();
 
   async function lancar(tipo: TipoLancamento, valor: number, classificacaoFiscal: ClassificacaoFiscal | null) {
