@@ -1,6 +1,6 @@
 # Estorno de baixa aprovada
 
-Data: 2026-11-23 · Status: aprovada para implementação
+Data: 2026-11-23 · Status: implementada (2026-11-23)
 
 Item 3 do [backlog](../../backlog.md), seção "Financeiro — lacunas achadas ao
 escrever a ajuda contextual" ("Baixa aprovada não pode ser desfeita",
