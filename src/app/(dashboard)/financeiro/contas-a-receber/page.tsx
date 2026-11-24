@@ -1,5 +1,5 @@
 import { requireSessaoAtiva } from "@/server/auth/sessao";
-import { requirePermission, podeEscreverTitulo, podeBaixarTitulo } from "@/server/auth/permissions";
+import { requirePermission, podeEscreverTitulo, podeBaixarTitulo, podeAprovarBaixa } from "@/server/auth/permissions";
 import { listarTitulos } from "@/server/services/titulo";
 import { listarClientes } from "@/server/services/cliente";
 import { listarCategoriasFinanceiras } from "@/server/services/categoriaFinanceira";
@@ -38,6 +38,7 @@ export default async function ContasAReceberPage({ searchParams }: { searchParam
   requirePermission(sessao.perfil, "titulo:ler");
   const podeEscrever = podeEscreverTitulo(sessao.perfil, sessao.podeAlterarFilial);
   const podeBaixar = podeBaixarTitulo(sessao.perfil, sessao.podeAlterarFilial);
+  const podeAprovar = podeAprovarBaixa(sessao.perfil, sessao.podeAlterarFilial);
 
   const sp = await searchParams;
   const get = (campo: string) => paramCru((sp as Record<string, string | string[] | undefined>)[campo]);
@@ -112,6 +113,7 @@ export default async function ContasAReceberPage({ searchParams }: { searchParam
         opcoes={opcoes}
         podeEscrever={podeEscrever}
         podeBaixar={podeBaixar}
+        podeAprovar={podeAprovar}
         filtroAtivo={algumFiltroAtivo(filtros)}
       />
     </div>

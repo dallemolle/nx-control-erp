@@ -6,6 +6,8 @@ import { TituloTable, type OpcoesTitulo } from "./titulo-table";
 import { BaixaDialog } from "./baixa-dialog";
 import { RenegociarDialog } from "./renegociar-dialog";
 import { ImportarCsvDialog } from "./importar-csv-dialog";
+import { EstornarDialog } from "./estornar-dialog";
+import type { BaixaDaParcela } from "./titulos-para-cliente";
 
 export function ContasClientePanel({
   tipo,
@@ -13,6 +15,7 @@ export function ContasClientePanel({
   opcoes,
   podeEscrever,
   podeBaixar,
+  podeAprovar,
   filtroAtivo,
 }: {
   tipo: TipoTitulo;
@@ -21,10 +24,12 @@ export function ContasClientePanel({
   opcoes: OpcoesTitulo;
   podeEscrever: boolean;
   podeBaixar: boolean;
+  podeAprovar: boolean;
   filtroAtivo: boolean;
 }) {
   const [parcelaBaixaId, setParcelaBaixaId] = useState<string | null>(null);
   const [parcelaRenegociacaoId, setParcelaRenegociacaoId] = useState<string | null>(null);
+  const [baixaEstorno, setBaixaEstorno] = useState<BaixaDaParcela | null>(null);
 
   return (
     <div className="space-y-4">
@@ -39,9 +44,11 @@ export function ContasClientePanel({
         opcoes={opcoes}
         podeEscrever={podeEscrever}
         podeBaixar={podeBaixar}
+        podeAprovar={podeAprovar}
         filtroAtivo={filtroAtivo}
         onAbrirBaixa={setParcelaBaixaId}
         onAbrirRenegociacao={setParcelaRenegociacaoId}
+        onAbrirEstorno={setBaixaEstorno}
       />
       <BaixaDialog
         tipo={tipo}
@@ -55,6 +62,11 @@ export function ContasClientePanel({
         parcelaId={parcelaRenegociacaoId}
         aberto={parcelaRenegociacaoId !== null}
         onOpenChange={(aberto) => !aberto && setParcelaRenegociacaoId(null)}
+      />
+      <EstornarDialog
+        tipo={tipo}
+        baixa={baixaEstorno}
+        onOpenChange={(aberto) => !aberto && setBaixaEstorno(null)}
       />
     </div>
   );
