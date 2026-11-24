@@ -28,7 +28,7 @@ import {
 } from "./pedidoVenda";
 import { cancelarRecepcao, criarRecepcao } from "./recepcaoFruto";
 import { liberarLoteVencido, registrarMovimento, revogarLiberacaoLote } from "./estoque";
-import { registrarBaixa, rejeitarBaixa } from "./baixa";
+import { estornarBaixa, registrarBaixa, rejeitarBaixa } from "./baixa";
 
 const d = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
 
@@ -138,6 +138,27 @@ describe("pedido de venda", () => {
     expect(gravado.condicaoPagamento).toBeNull();
     const lancamento = await prisma.lancamentoBancario.findFirstOrThrow({ where: { baixaId: gravado.baixaAutomaticaId! } });
     expect(lancamento).toMatchObject({ conciliado: false, contaBancariaId: cad.contaCorrenteId });
+  });
+
+  test("venda à vista: estornar a baixa reabre a parcela e o pedido ainda pode ser cancelado", async () => {
+    const lote = await novoLote();
+    const r = await criarPedido(
+      fx.sessao("VENDAS"),
+      pedido([{ loteId: lote.id, quantidadeKg: 10, precoKg: 5 }], { formaPagamento: "PIX" }),
+    );
+    const gravado = await prisma.pedidoVenda.findUniqueOrThrow({ where: { id: r.pedidoId } });
+    // A baixa automática é registrada por quem vendeu, o mesmo usuário da fixture: desliga a segregação.
+    await prisma.empresa.update({ where: { id: fx.empresaId }, data: { exigirAprovacaoPorOutro: false } });
+    try {
+      await estornarBaixa(fx.sessao("TESOURARIA"), gravado.baixaAutomaticaId!, "conta errada");
+    } finally {
+      await prisma.empresa.update({ where: { id: fx.empresaId }, data: { exigirAprovacaoPorOutro: true } });
+    }
+    expect(await prisma.lancamentoBancario.count({ where: { baixaId: gravado.baixaAutomaticaId! } })).toBe(0);
+    expect((await tituloDo(r.pedidoId)).parcelas[0].status).not.toBe("PAGO");
+
+    await cancelarPedido(fx.sessao("FINANCEIRO"), r.pedidoId, "Cliente desistiu");
+    expect((await prisma.pedidoVenda.findUniqueOrThrow({ where: { id: r.pedidoId } })).status).toBe("CANCELADO");
   });
 
   describe("parcelas a prazo", () => {

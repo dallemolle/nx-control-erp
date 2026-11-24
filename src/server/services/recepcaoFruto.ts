@@ -244,7 +244,7 @@ async function verificarCancelamento(
   }
   if (recepcao.tituloId) {
     const baixas = await db.baixa.count({
-      where: { parcela: { tituloId: recepcao.tituloId }, statusAprovacao: { not: "REJEITADO" } },
+      where: { parcela: { tituloId: recepcao.tituloId }, statusAprovacao: { in: ["PENDENTE", "APROVADO"] } },
     });
     if (baixas > 0) {
       return {
@@ -271,7 +271,7 @@ export async function situacoesParaCancelar(
   const [movimentos, baixas] = await Promise.all([
     prisma.movimentoEstoque.groupBy({ by: ["loteId"], where: { loteId: { in: loteIds } }, _count: { _all: true } }),
     prisma.baixa.findMany({
-      where: { parcela: { tituloId: { in: tituloIds } }, statusAprovacao: { not: "REJEITADO" } },
+      where: { parcela: { tituloId: { in: tituloIds } }, statusAprovacao: { in: ["PENDENTE", "APROVADO"] } },
       select: { parcela: { select: { tituloId: true } } },
     }),
   ]);
