@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.45](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.44...nx-control-erp-v0.1.45) (2026-11-24)
+
+
+### Novidades
+
+* **ajuda:** aposenta o Passo a passo e cria a página Primeiros passos ([8038e42](https://github.com/dallemolle/nx-control-erp/commit/8038e42559e76c80b681305840e755f09d3e901e))
+* **aprovacoes:** ajuda com os dados da baixa e o roteiro dos avisos ([2ddd3f9](https://github.com/dallemolle/nx-control-erp/commit/2ddd3f9856be6e351d676c90e7a9e7db5877d1a6))
+* **aprovacoes:** baixas pendentes com conta, parcelas do título e baixas da parcela ([1ab907a](https://github.com/dallemolle/nx-control-erp/commit/1ab907affabd64f2cd0e5dd63c7d011c26bd7dce))
+* **aprovacoes:** linha da baixa com data, conta, parcela, ajustes e avisos ([1d612cf](https://github.com/dallemolle/nx-control-erp/commit/1d612cfaa06987b4b13250ce8ae845ca90423688))
+* **aprovacoes:** regra dos avisos da baixa e data e hora de Brasília ([b168943](https://github.com/dallemolle/nx-control-erp/commit/b1689435d53d3bc59ae1bdeadb4be882ca4a8e3b))
+
+
+### Correções
+
+* **aprovacoes:** ajustes da revisão final (data com hora, teste de filial, avisos acessíveis) ([1e58409](https://github.com/dallemolle/nx-control-erp/commit/1e584096c578e04cf81027ccbfd4a5db59288197))
+* **aprovacoes:** avisos embaixo do título na réplica da ajuda ([4c1e579](https://github.com/dallemolle/nx-control-erp/commit/4c1e579e2356807a5f40a0001db7bcc233ace107))
+
 ## [0.1.44](https://github.com/dallemolle/nx-control-erp/compare/nx-control-erp-v0.1.43...nx-control-erp-v0.1.44) (2026-11-21)
 
 
