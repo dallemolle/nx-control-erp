@@ -7,6 +7,7 @@ import { BaixaDialog } from "./baixa-dialog";
 import { RenegociarDialog } from "./renegociar-dialog";
 import { ImportarCsvDialog } from "./importar-csv-dialog";
 import { EstornarDialog } from "./estornar-dialog";
+import { DispensarDialog } from "./dispensar-dialog";
 import type { BaixaDaParcela } from "./titulos-para-cliente";
 
 export function ContasClientePanel({
@@ -30,6 +31,7 @@ export function ContasClientePanel({
   const [parcelaBaixaId, setParcelaBaixaId] = useState<string | null>(null);
   const [parcelaRenegociacaoId, setParcelaRenegociacaoId] = useState<string | null>(null);
   const [baixaEstorno, setBaixaEstorno] = useState<BaixaDaParcela | null>(null);
+  const [baixaDispensa, setBaixaDispensa] = useState<BaixaDaParcela | null>(null);
 
   return (
     <div className="space-y-4">
@@ -49,6 +51,7 @@ export function ContasClientePanel({
         onAbrirBaixa={setParcelaBaixaId}
         onAbrirRenegociacao={setParcelaRenegociacaoId}
         onAbrirEstorno={setBaixaEstorno}
+        onAbrirDispensa={setBaixaDispensa}
       />
       <BaixaDialog
         tipo={tipo}
@@ -67,6 +70,11 @@ export function ContasClientePanel({
         tipo={tipo}
         baixa={baixaEstorno}
         onOpenChange={(aberto) => !aberto && setBaixaEstorno(null)}
+      />
+      <DispensarDialog
+        tipo={tipo}
+        baixa={baixaDispensa}
+        onOpenChange={(aberto) => !aberto && setBaixaDispensa(null)}
       />
     </div>
   );

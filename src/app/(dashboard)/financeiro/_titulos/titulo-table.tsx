@@ -117,6 +117,7 @@ export function TituloTable({
   onAbrirBaixa,
   onAbrirRenegociacao,
   onAbrirEstorno,
+  onAbrirDispensa,
 }: {
   tipo: TipoTitulo;
   titulos: TituloLinha[];
@@ -128,6 +129,7 @@ export function TituloTable({
   onAbrirBaixa: (parcelaId: string) => void;
   onAbrirRenegociacao: (parcelaId: string) => void;
   onAbrirEstorno: (baixa: BaixaDaParcela) => void;
+  onAbrirDispensa: (baixa: BaixaDaParcela) => void;
 }) {
   const [expandidoId, setExpandidoId] = useState<string | null>(null);
 
@@ -327,6 +329,8 @@ export function TituloTable({
                             baixas={parcela.baixas}
                             podeEstornar={podeAprovar}
                             onEstornar={onAbrirEstorno}
+                            podeDispensar={podeBaixar}
+                            onDispensar={onAbrirDispensa}
                           />
                         </TableCell>
                       </TableRow>

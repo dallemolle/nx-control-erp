@@ -30,8 +30,63 @@ const aprovada: BaixaDaParcela = {
   deRepasse: false,
 };
 
-const html = (baixas: BaixaDaParcela[], podeEstornar = true) =>
-  renderToStaticMarkup(createElement(BaixasDaParcela, { baixas, podeEstornar, onEstornar: () => {} }));
+const html = (baixas: BaixaDaParcela[], podeEstornar = true, podeDispensar = true) =>
+  renderToStaticMarkup(
+    createElement(BaixasDaParcela, {
+      baixas,
+      podeEstornar,
+      onEstornar: () => {},
+      podeDispensar,
+      onDispensar: () => {},
+    }),
+  );
+
+const rejeitada: BaixaDaParcela = {
+  ...aprovada,
+  status: "REJEITADO",
+  aprovadaPor: null,
+  rejeitadaPor: "Ana",
+  rejeitadaEm: new Date("2026-10-16T12:40:00.000Z"),
+  motivoRejeicao: "valor errado",
+  rejeicaoEmAberto: true,
+};
+
+describe("BaixasDaParcela com baixa rejeitada", () => {
+  test("em aberto: selo, quem, quando e motivo, com Dispensar", () => {
+    const saida = html([rejeitada]);
+    expect(saida).toContain("Rejeitada");
+    expect(saida).toContain("rejeitada por Ana em 16/10/2026 09:40: valor errado");
+    expect(saida).toContain(">Dispensar<");
+    expect(saida).toContain('aria-label="Dispensar rejeição da baixa de 15/10/2026 de R$');
+    expect(saida).not.toContain(">Estornar<");
+  });
+
+  test("sem permissão de dispensar, não tem botão", () => {
+    const saida = html([rejeitada], true, false);
+    expect(saida).toContain("Rejeitada");
+    expect(saida).not.toContain("Dispensar");
+  });
+
+  test("resolvida: uma linha apagada, sem selo nem botão", () => {
+    const saida = html([{ ...rejeitada, rejeicaoEmAberto: false }]);
+    expect(saida).toContain("rejeitada por Ana: valor errado");
+    expect(saida).not.toContain("Rejeitada");
+    expect(saida).not.toContain("Dispensar");
+  });
+
+  test("resolvida e dispensada: acrescenta quem dispensou e o motivo", () => {
+    const saida = html([
+      {
+        ...rejeitada,
+        rejeicaoEmAberto: false,
+        dispensadaPor: "Bia",
+        dispensadaEm: new Date("2026-10-17T12:00:00.000Z"),
+        motivoDispensa: "pagamento não aconteceu",
+      },
+    ]);
+    expect(saida).toContain("rejeitada por Ana: valor errado · dispensada por Bia: pagamento não aconteceu");
+  });
+});
 
 describe("BaixasDaParcela", () => {
   test("mostra data, conta, valor, ajustes e quem registrou e aprovou", () => {
@@ -99,6 +154,8 @@ describe("BaixasDaParcela sem o usuário do estorno", () => {
         ],
         podeEstornar: true,
         onEstornar: () => {},
+        podeDispensar: true,
+        onDispensar: () => {},
       }),
     );
     expect(saida).toContain("estornada em 16/10/2026 09:40: conta errada");
