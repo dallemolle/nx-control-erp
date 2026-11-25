@@ -410,6 +410,12 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 
 ### 13. Baixa aprovada e não conciliada some da projeção
 
+- **Status:** feito na branch `fix/projecao-aguardando-conciliacao` (2026-11-25, spec
+  e plano `2026-11-25-projecao-aguardando-conciliacao*`): linha "Aguardando
+  conciliação" no projetado (saldo conciliado → saldo contábil); Caixa
+  disponível do dashboard é o contábil; saldo projetado em 30 dias igual à
+  tela (com atrasados); estratégico parte do contábil.
+
 - **Problema:** a projeção parte do saldo em caixa **conciliado**
   (`buscarSaldoEmCaixaAte`, que só soma lançamentos com `conciliado: true`),
   mas cada parcela entra pelo que falta pagar depois das baixas **aprovadas**

@@ -1,6 +1,6 @@
 # Projeção considera o que aguarda conciliação
 
-Data: 2026-11-25 · Status: aprovada
+Data: 2026-11-25 · Status: implementada (2026-11-25)
 
 Item 13 do [backlog](../../backlog.md), seção "Financeiro — lacunas achadas ao
 escrever a ajuda contextual" ("Baixa aprovada e não conciliada some da
