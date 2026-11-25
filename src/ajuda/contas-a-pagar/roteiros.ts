@@ -276,6 +276,17 @@ export const ROTEIROS: readonly Roteiro[] = [
           "O próprio botão avisa: a baixa fica pendente de aprovação. Por enquanto a parcela ainda não aparece " +
           "como paga.",
       },
+      {
+        cena: "lista",
+        alvo: "lista.p1.aguardando",
+        instrucao: "Veja a parcela aguardando aprovação",
+        explicacao:
+          "A janela fecha e a baixa aparece embaixo da parcela com o selo “Aguardando aprovação”. No lugar do " +
+          "botão Baixar fica “Baixa aguardando aprovação”: a parcela não aceita outra baixa até esta ser aprovada " +
+          "ou rejeitada. Assim o mesmo pagamento não é lançado duas vezes.",
+        dica: "Pagou em partes? Registre a segunda parte depois que a primeira for aprovada.",
+        preenche: { "lista.p1.baixa": "pendente" },
+      },
     ],
     eDepois: {
       texto:

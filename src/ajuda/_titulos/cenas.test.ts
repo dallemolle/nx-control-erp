@@ -82,6 +82,16 @@ describe("cenas de títulos (exemplo de Contas a pagar)", () => {
     expect(saida).toContain('data-alvo="lista.p1.baixar"');
   });
 
+  test("baixa pendente: selo na lista e aviso no lugar do Baixar", () => {
+    const saida = html(CenaLista, { "lista.linhaExemplo": "expandida", "lista.p1.baixa": "pendente" });
+    expect(saida).toContain("Aguardando aprovação");
+    expect(saida).toContain('data-alvo="lista.p1.aguardando"');
+    expect(saida).toContain("Baixa aguardando aprovação");
+    expect(saida).toContain("registrada por Maria em 15/10/2026 10:20");
+    expect(saida).not.toContain('data-alvo="lista.p1.baixar"');
+    expect(saida).not.toContain('data-alvo="lista.p1.estornar"');
+  });
+
   test("sem baixa no roteiro, a parcela 1 não mostra a lista", () => {
     expect(html(CenaLista, { "lista.linhaExemplo": "expandida" })).not.toContain('data-alvo="lista.p1.baixa"');
   });
