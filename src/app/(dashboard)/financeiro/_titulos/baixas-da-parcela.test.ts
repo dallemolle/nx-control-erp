@@ -19,6 +19,13 @@ const aprovada: BaixaDaParcela = {
   estornadaPor: null,
   estornadaEm: null,
   motivoEstorno: null,
+  rejeitadaPor: null,
+  rejeitadaEm: null,
+  motivoRejeicao: null,
+  rejeicaoEmAberto: false,
+  dispensadaPor: null,
+  dispensadaEm: null,
+  motivoDispensa: null,
   conciliada: false,
   deRepasse: false,
 };
