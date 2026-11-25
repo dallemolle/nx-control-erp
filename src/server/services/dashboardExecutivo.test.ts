@@ -29,7 +29,8 @@ describe("calcularIndicadoresExecutivos e calcularAging", () => {
   test("inadimplência é a receber vencida pela data, também a paga em parte; vencendo hoje não conta", () => {
     const indicadores = calcularIndicadoresExecutivos({
       hoje,
-      caixaDisponivel: 1000,
+      caixaConciliado: 1000,
+      aguardandoConciliacao: { entradas: 0, saidas: 0 },
       entradasMes: 500,
       saidasMes: 200,
       parcelas: [
@@ -44,6 +45,7 @@ describe("calcularIndicadoresExecutivos e calcularAging", () => {
     });
     expect(indicadores).toEqual({
       caixaDisponivel: 1000,
+      aguardandoConciliacao: 0,
       contasAPagarEmAberto: 1199,
       contasAReceberEmAberto: 530,
       inadimplencia: 450,
@@ -51,8 +53,31 @@ describe("calcularIndicadoresExecutivos e calcularAging", () => {
       obrigacoes7Dias: 100,
       obrigacoes30Dias: 200,
       recebimentosEsperados30Dias: 80,
-      saldoProjetado30Dias: 880,
+      // 1000 + 450 a receber vencido − 0 a pagar vencido + 80 − 200
+      saldoProjetado30Dias: 1330,
     });
+  });
+
+  test("caixa disponível é o contábil; saldo projetado soma atrasados e o que aguarda conciliação, como o projetado", () => {
+    const indicadores = calcularIndicadoresExecutivos({
+      hoje,
+      caixaConciliado: 10000,
+      aguardandoConciliacao: { entradas: 200, saidas: 1012 },
+      entradasMes: 0,
+      saidasMes: 0,
+      parcelas: [
+        { tipo: "PAGAR", dataVencimento: dia("2026-11-10"), saldo: 600 }, // a pagar vencido
+        { tipo: "RECEBER", dataVencimento: dia("2026-11-01"), saldo: 450 }, // a receber vencido
+        { tipo: "RECEBER", dataVencimento: dia("2026-12-01"), saldo: 300 },
+        { tipo: "PAGAR", dataVencimento: dia("2026-12-01"), saldo: 100 },
+      ],
+    });
+    expect(indicadores.caixaDisponivel).toBe(9188);
+    expect(indicadores.aguardandoConciliacao).toBe(-812);
+    expect(indicadores.obrigacoes30Dias).toBe(100);
+    expect(indicadores.recebimentosEsperados30Dias).toBe(300);
+    // 9188 + 450 − 600 + 300 − 100
+    expect(indicadores.saldoProjetado30Dias).toBe(9238);
   });
 
   test("aging conta só as vencidas, por dias de atraso", () => {
@@ -109,7 +134,7 @@ describe("buscarIndicadoresExecutivos (integração)", () => {
     await expect(buscarIndicadoresExecutivos(sessaoFinanceiro)).rejects.toThrow(PermissionError);
   });
 
-  test("caixaDisponivel soma o saldo conciliado de todas as filiais da empresa", async () => {
+  test("caixaDisponivel soma o saldo de todas as filiais da empresa", async () => {
     await prisma.lancamentoBancario.create({
       data: {
         filialId: fixture.filialId,
@@ -301,12 +326,26 @@ describe("buscarIndicadoresExecutivos (integração)", () => {
     expect(indicadores.geracaoDeCaixaMesAtual).toBeGreaterThanOrEqual(600);
   });
 
-  test("saldoProjetado30Dias é caixaDisponivel + recebimentosEsperados30Dias - obrigacoes30Dias", async () => {
-    const indicadores = await buscarIndicadoresExecutivos(sessaoGestor);
-    expect(indicadores.saldoProjetado30Dias).toBeCloseTo(
-      indicadores.caixaDisponivel + indicadores.recebimentosEsperados30Dias - indicadores.obrigacoes30Dias,
-      6,
-    );
+  test("lançamento não conciliado entra no caixa disponível, no aguardando e no saldo projetado", async () => {
+    const antes = await buscarIndicadoresExecutivos(sessaoGestor);
+    await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: hoje,
+        tipo: "SAIDA",
+        valor: 1012,
+        descricao: "Baixa aprovada, ainda não conciliada",
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+        conciliado: false,
+      },
+    });
+    const depois = await buscarIndicadoresExecutivos(sessaoGestor);
+    expect(depois.caixaDisponivel - antes.caixaDisponivel).toBeCloseTo(-1012, 2);
+    expect(depois.aguardandoConciliacao - antes.aguardandoConciliacao).toBeCloseTo(-1012, 2);
+    expect(depois.saldoProjetado30Dias - antes.saldoProjetado30Dias).toBeCloseTo(-1012, 2);
+    expect(depois.geracaoDeCaixaMesAtual).toBeCloseTo(antes.geracaoDeCaixaMesAtual, 2);
   });
 
   test("escopo de empresa — indicadores de outra empresa não vazam", async () => {

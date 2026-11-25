@@ -7,8 +7,9 @@ import { percentualGerencial } from "@/server/services/relatorioFiscalGerencial"
 import { COMPRA } from "@/ajuda/recepcao/exemplo";
 import {
   AGING,
+  AGUARDANDO_CONCILIACAO,
   ajudaDashboardExecutivo,
-  CAIXA_DISPONIVEL,
+  CAIXA_CONCILIADO,
   FISCAL,
   HOJE_ISO,
   INDICADORES,
@@ -47,7 +48,8 @@ describe("ajuda do Dashboard executivo", () => {
     expect(
       calcularIndicadoresExecutivos({
         hoje,
-        caixaDisponivel: CAIXA_DISPONIVEL,
+        caixaConciliado: CAIXA_CONCILIADO,
+        aguardandoConciliacao: AGUARDANDO_CONCILIACAO,
         parcelas,
         entradasMes: novembro.entradas,
         saidasMes: novembro.saidas,
@@ -59,9 +61,9 @@ describe("ajuda do Dashboard executivo", () => {
     expect(calcularAging(parcelas, hoje)).toEqual(AGING);
   });
 
-  test("o saldo de novembro fecha com o caixa disponível", () => {
+  test("o saldo de novembro fecha com o caixa conciliado", () => {
     const saldo = MESES.reduce((s, m) => s + m.entradas - m.saidas, SALDO_ANTES_DE_JUNHO);
-    expect(saldo).toBe(CAIXA_DISPONIVEL);
+    expect(saldo).toBe(CAIXA_CONCILIADO);
   });
 
   test("fiscal e gerencial somam as entradas de novembro, e o % é o do sistema", () => {
