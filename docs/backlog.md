@@ -454,9 +454,11 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 
 ### 59. Cancelar ou renegociar parcela com baixa pendente
 
-- **Problema:** `cancelarParcela` (`src/server/services/titulo.ts`) e a
-  renegociação (`src/server/services/renegociacao.ts`) não olham as baixas
-  pendentes da parcela.
+- **Problema:** cancelar a parcela e renegociar não olham as baixas pendentes
+  dela.
+- **Onde:** `cancelarParcela` em `src/server/services/titulo.ts`;
+  `src/server/services/renegociacao.ts`; `aprovarBaixa`/`efetivarBaixa` em
+  `src/server/services/baixa.ts`.
 - **Exemplo:** a baixa da parcela 1 espera aprovação; alguém cancela a parcela.
   Depois a Tesouraria aprova a baixa: sai o lançamento de uma parcela
   cancelada.
@@ -465,6 +467,21 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   rejeitar a pendente junto, com motivo automático; ou recusar a aprovação de
   baixa em parcela fechada.
 - **Cuidados:** cancelamento de pedido de venda também cancela parcelas.
+- **Ao corrigir:** roteiro `cancelar-parcela` em
+  `src/ajuda/contas-a-pagar/roteiros.ts` e
+  `src/ajuda/contas-a-receber/roteiros.ts`; roteiro `renegociar`, se a regra
+  mudar o que o usuário vê.
+
+### 60. Repasse de cartão trava parcelas sem ordem
+
+- **Problema:** `confirmarRepasses` (`src/server/services/repasseCartao.ts`,
+  ~linha 111) faz `SELECT id FROM parcelas WHERE id IN (...) FOR UPDATE` sem
+  `ORDER BY id`.
+- **Onde:** `src/server/services/repasseCartao.ts`.
+- **Exemplo:** duas confirmações com parcelas em comum, em ordem diferente,
+  travam uma a outra (deadlock) e o Postgres aborta uma delas com erro.
+- **Impacto:** erro intermitente; nenhum dado errado.
+- **Caminhos:** `ORDER BY id` no SELECT.
 
 ## Controladoria — lacunas achadas ao escrever a ajuda contextual
 
