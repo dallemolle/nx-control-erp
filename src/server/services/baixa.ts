@@ -28,10 +28,14 @@ function garantirBaixaPendente(statusAtual: StatusAprovacaoBaixa): void {
 }
 
 /** A parcela já tem baixa esperando aprovação: a segunda só depois de aprovar ou rejeitar a primeira. */
-export class BaixaPendenteError extends Error {}
+export class BaixaPendenteError extends Error {
+  name = "BaixaPendenteError";
+}
 
 /** Parcela paga, cancelada ou renegociada não recebe baixa. */
-export class BaixaParcelaFechadaError extends Error {}
+export class BaixaParcelaFechadaError extends Error {
+  name = "BaixaParcelaFechadaError";
+}
 
 const STATUS_QUE_ACEITAM_BAIXA: readonly StatusParcela[] = ["EM_ABERTO", "A_VENCER", "VENCIDO", "PARCIALMENTE_PAGO"];
 

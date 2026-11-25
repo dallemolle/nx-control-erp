@@ -65,6 +65,18 @@ describe("BaixasDaParcela", () => {
   });
 });
 
+describe("BaixasDaParcela com baixa pendente", () => {
+  test("pendente: selo, quem e quando registrou, sem Estornar", () => {
+    const saida = html(
+      [{ ...aprovada, status: "PENDENTE", aprovadaPor: null, registradaEm: new Date("2026-10-15T13:20:00.000Z") }],
+      true,
+    );
+    expect(saida).toContain("Aguardando aprovação");
+    expect(saida).toContain("registrada por Maria em 15/10/2026 10:20");
+    expect(saida).not.toContain("Estornar");
+  });
+});
+
 describe("BaixasDaParcela sem o usuário do estorno", () => {
   test("usuário apagado: não escreve null", () => {
     const saida = renderToStaticMarkup(
