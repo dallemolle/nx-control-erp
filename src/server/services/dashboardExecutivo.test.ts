@@ -3,6 +3,7 @@ import { prisma } from "@/server/db/client";
 import { PermissionError } from "@/server/auth/permissions";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
 import { criarTitulo } from "./titulo";
+import { registrarBaixa, aprovarBaixa } from "./baixa";
 import { hojeDeCalendario } from "@/lib/producao/periodo";
 import {
   buscarIndicadoresExecutivos,
@@ -346,6 +347,39 @@ describe("buscarIndicadoresExecutivos (integração)", () => {
     expect(depois.aguardandoConciliacao - antes.aguardandoConciliacao).toBeCloseTo(-1012, 2);
     expect(depois.saldoProjetado30Dias - antes.saldoProjetado30Dias).toBeCloseTo(-1012, 2);
     expect(depois.geracaoDeCaixaMesAtual).toBeCloseTo(antes.geracaoDeCaixaMesAtual, 2);
+  });
+
+  test("baixa aprovada e não conciliada: sai das obrigações, entra no aguardando e o saldo projetado não muda", async () => {
+    const titulo = await criarTitulo(fixture.sessaoAdmin, "PAGAR", {
+      contraparteId: fixture.fornecedorId,
+      documento: `DASH-PAG-ADUBO-${Date.now()}`,
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: fixture.contaBancariaId,
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: em15Dias, valorOriginal: 1012 }],
+    });
+    const antes = await buscarIndicadoresExecutivos(sessaoGestor);
+    const baixa = await registrarBaixa(fixture.sessaoAdmin, titulo.parcelas[0].id, {
+      data: new Date(),
+      valorPago: 1012,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fixture.contaBancariaId,
+    });
+    await aprovarBaixa(fixture.sessaoAdmin, baixa.id);
+    const depois = await buscarIndicadoresExecutivos(sessaoGestor);
+
+    expect(depois.saldoProjetado30Dias).toBeCloseTo(antes.saldoProjetado30Dias, 2);
+    expect(depois.caixaDisponivel - antes.caixaDisponivel).toBeCloseTo(-1012, 2);
+    expect(depois.aguardandoConciliacao - antes.aguardandoConciliacao).toBeCloseTo(-1012, 2);
+    expect(depois.obrigacoes30Dias - antes.obrigacoes30Dias).toBeCloseTo(-1012, 2);
   });
 
   test("escopo de empresa — indicadores de outra empresa não vazam", async () => {
