@@ -131,13 +131,16 @@ nem em lançamento.
   do tipo, com a parcela (status e `criadoEm` das outras baixas), e conta as
   que passam em `rejeicaoEmAberto`. A página chama essa função à parte do
   filtro, para o aviso aparecer mesmo com outros filtros ativos.
-- Não entra no export CSV/Excel.
+- O export (CSV, Excel e PDF) não ganha colunas novas. Ele segue o filtro da
+  URL, então com `rejeitadas=1` exporta só os títulos com rejeição em aberto,
+  e o cabeçalho do PDF descreve o filtro.
 
 ## Tela
 
 ### URL e filtro
 
-`rejeitadas=1` entra em `CAMPOS_FILTRO_TITULOS` e em `filtroTitulosDaUrl`.
+`rejeitadas=1` entra em `CAMPOS_FILTRO_TITULOS` (assim o link de exportar
+leva o filtro) e em `filtroTitulosDaUrl`.
 Qualquer outro valor é ignorado. `descrever-filtro-titulos.ts` descreve o
 filtro como "com baixa rejeitada aguardando novo registro". A barra de filtros
 não ganha um campo novo: o filtro é ligado pelo aviso e desligado pelo "Limpar
@@ -233,9 +236,11 @@ devolve a mensagem de `RejeicaoNaoDispensavelError` como erro do formulário.
 
 ## Fora do escopo
 
-- **API: `GET /titulos` sem as rejeições** → backlog. Um agente que registra
-  baixas pela API não fica sabendo que alguma foi rejeitada. É o mesmo
-  controle deste item, só que pela API, e só pesa se a API estiver em uso.
+- **API** → descartado (já atendido): `GET /titulos` usa
+  `parcelas: { include: { baixas: true } }` e já devolve cada baixa com
+  `statusAprovacao` (inclusive `REJEITADO`), `motivoRejeicao` e `avaliadoEm`;
+  as colunas novas da dispensa saem do mesmo jeito. Basta uma nota em
+  `docs/api-v1.md` dizendo onde ver a rejeição e a regra de "em aberto".
 - **Notificação por e-mail ou no sino** → descartado: o sistema não tem envio
   de e-mail nem central de notificações, e o aviso na lista resolve.
 - **Filtro de rejeitadas na barra de filtros** → descartado: o aviso já liga o
