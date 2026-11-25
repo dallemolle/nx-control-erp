@@ -3,7 +3,7 @@ import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { registrarAuditoria, type ClientePrisma } from "@/server/audit/registrar";
 import type { TipoCenarioEstrategico } from "@prisma/client";
-import { buscarSaldoEmCaixaAteDasFiliais } from "./fluxoDeCaixa";
+import { buscarAguardandoConciliacaoDasFiliais, buscarSaldoEmCaixaAteDasFiliais, saldoComAguardando } from "./fluxoDeCaixa";
 import { idsDasFiliaisAtivas } from "./filiaisConsolidadas";
 import { whereLancamentoPorClassificacao, type FiltroClassificacao } from "./classificacaoFiscal";
 
@@ -96,6 +96,8 @@ export async function garantirCenariosEstrategicos(empresaId: string, db: Client
  * vira o *acumulado* que aquela classificação gera, porque o saldo bancário
  * é único e não se divide entre fiscal e gerencial (decisão FG5, igual ao
  * fluxo realizado filtrado).
+ *
+ * O saldo de partida é o saldo contábil de hoje (conciliado + o que aguarda conciliação), o mesmo de onde parte o Fluxo de caixa projetado; o ano-base continua só com conciliados.
  */
 export async function buscarAnoBaseConsolidado(
   empresaId: string,
@@ -107,7 +109,12 @@ export async function buscarAnoBaseConsolidado(
   inicioJanela.setUTCFullYear(inicioJanela.getUTCFullYear() - 1);
 
   const [saldoCaixaBase, somas] = await Promise.all([
-    opcoes.classificacao ? Promise.resolve(0) : buscarSaldoEmCaixaAteDasFiliais(filialIds, hoje),
+    opcoes.classificacao
+      ? Promise.resolve(0)
+      : Promise.all([
+          buscarSaldoEmCaixaAteDasFiliais(filialIds, hoje),
+          buscarAguardandoConciliacaoDasFiliais(filialIds),
+        ]).then(([conciliado, aguardando]) => saldoComAguardando(conciliado, aguardando)),
     prisma.lancamentoBancario.groupBy({
       by: ["tipo"],
       where: {
