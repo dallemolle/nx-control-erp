@@ -62,7 +62,7 @@ Todas foram escolhas do usuário.
 
 1. **Baixa que não abate nada é recusada.** Se juros + multa ≥ valor pago +
    desconto, o registro é recusado com "Juros e multa não podem ser maiores
-   que o valor pago mais o desconto". Vale para a tela e para a API (400).
+   que o valor pago mais o desconto". Vale para a tela e para a API (422).
    Quase sempre é erro de digitação. Descartado: aceitar e abater zero (a
    baixa sairia do banco sem efeito visível na parcela).
 2. **O diálogo "Registrar baixa" mostra a prévia** "Abate R$ X da parcela ·
@@ -110,7 +110,7 @@ Novo `src/lib/financeiro/valorAbatido.ts` (puro, usável no cliente):
 `baixaSchema` (`src/lib/schemas/baixa.ts`) ganha um `refine`: valor abatido
 > 0, senão a mensagem da decisão 1 no campo `valorJuros`. A API
 (`src/app/api/v1/baixas/route.ts`) já valida pelo mesmo schema; conferir que
-responde 400 com a mensagem. Baixas criadas pelo sistema (venda à vista,
+responde 422 com a mensagem. Baixas criadas pelo sistema (venda à vista,
 repasse de cartão) não têm juros, multa nem desconto e não são afetadas.
 
 ### Prévia no diálogo
@@ -145,7 +145,7 @@ que já roda ao abrir a lista de títulos.
   desconto 50,00, a parcela fica paga). O passo "Informe juros, multa e
   desconto" deixa de dizer que os campos "só detalham" e diz que o sistema
   usa os três para saber quanto da parcela foi quitado, e cita a prévia.
-- `docs/api-v1.md`, `POST /baixas`: a regra do valor abatido e o 400.
+- `docs/api-v1.md`, `POST /baixas`: a regra do valor abatido e o 422.
 - `docs/backlog.md`: o item 1 ganha "Status: feito", como os itens 2 a 5.
 
 ## Testes

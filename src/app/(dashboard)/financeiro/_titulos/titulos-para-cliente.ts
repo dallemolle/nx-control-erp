@@ -76,6 +76,9 @@ export type BaixaDaParcela = {
 
 const numero = (valor: ValorDecimal) => Number(valor.toString());
 
+/** a − b em centavos: evita o resto de ponto flutuante (150.25 − 100.1). */
+const subtrairEmCentavos = (a: number, b: number) => (Math.round(a * 100) - Math.round(b * 100)) / 100;
+
 /** Todas as baixas da parcela: pendentes, aprovadas, rejeitadas e estornadas. */
 function baixasParaCliente(parcela: { status: string; baixas: BaixaDoServico[] }): BaixaDaParcela[] {
   return [...parcela.baixas]
@@ -139,8 +142,8 @@ export function titulosParaCliente<T extends TituloDoServico>(titulos: T[]) {
       numero: parcela.numero,
       dataVencimento: parcela.dataVencimento,
       valorAtualizado: numero(parcela.valorAtualizado),
-      saldoEmAberto:
-        numero(parcela.valorAtualizado) -
+      saldoEmAberto: subtrairEmCentavos(
+        numero(parcela.valorAtualizado),
         totalAbatido(
           parcela.baixas
             .filter((b) => b.statusAprovacao === "APROVADO")
@@ -151,6 +154,7 @@ export function titulosParaCliente<T extends TituloDoServico>(titulos: T[]) {
               valorDesconto: numero(b.valorDesconto),
             })),
         ),
+      ),
       status: parcela.status,
       baixas: baixasParaCliente(parcela),
       temBaixaPendente: parcela.baixas.some((b) => b.statusAprovacao === "PENDENTE"),

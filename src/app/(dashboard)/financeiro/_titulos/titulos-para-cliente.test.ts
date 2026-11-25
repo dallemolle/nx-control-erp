@@ -95,6 +95,21 @@ describe("titulosParaCliente", () => {
     expect(titulo.parcelas[0].saldoEmAberto).toBe(0);
   });
 
+  it("saldoEmAberto é calculado em centavos, sem resto de ponto flutuante", () => {
+    const parcela = {
+      ...tituloDoServico.parcelas[0],
+      valorAtualizado: dec("150.25"),
+      baixas: [
+        baixa("aprovada", "APROVADO", {
+          valorPago: dec("100.10"), valorJuros: dec("0"), valorMulta: dec("0"), valorDesconto: dec("0"),
+        }),
+      ],
+    };
+    const [titulo] = titulosParaCliente([{ ...tituloDoServico, parcelas: [parcela] }]);
+
+    expect(titulo.parcelas[0].saldoEmAberto).toBe(50.15);
+  });
+
   it("leva todas as baixas, convertidas, inclusive rejeitadas", () => {
     const estornadaEm = new Date("2026-10-16T12:40:00.000Z");
     const parcela = {
