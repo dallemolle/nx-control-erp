@@ -14,6 +14,7 @@ export const ALVOS = {
     "lista.tabela",
     "lista.linhaExemplo",
     "lista.p1.baixar",
+    "lista.p1.aguardando",
     "lista.p1.baixa",
     "lista.p1.estornar",
     "lista.p2.renegociar",

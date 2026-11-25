@@ -213,6 +213,11 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 
 ### 4. Parcela com baixa pendente aceita outra baixa (prioridade alta)
 
+- **Status:** feito na branch `fix/baixa-pendente-unica` (2026-11-24, spec
+  `2026-11-24-baixa-pendente-unica-design.md`): uma baixa pendente por parcela
+  (trava com `FOR UPDATE`, API 409), baixa só em parcela em aberto; a parcela
+  mostra a pendente e "Baixa aguardando aprovação" no lugar do Baixar; ajuda de
+  Aprovações sem o exemplo de baixa em dobro.
 - **Problema:** o botão Baixar continua na parcela enquanto a baixa espera
   aprovação, e `registrarBaixa` (`src/server/services/baixa.ts`) não olha as
   baixas pendentes.
@@ -446,6 +451,37 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 - **Ao corrigir:** passo "Margem líquida" do roteiro `ler-projecao` em
   `src/ajuda/fluxo-de-caixa-estrategico/roteiros.ts` (avisa que não desconta
   CAPEX nem juros) e a réplica (`cenas.tsx`, rótulo da métrica); manual, seção 3.7.
+
+### 59. Cancelar ou renegociar parcela com baixa pendente
+
+- **Problema:** cancelar a parcela e renegociar não olham as baixas pendentes
+  dela.
+- **Onde:** `cancelarParcela` em `src/server/services/titulo.ts`;
+  `src/server/services/renegociacao.ts`; `aprovarBaixa`/`efetivarBaixa` em
+  `src/server/services/baixa.ts`.
+- **Exemplo:** a baixa da parcela 1 espera aprovação; alguém cancela a parcela.
+  Depois a Tesouraria aprova a baixa: sai o lançamento de uma parcela
+  cancelada.
+- **Impacto:** dado errado.
+- **Caminhos:** bloquear cancelar/renegociar enquanto houver pendente; ou
+  rejeitar a pendente junto, com motivo automático; ou recusar a aprovação de
+  baixa em parcela fechada.
+- **Cuidados:** cancelamento de pedido de venda também cancela parcelas.
+- **Ao corrigir:** roteiro `cancelar-parcela` em
+  `src/ajuda/contas-a-pagar/roteiros.ts` e
+  `src/ajuda/contas-a-receber/roteiros.ts`; roteiro `renegociar`, se a regra
+  mudar o que o usuário vê.
+
+### 60. Repasse de cartão trava parcelas sem ordem
+
+- **Problema:** `confirmarRepasses` (`src/server/services/repasseCartao.ts`,
+  ~linha 111) faz `SELECT id FROM parcelas WHERE id IN (...) FOR UPDATE` sem
+  `ORDER BY id`.
+- **Onde:** `src/server/services/repasseCartao.ts`.
+- **Exemplo:** duas confirmações com parcelas em comum, em ordem diferente,
+  travam uma a outra (deadlock) e o Postgres aborta uma delas com erro.
+- **Impacto:** erro intermitente; nenhum dado errado.
+- **Caminhos:** `ORDER BY id` no SELECT.
 
 ## Controladoria — lacunas achadas ao escrever a ajuda contextual
 

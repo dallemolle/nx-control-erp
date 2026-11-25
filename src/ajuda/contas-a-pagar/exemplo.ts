@@ -31,6 +31,7 @@ export const EXEMPLO = {
     valorFormatado: "R$ 1.012,00",
     ajuste: "+ juros R$ 12,00",
     registradaPor: "Maria",
+    registradaEm: "15/10/2026 10:20",
     aprovadaPor: "João",
     estornadaPor: "João",
     estornadaEm: "16/10/2026 09:40",

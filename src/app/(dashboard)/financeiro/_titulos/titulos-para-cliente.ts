@@ -39,7 +39,9 @@ type TituloDoServico = {
 export type BaixaDaParcela = {
   id: string;
   data: Date;
-  status: "APROVADO" | "ESTORNADO";
+  /** Quando a baixa foi registrada (a tela mostra na pendente). */
+  registradaEm: Date;
+  status: "PENDENTE" | "APROVADO" | "ESTORNADO";
   valorPago: number;
   valorJuros: number;
   valorMulta: number;
@@ -59,15 +61,16 @@ export type BaixaDaParcela = {
 
 const numero = (valor: ValorDecimal) => Number(valor.toString());
 
-/** Só as que mexeram no saldo: aprovadas e estornadas (pendentes e rejeitadas são os itens 4 e 5 do backlog). */
+/** As que esperam aprovação ou mexeram no saldo: pendentes, aprovadas e estornadas (rejeitadas são o item 5 do backlog). */
 function baixasParaCliente(baixas: BaixaDoServico[]): BaixaDaParcela[] {
   return baixas
-    .filter((b) => b.statusAprovacao === "APROVADO" || b.statusAprovacao === "ESTORNADO")
+    .filter((b) => b.statusAprovacao === "PENDENTE" || b.statusAprovacao === "APROVADO" || b.statusAprovacao === "ESTORNADO")
     .sort((a, b) => a.data.getTime() - b.data.getTime() || a.criadoEm.getTime() - b.criadoEm.getTime())
     .map((b) => ({
       id: b.id,
       data: b.data,
-      status: b.statusAprovacao as "APROVADO" | "ESTORNADO",
+      registradaEm: b.criadoEm,
+      status: b.statusAprovacao as BaixaDaParcela["status"],
       valorPago: numero(b.valorPago),
       valorJuros: numero(b.valorJuros),
       valorMulta: numero(b.valorMulta),
@@ -87,7 +90,7 @@ function baixasParaCliente(baixas: BaixaDoServico[]): BaixaDaParcela[] {
  * Prepara o retorno de `listarTitulos` para a tabela (Client Component): o
  * `Decimal` do Prisma não é um "plain object" e gera aviso na serialização.
  * Converte os valores para `number` e descarta o que a tela não usa
- * (colunas da conta bancária como `saldoInicial`, baixas pendentes e rejeitadas).
+ * (colunas da conta bancária como `saldoInicial`, baixas rejeitadas).
  */
 export function titulosParaCliente<T extends TituloDoServico>(titulos: T[]) {
   return titulos.map(({ contaBancaria, parcelas, ...titulo }) => ({
@@ -104,6 +107,7 @@ export function titulosParaCliente<T extends TituloDoServico>(titulos: T[]) {
       valorAtualizado: numero(parcela.valorAtualizado),
       status: parcela.status,
       baixas: baixasParaCliente(parcela.baixas),
+      temBaixaPendente: parcela.baixas.some((b) => b.statusAprovacao === "PENDENTE"),
     })),
   }));
 }

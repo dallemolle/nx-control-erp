@@ -139,4 +139,23 @@ describe("POST /api/v1/baixas", () => {
     const corpo = await resposta.json();
     expect(corpo.campos).toContain("parcelaId");
   });
+
+  test("parcela com baixa pendente -> 409 com a mensagem", async () => {
+    const conta = await prisma.contaBancaria.findUniqueOrThrow({ where: { id: fixture.contaBancariaId } });
+    const request = new Request("http://localhost/api/v1/baixas", {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({
+        parcelaId,
+        data: "2026-09-30",
+        valorPago: 300,
+        contaBancariaAgencia: conta.agencia,
+        contaBancariaConta: conta.conta,
+      }),
+    });
+
+    const resposta = await POST(request);
+    expect(resposta.status).toBe(409);
+    expect((await resposta.json()).erro).toMatch(/^Esta parcela já tem uma baixa aguardando aprovação/);
+  });
 });

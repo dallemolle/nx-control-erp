@@ -88,7 +88,7 @@ export const ROTEIROS: readonly Roteiro[] = [
     titulo: "Quando a baixa tem um aviso",
     quandoUsar:
       "Quando aparece um triângulo amarelo com um aviso embaixo do título da baixa. O aviso aponta o que costuma " +
-      "ser erro de digitação ou baixa em dobro, mas não impede a aprovação: quem decide é você.",
+      "ser erro de digitação, no valor ou na data, mas não impede a aprovação: quem decide é você.",
     quemPode: QUEM_APROVA,
     passos: [
       {
@@ -113,13 +113,13 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "lista.l2.avisos",
         instrucao: "Veja o aviso de valor",
         explicacao:
-          "O Recibo 88 já tinha sido pago e aprovado: não sobra nada a pagar, e esta baixa é repetida. Os outros " +
-          "avisos de valor comparam o valor pago com o que falta da parcela, mais juros e multa, menos o desconto: " +
-          "“Pagamento parcial: faltam R$ …” (ou Recebimento parcial) e “Acima do saldo em R$ …”.",
+          "O recibo do José da Silva é de R$ 1.200,00, e a Maria digitou R$ 12.000,00. O sistema compara o valor " +
+          "pago com o que falta da parcela, mais juros e multa, menos o desconto: “Acima do saldo em R$ …” quando " +
+          "passa, “Pagamento parcial: faltam R$ …” (ou Recebimento parcial) quando fica abaixo.",
         dica:
-          "Pagamento parcial pode estar certo, quando foi combinado pagar em partes. “Há outra baixa pendente nesta " +
-          "parcela” aparece quando a mesma parcela tem duas baixas esperando: confira se não é a mesma lançada duas " +
-          "vezes.",
+          "Pagamento parcial pode estar certo, quando foi combinado pagar em partes. “A parcela já está paga” e " +
+          "“Há outra baixa pendente nesta parcela” só aparecem em baixas registradas antes de o sistema impedir a " +
+          "segunda baixa na mesma parcela: confira se não é o mesmo pagamento lançado duas vezes.",
       },
     ],
     eDepois: {
@@ -134,9 +134,8 @@ export const ROTEIROS: readonly Roteiro[] = [
     id: "rejeitar-baixa",
     titulo: "Rejeitar uma baixa",
     quandoUsar:
-      "Quando a baixa está errada: foi lançada em dobro, o valor não bate com o comprovante, foi na parcela " +
-      "errada ou o pagamento não aconteceu. A parcela continua com o botão Baixar enquanto a baixa espera " +
-      "aprovação, então baixa em dobro acontece.",
+      "Quando a baixa está errada: o valor ou a data não batem com o comprovante, foi na parcela errada ou o " +
+      "pagamento não aconteceu.",
     quemPode: QUEM_APROVA,
     passos: [
       {
@@ -145,8 +144,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Escreva o motivo na linha da baixa",
         explicacao:
           "O campo fica ao lado do botão Rejeitar, na mesma linha. O motivo é obrigatório, com pelo menos 3 " +
-          "letras. No exemplo, o Recibo 88 tem o aviso “A parcela já está paga”: ela foi paga e aprovada em 05/10, " +
-          "e a baixa nova é repetida.",
+          "letras. No exemplo, o Recibo 88 tem o aviso “Acima do saldo”: o recibo é de R$ 1.200,00 e a baixa foi " +
+          "lançada com R$ 12.000,00.",
         preenche: { "lista.l2.motivo": MOTIVO_REJEICAO },
       },
       {
@@ -161,7 +160,7 @@ export const ROTEIROS: readonly Roteiro[] = [
     ],
     eDepois: {
       texto:
-        "A linha sai da lista e nenhum lançamento é feito: a parcela continua como estava. Se a baixa precisava " +
+        "A linha sai da lista e nenhum lançamento é feito: a parcela continua como estava e volta a aceitar baixa. Se a baixa precisava " +
         "só de correção, quem registrou lança outra pelo botão Baixar da parcela, em Contas a pagar ou Contas a " +
         "receber, e ela volta para esta lista.",
       proximoRoteiro: "aprovar-bloqueado",

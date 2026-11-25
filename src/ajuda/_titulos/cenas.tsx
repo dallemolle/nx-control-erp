@@ -94,17 +94,18 @@ function Detalhe({ rotulo, valor }: { rotulo: string; valor: string }) {
   );
 }
 
-/** A baixa da parcela 1 no roteiro de estorno: aprovada (com Estornar) ou já estornada. */
+/** A baixa da parcela 1: pendente (roteiro de pagamento), aprovada (com Estornar) ou já estornada. */
 function BaixaDoExemplo({ estado, exemplo }: { estado: string; exemplo: ExemploTitulos }) {
   const { baixa } = exemplo;
   const estornada = estado === "estornada";
+  const pendente = estado === "pendente";
   return (
     <div className="space-y-1 text-sm">
       <div className="text-xs font-medium text-muted-foreground">Baixas</div>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <Alvo nome="lista.p1.baixa" className={estornada ? "p-1 text-muted-foreground" : "p-1"}>
           <p>
-            {`Baixa de ${baixa.data} · ${baixa.conta} · `}
+            {`Baixa de ${baixa.data} · ${pendente ? exemplo.conta : baixa.conta} · `}
             <span className={estornada ? "line-through" : "font-medium"}>{baixa.valorFormatado}</span>
             {` (${baixa.ajuste})`}
             {estornada && (
@@ -112,15 +113,22 @@ function BaixaDoExemplo({ estado, exemplo }: { estado: string; exemplo: ExemploT
                 Estornada
               </Badge>
             )}
+            {pendente && (
+              <Badge variant="outline" className="ml-2">
+                Aguardando aprovação
+              </Badge>
+            )}
           </p>
           <p className="text-xs text-muted-foreground">
-            {`registrada por ${baixa.registradaPor} · aprovada por ${baixa.aprovadaPor}`}
+            {pendente
+              ? `registrada por ${baixa.registradaPor} em ${baixa.registradaEm}`
+              : `registrada por ${baixa.registradaPor} · aprovada por ${baixa.aprovadaPor}`}
           </p>
           {estornada && (
             <p className="text-xs">{`estornada por ${baixa.estornadaPor} em ${baixa.estornadaEm}: ${baixa.motivoEstorno}`}</p>
           )}
         </Alvo>
-        {!estornada && (
+        {!estornada && !pendente && (
           <BotaoSimulado alvo="lista.p1.estornar" variant="outline" size="sm">
             Estornar
           </BotaoSimulado>
@@ -132,7 +140,7 @@ function BaixaDoExemplo({ estado, exemplo }: { estado: string; exemplo: ExemploT
 
 function LinhasDoExemplo({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exemplo">) {
   const expandido = valores["lista.linhaExemplo"] === "expandida";
-  // Só o roteiro de estorno define: "aprovada" (parcela 1 paga) ou "estornada" (volta ao status do exemplo).
+  // "pendente" (roteiro de pagamento), "aprovada" (parcela 1 paga) ou "estornada" (volta ao status do exemplo).
   const estadoBaixa = valores["lista.p1.baixa"];
   return (
     <>
@@ -178,6 +186,7 @@ function LinhasDoExemplo({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exe
           {exemplo.parcelas.map((parcela) => {
             const p = `lista.p${parcela.numero}`;
             const paga = parcela.numero === 1 && estadoBaixa === "aprovada";
+            const pendente = parcela.numero === 1 && estadoBaixa === "pendente";
             const status = paga ? "PAGO" : parcela.status;
             return (
               <Fragment key={parcela.numero}>
@@ -201,9 +210,15 @@ function LinhasDoExemplo({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exe
                             Alterar vencimento
                           </BotaoSimulado>
                         </div>
-                        <BotaoSimulado alvo={`${p}.baixar`} size="sm">
-                          Baixar
-                        </BotaoSimulado>
+                        {pendente ? (
+                          <Alvo nome={`${p}.aguardando`} className="p-1 text-xs text-muted-foreground">
+                            Baixa aguardando aprovação
+                          </Alvo>
+                        ) : (
+                          <BotaoSimulado alvo={`${p}.baixar`} size="sm">
+                            Baixar
+                          </BotaoSimulado>
+                        )}
                         {parcela.status === "VENCIDO" && (
                           <BotaoSimulado alvo={`${p}.renegociar`} variant="outline" size="sm">
                             Renegociar

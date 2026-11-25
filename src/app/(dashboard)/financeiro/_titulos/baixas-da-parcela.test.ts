@@ -7,6 +7,7 @@ import type { BaixaDaParcela } from "./titulos-para-cliente";
 const aprovada: BaixaDaParcela = {
   id: "b1",
   data: new Date("2026-10-15T00:00:00.000Z"),
+  registradaEm: new Date("2026-10-15T13:00:00.000Z"),
   status: "APROVADO",
   valorPago: 1012,
   valorJuros: 12,
@@ -61,6 +62,18 @@ describe("BaixasDaParcela", () => {
     expect(saida).toContain("Estornada");
     expect(saida).toContain("estornada por João em 16/10/2026 09:40: conta errada");
     expect(saida).not.toContain(">Estornar<");
+  });
+});
+
+describe("BaixasDaParcela com baixa pendente", () => {
+  test("pendente: selo, quem e quando registrou, sem Estornar", () => {
+    const saida = html(
+      [{ ...aprovada, status: "PENDENTE", aprovadaPor: null, registradaEm: new Date("2026-10-15T13:20:00.000Z") }],
+      true,
+    );
+    expect(saida).toContain("Aguardando aprovação");
+    expect(saida).toContain("registrada por Maria em 15/10/2026 10:20");
+    expect(saida).not.toContain("Estornar");
   });
 });
 

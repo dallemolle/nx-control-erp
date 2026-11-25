@@ -57,18 +57,26 @@ describe("titulosParaCliente", () => {
     const [titulo] = titulosParaCliente([tituloDoServico]);
 
     expect(titulo.parcelas).toEqual([
-      { id: "p1", numero: 1, dataVencimento: vencimento, valorAtualizado: 150.25, status: "ABERTA", baixas: [] },
+      {
+        id: "p1",
+        numero: 1,
+        dataVencimento: vencimento,
+        valorAtualizado: 150.25,
+        status: "ABERTA",
+        baixas: [],
+        temBaixaPendente: false,
+      },
     ]);
     expect(titulo.contaBancaria).toEqual({ tipo: "CORRENTE", agencia: "0001", conta: "123-4", banco: { nome: "Banco X" } });
     expect(titulo.documento).toBe("NF 1");
   });
 
-  it("leva só as baixas aprovadas e estornadas, convertidas", () => {
+  it("leva as baixas pendentes, aprovadas e estornadas, convertidas; rejeitadas ficam fora", () => {
     const estornadaEm = new Date("2026-10-16T12:40:00.000Z");
     const parcela = {
       ...tituloDoServico.parcelas[0],
       baixas: [
-        baixa("pendente", "PENDENTE"),
+        baixa("pendente", "PENDENTE", { avaliadoPor: null, lancamentos: [] }),
         baixa("rejeitada", "REJEITADO"),
         baixa("estornada", "ESTORNADO", {
           estornadoPor: { nome: "João" },
@@ -81,10 +89,13 @@ describe("titulosParaCliente", () => {
     };
     const [titulo] = titulosParaCliente([{ ...tituloDoServico, parcelas: [parcela] }]);
 
+    expect(titulo.parcelas[0].temBaixaPendente).toBe(true);
     expect(titulo.parcelas[0].baixas).toEqual([
+      expect.objectContaining({ id: "pendente", status: "PENDENTE", aprovadaPor: null }),
       {
         id: "estornada",
         data: new Date("2026-10-15T00:00:00.000Z"),
+        registradaEm: new Date("2026-10-15T13:00:00.000Z"),
         status: "ESTORNADO",
         valorPago: 1012,
         valorJuros: 12,
@@ -101,6 +112,13 @@ describe("titulosParaCliente", () => {
       },
       expect.objectContaining({ id: "aprovada", status: "APROVADO", estornadaPor: null }),
     ]);
+  });
+
+  it("parcela só com baixa rejeitada não tem pendente", () => {
+    const parcela = { ...tituloDoServico.parcelas[0], baixas: [baixa("rejeitada", "REJEITADO")] };
+    const [titulo] = titulosParaCliente([{ ...tituloDoServico, parcelas: [parcela] }]);
+    expect(titulo.parcelas[0].temBaixaPendente).toBe(false);
+    expect(titulo.parcelas[0].baixas).toEqual([]);
   });
 
   it("marca conciliada e de repasse", () => {
