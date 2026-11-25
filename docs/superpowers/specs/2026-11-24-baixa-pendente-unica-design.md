@@ -93,12 +93,28 @@ mensagem pelo `FormState`, sem mudança.
 
 ## Ajuda
 
+Com as duas travas, nenhuma baixa nova dispara os avisos "A parcela já está
+paga" e "Há outra baixa pendente nesta parcela". Os avisos ficam no código
+(servem às pendentes registradas antes desta mudança), mas a ajuda de
+Aprovações deixa de usá-los como exemplo:
+
+- `src/ajuda/aprovacoes/exemplo.ts`: o Recibo 88 deixa de ser baixa repetida
+  em parcela paga. Passa a ser valor digitado errado: parcela de R$ 1.200,00,
+  nada aprovado, valor pago R$ 12.000,00 → aviso (pela regra real) "Acima do
+  saldo em R$ 10.800,00". `MOTIVO_REJEICAO` = "Valor errado: o recibo é de
+  R$ 1.200,00".
 - `src/ajuda/aprovacoes/roteiros.ts`:
-  - `rejeitar-baixa`, "Quando usar": sai "A parcela continua com o botão
-    Baixar enquanto a baixa espera aprovação, então baixa em dobro acontece".
-  - `entender-avisos`, dica de "Há outra baixa pendente nesta parcela": o
-    sistema não deixa mais registrar a segunda; o aviso só aparece em baixas
-    registradas antes dessa trava.
+  - `entender-avisos`: "Quando usar" cita valor e data digitados errados, não
+    "baixa em dobro". O passo "Veja o aviso de valor" explica o Recibo 88
+    novo. A dica diz que "A parcela já está paga" e "Há outra baixa pendente
+    nesta parcela" só aparecem em baixas registradas antes de o sistema
+    impedir a segunda baixa.
+  - `rejeitar-baixa`: "Quando usar" perde "A parcela continua com o botão
+    Baixar enquanto a baixa espera aprovação, então baixa em dobro acontece"
+    e o exemplo "lançada em dobro". O passo do motivo explica o Recibo 88
+    novo.
+- `src/ajuda/aprovacoes/roteiros.test.ts`: a réplica mostra "Acima do saldo"
+  no Recibo 88 em vez de "A parcela já está paga".
 - `src/ajuda/contas-a-pagar/roteiros.ts` (`pagar-parcela`) e
   `src/ajuda/contas-a-receber/roteiros.ts` (`receber-parcela`), passo do
   botão Registrar baixa: a parcela mostra a baixa aguardando aprovação e não
