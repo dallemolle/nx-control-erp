@@ -353,7 +353,7 @@ export const ajudaDashboardExecutivo: DefinicaoAjuda = {
             `Saldo de todas as contas das filiais ativas em ${HOJE}, o mesmo saldo contábil da Tesouraria: o que o ` +
             `extrato já confirmou (${moeda(CAIXA_CONCILIADO)}) mais o que foi lançado e ainda aguarda conciliação. No ` +
             `exemplo, a parcela 2 do adubo, paga e aprovada em 19/11: ${moeda(INDICADORES.caixaDisponivel)}.`,
-          dica: "A linha embaixo do valor mostra quanto ainda aguarda conciliação. Ela some quando tudo está conciliado.",
+          dica: "A linha embaixo do valor mostra quanto ainda aguarda conciliação (entradas menos saídas). Ela some quando não há nada aguardando.",
         },
         {
           cena: "painel",
