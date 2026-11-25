@@ -5,6 +5,7 @@ import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro
 import { criarTitulo, cancelarParcela, listarTitulos } from "./titulo";
 import type { TipoTitulo } from "@prisma/client";
 import { resumirBaixasDaParcela } from "@/lib/financeiro/avisosDaBaixa";
+import { valoresDaBaixa } from "./parcela";
 import {
   registrarBaixa,
   aprovarBaixa,
@@ -56,6 +57,20 @@ describe("baixa (fluxo de aprovação)", () => {
     });
     return titulo.parcelas[0];
   }
+
+  test("baixa com desconto, aprovada, deixa a parcela PAGO e o lançamento com o valor pago", async () => {
+    const parcela = await criarParcelaDeTeste(fixtureTesouraria, 1000);
+    const baixa = await registrarBaixa(fixtureTesouraria.sessao, parcela.id, {
+      data: new Date(), valorPago: 950, valorJuros: 0, valorMulta: 0, valorDesconto: 50,
+      contaBancariaId: fixtureTesouraria.contaBancariaId,
+    });
+    await aprovarBaixa(fixtureTesouraria.sessao, baixa.id);
+
+    const atualizada = await prisma.parcela.findUniqueOrThrow({ where: { id: parcela.id } });
+    expect(atualizada.status).toBe("PAGO");
+    const lancamento = await prisma.lancamentoBancario.findFirstOrThrow({ where: { baixaId: baixa.id } });
+    expect(Number(lancamento.valor)).toBe(950);
+  });
 
   test("baixa pendente não altera o status da parcela", async () => {
     const parcela = await criarParcelaDeTeste(fixture, 100);
@@ -223,8 +238,8 @@ describe("baixa (fluxo de aprovação)", () => {
         linha!.id,
         linha!.parcela.baixas.map((b) => ({
           id: b.id,
-          valorPago: Number(b.valorPago),
           statusAprovacao: b.statusAprovacao,
+          ...valoresDaBaixa(b),
         })),
       ),
     ).toEqual({ totalAprovado: 100, outrasPendentes: 1 });

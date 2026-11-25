@@ -1,4 +1,5 @@
 import { formatarMoeda } from "@/lib/formatacao";
+import { totalAbatido, type ValoresDaBaixa } from "./valorAbatido";
 import { hojeDeCalendario } from "@/lib/producao/periodo";
 
 /** Mais que isto, em dias, entre a data da baixa e o dia do registro vira aviso (provável erro de digitação). */
@@ -29,7 +30,7 @@ export type DadosAvisoBaixa = {
   valorDesconto: number;
   /** `valorAtualizado` da parcela. */
   valorParcela: number;
-  /** Soma do valor pago das baixas aprovadas da parcela. */
+  /** Soma do valor abatido (pago − juros − multa + desconto) das baixas aprovadas da parcela. */
   totalAprovado: number;
   /** Outras baixas pendentes na mesma parcela, sem contar esta. */
   outrasPendentes: number;
@@ -79,11 +80,11 @@ export function avisosDaBaixa(dados: DadosAvisoBaixa): AvisoBaixa[] {
 /** A partir de todas as baixas da parcela: soma das aprovadas e quantas outras esperam aprovação. */
 export function resumirBaixasDaParcela(
   baixaId: string,
-  baixas: readonly { id: string; valorPago: number; statusAprovacao: string }[],
+  baixas: readonly (ValoresDaBaixa & { id: string; statusAprovacao: string })[],
 ): { totalAprovado: number; outrasPendentes: number } {
   const aprovadas = baixas.filter((b) => b.statusAprovacao === "APROVADO");
   return {
-    totalAprovado: aprovadas.reduce((soma, b) => soma + centavos(b.valorPago), 0) / 100,
+    totalAprovado: totalAbatido(aprovadas),
     outrasPendentes: baixas.filter((b) => b.statusAprovacao === "PENDENTE" && b.id !== baixaId).length,
   };
 }

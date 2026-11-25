@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MSG_BAIXA_SEM_ABATIMENTO, valorAbatidoDaBaixa } from "@/lib/financeiro/valorAbatido";
 
 export const baixaSchema = z.object({
   data: z.coerce.date(),
@@ -7,7 +8,7 @@ export const baixaSchema = z.object({
   valorMulta: z.coerce.number().min(0).default(0),
   valorDesconto: z.coerce.number().min(0).default(0),
   contaBancariaId: z.string().trim().min(1, "Selecione a conta bancária"),
-});
+}).refine((b) => valorAbatidoDaBaixa(b) > 0, { message: MSG_BAIXA_SEM_ABATIMENTO, path: ["valorJuros"] });
 export type BaixaFormValues = z.infer<typeof baixaSchema>;
 
 export const rejeicaoBaixaSchema = z.object({

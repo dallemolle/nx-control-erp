@@ -1,4 +1,5 @@
 import { prisma } from "@/server/db/client";
+import { SELECT_VALORES_BAIXA, valoresDaBaixa } from "@/server/services/parcela";
 import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { StatusParcela } from "@prisma/client";
@@ -34,7 +35,7 @@ function buscarParcelasEmAbertoDasFiliais(filialIds: string[], venceAntesDe?: Da
       valorAtualizado: true,
       dataVencimento: true,
       titulo: { select: { tipo: true } },
-      baixas: { where: { statusAprovacao: "APROVADO" }, select: { valorPago: true } },
+      baixas: { where: { statusAprovacao: "APROVADO" }, select: SELECT_VALORES_BAIXA },
     },
   });
 }
@@ -132,7 +133,7 @@ function paraIndicadores(
     dataVencimento: parcela.dataVencimento,
     saldo: saldoRemanescenteParcela(
       Number(parcela.valorAtualizado),
-      parcela.baixas.map((baixa) => ({ valorPago: Number(baixa.valorPago) })),
+      parcela.baixas.map(valoresDaBaixa),
     ),
   }));
 }

@@ -9,6 +9,7 @@ import { exigeAprovacaoPorOutro, listarBaixasPendentes } from "@/server/services
 import { aprovarBaixaAction } from "./actions";
 import { RejeitarBaixaForm } from "./rejeitar-baixa-form";
 import { AvisosDaBaixa, DetalheDoValor } from "./partes-da-linha";
+import { valoresDaBaixa } from "@/server/services/parcela";
 import { avisosDaBaixa, resumirBaixasDaParcela } from "@/lib/financeiro/avisosDaBaixa";
 import { nomeDaContaBancaria } from "@/lib/contaBancaria";
 import { formatarData, formatarDataHora, formatarMoeda } from "@/lib/formatacao";
@@ -67,8 +68,8 @@ export default async function AprovacoesPage() {
                 baixa.id,
                 baixa.parcela.baixas.map((b) => ({
                   id: b.id,
-                  valorPago: Number(b.valorPago),
                   statusAprovacao: b.statusAprovacao,
+                  ...valoresDaBaixa(b),
                 })),
               ),
               hoje,

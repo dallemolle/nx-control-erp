@@ -50,7 +50,7 @@ export const ALVOS = {
     "novo.adicionarParcela",
     "novo.salvar",
   ],
-  baixa: ["baixa.data", "baixa.valorPago", "baixa.juros", "baixa.multa", "baixa.desconto", "baixa.conta", "baixa.registrar"],
+  baixa: ["baixa.data", "baixa.valorPago", "baixa.juros", "baixa.multa", "baixa.desconto", "baixa.previa", "baixa.conta", "baixa.registrar"],
   renegociar: ["reneg.parcela1", "reneg.parcela2", "reneg.adicionar", "reneg.confirmar"],
   estornar: ["estorno.resumo", "estorno.motivo", "estorno.confirmar"],
   dispensar: ["dispensa.resumo", "dispensa.motivo", "dispensa.confirmar"],

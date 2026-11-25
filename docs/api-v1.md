@@ -212,6 +212,8 @@ Permissão: `titulo:baixar`.
 ```
 - `parcelaId` é o **único** campo desta API que exige o ID interno — obtenha via `GET /titulos?tipo=...` (cada título em `itens` vem com `parcelas[].id`).
 - `valorJuros`/`valorMulta`/`valorDesconto`: opcionais, default `0`.
+- `valorPago` é o total que saiu ou entrou na conta, já com juros e multa e sem o desconto. A baixa aprovada quita da parcela `valorPago − valorJuros − valorMulta + valorDesconto`; o lançamento bancário fica com `valorPago`.
+- Se `valorJuros + valorMulta` for maior ou igual a `valorPago + valorDesconto`, responde `422` (`erro`: "Juros e multa não podem ser maiores que o valor pago mais o desconto"; `campos`: `["valorJuros"]`).
 - `parcelaId` inexistente → `404`.
 - Cada parcela aceita **uma** baixa aguardando aprovação por vez, e só recebe baixa enquanto está em aberto (não paga, cancelada nem renegociada). Se recusar, responde `409` com o motivo em `erro` — reenviar não adianta.
 - Baixa rejeitada: `GET /titulos` devolve cada baixa em `itens[].parcelas[].baixas[]` com `statusAprovacao` (`REJEITADO`), `motivoRejeicao` e `avaliadoEm` (quando foi rejeitada). Ela ainda pede ação enquanto `dispensadaEm` for nulo, nenhuma baixa da parcela tiver `criadoEm` posterior a `avaliadoEm` e a parcela não estiver paga, cancelada ou renegociada; nesse caso, registre a baixa de novo com os dados certos.

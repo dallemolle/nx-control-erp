@@ -24,6 +24,7 @@ type ParcelaLinha = {
   numero: number;
   dataVencimento: Date;
   valorAtualizado: number;
+  saldoEmAberto: number;
   status: string;
   baixas: BaixaDaParcela[];
   temBaixaPendente: boolean;
@@ -126,7 +127,7 @@ export function TituloTable({
   podeBaixar: boolean;
   podeAprovar: boolean;
   filtroAtivo: boolean;
-  onAbrirBaixa: (parcelaId: string) => void;
+  onAbrirBaixa: (parcela: { id: string; saldoEmAberto: number }) => void;
   onAbrirRenegociacao: (parcelaId: string) => void;
   onAbrirEstorno: (baixa: BaixaDaParcela) => void;
   onAbrirDispensa: (baixa: BaixaDaParcela) => void;
@@ -297,7 +298,7 @@ export function TituloTable({
                           (parcela.temBaixaPendente ? (
                             <span className="text-xs text-muted-foreground">Baixa aguardando aprovação</span>
                           ) : (
-                            <Button type="button" size="sm" onClick={() => onAbrirBaixa(parcela.id)}>
+                            <Button type="button" size="sm" onClick={() => onAbrirBaixa({ id: parcela.id, saldoEmAberto: parcela.saldoEmAberto })}>
                               Baixar
                             </Button>
                           ))}
