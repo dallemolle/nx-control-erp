@@ -1,4 +1,5 @@
 import { nomeDaContaBancaria } from "@/lib/contaBancaria";
+import { rejeicaoEmAberto } from "@/lib/financeiro/rejeicaoEmAberto";
 
 type ValorDecimal = number | string | { toString(): string };
 
@@ -19,6 +20,11 @@ type BaixaDoServico = {
   estornadoPor: { nome: string } | null;
   estornadoEm: Date | null;
   motivoEstorno: string | null;
+  avaliadoEm: Date | null;
+  motivoRejeicao: string | null;
+  dispensadaEm: Date | null;
+  motivoDispensa: string | null;
+  dispensadaPor: { nome: string } | null;
   lancamentos: { grupoConciliacaoId: string | null }[];
   repasseRecebimento: { id: string } | null;
   repasseTaxa: { id: string } | null;
@@ -41,7 +47,7 @@ export type BaixaDaParcela = {
   data: Date;
   /** Quando a baixa foi registrada (a tela mostra na pendente). */
   registradaEm: Date;
-  status: "PENDENTE" | "APROVADO" | "ESTORNADO";
+  status: "PENDENTE" | "APROVADO" | "REJEITADO" | "ESTORNADO";
   valorPago: number;
   valorJuros: number;
   valorMulta: number;
@@ -53,6 +59,14 @@ export type BaixaDaParcela = {
   estornadaPor: string | null;
   estornadaEm: Date | null;
   motivoEstorno: string | null;
+  rejeitadaPor: string | null;
+  rejeitadaEm: Date | null;
+  motivoRejeicao: string | null;
+  /** Rejeitada que ainda pede ação: aparece em destaque, com Dispensar, e conta no aviso. */
+  rejeicaoEmAberto: boolean;
+  dispensadaPor: string | null;
+  dispensadaEm: Date | null;
+  motivoDispensa: string | null;
   /** Algum lançamento da baixa está num grupo de conciliação. */
   conciliada: boolean;
   /** Baixa criada pela confirmação de um repasse de cartão. */
@@ -61,36 +75,55 @@ export type BaixaDaParcela = {
 
 const numero = (valor: ValorDecimal) => Number(valor.toString());
 
-/** As que esperam aprovação ou mexeram no saldo: pendentes, aprovadas e estornadas (rejeitadas são o item 5 do backlog). */
-function baixasParaCliente(baixas: BaixaDoServico[]): BaixaDaParcela[] {
-  return baixas
-    .filter((b) => b.statusAprovacao === "PENDENTE" || b.statusAprovacao === "APROVADO" || b.statusAprovacao === "ESTORNADO")
+/** Todas as baixas da parcela: pendentes, aprovadas, rejeitadas e estornadas. */
+function baixasParaCliente(parcela: { status: string; baixas: BaixaDoServico[] }): BaixaDaParcela[] {
+  return [...parcela.baixas]
     .sort((a, b) => a.data.getTime() - b.data.getTime() || a.criadoEm.getTime() - b.criadoEm.getTime())
-    .map((b) => ({
-      id: b.id,
-      data: b.data,
-      registradaEm: b.criadoEm,
-      status: b.statusAprovacao as BaixaDaParcela["status"],
-      valorPago: numero(b.valorPago),
-      valorJuros: numero(b.valorJuros),
-      valorMulta: numero(b.valorMulta),
-      valorDesconto: numero(b.valorDesconto),
-      conta: nomeDaContaBancaria(b.contaBancaria),
-      registradaPor: b.usuario.nome,
-      aprovadaPor: b.avaliadoPor?.nome ?? null,
-      estornadaPor: b.estornadoPor?.nome ?? null,
-      estornadaEm: b.estornadoEm,
-      motivoEstorno: b.motivoEstorno,
-      conciliada: b.lancamentos.some((l) => l.grupoConciliacaoId !== null),
-      deRepasse: b.repasseRecebimento !== null || b.repasseTaxa !== null,
-    }));
+    .map((b) => {
+      const rejeitada = b.statusAprovacao === "REJEITADO";
+      return {
+        id: b.id,
+        data: b.data,
+        registradaEm: b.criadoEm,
+        status: b.statusAprovacao as BaixaDaParcela["status"],
+        valorPago: numero(b.valorPago),
+        valorJuros: numero(b.valorJuros),
+        valorMulta: numero(b.valorMulta),
+        valorDesconto: numero(b.valorDesconto),
+        conta: nomeDaContaBancaria(b.contaBancaria),
+        registradaPor: b.usuario.nome,
+        aprovadaPor: rejeitada ? null : (b.avaliadoPor?.nome ?? null),
+        estornadaPor: b.estornadoPor?.nome ?? null,
+        estornadaEm: b.estornadoEm,
+        motivoEstorno: b.motivoEstorno,
+        rejeitadaPor: rejeitada ? (b.avaliadoPor?.nome ?? null) : null,
+        rejeitadaEm: rejeitada ? b.avaliadoEm : null,
+        motivoRejeicao: rejeitada ? b.motivoRejeicao : null,
+        rejeicaoEmAberto: rejeicaoEmAberto(
+          {
+            id: b.id,
+            statusAprovacao: b.statusAprovacao,
+            criadoEm: b.criadoEm,
+            avaliadoEm: b.avaliadoEm,
+            dispensadaEm: b.dispensadaEm,
+          },
+          parcela.baixas,
+          parcela.status,
+        ),
+        dispensadaPor: b.dispensadaPor?.nome ?? null,
+        dispensadaEm: b.dispensadaEm,
+        motivoDispensa: b.motivoDispensa,
+        conciliada: b.lancamentos.some((l) => l.grupoConciliacaoId !== null),
+        deRepasse: b.repasseRecebimento !== null || b.repasseTaxa !== null,
+      };
+    });
 }
 
 /**
  * Prepara o retorno de `listarTitulos` para a tabela (Client Component): o
  * `Decimal` do Prisma não é um "plain object" e gera aviso na serialização.
  * Converte os valores para `number` e descarta o que a tela não usa
- * (colunas da conta bancária como `saldoInicial`, baixas rejeitadas).
+ * (colunas da conta bancária como `saldoInicial`).
  */
 export function titulosParaCliente<T extends TituloDoServico>(titulos: T[]) {
   return titulos.map(({ contaBancaria, parcelas, ...titulo }) => ({
@@ -106,7 +139,7 @@ export function titulosParaCliente<T extends TituloDoServico>(titulos: T[]) {
       dataVencimento: parcela.dataVencimento,
       valorAtualizado: numero(parcela.valorAtualizado),
       status: parcela.status,
-      baixas: baixasParaCliente(parcela.baixas),
+      baixas: baixasParaCliente(parcela),
       temBaixaPendente: parcela.baixas.some((b) => b.statusAprovacao === "PENDENTE"),
     })),
   }));

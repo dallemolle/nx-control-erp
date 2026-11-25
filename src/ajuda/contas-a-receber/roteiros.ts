@@ -293,7 +293,7 @@ export const ROTEIROS: readonly Roteiro[] = [
         "Aprovar. Se a empresa exige aprovação por outra pessoa (o padrão), quem registrou a baixa não pode " +
         "aprová-la. Depois de aprovada, o sistema lança a entrada na conta escolhida e a parcela fica PAGO (o " +
         "status é o mesmo nas duas telas). Se for rejeitada, a parcela continua em aberto e nenhum lançamento é " +
-        "feito." +
+        "feito e a rejeição aparece embaixo da parcela, com o motivo, e no aviso do alto da tela." +
         " Baixa aprovada com erro (conta, valor ou data) é estornada na própria parcela.",
       proximoRoteiro: "estornar-baixa",
     },
@@ -367,6 +367,84 @@ export const ROTEIROS: readonly Roteiro[] = [
       texto:
         "O lançamento saiu da conta (confira na Tesouraria) e a parcela voltou a ficar em aberto. Agora registre a " +
         "baixa de novo, com a conta, o valor e a data certos: ela passa outra vez pela aprovação.",
+      proximoRoteiro: "tratar-rejeitada",
+    },
+  }),
+
+  roteiro({
+    id: "tratar-rejeitada",
+    titulo: "Quando uma baixa é rejeitada",
+    quandoUsar:
+      "Quando aparece no alto da tela o aviso de baixa rejeitada: quem aprova recusou uma baixa e escreveu o " +
+      "motivo. É preciso lançar de novo do jeito certo ou, se o recebimento não aconteceu, dispensar o aviso.",
+    quemPode: QUEM_BAIXA,
+    passos: [
+      {
+        cena: "lista",
+        alvo: "lista.avisoRejeitadas",
+        instrucao: "Clique em “Ver” no aviso",
+        explicacao:
+          "O aviso conta as baixas rejeitadas da filial que ninguém lançou de novo nem dispensou, de todas as " +
+          "pessoas. O Ver deixa na lista só os títulos com rejeição; Limpar filtros mostra todos de novo.",
+        preenche: { "lista.p1.baixa": "rejeitada" },
+      },
+      {
+        ...ABRIR_TITULO,
+        // O filtro do "Ver" continua aplicado nos passos seguintes (valoresAte acumula).
+        preenche: {
+          "lista.linhaExemplo": "expandida",
+          "lista.p1.baixa": "rejeitada",
+          "lista.filtro.rejeitadas": "1",
+        },
+      },
+      {
+        cena: "lista",
+        alvo: "lista.p1.baixa",
+        instrucao: "Leia o motivo da rejeição",
+        explicacao:
+          "A baixa rejeitada aparece embaixo da parcela com o selo “Rejeitada”, quem rejeitou, quando e o motivo. " +
+          `No exemplo: “${EXEMPLO.baixa.motivoRejeicao}”.`,
+        dica:
+          "O recebimento aconteceu e só o registro estava errado? Clique em Baixar na parcela e lance de novo com o " +
+          "valor, a data e a conta certos. A rejeição sai do aviso assim que a baixa nova é registrada.",
+      },
+      {
+        cena: "lista",
+        alvo: "lista.p1.dispensar",
+        instrucao: "Se não há o que relançar, clique em “Dispensar”",
+        explicacao:
+          "Use quando a rejeição está certa e nada deve ser registrado: o recebimento não aconteceu, ou foi lançado " +
+          "em outra parcela.",
+      },
+      {
+        cena: "dispensar",
+        alvo: "dispensa.motivo",
+        instrucao: "Diga por que não vai lançar de novo",
+        explicacao: "O motivo é obrigatório, com pelo menos 3 letras, e fica na baixa e na Auditoria.",
+        preenche: { "dispensa.motivo": EXEMPLO.baixa.motivoDispensa },
+      },
+      {
+        cena: "dispensar",
+        alvo: "dispensa.confirmar",
+        instrucao: "Clique em “Dispensar”",
+        explicacao: "A parcela não muda: continua em aberto, com o botão Baixar.",
+      },
+      {
+        cena: "lista",
+        alvo: "lista.p1.baixa",
+        instrucao: "Veja a rejeição dispensada",
+        explicacao:
+          "A baixa rejeitada continua embaixo da parcela, apagada e numa linha só, com quem dispensou e o motivo. " +
+          "O aviso do alto da tela some. Com o filtro de rejeitadas ligado, a lista fica vazia e aparece " +
+          "“Nenhuma baixa rejeitada aguardando novo registro.”: clique em “Mostrar todos os títulos” para ver o " +
+          "título de novo.",
+        preenche: { "lista.linhaExemplo": "expandida", "lista.p1.baixa": "dispensada", "lista.filtro.rejeitadas": "" },
+      },
+    ],
+    eDepois: {
+      texto:
+        "Rejeições resolvidas (lançadas de novo, dispensadas, ou de parcela paga, cancelada ou renegociada) ficam só " +
+        "no histórico da parcela, numa linha apagada, e não contam no aviso.",
       proximoRoteiro: "mudar-vencimento",
     },
   }),

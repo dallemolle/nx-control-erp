@@ -3,8 +3,9 @@ import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permiss
 import { registrarAuditoria, type ClientePrisma } from "@/server/audit/registrar";
 import { recalcularEPersistirStatusParcela } from "@/server/services/parcela";
 import type { SessaoAtiva } from "@/server/auth/sessao";
-import type { Prisma, StatusAprovacaoBaixa, StatusParcela } from "@prisma/client";
-import { formatarData, formatarMoeda } from "@/lib/formatacao";
+import type { Prisma, StatusAprovacaoBaixa, StatusParcela, TipoTitulo } from "@prisma/client";
+import { formatarData, formatarDataHora, formatarMoeda } from "@/lib/formatacao";
+import { rejeicaoEmAberto } from "@/lib/financeiro/rejeicaoEmAberto";
 import type { BaixaFormValues } from "@/lib/schemas/baixa";
 import type { ContextoTitulo } from "./titulo";
 
@@ -35,6 +36,11 @@ export class BaixaPendenteError extends Error {
 /** Parcela paga, cancelada ou renegociada não recebe baixa. */
 export class BaixaParcelaFechadaError extends Error {
   name = "BaixaParcelaFechadaError";
+}
+
+/** A baixa não é uma rejeição em aberto: não é rejeitada, já foi dispensada ou já se resolveu. */
+export class RejeicaoNaoDispensavelError extends Error {
+  name = "RejeicaoNaoDispensavelError";
 }
 
 const STATUS_QUE_ACEITAM_BAIXA: readonly StatusParcela[] = ["EM_ABERTO", "A_VENCER", "VENCIDO", "PARCIALMENTE_PAGO"];
@@ -363,4 +369,87 @@ export async function estornarBaixa(sessao: SessaoAtiva, baixaId: string, motivo
 
     return tx.baixa.findUniqueOrThrow({ where: { id: baixaId } });
   });
+}
+
+/**
+ * Tira do aviso uma rejeição que não precisa de nova baixa (spec 2026-11-25-rejeicao-visivel): o pagamento
+ * não aconteceu, por exemplo. Só esconde o aviso, sem mexer em saldo nem lançamento: não há segregação.
+ */
+export async function dispensarRejeicao(sessao: SessaoAtiva, baixaId: string, motivo: string) {
+  requirePermission(sessao.perfil, "titulo:baixar");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
+  const motivoLimpo = motivo.trim();
+  if (motivoLimpo.length < 3) throw new Error("Informe o motivo da dispensa");
+
+  return prisma.$transaction(async (tx) => {
+    // Leituras em sequência, sem include com várias relações (consultas paralelas na transação).
+    const baixa = await tx.baixa.findFirstOrThrow({
+      where: { id: baixaId, parcela: { titulo: { filialId: sessao.filialId } } },
+    });
+    if (baixa.statusAprovacao !== "REJEITADO") {
+      throw new RejeicaoNaoDispensavelError("Só uma baixa rejeitada pode ser dispensada");
+    }
+    if (baixa.dispensadaEm) {
+      const quem = baixa.dispensadaPorId
+        ? await tx.usuario.findUnique({ where: { id: baixa.dispensadaPorId }, select: { nome: true } })
+        : null;
+      throw new RejeicaoNaoDispensavelError(
+        `Esta rejeição já foi dispensada${quem ? ` por ${quem.nome}` : ""} em ${formatarDataHora(baixa.dispensadaEm)}`,
+      );
+    }
+    const parcela = await tx.parcela.findUniqueOrThrow({ where: { id: baixa.parcelaId }, select: { status: true } });
+    const daParcela = await tx.baixa.findMany({
+      where: { parcelaId: baixa.parcelaId },
+      select: { id: true, criadoEm: true },
+    });
+    if (!rejeicaoEmAberto(baixa, daParcela, parcela.status)) {
+      throw new RejeicaoNaoDispensavelError(
+        "Esta rejeição já foi resolvida: a parcela recebeu outra baixa ou não está mais em aberto",
+      );
+    }
+
+    const dispensadaEm = new Date();
+    // Condicional: de duas dispensas simultâneas, só uma passa.
+    const { count } = await tx.baixa.updateMany({
+      where: { id: baixaId, dispensadaEm: null },
+      data: { dispensadaPorId: sessao.usuarioId, dispensadaEm, motivoDispensa: motivoLimpo },
+    });
+    if (count !== 1) throw new RejeicaoNaoDispensavelError("Esta rejeição já foi dispensada");
+
+    await registrarAuditoria(
+      {
+        empresaId: sessao.empresaId,
+        filialId: sessao.filialId,
+        usuarioId: sessao.usuarioId,
+        entidade: "Baixa",
+        entidadeId: baixaId,
+        acao: "DISPENSAR_REJEICAO",
+        anterior: { dispensadaEm: null },
+        novo: { dispensadaEm, motivoDispensa: motivoLimpo },
+      },
+      tx,
+    );
+
+    return tx.baixa.findUniqueOrThrow({ where: { id: baixaId } });
+  });
+}
+
+/** Quantas rejeições em aberto há na filial, para o aviso de Contas a pagar/receber. */
+export async function contarRejeicoesEmAberto(filialId: string, tipo: TipoTitulo): Promise<number> {
+  const rejeitadas = await prisma.baixa.findMany({
+    where: {
+      statusAprovacao: "REJEITADO",
+      dispensadaEm: null,
+      parcela: { titulo: { filialId, tipo }, status: { notIn: ["PAGO", "CANCELADO", "RENEGOCIADO"] } },
+    },
+    select: {
+      id: true,
+      statusAprovacao: true,
+      criadoEm: true,
+      avaliadoEm: true,
+      dispensadaEm: true,
+      parcela: { select: { status: true, baixas: { select: { id: true, criadoEm: true } } } },
+    },
+  });
+  return rejeitadas.filter((baixa) => rejeicaoEmAberto(baixa, baixa.parcela.baixas, baixa.parcela.status)).length;
 }

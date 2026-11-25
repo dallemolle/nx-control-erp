@@ -189,6 +189,7 @@ model Usuario {
   baixasRegistradas         Baixa[]                  @relation("BaixaRegistradaPor")
   baixasAvaliadas           Baixa[]                  @relation("BaixaAvaliadaPor")
   baixasEstornadas          Baixa[]                  @relation("BaixaEstornadaPor")
+  baixasRejeicaoDispensada  Baixa[]                  @relation("BaixaRejeicaoDispensadaPor")
   anexos                    Anexo[]
   lancamentosBancarios      LancamentoBancario[]
   saldosBancariosInformados SaldoBancarioInformado[]
@@ -677,6 +678,9 @@ model Baixa {
   estornadoPorId  String?
   estornadoEm     DateTime?
   motivoEstorno   String?
+  dispensadaPorId String?
+  dispensadaEm    DateTime?
+  motivoDispensa  String?
   criadoEm        DateTime             @default(now())
 
   parcela       Parcela              @relation(fields: [parcelaId], references: [id], onDelete: Cascade)
@@ -684,6 +688,7 @@ model Baixa {
   usuario       Usuario              @relation("BaixaRegistradaPor", fields: [usuarioId], references: [id])
   avaliadoPor   Usuario?             @relation("BaixaAvaliadaPor", fields: [avaliadoPorId], references: [id])
   estornadoPor  Usuario?             @relation("BaixaEstornadaPor", fields: [estornadoPorId], references: [id])
+  dispensadaPor Usuario?             @relation("BaixaRejeicaoDispensadaPor", fields: [dispensadaPorId], references: [id])
   lancamentos        LancamentoBancario[]
   pedidoVenda        PedidoVenda?
   repasseRecebimento RepasseCartaoConfirmado? @relation("RepasseRecebimento")

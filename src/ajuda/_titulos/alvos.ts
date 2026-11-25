@@ -11,12 +11,15 @@ export const ALVOS = {
     "lista.filtro.vencimentoDe",
     "lista.filtro.vencimentoAte",
     "lista.filtro.limpar",
+    "lista.filtro.rejeitadas", // só em preenche (o filtro aplicado pelo "Ver"), nunca como alvo de passo
     "lista.tabela",
+    "lista.avisoRejeitadas",
     "lista.linhaExemplo",
     "lista.p1.baixar",
     "lista.p1.aguardando",
     "lista.p1.baixa",
     "lista.p1.estornar",
+    "lista.p1.dispensar",
     "lista.p2.renegociar",
     "lista.p3.vencimento",
     "lista.p3.alterar",
@@ -50,4 +53,5 @@ export const ALVOS = {
   baixa: ["baixa.data", "baixa.valorPago", "baixa.juros", "baixa.multa", "baixa.desconto", "baixa.conta", "baixa.registrar"],
   renegociar: ["reneg.parcela1", "reneg.parcela2", "reneg.adicionar", "reneg.confirmar"],
   estornar: ["estorno.resumo", "estorno.motivo", "estorno.confirmar"],
+  dispensar: ["dispensa.resumo", "dispensa.motivo", "dispensa.confirmar"],
 } as const;

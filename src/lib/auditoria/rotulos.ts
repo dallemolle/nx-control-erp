@@ -62,6 +62,7 @@ export const ROTULOS_ACAO_AUDITORIA: Readonly<Record<string, string>> = {
   CRIAR_LANCAMENTO_E_CONCILIAR: "Criar lançamento e conciliar",
   DESCONCILIAR: "Desconciliar",
   DESFAZER_REPASSE: "Desfazer repasse",
+  DISPENSAR_REJEICAO: "Dispensar rejeição",
   ENCERRAR: "Encerrar",
   ESTORNAR: "Estornar",
   IMPORTAR: "Importar",

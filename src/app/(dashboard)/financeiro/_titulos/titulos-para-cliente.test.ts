@@ -22,6 +22,11 @@ function baixa(id: string, statusAprovacao: string, extra: Record<string, unknow
     estornadoPor: null,
     estornadoEm: null,
     motivoEstorno: null,
+    avaliadoEm: new Date("2026-10-15T18:00:00.000Z"),
+    motivoRejeicao: null,
+    dispensadaEm: null,
+    motivoDispensa: null,
+    dispensadaPor: null,
     lancamentos: [{ grupoConciliacaoId: null }],
     repasseRecebimento: null,
     repasseTaxa: null,
@@ -71,13 +76,17 @@ describe("titulosParaCliente", () => {
     expect(titulo.documento).toBe("NF 1");
   });
 
-  it("leva as baixas pendentes, aprovadas e estornadas, convertidas; rejeitadas ficam fora", () => {
+  it("leva todas as baixas, convertidas, inclusive rejeitadas", () => {
     const estornadaEm = new Date("2026-10-16T12:40:00.000Z");
     const parcela = {
       ...tituloDoServico.parcelas[0],
       baixas: [
         baixa("pendente", "PENDENTE", { avaliadoPor: null, lancamentos: [] }),
-        baixa("rejeitada", "REJEITADO"),
+        baixa("rejeitada", "REJEITADO", {
+          criadoEm: new Date("2026-10-14T13:00:00.000Z"),
+          avaliadoEm: new Date("2026-10-14T18:00:00.000Z"),
+          motivoRejeicao: "valor errado",
+        }),
         baixa("estornada", "ESTORNADO", {
           estornadoPor: { nome: "João" },
           estornadoEm: estornadaEm,
@@ -91,6 +100,16 @@ describe("titulosParaCliente", () => {
 
     expect(titulo.parcelas[0].temBaixaPendente).toBe(true);
     expect(titulo.parcelas[0].baixas).toEqual([
+      expect.objectContaining({
+        id: "rejeitada",
+        status: "REJEITADO",
+        aprovadaPor: null,
+        rejeitadaPor: "João",
+        rejeitadaEm: new Date("2026-10-14T18:00:00.000Z"),
+        motivoRejeicao: "valor errado",
+        // Vieram baixas depois da rejeição: resolvida.
+        rejeicaoEmAberto: false,
+      }),
       expect.objectContaining({ id: "pendente", status: "PENDENTE", aprovadaPor: null }),
       {
         id: "estornada",
@@ -107,6 +126,13 @@ describe("titulosParaCliente", () => {
         estornadaPor: "João",
         estornadaEm,
         motivoEstorno: "conta errada",
+        rejeitadaPor: null,
+        rejeitadaEm: null,
+        motivoRejeicao: null,
+        rejeicaoEmAberto: false,
+        dispensadaPor: null,
+        dispensadaEm: null,
+        motivoDispensa: null,
         conciliada: false,
         deRepasse: false,
       },
@@ -114,11 +140,37 @@ describe("titulosParaCliente", () => {
     ]);
   });
 
-  it("parcela só com baixa rejeitada não tem pendente", () => {
-    const parcela = { ...tituloDoServico.parcelas[0], baixas: [baixa("rejeitada", "REJEITADO")] };
+  it("parcela só com baixa rejeitada: sem pendente, com a rejeição em aberto", () => {
+    const parcela = {
+      ...tituloDoServico.parcelas[0],
+      baixas: [baixa("rejeitada", "REJEITADO", { motivoRejeicao: "valor errado" })],
+    };
     const [titulo] = titulosParaCliente([{ ...tituloDoServico, parcelas: [parcela] }]);
     expect(titulo.parcelas[0].temBaixaPendente).toBe(false);
-    expect(titulo.parcelas[0].baixas).toEqual([]);
+    expect(titulo.parcelas[0].baixas).toEqual([
+      expect.objectContaining({ id: "rejeitada", rejeicaoEmAberto: true, motivoRejeicao: "valor errado" }),
+    ]);
+  });
+
+  it("rejeição dispensada leva quem, quando e o motivo, e não está em aberto", () => {
+    const dispensadaEm = new Date("2026-10-16T12:00:00.000Z");
+    const parcela = {
+      ...tituloDoServico.parcelas[0],
+      baixas: [
+        baixa("rejeitada", "REJEITADO", {
+          dispensadaEm,
+          dispensadaPor: { nome: "Maria" },
+          motivoDispensa: "pagamento não aconteceu",
+        }),
+      ],
+    };
+    const [titulo] = titulosParaCliente([{ ...tituloDoServico, parcelas: [parcela] }]);
+    expect(titulo.parcelas[0].baixas[0]).toMatchObject({
+      rejeicaoEmAberto: false,
+      dispensadaPor: "Maria",
+      dispensadaEm,
+      motivoDispensa: "pagamento não aconteceu",
+    });
   });
 
   it("marca conciliada e de repasse", () => {

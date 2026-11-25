@@ -154,15 +154,15 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Clique em Rejeitar",
         explicacao: "O clique já rejeita a baixa, sem pergunta de confirmação.",
         dica:
-          "Quem registrou não recebe aviso, e o motivo fica só na Auditoria, que o perfil Financeiro não vê. " +
-          "Avise a pessoa, para ela lançar de novo do jeito certo.",
+          "Quem registrou vê a rejeição embaixo da parcela, com o seu nome e o motivo, e o aviso “baixa rejeitada " +
+          "aguardando novo registro” no alto de Contas a pagar ou Contas a receber.",
       },
     ],
     eDepois: {
       texto:
-        "A linha sai da lista e nenhum lançamento é feito: a parcela continua como estava e volta a aceitar baixa. Se a baixa precisava " +
-        "só de correção, quem registrou lança outra pelo botão Baixar da parcela, em Contas a pagar ou Contas a " +
-        "receber, e ela volta para esta lista.",
+        "A linha sai da lista e nenhum lançamento é feito: a parcela continua como estava e volta a aceitar baixa. " +
+        "Quem registrou lança outra pelo botão Baixar da parcela, e ela volta para esta lista; se o pagamento não " +
+        "aconteceu, dispensa o aviso na própria parcela.",
       proximoRoteiro: "aprovar-bloqueado",
     },
   }),

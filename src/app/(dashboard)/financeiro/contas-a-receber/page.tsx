@@ -16,6 +16,8 @@ import { ExportarLinks } from "../../_shared/exportar-links";
 import { titulosParaCliente } from "../_titulos/titulos-para-cliente";
 import { nomeDaContaBancaria } from "@/lib/contaBancaria";
 import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
+import { contarRejeicoesEmAberto } from "@/server/services/baixa";
+import { AvisoRejeitadas } from "../_titulos/aviso-rejeitadas";
 
 function paramCru(valor: string | string[] | undefined): string | undefined {
   return Array.isArray(valor) ? valor[0] : valor;
@@ -31,6 +33,7 @@ type SearchParams = {
   status?: string | string[];
   vencimentoDe?: string | string[];
   vencimentoAte?: string | string[];
+  rejeitadas?: string | string[];
 };
 
 export default async function ContasAReceberPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
@@ -45,17 +48,27 @@ export default async function ContasAReceberPage({ searchParams }: { searchParam
   const filtros = filtroTitulosDaUrl(get);
   const queryString = queryStringDosFiltros(get);
 
-  const [titulos, clientes, categorias, centrosCusto, centrosLucro, safras, projetos, contasBancarias] =
-    await Promise.all([
-      listarTitulos(sessao.filialId, "RECEBER", filtros),
-      listarClientes(sessao.empresaId),
-      listarCategoriasFinanceiras(sessao.filialId),
-      listarCentrosCusto(sessao.filialId),
-      listarCentrosLucro(sessao.filialId),
-      listarSafras(sessao.filialId),
-      listarProjetos(sessao.filialId),
-      listarContasBancarias(sessao.filialId),
-    ]);
+  const [
+    titulos,
+    clientes,
+    categorias,
+    centrosCusto,
+    centrosLucro,
+    safras,
+    projetos,
+    contasBancarias,
+    rejeicoesEmAberto,
+  ] = await Promise.all([
+    listarTitulos(sessao.filialId, "RECEBER", filtros),
+    listarClientes(sessao.empresaId),
+    listarCategoriasFinanceiras(sessao.filialId),
+    listarCentrosCusto(sessao.filialId),
+    listarCentrosLucro(sessao.filialId),
+    listarSafras(sessao.filialId),
+    listarProjetos(sessao.filialId),
+    listarContasBancarias(sessao.filialId),
+    contarRejeicoesEmAberto(sessao.filialId, "RECEBER"),
+  ]);
 
   const opcoes = {
     contrapartes: clientes,
@@ -106,6 +119,12 @@ export default async function ContasAReceberPage({ searchParams }: { searchParam
           safras: opcoes.safras,
           projetos: opcoes.projetos,
         }}
+      />
+      <AvisoRejeitadas
+        quantidade={rejeicoesEmAberto}
+        href="/financeiro/contas-a-receber?rejeitadas=1"
+        filtroAtivo={filtros.rejeitadas === true}
+        hrefSemFiltro="/financeiro/contas-a-receber"
       />
       <ContasClientePanel
         tipo="RECEBER"

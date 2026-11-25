@@ -11,6 +11,7 @@ const {
   baixa: CenaBaixa,
   renegociar: CenaRenegociar,
   estornar: CenaEstornar,
+  dispensar: CenaDispensar,
 } = criarCenas("PAGAR", EXEMPLO);
 
 const html = (componente: ComponentType<PropsCena>, valores: Record<string, string> = {}) =>
@@ -90,6 +91,42 @@ describe("cenas de títulos (exemplo de Contas a pagar)", () => {
     expect(saida).toContain("registrada por Maria em 15/10/2026 10:20");
     expect(saida).not.toContain('data-alvo="lista.p1.baixar"');
     expect(saida).not.toContain('data-alvo="lista.p1.estornar"');
+  });
+
+  test("baixa rejeitada em aberto: selo, motivo, Dispensar e o aviso no topo", () => {
+    const saida = html(CenaLista, { "lista.linhaExemplo": "expandida", "lista.p1.baixa": "rejeitada" });
+    expect(saida).toContain("Rejeitada");
+    expect(saida).toContain(EXEMPLO.baixa.motivoRejeicao);
+    expect(saida).toContain('data-alvo="lista.p1.dispensar"');
+    expect(saida).toContain('data-alvo="lista.avisoRejeitadas"');
+    expect(saida).toContain("1 baixa rejeitada aguardando novo registro.");
+  });
+
+  test("baixa rejeitada com o filtro de rejeitadas aplicado: só o título do exemplo e aviso sem Ver", () => {
+    const valores = { "lista.p1.baixa": "rejeitada", "lista.filtro.rejeitadas": "1" };
+    const saida = html(CenaLista, valores);
+    expect(saida).toContain(EXEMPLO.documento);
+    for (const outro of EXEMPLO.outrosTitulos) expect(saida).not.toContain(outro.documento);
+    expect(saida).toContain('data-alvo="lista.avisoRejeitadas"');
+    const aviso = saida.slice(saida.indexOf('data-alvo="lista.avisoRejeitadas"'));
+    expect(aviso.slice(0, aviso.indexOf("</div>"))).not.toContain("Ver");
+    // sem o filtro, os outros títulos aparecem e o aviso tem o Ver
+    const semFiltro = html(CenaLista, { "lista.p1.baixa": "rejeitada" });
+    for (const outro of EXEMPLO.outrosTitulos) expect(semFiltro).toContain(outro.documento);
+  });
+
+  test("baixa rejeitada e dispensada: linha apagada com a dispensa, sem aviso nem botão", () => {
+    const saida = html(CenaLista, { "lista.linhaExemplo": "expandida", "lista.p1.baixa": "dispensada" });
+    expect(saida).toContain(EXEMPLO.baixa.motivoDispensa);
+    expect(saida).not.toContain('data-alvo="lista.p1.dispensar"');
+    expect(saida).not.toContain("aguardando novo registro");
+  });
+
+  test("janela Dispensar rejeição", () => {
+    const saida = html(CenaDispensar, { "dispensa.motivo": EXEMPLO.baixa.motivoDispensa });
+    expect(saida).toContain("Dispensar rejeição");
+    expect(saida).toContain(EXEMPLO.baixa.motivoRejeicao);
+    expect(saida).toContain('data-alvo="dispensa.confirmar"');
   });
 
   test("sem baixa no roteiro, a parcela 1 não mostra a lista", () => {

@@ -36,6 +36,10 @@ export const EXEMPLO = {
     estornadaPor: "João",
     estornadaEm: "16/10/2026 09:40",
     motivoEstorno: "Conta errada: o pagamento saiu do Banco do Brasil",
+    rejeitadaPor: "João",
+    rejeitadaEm: "15/10/2026 16:05",
+    motivoRejeicao: "Comprovante sem juros: o boleto foi pago por R$ 1.000,00",
+    motivoDispensa: "Boleto não foi pago: o fornecedor vai emitir outro",
   },
   outrosTitulos: [
     {

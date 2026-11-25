@@ -132,6 +132,23 @@ export async function estornarBaixaAction(tipo: TipoTitulo, baixaId: string, mot
   return { sucesso: true };
 }
 
+export async function dispensarRejeicaoAction(tipo: TipoTitulo, baixaId: string, motivo: string): Promise<FormState> {
+  const sessao = await requireSessaoAtiva();
+
+  if (typeof motivo !== "string" || typeof baixaId !== "string") {
+    return { erro: "Informe o motivo da dispensa" };
+  }
+
+  try {
+    await baixaService.dispensarRejeicao(sessao, baixaId, motivo);
+  } catch (erro) {
+    return { erro: mensagemErro(erro) };
+  }
+
+  revalidatePath(rotaPara(tipo));
+  return { sucesso: true };
+}
+
 export async function renegociarParcelaAction(
   tipo: TipoTitulo,
   parcelaId: string,
