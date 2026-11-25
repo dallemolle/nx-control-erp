@@ -54,7 +54,7 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Geração líquida: entradas menos saídas",
         explicacao:
           "Positiva quando entrou mais do que saiu; negativa quando saiu mais. Em novembro de 2026, " +
-          "R$ 19.400,00 − R$ 21.650,00 = −R$ 2.250,00: o caixa encolheu no mês.",
+          "R$ 19.400,00 − R$ 20.638,00 = −R$ 1.238,00: o caixa encolheu no mês.",
       },
       {
         cena: "painel",
