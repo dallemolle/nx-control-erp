@@ -135,6 +135,10 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 
 ### 1. Desconto na baixa não abate o saldo da parcela
 
+- **Status:** feito na branch `fix/desconto-abate-parcela` (2026-11-25, spec
+  `2026-11-25-desconto-abate-parcela-design.md`): o saldo e o status usam
+  pago − juros − multa + desconto; baixa que não abate nada é recusada; o
+  diálogo mostra a prévia.
 - **Problema:** `calcularStatusParcela` (`src/server/services/parcela.ts`)
   compara só a soma de `valorPago` das baixas aprovadas com `valorAtualizado`.
   `valorDesconto`, `valorJuros` e `valorMulta` são só registro.

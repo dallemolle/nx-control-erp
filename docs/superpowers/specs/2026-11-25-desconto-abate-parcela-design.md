@@ -1,6 +1,6 @@
 # Desconto na baixa abate o saldo da parcela
 
-Data: 2026-11-25 · Status: desenho aprovado
+Data: 2026-11-25 · Status: implementada (2026-11-25)
 
 Item 1 do [backlog](../../backlog.md), seção "Financeiro — lacunas achadas ao
 escrever a ajuda contextual" ("Desconto na baixa não abate o saldo da

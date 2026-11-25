@@ -506,6 +506,11 @@ function CenaBaixa({ valores }: PropsCena) {
         <CampoSimulado alvo="baixa.multa" rotulo="Multa" valor={valores["baixa.multa"] ?? "0"} />
         <CampoSimulado alvo="baixa.desconto" rotulo="Desconto" valor={valores["baixa.desconto"] ?? "0"} />
       </div>
+      {valores["baixa.previa"] ? (
+        <Alvo nome="baixa.previa">
+          <p className="text-sm text-muted-foreground">{valores["baixa.previa"]}</p>
+        </Alvo>
+      ) : null}
       <SelectSimulado alvo="baixa.conta" rotulo="Conta bancária" valor={valores["baixa.conta"]} />
       <BotaoSimulado alvo="baixa.registrar" largo>
         Registrar baixa (fica pendente de aprovação)

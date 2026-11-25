@@ -246,9 +246,9 @@ export const ROTEIROS: readonly Roteiro[] = [
           "O campo se chama Valor pago nas duas telas: aqui é o que o cliente pagou, o total que entrou na conta. " +
           "O cliente pagou 5 dias atrasado, com R$ 60,00 de juros: 15.000,00 + 60,00 = 15060,00.",
         dica:
-          "O cliente pagou menos que o valor da parcela, ou você deu desconto? Hoje o sistema compara só o valor " +
-          "pago com o valor da parcela: a parcela fica como PARCIALMENTE_PAGO e a diferença continua em aberto. " +
-          "Se foi desconto, combine com o responsável pelo financeiro como registrar antes de lançar a baixa.",
+          "Deu desconto ao cliente? Informe no Valor pago o que de fato entrou na conta e o desconto no campo " +
+          "Desconto: parcela de R$ 15.000,00 recebida com R$ 300,00 de desconto fica Valor pago 14700,00 e " +
+          "Desconto 300,00. O sistema soma o desconto e a parcela fica paga.",
         preenche: { "baixa.valorPago": "15060,00" },
       },
       {
@@ -256,9 +256,14 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "baixa.juros",
         instrucao: "Informe juros, multa e desconto, se houver",
         explicacao:
-          "Esses campos só detalham de onde veio a diferença no valor recebido. No exemplo, R$ 60,00 vão em Juros. " +
-          "Multa e Desconto ficam em 0 quando não existem.",
-        preenche: { "baixa.juros": "60,00" },
+          "O sistema usa esses campos para saber quanto da parcela foi quitado: valor pago, menos juros e " +
+          "multa, mais o desconto. No exemplo, R$ 60,00 vão em Juros e a baixa quita os R$ 15.000,00 da " +
+          "parcela. Multa e Desconto ficam em 0 quando não existem. Abaixo dos campos aparece quanto a baixa " +
+          "abate e quanto fica em aberto.",
+        preenche: {
+          "baixa.juros": "60,00",
+          "baixa.previa": "Abate R$ 15.000,00 da parcela · fica R$ 0,00 em aberto",
+        },
       },
       {
         cena: "baixa",

@@ -66,6 +66,14 @@ describe("cenas de títulos (exemplo de Contas a pagar)", () => {
     expect(html(CenaRenegociar)).toContain("Confirmar renegociação");
   });
 
+  test("a prévia da baixa só aparece quando o roteiro preenche", () => {
+    const texto = "Abate R$ 1.000,00 da parcela · fica R$ 0,00 em aberto";
+    const com = html(CenaBaixa, { "baixa.previa": texto });
+    expect(com).toContain(texto);
+    expect(com).toContain('data-alvo="baixa.previa"');
+    expect(html(CenaBaixa)).not.toContain("baixa.previa");
+  });
+
   test("baixa aprovada aparece embaixo da parcela 1, que fica PAGO e sem Baixar", () => {
     const saida = html(CenaLista, { "lista.linhaExemplo": "expandida", "lista.p1.baixa": "aprovada" });
     expect(saida).toContain('data-alvo="lista.p1.baixa"');
