@@ -3,7 +3,8 @@ import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permiss
 import { registrarAuditoria, type ClientePrisma } from "@/server/audit/registrar";
 import { recalcularEPersistirStatusParcela } from "@/server/services/parcela";
 import type { SessaoAtiva } from "@/server/auth/sessao";
-import type { Prisma, StatusAprovacaoBaixa } from "@prisma/client";
+import type { Prisma, StatusAprovacaoBaixa, StatusParcela } from "@prisma/client";
+import { formatarData, formatarMoeda } from "@/lib/formatacao";
 import type { BaixaFormValues } from "@/lib/schemas/baixa";
 import type { ContextoTitulo } from "./titulo";
 
@@ -25,6 +26,20 @@ function garantirBaixaPendente(statusAtual: StatusAprovacaoBaixa): void {
     throw new Error("Esta baixa já foi avaliada");
   }
 }
+
+/** A parcela já tem baixa esperando aprovação: a segunda só depois de aprovar ou rejeitar a primeira. */
+export class BaixaPendenteError extends Error {}
+
+/** Parcela paga, cancelada ou renegociada não recebe baixa. */
+export class BaixaParcelaFechadaError extends Error {}
+
+const STATUS_QUE_ACEITAM_BAIXA: readonly StatusParcela[] = ["EM_ABERTO", "A_VENCER", "VENCIDO", "PARCIALMENTE_PAGO"];
+
+const ROTULO_PARCELA_FECHADA: Partial<Record<StatusParcela, string>> = {
+  PAGO: "paga",
+  CANCELADO: "cancelada",
+  RENEGOCIADO: "renegociada",
+};
 
 export const MSG_BAIXA_MAQUININHA =
   "Este título é de venda na maquininha: confirme o recebimento em Repasses de cartão";
@@ -101,32 +116,61 @@ export async function registrarBaixa(sessao: SessaoAtiva, parcelaId: string, dad
     throw new Error("Conta bancária não pertence à filial ativa");
   }
 
-  const baixa = await prisma.baixa.create({
-    data: {
-      parcelaId,
-      data: dados.data,
-      valorPago: dados.valorPago,
-      valorJuros: dados.valorJuros,
-      valorMulta: dados.valorMulta,
-      valorDesconto: dados.valorDesconto,
-      contaBancariaId: dados.contaBancariaId,
-      usuarioId: sessao.usuarioId,
-      statusAprovacao: "PENDENTE",
-    },
-  });
+  return prisma.$transaction(async (tx) => {
+    // Trava a parcela: duas baixas ao mesmo tempo ficam em fila e a segunda vê a primeira.
+    await tx.$queryRaw`SELECT id FROM parcelas WHERE id = ${parcelaId} FOR UPDATE`;
 
-  await registrarAuditoria({
-    empresaId: sessao.empresaId,
-    filialId: sessao.filialId,
-    usuarioId: sessao.usuarioId,
-    entidade: "Baixa",
-    entidadeId: baixa.id,
-    acao: "CRIAR",
-    anterior: null,
-    novo: { parcelaId, valorPago: dados.valorPago, statusAprovacao: "PENDENTE" },
-  });
+    const parcela = await tx.parcela.findUniqueOrThrow({ where: { id: parcelaId }, select: { status: true } });
+    if (!STATUS_QUE_ACEITAM_BAIXA.includes(parcela.status)) {
+      throw new BaixaParcelaFechadaError(
+        `Esta parcela está ${ROTULO_PARCELA_FECHADA[parcela.status] ?? "fechada"} e não aceita baixa`,
+      );
+    }
 
-  return baixa;
+    // Leituras em sequência (sem include): ver "consultas paralelas na transação" no backlog.
+    const pendente = await tx.baixa.findFirst({
+      where: { parcelaId, statusAprovacao: "PENDENTE" },
+      select: { valorPago: true, data: true, usuarioId: true },
+    });
+    if (pendente) {
+      const quem = await tx.usuario.findUniqueOrThrow({ where: { id: pendente.usuarioId }, select: { nome: true } });
+      throw new BaixaPendenteError(
+        `Esta parcela já tem uma baixa aguardando aprovação: ${formatarMoeda(pendente.valorPago)} de ` +
+          `${formatarData(pendente.data)}, registrada por ${quem.nome}. ` +
+          "Peça para aprovarem ou rejeitarem essa baixa antes de registrar outra.",
+      );
+    }
+
+    const baixa = await tx.baixa.create({
+      data: {
+        parcelaId,
+        data: dados.data,
+        valorPago: dados.valorPago,
+        valorJuros: dados.valorJuros,
+        valorMulta: dados.valorMulta,
+        valorDesconto: dados.valorDesconto,
+        contaBancariaId: dados.contaBancariaId,
+        usuarioId: sessao.usuarioId,
+        statusAprovacao: "PENDENTE",
+      },
+    });
+
+    await registrarAuditoria(
+      {
+        empresaId: sessao.empresaId,
+        filialId: sessao.filialId,
+        usuarioId: sessao.usuarioId,
+        entidade: "Baixa",
+        entidadeId: baixa.id,
+        acao: "CRIAR",
+        anterior: null,
+        novo: { parcelaId, valorPago: dados.valorPago, statusAprovacao: "PENDENTE" },
+      },
+      tx,
+    );
+
+    return baixa;
+  });
 }
 
 export async function aprovarBaixa(sessao: SessaoAtiva, baixaId: string) {

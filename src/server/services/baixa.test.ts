@@ -14,7 +14,10 @@ import {
   estornarBaixa,
   MSG_ESTORNO_CONCILIADA,
   MSG_ESTORNO_POR_QUEM_REGISTROU,
+  BaixaPendenteError,
+  BaixaParcelaFechadaError,
 } from "./baixa";
+import { formatarMoeda } from "@/lib/formatacao";
 
 describe("baixa (fluxo de aprovação)", () => {
   let fixture: FixtureFinanceiro; // perfil FINANCEIRO: pode registrar baixa, não aprovar
@@ -188,7 +191,17 @@ describe("baixa (fluxo de aprovação)", () => {
     const aprovada = await registrarBaixa(fixtureTesouraria.sessao, parcela.id, { ...dados, valorPago: 100 });
     await aprovarBaixa(fixtureTesouraria.sessao, aprovada.id);
     const primeira = await registrarBaixa(fixtureTesouraria.sessao, parcela.id, { ...dados, valorPago: 200 });
-    await registrarBaixa(fixtureTesouraria.sessao, parcela.id, { ...dados, valorPago: 200 });
+    // Pendente de antes da trava de uma pendente por parcela: gravada direto no banco.
+    await prisma.baixa.create({
+      data: {
+        parcelaId: parcela.id,
+        data: dados.data,
+        valorPago: 200,
+        contaBancariaId: dados.contaBancariaId,
+        usuarioId: fixtureTesouraria.usuarioId,
+        statusAprovacao: "PENDENTE",
+      },
+    });
     const parcelaOutraFilial = await criarParcelaDeTeste(fixture, 50);
     const deOutraFilial = await registrarBaixa(fixture.sessao, parcelaOutraFilial.id, {
       ...dados,
@@ -362,6 +375,81 @@ describe("baixa (fluxo de aprovação)", () => {
     await expect(prisma.$transaction((tx) => efetivarBaixa(tx, contexto, baixa.id))).rejects.toThrow(
       "Esta baixa já foi avaliada",
     );
+  });
+
+  describe("uma baixa pendente por parcela", () => {
+    const dadosBaixa = (valorPago: number, data = new Date()) => ({
+      data,
+      valorPago,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fixtureTesouraria.contaBancariaId,
+    });
+
+    test("recusa a segunda baixa enquanto a primeira está pendente, dizendo qual é", async () => {
+      const parcela = await criarParcelaDeTeste(fixtureTesouraria, 1012);
+      await registrarBaixa(fixtureTesouraria.sessao, parcela.id, dadosBaixa(1012, new Date("2026-10-14T00:00:00Z")));
+      const usuario = await prisma.usuario.findUniqueOrThrow({ where: { id: fixtureTesouraria.usuarioId } });
+
+      const tentativa = registrarBaixa(fixtureTesouraria.sessao, parcela.id, dadosBaixa(1012));
+
+      await expect(tentativa).rejects.toThrow(BaixaPendenteError);
+      await expect(tentativa).rejects.toThrow(
+        `Esta parcela já tem uma baixa aguardando aprovação: ${formatarMoeda(1012)} de 14/10/2026, ` +
+          `registrada por ${usuario.nome}. Peça para aprovarem ou rejeitarem essa baixa antes de registrar outra.`,
+      );
+      expect(await prisma.baixa.count({ where: { parcelaId: parcela.id } })).toBe(1);
+    });
+
+    test("depois de aprovar a primeira (parcial), a segunda é registrada", async () => {
+      const parcela = await criarParcelaDeTeste(fixtureTesouraria, 1000);
+      const primeira = await registrarBaixa(fixtureTesouraria.sessao, parcela.id, dadosBaixa(400));
+      await aprovarBaixa(fixtureTesouraria.sessao, primeira.id);
+
+      const segunda = await registrarBaixa(fixtureTesouraria.sessao, parcela.id, dadosBaixa(600));
+
+      expect(segunda.statusAprovacao).toBe("PENDENTE");
+    });
+
+    test("depois de rejeitar a primeira, a segunda é registrada", async () => {
+      const parcela = await criarParcelaDeTeste(fixtureTesouraria, 700);
+      const primeira = await registrarBaixa(fixtureTesouraria.sessao, parcela.id, dadosBaixa(7000));
+      await rejeitarBaixa(fixtureTesouraria.sessao, primeira.id, "valor errado");
+
+      const segunda = await registrarBaixa(fixtureTesouraria.sessao, parcela.id, dadosBaixa(700));
+
+      expect(segunda.statusAprovacao).toBe("PENDENTE");
+    });
+
+    test("duas baixas ao mesmo tempo: só uma é registrada", async () => {
+      const parcela = await criarParcelaDeTeste(fixtureTesouraria, 900);
+
+      const resultados = await Promise.allSettled([
+        registrarBaixa(fixtureTesouraria.sessao, parcela.id, dadosBaixa(900)),
+        registrarBaixa(fixtureTesouraria.sessao, parcela.id, dadosBaixa(900)),
+      ]);
+
+      expect(resultados.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+      const recusa = resultados.find((r) => r.status === "rejected") as PromiseRejectedResult;
+      expect(recusa.reason).toBeInstanceOf(BaixaPendenteError);
+      expect(await prisma.baixa.count({ where: { parcelaId: parcela.id } })).toBe(1);
+    });
+
+    test("parcela paga ou cancelada não aceita baixa", async () => {
+      const paga = await criarParcelaDeTeste(fixtureTesouraria, 300);
+      const baixa = await registrarBaixa(fixtureTesouraria.sessao, paga.id, dadosBaixa(300));
+      await aprovarBaixa(fixtureTesouraria.sessao, baixa.id);
+      await expect(registrarBaixa(fixtureTesouraria.sessao, paga.id, dadosBaixa(300))).rejects.toThrow(
+        new BaixaParcelaFechadaError("Esta parcela está paga e não aceita baixa"),
+      );
+
+      const cancelada = await criarParcelaDeTeste(fixtureTesouraria, 300);
+      await cancelarParcela(fixtureTesouraria.sessaoAdmin, cancelada.id);
+      await expect(registrarBaixa(fixtureTesouraria.sessao, cancelada.id, dadosBaixa(300))).rejects.toThrow(
+        "Esta parcela está cancelada e não aceita baixa",
+      );
+    });
   });
 });
 
