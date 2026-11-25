@@ -435,8 +435,10 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Veja a rejeição dispensada",
         explicacao:
           "A baixa rejeitada continua embaixo da parcela, apagada e numa linha só, com quem dispensou e o motivo. " +
-          "O aviso do alto da tela some.",
-        preenche: { "lista.linhaExemplo": "expandida", "lista.p1.baixa": "dispensada" },
+          "O aviso do alto da tela some. Com o filtro de rejeitadas ligado, a lista fica vazia e aparece " +
+          "“Nenhuma baixa rejeitada aguardando novo registro.”: clique em “Mostrar todos os títulos” para ver o " +
+          "título de novo.",
+        preenche: { "lista.linhaExemplo": "expandida", "lista.p1.baixa": "dispensada", "lista.filtro.rejeitadas": "" },
       },
     ],
     eDepois: {
