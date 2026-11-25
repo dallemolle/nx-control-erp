@@ -3,7 +3,7 @@ import { valoresDaBaixa } from "@/server/services/parcela";
 import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { TipoTitulo } from "@prisma/client";
-import { buscarSaldoEmCaixaAte, calcularJanela, fimDoDiaUTC, type SubPeriodo } from "./fluxoDeCaixa";
+import { buscarAguardandoConciliacao, buscarSaldoEmCaixaAte, calcularJanela, fimDoDiaUTC, type AguardandoConciliacao, type SubPeriodo } from "./fluxoDeCaixa";
 import { totalAbatido, type ValoresDaBaixa } from "@/lib/financeiro/valorAbatido";
 import { whereTituloPorClassificacao, type FiltroClassificacao } from "./classificacaoFiscal";
 
@@ -38,7 +38,11 @@ export type LinhaAVencerAntes = Omit<LinhaEmAtraso, "venceuAte"> & {
   venceAte: Date;
 };
 
+/** Lançamentos ainda não conciliados: liga o saldo conciliado (saldo inicial) ao saldo contábil (saldo final). */
+export type LinhaAguardandoConciliacao = Omit<LinhaEmAtraso, "venceuAte">;
+
 export type FluxoDeCaixaProjetado = {
+  aguardandoConciliacao: LinhaAguardandoConciliacao | null;
   emAtraso: LinhaEmAtraso | null;
   aVencerAntes: LinhaAVencerAntes | null;
   periodos: PeriodoFluxoDeCaixaProjetado[];
@@ -46,6 +50,8 @@ export type FluxoDeCaixaProjetado = {
 
 /** Parcelas que vencem antes da janela, cada grupo na sua linha (presente = linha existe, mesmo vazia). */
 export type ParcelasAntesDaJanela = {
+  /** Lançado e não conciliado; presente = linha existe, mesmo zerada. */
+  aguardandoConciliacao?: AguardandoConciliacao;
   atrasadas?: { parcelas: ParcelaParaProjecao[]; venceuAte: Date };
   aVencerAntes?: ParcelaParaProjecao[];
 };
@@ -80,13 +86,18 @@ export function saldoRemanescenteParcela(
   return valorAtualizado - totalAbatido(baixasAprovadas);
 }
 
-/** Soma as parcelas por tipo e encadeia o saldo a partir de `saldoInicial`. */
-function agregar(parcelas: ParcelaParaProjecao[], saldoInicial: number) {
-  const entradasProjetadas = parcelas.filter((p) => p.tipo === "RECEBER").reduce((soma, p) => soma + p.saldo, 0);
-  const saidasProjetadas = parcelas.filter((p) => p.tipo === "PAGAR").reduce((soma, p) => soma + p.saldo, 0);
+/** Uma linha da projeção a partir das entradas e saídas, encadeando de `saldoInicial`. */
+function linha(entradasProjetadas: number, saidasProjetadas: number, saldoInicial: number) {
   const geracaoLiquida = entradasProjetadas - saidasProjetadas;
   const saldoFinal = saldoInicial + geracaoLiquida;
   return { saldoInicial, entradasProjetadas, saidasProjetadas, geracaoLiquida, saldoFinal, alerta: saldoFinal < 0 };
+}
+
+/** Soma as parcelas por tipo e encadeia o saldo a partir de `saldoInicial`. */
+function agregar(parcelas: ParcelaParaProjecao[], saldoInicial: number) {
+  const entradas = parcelas.filter((p) => p.tipo === "RECEBER").reduce((soma, p) => soma + p.saldo, 0);
+  const saidas = parcelas.filter((p) => p.tipo === "PAGAR").reduce((soma, p) => soma + p.saldo, 0);
+  return linha(entradas, saidas, saldoInicial);
 }
 
 /**
@@ -96,9 +107,10 @@ function agregar(parcelas: ParcelaParaProjecao[], saldoInicial: number) {
  * `calcularPeriodosFluxoDeCaixa` no fluxo realizado, mas agrupando por
  * `tipo` de título (RECEBER/PAGAR) em vez de tipo de lançamento.
  *
- * Antes dos meses, na ordem: a linha "Em atraso" (se `anteriores.atrasadas`
- * vier) e a linha "A vencer até" (se `anteriores.aVencerAntes` vier). Cada
- * uma parte do saldo final da anterior, e os meses partem da última.
+ * Antes dos meses, na ordem: "Aguardando conciliação" (se
+ * `anteriores.aguardandoConciliacao` vier), "Em atraso" (se
+ * `anteriores.atrasadas` vier) e "A vencer até" (se `anteriores.aVencerAntes`
+ * vier). Cada uma parte do saldo final da anterior, e os meses partem da última.
  */
 export function calcularPeriodosFluxoDeCaixaProjetado(
   periodos: SubPeriodo[],
@@ -106,25 +118,29 @@ export function calcularPeriodosFluxoDeCaixaProjetado(
   saldoInicialAbsoluto: number,
   anteriores: ParcelasAntesDaJanela = {},
 ): FluxoDeCaixaProjetado {
+  const aguardandoConciliacao = anteriores.aguardandoConciliacao
+    ? linha(anteriores.aguardandoConciliacao.entradas, anteriores.aguardandoConciliacao.saidas, saldoInicialAbsoluto)
+    : null;
+  const saldoDePartida = aguardandoConciliacao?.saldoFinal ?? saldoInicialAbsoluto;
   const emAtraso = anteriores.atrasadas
-    ? { venceuAte: anteriores.atrasadas.venceuAte, ...agregar(anteriores.atrasadas.parcelas, saldoInicialAbsoluto) }
+    ? { venceuAte: anteriores.atrasadas.venceuAte, ...agregar(anteriores.atrasadas.parcelas, saldoDePartida) }
     : null;
   const aVencerAntes = anteriores.aVencerAntes
     ? {
         venceAte: new Date(periodos[0].inicio.getTime() - 1),
-        ...agregar(anteriores.aVencerAntes, emAtraso ? emAtraso.saldoFinal : saldoInicialAbsoluto),
+        ...agregar(anteriores.aVencerAntes, emAtraso ? emAtraso.saldoFinal : saldoDePartida),
       }
     : null;
-  let saldoCorrente = aVencerAntes?.saldoFinal ?? emAtraso?.saldoFinal ?? saldoInicialAbsoluto;
+  let saldoCorrente = aVencerAntes?.saldoFinal ?? emAtraso?.saldoFinal ?? saldoDePartida;
 
   const meses = periodos.map(({ inicio, fim }) => {
     const doPeriodo = parcelas.filter((p) => p.dataVencimento >= inicio && p.dataVencimento <= fim);
-    const linha = agregar(doPeriodo, saldoCorrente);
-    saldoCorrente = linha.saldoFinal;
-    return { inicio, fim, ...linha };
+    const agregado = agregar(doPeriodo, saldoCorrente);
+    saldoCorrente = agregado.saldoFinal;
+    return { inicio, fim, ...agregado };
   });
 
-  return { emAtraso, aVencerAntes, periodos: meses };
+  return { aguardandoConciliacao, emAtraso, aVencerAntes, periodos: meses };
 }
 
 const STATUS_EM_ABERTO = ["EM_ABERTO", "A_VENCER", "VENCIDO", "PARCIALMENTE_PAGO"] as const;
@@ -189,7 +205,9 @@ export function buscarParcelasEmAbertoVencendoEntre(
  * partindo de 0 (acumulado — o saldo bancário não se divide) e sem alerta de
  * saldo negativo, que não faz sentido sobre um acumulado parcial.
  *
- * Tudo parte do saldo em caixa de hoje. O corte do atraso é o menor entre o
+ * Tudo parte do saldo em caixa conciliado de hoje; a linha "Aguardando
+ * conciliação" soma o que foi lançado e o extrato ainda não confirmou e chega
+ * ao saldo contábil, de onde partem as demais. O corte do atraso é o menor entre o
  * início da janela e o início de hoje: "Em atraso" (sempre presente) soma as
  * parcelas em aberto vencidas antes dele. Numa janela que começa depois de
  * hoje, "A vencer até" soma as que vencem de hoje até a véspera da janela.
@@ -211,8 +229,9 @@ export async function listarFluxoDeCaixaProjetado(
   const corte = inicioDaJanela < inicioDeHoje ? inicioDaJanela : inicioDeHoje;
   const janelaFutura = inicioDaJanela > inicioDeHoje;
 
-  const [saldoInicialAbsoluto, parcelas, atrasadas, aVencerAntes] = await Promise.all([
+  const [saldoInicialAbsoluto, aguardandoConciliacao, parcelas, atrasadas, aVencerAntes] = await Promise.all([
     opcoes.classificacao ? Promise.resolve(0) : buscarSaldoEmCaixaAte(sessao.filialId, agora),
+    opcoes.classificacao ? Promise.resolve(undefined) : buscarAguardandoConciliacao(sessao.filialId),
     buscarParcelasEmAbertoNoPeriodo(sessao.filialId, inicioDaJanela, fimDaJanela, opcoes.classificacao),
     buscarParcelasEmAbertoVencidasAntes(sessao.filialId, corte, opcoes.classificacao),
     janelaFutura
@@ -221,11 +240,13 @@ export async function listarFluxoDeCaixaProjetado(
   ]);
 
   const resultado = calcularPeriodosFluxoDeCaixaProjetado(periodos, parcelas, saldoInicialAbsoluto, {
+    aguardandoConciliacao,
     atrasadas: { parcelas: atrasadas, venceuAte: new Date(corte.getTime() - 1) },
     aVencerAntes,
   });
   if (!opcoes.classificacao) return resultado;
   return {
+    aguardandoConciliacao: null,
     emAtraso: resultado.emAtraso && { ...resultado.emAtraso, alerta: false },
     aVencerAntes: resultado.aVencerAntes && { ...resultado.aVencerAntes, alerta: false },
     periodos: resultado.periodos.map((periodo) => ({ ...periodo, alerta: false })),

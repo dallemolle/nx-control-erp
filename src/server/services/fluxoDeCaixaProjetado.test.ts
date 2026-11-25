@@ -198,6 +198,38 @@ describe("calcularPeriodosFluxoDeCaixaProjetado", () => {
     });
     expect(r.aVencerAntes).toMatchObject({ saldoFinal: -200, alerta: true });
   });
+
+  test("com aguardando conciliação: a linha parte do saldo conciliado e Em atraso parte do saldo final dela", () => {
+    const atrasadas: ParcelaParaProjecao[] = [
+      { dataVencimento: new Date(Date.UTC(2026, 6, 10)), saldo: 400, tipo: "RECEBER" },
+    ];
+    const r = calcularPeriodosFluxoDeCaixaProjetado(periodos, [], 500, {
+      aguardandoConciliacao: { entradas: 100, saidas: 1012 },
+      atrasadas: { parcelas: atrasadas, venceuAte },
+    });
+    expect(r.aguardandoConciliacao).toEqual({
+      saldoInicial: 500,
+      entradasProjetadas: 100,
+      saidasProjetadas: 1012,
+      geracaoLiquida: -912,
+      saldoFinal: -412,
+      alerta: true,
+    });
+    expect(r.emAtraso?.saldoInicial).toBe(-412);
+    expect(r.emAtraso?.saldoFinal).toBe(-12);
+    expect(r.periodos[0].saldoInicial).toBe(-12);
+  });
+
+  test("sem aguardando, a linha é null e nada muda", () => {
+    const r = calcularPeriodosFluxoDeCaixaProjetado(periodos, [], 500, {});
+    expect(r.aguardandoConciliacao).toBeNull();
+    expect(r.periodos[0].saldoInicial).toBe(500);
+  });
+
+  test("aguardando zerado gera linha zerada", () => {
+    const r = calcularPeriodosFluxoDeCaixaProjetado(periodos, [], 500, { aguardandoConciliacao: { entradas: 0, saidas: 0 } });
+    expect(r.aguardandoConciliacao).toMatchObject({ saldoInicial: 500, geracaoLiquida: 0, saldoFinal: 500, alerta: false });
+  });
 });
 
 function criarTituloNaFixture(fixture: FixtureFinanceiro, tipo: TipoTitulo, valor: number, dataVencimento: Date) {
@@ -509,7 +541,7 @@ describe("buscarParcelasEmAbertoNoPeriodo / listarFluxoDeCaixaProjetado (integra
     }
   });
 
-  test("saldoInicial do primeiro mês reflete o saldo em caixa conciliado de hoje, e encadeia para o mês seguinte", async () => {
+  test("Aguardando conciliação parte do saldo conciliado de hoje, e Em atraso e os meses encadeiam a partir dela", async () => {
     await prisma.lancamentoBancario.create({
       data: {
         filialId: fixture.filialId,
@@ -525,15 +557,42 @@ describe("buscarParcelasEmAbertoNoPeriodo / listarFluxoDeCaixaProjetado (integra
     });
 
     const agora = new Date();
-    const [{ emAtraso, periodos }, saldoDireto] = await Promise.all([
+    const [{ aguardandoConciliacao, emAtraso, periodos }, saldoDireto] = await Promise.all([
       listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", agora),
       buscarSaldoEmCaixaAte(fixture.filialId, agora),
     ]);
 
     expect(saldoDireto).toBeGreaterThanOrEqual(5000);
-    expect(emAtraso!.saldoInicial).toBeCloseTo(saldoDireto, 2);
+    expect(aguardandoConciliacao!.saldoInicial).toBeCloseTo(saldoDireto, 2);
+    expect(emAtraso!.saldoInicial).toBeCloseTo(aguardandoConciliacao!.saldoFinal, 2);
     expect(periodos[0].saldoInicial).toBeCloseTo(emAtraso!.saldoFinal, 2);
     expect(periodos[1].saldoInicial).toBeCloseTo(periodos[0].saldoFinal, 2);
+  });
+
+  test("baixa aprovada e não conciliada: vai para Aguardando conciliação e o saldo final dos meses não muda", async () => {
+    const agora = new Date();
+    const vencimento = new Date(Date.UTC(agora.getUTCFullYear(), agora.getUTCMonth(), agora.getUTCDate() + 10));
+    const titulo = await criarTituloDeTeste("PAGAR", 1012, vencimento);
+    const antes = await listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", agora);
+
+    const baixa = await registrarBaixa(fixture.sessao, titulo.parcelas[0].id, {
+      data: agora,
+      valorPago: 1012,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fixture.contaBancariaId,
+    });
+    await aprovarBaixa(fixture.sessao, baixa.id);
+    const depois = await listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", agora);
+
+    expect(depois.aguardandoConciliacao!.saidasProjetadas - antes.aguardandoConciliacao!.saidasProjetadas).toBeCloseTo(1012, 2);
+    expect(depois.periodos.at(-1)!.saldoFinal).toBeCloseTo(antes.periodos.at(-1)!.saldoFinal, 2);
+  });
+
+  test("visão filtrada não tem a linha Aguardando conciliação", async () => {
+    const r = await listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", new Date(), { classificacao: "FISCAL" });
+    expect(r.aguardandoConciliacao).toBeNull();
   });
 
   test("MOVEL e ANO_CIVIL com a mesma dataReferencia produzem janelas diferentes fora de janeiro", async () => {

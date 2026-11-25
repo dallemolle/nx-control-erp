@@ -50,7 +50,7 @@ export async function GET(request: Request) {
   const dataReferencia = dataValida(url.searchParams.get("data") ?? undefined);
   const classificacao = classificacaoDaUrl(url.searchParams.get("classificacao") ?? undefined);
 
-  const { emAtraso, aVencerAntes, periodos } = await listarFluxoDeCaixaProjetado(sessao, modo, dataReferencia, { classificacao });
+  const { aguardandoConciliacao, emAtraso, aVencerAntes, periodos } = await listarFluxoDeCaixaProjetado(sessao, modo, dataReferencia, { classificacao });
   const paraLinha = (mes: string, l: Omit<LinhaExport, "mes">): LinhaExport => ({
     mes,
     saldoInicial: l.saldoInicial,
@@ -61,6 +61,7 @@ export async function GET(request: Request) {
     alerta: l.alerta,
   });
   const linhas: LinhaExport[] = [
+    ...(aguardandoConciliacao ? [paraLinha("Aguardando conciliação", aguardandoConciliacao)] : []),
     ...(emAtraso ? [paraLinha(rotuloEmAtraso(emAtraso.venceuAte), emAtraso)] : []),
     ...(aVencerAntes ? [paraLinha(rotuloAVencerAntes(aVencerAntes.venceAte), aVencerAntes)] : []),
     ...periodos.map((periodo) => paraLinha(formatarRotuloPeriodo("MES", periodo.inicio, periodo.fim), periodo)),
