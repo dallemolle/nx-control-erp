@@ -37,7 +37,7 @@ function AcaoDoEstorno({ baixa, onEstornar }: { baixa: BaixaDaParcela; onEstorna
   );
 }
 
-/** As baixas aprovadas e estornadas de uma parcela, com o estorno para quem pode aprovar. */
+/** As baixas pendentes, aprovadas e estornadas de uma parcela, com o estorno para quem pode aprovar. */
 export function BaixasDaParcela({
   baixas,
   podeEstornar,
@@ -53,6 +53,7 @@ export function BaixasDaParcela({
       <ul className="space-y-2">
         {baixas.map((baixa) => {
           const estornada = baixa.status === "ESTORNADO";
+          const pendente = baixa.status === "PENDENTE";
           const ajustes = textoDosAjustes(baixa);
           return (
             <li key={baixa.id} className="flex flex-wrap items-start justify-between gap-2">
@@ -66,9 +67,15 @@ export function BaixasDaParcela({
                       Estornada
                     </Badge>
                   )}
+                  {pendente && (
+                    <Badge variant="outline" className="ml-2">
+                      Aguardando aprovação
+                    </Badge>
+                  )}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {`registrada por ${baixa.registradaPor}` +
+                    (pendente ? ` em ${formatarDataHora(baixa.registradaEm)}` : "") +
                     (baixa.aprovadaPor ? ` · aprovada por ${baixa.aprovadaPor}` : "")}
                 </p>
                 {estornada && baixa.estornadaEm && (
@@ -78,7 +85,7 @@ export function BaixasDaParcela({
                   </p>
                 )}
               </div>
-              {!estornada && podeEstornar && <AcaoDoEstorno baixa={baixa} onEstornar={onEstornar} />}
+              {!estornada && !pendente && podeEstornar && <AcaoDoEstorno baixa={baixa} onEstornar={onEstornar} />}
             </li>
           );
         })}

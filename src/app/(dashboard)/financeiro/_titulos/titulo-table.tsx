@@ -26,6 +26,7 @@ type ParcelaLinha = {
   valorAtualizado: number;
   status: string;
   baixas: BaixaDaParcela[];
+  temBaixaPendente: boolean;
 };
 
 type TituloLinha = {
@@ -289,11 +290,15 @@ export function TituloTable({
                             </Button>
                           </form>
                         )}
-                        {podeBaixar && !STATUS_TERMINAIS.includes(parcela.status) && (
-                          <Button type="button" size="sm" onClick={() => onAbrirBaixa(parcela.id)}>
-                            Baixar
-                          </Button>
-                        )}
+                        {podeBaixar &&
+                          !STATUS_TERMINAIS.includes(parcela.status) &&
+                          (parcela.temBaixaPendente ? (
+                            <span className="text-xs text-muted-foreground">Baixa aguardando aprovação</span>
+                          ) : (
+                            <Button type="button" size="sm" onClick={() => onAbrirBaixa(parcela.id)}>
+                              Baixar
+                            </Button>
+                          ))}
                         {podeEscrever && parcela.status === "VENCIDO" && (
                           <Button
                             type="button"

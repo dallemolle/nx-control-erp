@@ -7,6 +7,7 @@ import type { BaixaDaParcela } from "./titulos-para-cliente";
 const aprovada: BaixaDaParcela = {
   id: "b1",
   data: new Date("2026-10-15T00:00:00.000Z"),
+  registradaEm: new Date("2026-10-15T13:00:00.000Z"),
   status: "APROVADO",
   valorPago: 1012,
   valorJuros: 12,
