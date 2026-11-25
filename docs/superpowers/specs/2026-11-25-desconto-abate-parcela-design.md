@@ -146,7 +146,7 @@ que já roda ao abrir a lista de títulos.
   desconto" deixa de dizer que os campos "só detalham" e diz que o sistema
   usa os três para saber quanto da parcela foi quitado, e cita a prévia.
 - `docs/api-v1.md`, `POST /baixas`: a regra do valor abatido e o 400.
-- `docs/backlog.md`: o item 1 sai do backlog.
+- `docs/backlog.md`: o item 1 ganha "Status: feito", como os itens 2 a 5.
 
 ## Testes
 
