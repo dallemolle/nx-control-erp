@@ -1,6 +1,7 @@
 import { prisma } from "@/server/db/client";
 import type { ClientePrisma } from "@/server/audit/registrar";
 import type { StatusParcela } from "@prisma/client";
+import { totalAbatido, type ValoresDaBaixa } from "@/lib/financeiro/valorAbatido";
 
 export type ParcelaParaStatus = {
   valorAtualizado: number;
@@ -8,9 +9,25 @@ export type ParcelaParaStatus = {
   status: StatusParcela;
 };
 
-export type BaixaAprovadaParaStatus = {
-  valorPago: number;
-};
+export type BaixaAprovadaParaStatus = ValoresDaBaixa;
+
+type Decimalish = { toString(): string } | number;
+
+export const SELECT_VALORES_BAIXA = { valorPago: true, valorJuros: true, valorMulta: true, valorDesconto: true } as const;
+
+export function valoresDaBaixa(b: {
+  valorPago: Decimalish;
+  valorJuros: Decimalish;
+  valorMulta: Decimalish;
+  valorDesconto: Decimalish;
+}): ValoresDaBaixa {
+  return {
+    valorPago: Number(b.valorPago),
+    valorJuros: Number(b.valorJuros),
+    valorMulta: Number(b.valorMulta),
+    valorDesconto: Number(b.valorDesconto),
+  };
+}
 
 const SETE_DIAS_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -23,8 +40,7 @@ export function calcularStatusParcela(
     return parcela.status;
   }
 
-  const totalPago = baixasAprovadas.reduce((soma, baixa) => soma + baixa.valorPago, 0);
-  const saldo = parcela.valorAtualizado - totalPago;
+  const saldo = parcela.valorAtualizado - totalAbatido(baixasAprovadas);
 
   if (saldo <= 0) return "PAGO";
   if (saldo < parcela.valorAtualizado) return "PARCIALMENTE_PAGO";
@@ -46,7 +62,7 @@ export async function recalcularEPersistirStatusParcela(
 
   const baixasAprovadas = parcela.baixas
     .filter((baixa) => baixa.statusAprovacao === "APROVADO")
-    .map((baixa) => ({ valorPago: Number(baixa.valorPago) }));
+    .map(valoresDaBaixa);
 
   const statusCalculado = calcularStatusParcela(
     {

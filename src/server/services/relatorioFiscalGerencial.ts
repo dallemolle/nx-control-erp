@@ -1,4 +1,5 @@
 import { prisma } from "@/server/db/client";
+import { SELECT_VALORES_BAIXA, valoresDaBaixa } from "@/server/services/parcela";
 import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { ClassificacaoFiscal, StatusParcela, TipoLancamento, TipoTitulo } from "@prisma/client";
@@ -94,7 +95,7 @@ export async function obterEmAbertoPorClassificacao(sessao: SessaoAtiva): Promis
     where: { titulo: { filialId: sessao.filialId, ativo: true }, status: { in: STATUS_ABERTO } },
     include: {
       titulo: { select: { tipo: true, classificacaoFiscal: true } },
-      baixas: { where: { statusAprovacao: "APROVADO" }, select: { valorPago: true } },
+      baixas: { where: { statusAprovacao: "APROVADO" }, select: SELECT_VALORES_BAIXA },
     },
   });
 
@@ -102,7 +103,7 @@ export async function obterEmAbertoPorClassificacao(sessao: SessaoAtiva): Promis
   for (const parcela of parcelas) {
     const saldo = saldoRemanescenteParcela(
       Number(parcela.valorAtualizado),
-      parcela.baixas.map((baixa) => ({ valorPago: Number(baixa.valorPago) })),
+      parcela.baixas.map(valoresDaBaixa),
     );
     const gerencial = parcela.titulo.classificacaoFiscal === "GERENCIAL";
     if (parcela.titulo.tipo === "RECEBER") {

@@ -1,4 +1,5 @@
 import { prisma } from "@/server/db/client";
+import { valoresDaBaixa } from "@/server/services/parcela";
 import type { Prisma } from "@prisma/client";
 import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
@@ -178,7 +179,7 @@ async function somarProjetadoPorDimensao(
   for (const parcela of parcelas) {
     const saldo = saldoRemanescenteParcela(
       Number(parcela.valorAtualizado),
-      parcela.baixas.map((baixa) => ({ valorPago: Number(baixa.valorPago) })),
+      parcela.baixas.map(valoresDaBaixa),
     );
     const dimensaoId = parcela.titulo[campo];
     somar(totais, dimensaoId, parcela.titulo.tipo === "RECEBER" ? "entradas" : "saidas", saldo);

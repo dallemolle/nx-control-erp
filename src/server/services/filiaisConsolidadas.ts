@@ -1,4 +1,5 @@
 import { prisma } from "@/server/db/client";
+import { SELECT_VALORES_BAIXA, valoresDaBaixa } from "@/server/services/parcela";
 import type { StatusParcela } from "@prisma/client";
 import { buscarSaldoEmCaixaAteDasFiliais } from "./fluxoDeCaixa";
 import { saldoRemanescenteParcela } from "./fluxoDeCaixaProjetado";
@@ -43,7 +44,7 @@ export async function filiaisDesativadasComPendencia(empresaId: string): Promise
           where: { titulo: { filialId: filial.id }, status: { in: STATUS_ABERTO } },
           select: {
             valorAtualizado: true,
-            baixas: { where: { statusAprovacao: "APROVADO" }, select: { valorPago: true } },
+            baixas: { where: { statusAprovacao: "APROVADO" }, select: SELECT_VALORES_BAIXA },
           },
         }),
         buscarSaldoEmCaixaAteDasFiliais([filial.id], hoje),
@@ -53,7 +54,7 @@ export async function filiaisDesativadasComPendencia(empresaId: string): Promise
           soma +
           saldoRemanescenteParcela(
             Number(parcela.valorAtualizado),
-            parcela.baixas.map((baixa) => ({ valorPago: Number(baixa.valorPago) })),
+            parcela.baixas.map(valoresDaBaixa),
           ),
         0,
       );

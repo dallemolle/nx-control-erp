@@ -120,12 +120,20 @@ describe("avisosDaBaixa", () => {
 describe("resumirBaixasDaParcela", () => {
   it("soma as aprovadas e conta as outras pendentes, sem contar a própria nem as rejeitadas", () => {
     const baixas = [
-      { id: "esta", valorPago: 200, statusAprovacao: "PENDENTE" },
-      { id: "a1", valorPago: 100.1, statusAprovacao: "APROVADO" },
-      { id: "a2", valorPago: 0.2, statusAprovacao: "APROVADO" },
-      { id: "p2", valorPago: 200, statusAprovacao: "PENDENTE" },
-      { id: "r1", valorPago: 999, statusAprovacao: "REJEITADO" },
+      { id: "esta", valorPago: 200, valorJuros: 0, valorMulta: 0, valorDesconto: 0, statusAprovacao: "PENDENTE" },
+      { id: "a1", valorPago: 100.1, valorJuros: 0, valorMulta: 0, valorDesconto: 0, statusAprovacao: "APROVADO" },
+      { id: "a2", valorPago: 0.2, valorJuros: 0, valorMulta: 0, valorDesconto: 0, statusAprovacao: "APROVADO" },
+      { id: "p2", valorPago: 200, valorJuros: 0, valorMulta: 0, valorDesconto: 0, statusAprovacao: "PENDENTE" },
+      { id: "r1", valorPago: 999, valorJuros: 0, valorMulta: 0, valorDesconto: 0, statusAprovacao: "REJEITADO" },
     ];
     expect(resumirBaixasDaParcela("esta", baixas)).toEqual({ totalAprovado: 100.3, outrasPendentes: 1 });
+  });
+
+  it("total aprovado usa o valor abatido (desconto de baixa anterior conta)", () => {
+    const baixas = [
+      { id: "esta", valorPago: 450, valorJuros: 0, valorMulta: 0, valorDesconto: 0, statusAprovacao: "PENDENTE" },
+      { id: "a1", valorPago: 500, valorJuros: 10, valorMulta: 0, valorDesconto: 60, statusAprovacao: "APROVADO" },
+    ];
+    expect(resumirBaixasDaParcela("esta", baixas)).toEqual({ totalAprovado: 550, outrasPendentes: 0 });
   });
 });

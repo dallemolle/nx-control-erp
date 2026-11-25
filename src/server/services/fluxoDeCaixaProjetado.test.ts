@@ -32,17 +32,29 @@ describe("calcularJanelaProjetada", () => {
   });
 });
 
+const pago = (valorPago: number, a: Partial<{ valorJuros: number; valorMulta: number; valorDesconto: number }> = {}) => ({
+  valorPago, valorJuros: 0, valorMulta: 0, valorDesconto: 0, ...a,
+});
+
 describe("saldoRemanescenteParcela", () => {
   test("sem baixas, devolve o valor atualizado inteiro", () => {
     expect(saldoRemanescenteParcela(1000, [])).toBe(1000);
   });
 
   test("com baixa parcial, subtrai o valor pago", () => {
-    expect(saldoRemanescenteParcela(1000, [{ valorPago: 400 }])).toBe(600);
+    expect(saldoRemanescenteParcela(1000, [pago(400)])).toBe(600);
   });
 
   test("com baixas somando mais que o valor, devolve negativo sem lançar erro", () => {
-    expect(saldoRemanescenteParcela(1000, [{ valorPago: 600 }, { valorPago: 500 }])).toBe(-100);
+    expect(saldoRemanescenteParcela(1000, [pago(600), pago(500)])).toBe(-100);
+  });
+
+  test("desconto abate o saldo", () => {
+    expect(saldoRemanescenteParcela(1000, [pago(950, { valorDesconto: 50 })])).toBe(0);
+  });
+
+  test("juros não abatem o saldo", () => {
+    expect(saldoRemanescenteParcela(1000, [pago(1000, { valorJuros: 30 })])).toBe(30);
   });
 });
 

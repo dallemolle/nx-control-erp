@@ -1,4 +1,5 @@
 import type { StatusParcela } from "@prisma/client";
+import { SELECT_VALORES_BAIXA, valoresDaBaixa } from "@/server/services/parcela";
 import { prisma } from "@/server/db/client";
 import type { ItemVendido, OPDatada, SaldoAReceber } from "@/lib/producao/relatorios";
 import type { OPDoProcessamento } from "@/lib/producao/relatoriosProcessamento";
@@ -56,7 +57,7 @@ export async function buscarSaldosAReceber(filialId: string): Promise<SaldoARece
     },
     select: {
       valorAtualizado: true,
-      baixas: { where: { statusAprovacao: "APROVADO" }, select: { valorPago: true } },
+      baixas: { where: { statusAprovacao: "APROVADO" }, select: SELECT_VALORES_BAIXA },
       titulo: {
         select: {
           pedidoVenda: { select: { formaPagamento: true, cliente: { select: { id: true, nome: true } } } },
@@ -74,7 +75,7 @@ export async function buscarSaldosAReceber(filialId: string): Promise<SaldoARece
         formaPagamento: pedido.formaPagamento,
         saldo: saldoRemanescenteParcela(
           Number(p.valorAtualizado),
-          p.baixas.map((b) => ({ valorPago: Number(b.valorPago) })),
+          p.baixas.map(valoresDaBaixa),
         ),
       },
     ];

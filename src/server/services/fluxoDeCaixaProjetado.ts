@@ -1,8 +1,10 @@
 import { prisma } from "@/server/db/client";
+import { valoresDaBaixa } from "@/server/services/parcela";
 import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { TipoTitulo } from "@prisma/client";
 import { buscarSaldoEmCaixaAte, calcularJanela, fimDoDiaUTC, type SubPeriodo } from "./fluxoDeCaixa";
+import { totalAbatido, type ValoresDaBaixa } from "@/lib/financeiro/valorAbatido";
 import { whereTituloPorClassificacao, type FiltroClassificacao } from "./classificacaoFiscal";
 
 export type ModoJanelaProjetado = "MOVEL" | "ANO_CIVIL";
@@ -73,10 +75,9 @@ export function calcularJanelaProjetada(modo: ModoJanelaProjetado, dataReferenci
 
 export function saldoRemanescenteParcela(
   valorAtualizado: number,
-  baixasAprovadas: { valorPago: number }[],
+  baixasAprovadas: readonly ValoresDaBaixa[],
 ): number {
-  const totalPago = baixasAprovadas.reduce((soma, baixa) => soma + baixa.valorPago, 0);
-  return valorAtualizado - totalPago;
+  return valorAtualizado - totalAbatido(baixasAprovadas);
 }
 
 /** Soma as parcelas por tipo e encadeia o saldo a partir de `saldoInicial`. */
@@ -150,7 +151,7 @@ async function buscarParcelasEmAberto(
     tipo: parcela.titulo.tipo,
     saldo: saldoRemanescenteParcela(
       Number(parcela.valorAtualizado),
-      parcela.baixas.map((baixa) => ({ valorPago: Number(baixa.valorPago) })),
+      parcela.baixas.map(valoresDaBaixa),
     ),
   }));
 }

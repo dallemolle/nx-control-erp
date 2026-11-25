@@ -1,7 +1,7 @@
 import { prisma } from "@/server/db/client";
 import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permissions";
 import { registrarAuditoria, type ClientePrisma } from "@/server/audit/registrar";
-import { recalcularEPersistirStatusParcela, calcularStatusParcela } from "@/server/services/parcela";
+import { recalcularEPersistirStatusParcela, calcularStatusParcela, valoresDaBaixa } from "@/server/services/parcela";
 import { SEM_VALOR } from "@/lib/schemas/enums";
 import { parcelaTemRejeicaoEmAberto } from "@/lib/financeiro/rejeicaoEmAberto";
 import {
@@ -279,7 +279,7 @@ async function sincronizarStatusDasParcelas(titulos: TituloListado[]): Promise<v
         },
         parcela.baixas
           .filter((baixa) => baixa.statusAprovacao === "APROVADO")
-          .map((baixa) => ({ valorPago: Number(baixa.valorPago) })),
+          .map(valoresDaBaixa),
         hoje,
       );
 

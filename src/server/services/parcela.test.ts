@@ -5,6 +5,10 @@ import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro
 
 const HOJE = new Date("2026-08-31T12:00:00Z");
 
+const pago = (valorPago: number, a: Partial<{ valorJuros: number; valorMulta: number; valorDesconto: number }> = {}) => ({
+  valorPago, valorJuros: 0, valorMulta: 0, valorDesconto: 0, ...a,
+});
+
 function parcela(overrides: Partial<{ valorAtualizado: number; dataVencimento: Date; status: "EM_ABERTO" | "CANCELADO" | "RENEGOCIADO" }> = {}) {
   return {
     valorAtualizado: 1000,
@@ -16,17 +20,17 @@ function parcela(overrides: Partial<{ valorAtualizado: number; dataVencimento: D
 
 describe("calcularStatusParcela", () => {
   test("saldo zerado por baixas aprovadas = PAGO", () => {
-    const status = calcularStatusParcela(parcela(), [{ valorPago: 1000 }], HOJE);
+    const status = calcularStatusParcela(parcela(), [pago(1000)], HOJE);
     expect(status).toBe("PAGO");
   });
 
   test("saldo negativo (pagou a mais) também = PAGO", () => {
-    const status = calcularStatusParcela(parcela(), [{ valorPago: 1200 }], HOJE);
+    const status = calcularStatusParcela(parcela(), [pago(1200)], HOJE);
     expect(status).toBe("PAGO");
   });
 
   test("baixa parcial = PARCIALMENTE_PAGO", () => {
-    const status = calcularStatusParcela(parcela(), [{ valorPago: 400 }], HOJE);
+    const status = calcularStatusParcela(parcela(), [pago(400)], HOJE);
     expect(status).toBe("PARCIALMENTE_PAGO");
   });
 
@@ -66,8 +70,21 @@ describe("calcularStatusParcela", () => {
     expect(status).toBe("EM_ABERTO");
   });
 
+  test("desconto completa o valor da parcela = PAGO", () => {
+    expect(calcularStatusParcela(parcela(), [pago(950, { valorDesconto: 50 })], HOJE)).toBe("PAGO");
+  });
+  test("juros dentro do valor pago não quitam a parcela = PARCIALMENTE_PAGO", () => {
+    expect(calcularStatusParcela(parcela(), [pago(1000, { valorJuros: 30 })], HOJE)).toBe("PARCIALMENTE_PAGO");
+  });
+  test("pagou com juros por cima = PAGO", () => {
+    expect(calcularStatusParcela(parcela(), [pago(1012, { valorJuros: 12 })], HOJE)).toBe("PAGO");
+  });
+  test("duas baixas parciais, a segunda com desconto = PAGO", () => {
+    expect(calcularStatusParcela(parcela(), [pago(500), pago(450, { valorDesconto: 50 })], HOJE)).toBe("PAGO");
+  });
+
   test("CANCELADO nunca é sobrescrito, mesmo com saldo zerado", () => {
-    const status = calcularStatusParcela(parcela({ status: "CANCELADO" }), [{ valorPago: 1000 }], HOJE);
+    const status = calcularStatusParcela(parcela({ status: "CANCELADO" }), [pago(1000)], HOJE);
     expect(status).toBe("CANCELADO");
   });
 

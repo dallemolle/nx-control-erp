@@ -1,7 +1,7 @@
 import { prisma } from "@/server/db/client";
 import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permissions";
 import { registrarAuditoria, type ClientePrisma } from "@/server/audit/registrar";
-import { recalcularEPersistirStatusParcela } from "@/server/services/parcela";
+import { recalcularEPersistirStatusParcela, SELECT_VALORES_BAIXA } from "@/server/services/parcela";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { Prisma, StatusAprovacaoBaixa, StatusParcela, TipoTitulo } from "@prisma/client";
 import { formatarData, formatarDataHora, formatarMoeda } from "@/lib/formatacao";
@@ -100,7 +100,7 @@ export async function listarBaixasPendentes(filialId: string) {
         include: {
           titulo: { include: { fornecedor: true, cliente: true, _count: { select: { parcelas: true } } } },
           // Todas as baixas da parcela: a tela soma as aprovadas (saldo) e conta as outras pendentes (em dobro).
-          baixas: { select: { id: true, valorPago: true, statusAprovacao: true } },
+          baixas: { select: { id: true, statusAprovacao: true, ...SELECT_VALORES_BAIXA } },
         },
       },
       contaBancaria: { include: { banco: true } },
