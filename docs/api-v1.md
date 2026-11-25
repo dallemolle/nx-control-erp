@@ -214,6 +214,7 @@ Permissão: `titulo:baixar`.
 - `valorJuros`/`valorMulta`/`valorDesconto`: opcionais, default `0`.
 - `parcelaId` inexistente → `404`.
 - Cada parcela aceita **uma** baixa aguardando aprovação por vez, e só recebe baixa enquanto está em aberto (não paga, cancelada nem renegociada). Se recusar, responde `409` com o motivo em `erro` — reenviar não adianta.
+- Baixa rejeitada: `GET /titulos` devolve cada baixa em `itens[].parcelas[].baixas[]` com `statusAprovacao` (`REJEITADO`), `motivoRejeicao` e `avaliadoEm` (quando foi rejeitada). Ela ainda pede ação enquanto `dispensadaEm` for nulo, nenhuma baixa da parcela tiver `criadoEm` posterior a `avaliadoEm` e a parcela não estiver paga, cancelada ou renegociada; nesse caso, registre a baixa de novo com os dados certos.
 
 ### `POST /extratos/importar` — importar extrato bancário (OFX)
 Permissão: `conciliacao:escrever`. **`multipart/form-data`**, não JSON.

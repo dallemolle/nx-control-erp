@@ -237,6 +237,12 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 
 ### 5. Rejeição não chega a quem registrou (prioridade alta)
 
+- **Status:** feito na branch `feat/rejeicao-visivel` (2026-11-25, spec
+  `2026-11-25-rejeicao-visivel-design.md`): a parcela mostra a baixa rejeitada com motivo, quem e quando; Contas a
+  pagar/receber tem o aviso "N baixas rejeitadas aguardando novo registro" com o filtro `rejeitadas=1`; a rejeição
+  sai do aviso ao relançar, ao fechar a parcela ou pelo Dispensar (com motivo e auditoria); ajuda com o roteiro
+  novo `tratar-rejeitada`.
+
 - **Problema:** `rejeitarBaixa` grava `motivoRejeicao`, mas ele só aparece na
   Auditoria, que o perfil Financeiro não acessa. A parcela não mostra que houve
   baixa rejeitada.

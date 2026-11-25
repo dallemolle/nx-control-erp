@@ -1,6 +1,6 @@
 # Baixa rejeitada visível para quem registrou
 
-Data: 2026-11-25 · Status: desenho aprovado
+Data: 2026-11-25 · Status: implementada (2026-11-25)
 
 Item 5 do [backlog](../../backlog.md), seção "Financeiro — lacunas achadas ao
 escrever a ajuda contextual" ("Rejeição não chega a quem registrou",
