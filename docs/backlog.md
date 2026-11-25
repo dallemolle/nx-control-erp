@@ -213,6 +213,11 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 
 ### 4. Parcela com baixa pendente aceita outra baixa (prioridade alta)
 
+- **Status:** feito na branch `fix/baixa-pendente-unica` (2026-11-24, spec
+  `2026-11-24-baixa-pendente-unica-design.md`): uma baixa pendente por parcela
+  (trava com `FOR UPDATE`, API 409), baixa só em parcela em aberto; a parcela
+  mostra a pendente e "Baixa aguardando aprovação" no lugar do Baixar; ajuda de
+  Aprovações sem o exemplo de baixa em dobro.
 - **Problema:** o botão Baixar continua na parcela enquanto a baixa espera
   aprovação, e `registrarBaixa` (`src/server/services/baixa.ts`) não olha as
   baixas pendentes.
@@ -446,6 +451,20 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 - **Ao corrigir:** passo "Margem líquida" do roteiro `ler-projecao` em
   `src/ajuda/fluxo-de-caixa-estrategico/roteiros.ts` (avisa que não desconta
   CAPEX nem juros) e a réplica (`cenas.tsx`, rótulo da métrica); manual, seção 3.7.
+
+### 59. Cancelar ou renegociar parcela com baixa pendente
+
+- **Problema:** `cancelarParcela` (`src/server/services/titulo.ts`) e a
+  renegociação (`src/server/services/renegociacao.ts`) não olham as baixas
+  pendentes da parcela.
+- **Exemplo:** a baixa da parcela 1 espera aprovação; alguém cancela a parcela.
+  Depois a Tesouraria aprova a baixa: sai o lançamento de uma parcela
+  cancelada.
+- **Impacto:** dado errado.
+- **Caminhos:** bloquear cancelar/renegociar enquanto houver pendente; ou
+  rejeitar a pendente junto, com motivo automático; ou recusar a aprovação de
+  baixa em parcela fechada.
+- **Cuidados:** cancelamento de pedido de venda também cancela parcelas.
 
 ## Controladoria — lacunas achadas ao escrever a ajuda contextual
 

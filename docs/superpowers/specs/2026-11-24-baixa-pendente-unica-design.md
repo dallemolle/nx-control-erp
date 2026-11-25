@@ -1,6 +1,6 @@
 # Uma baixa pendente por parcela
 
-Data: 2026-11-24 · Status: aprovada, a implementar
+Data: 2026-11-24 · Status: implementada (2026-11-24)
 
 Item 4 do [backlog](../../backlog.md), seção "Financeiro — lacunas achadas ao
 escrever a ajuda contextual" ("Parcela com baixa pendente aceita outra baixa",
