@@ -3,6 +3,7 @@ import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permiss
 import { registrarAuditoria, type ClientePrisma } from "@/server/audit/registrar";
 import { recalcularEPersistirStatusParcela, calcularStatusParcela } from "@/server/services/parcela";
 import { SEM_VALOR } from "@/lib/schemas/enums";
+import { parcelaTemRejeicaoEmAberto } from "@/lib/financeiro/rejeicaoEmAberto";
 import {
   ErroClassificacaoFiscal,
   garantirComprovanteValido,
@@ -30,6 +31,8 @@ export type FiltroTitulos = {
   vencimentoDe?: Date;
   vencimentoAte?: Date;
   classificacao?: ClassificacaoFiscal;
+  /** Só títulos com alguma parcela com baixa rejeitada em aberto (aviso de Contas a pagar/receber). */
+  rejeitadas?: true;
 };
 
 export function parcelaBateFiltroDeParcela(
@@ -216,13 +219,14 @@ const INCLUDE_TELA_TITULOS = {
   ...INCLUDE_LISTAGEM_TITULOS,
   parcelas: {
     include: {
-      // A tela lista as baixas na parcela (aprovadas e estornadas) com conta, pessoas e se dá para estornar.
+      // A tela lista as baixas na parcela (todas, inclusive rejeitadas) com conta, pessoas e se dá para estornar.
       baixas: {
         include: {
           contaBancaria: { include: { banco: true } },
           usuario: { select: { nome: true } },
           avaliadoPor: { select: { nome: true } },
           estornadoPor: { select: { nome: true } },
+          dispensadaPor: { select: { nome: true } },
           lancamentos: { select: { grupoConciliacaoId: true } },
           repasseRecebimento: { select: { id: true } },
           repasseTaxa: { select: { id: true } },
@@ -302,10 +306,18 @@ export async function listarTitulos(filialId: string, tipo: TipoTitulo, filtros:
   await sincronizarStatusDasParcelas(titulos);
 
   const temFiltroDeParcela =
-    filtros.status !== undefined || filtros.vencimentoDe !== undefined || filtros.vencimentoAte !== undefined;
+    filtros.status !== undefined ||
+    filtros.vencimentoDe !== undefined ||
+    filtros.vencimentoAte !== undefined ||
+    filtros.rejeitadas !== undefined;
   if (!temFiltroDeParcela) return titulos;
 
-  return titulos.filter((titulo) => titulo.parcelas.some((parcela) => parcelaBateFiltroDeParcela(parcela, filtros)));
+  return titulos.filter((titulo) =>
+    titulo.parcelas.some(
+      (parcela) =>
+        parcelaBateFiltroDeParcela(parcela, filtros) && (!filtros.rejeitadas || parcelaTemRejeicaoEmAberto(parcela)),
+    ),
+  );
 }
 
 /** Versão da API: uma página por vez, ordenada por criação (mais novo primeiro). */

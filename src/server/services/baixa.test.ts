@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { prisma } from "@/server/db/client";
 import { PermissionError } from "@/server/auth/permissions";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
-import { criarTitulo, cancelarParcela } from "./titulo";
+import { criarTitulo, cancelarParcela, listarTitulos } from "./titulo";
 import type { TipoTitulo } from "@prisma/client";
 import { resumirBaixasDaParcela } from "@/lib/financeiro/avisosDaBaixa";
 import {
@@ -16,6 +16,9 @@ import {
   MSG_ESTORNO_POR_QUEM_REGISTROU,
   BaixaPendenteError,
   BaixaParcelaFechadaError,
+  dispensarRejeicao,
+  contarRejeicoesEmAberto,
+  RejeicaoNaoDispensavelError,
 } from "./baixa";
 import { formatarMoeda } from "@/lib/formatacao";
 
@@ -755,6 +758,133 @@ describe("segregação no estorno", () => {
       expect(estornada.statusAprovacao).toBe("ESTORNADO");
     } finally {
       await prisma.empresa.update({ where: { id: fx.empresaId }, data: { exigirAprovacaoPorOutro: true } });
+    }
+  });
+});
+
+describe("rejeição em aberto e dispensa", () => {
+  let fx: FixtureFinanceiro; // FINANCEIRO: registra e dispensa; quem rejeita é o sessaoAdmin
+  let fxOutra: FixtureFinanceiro; // outra filial
+
+  beforeAll(async () => {
+    fx = await criarFixtureFinanceiro("BXR");
+    fxOutra = await criarFixtureFinanceiro("BXRO");
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fx);
+    await limparFixtureFinanceiro(fxOutra);
+  });
+
+  async function parcelaNova(f: FixtureFinanceiro, tipo: TipoTitulo = "PAGAR") {
+    const titulo = await criarTitulo(f.sessaoAdmin, tipo, {
+      contraparteId: tipo === "PAGAR" ? f.fornecedorId : f.clienteId,
+      documento: `NF-R-${Date.now()}-${Math.random()}`,
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: f.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: f.contaBancariaId,
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: new Date(), valorOriginal: 100 }],
+    });
+    return titulo.parcelas[0];
+  }
+
+  async function baixaRejeitada(f: FixtureFinanceiro, tipo: TipoTitulo = "PAGAR") {
+    const parcela = await parcelaNova(f, tipo);
+    const baixa = await registrarBaixa(f.sessao, parcela.id, {
+      data: new Date(),
+      valorPago: 100,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: f.contaBancariaId,
+    });
+    await rejeitarBaixa(f.sessaoAdmin, baixa.id, "Valor diferente do comprovante");
+    return { parcela, baixa };
+  }
+
+  test("dispensa grava quem, quando e o motivo, e registra a auditoria", async () => {
+    const { baixa } = await baixaRejeitada(fx);
+    const dispensada = await dispensarRejeicao(fx.sessao, baixa.id, "  pagamento não aconteceu  ");
+
+    expect(dispensada.dispensadaPorId).toBe(fx.sessao.usuarioId);
+    expect(dispensada.dispensadaEm).toBeInstanceOf(Date);
+    expect(dispensada.motivoDispensa).toBe("pagamento não aconteceu");
+    const auditoria = await prisma.auditLog.findFirst({ where: { entidadeId: baixa.id, acao: "DISPENSAR_REJEICAO" } });
+    expect(auditoria).not.toBeNull();
+  });
+
+  test("motivo curto, perfil sem titulo:baixar, filial somente leitura e outra filial são recusados", async () => {
+    const { baixa } = await baixaRejeitada(fx);
+    await expect(dispensarRejeicao(fx.sessao, baixa.id, " a ")).rejects.toThrow("Informe o motivo da dispensa");
+    await expect(dispensarRejeicao({ ...fx.sessao, perfil: "GESTOR" }, baixa.id, "motivo ok")).rejects.toThrow(
+      PermissionError,
+    );
+    await expect(dispensarRejeicao(fx.sessaoSomenteLeitura, baixa.id, "motivo ok")).rejects.toThrow();
+    await expect(dispensarRejeicao(fxOutra.sessao, baixa.id, "motivo ok")).rejects.toThrow();
+    const intacta = await prisma.baixa.findUniqueOrThrow({ where: { id: baixa.id } });
+    expect(intacta.dispensadaEm).toBeNull();
+  });
+
+  test("baixa que não é rejeitada, já dispensada ou já resolvida não é dispensada", async () => {
+    const parcela = await parcelaNova(fx);
+    const pendente = await registrarBaixa(fx.sessao, parcela.id, {
+      data: new Date(),
+      valorPago: 50,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fx.contaBancariaId,
+    });
+    await expect(dispensarRejeicao(fx.sessao, pendente.id, "motivo ok")).rejects.toThrow(
+      "Só uma baixa rejeitada pode ser dispensada",
+    );
+
+    const { baixa: dispensada } = await baixaRejeitada(fx);
+    await dispensarRejeicao(fx.sessao, dispensada.id, "primeira vez");
+    await expect(dispensarRejeicao(fx.sessao, dispensada.id, "segunda vez")).rejects.toThrow(
+      RejeicaoNaoDispensavelError,
+    );
+
+    // Relançada: a rejeição se resolveu sozinha.
+    const { parcela: relancada, baixa: resolvida } = await baixaRejeitada(fx);
+    await registrarBaixa(fx.sessao, relancada.id, {
+      data: new Date(),
+      valorPago: 100,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fx.contaBancariaId,
+    });
+    await expect(dispensarRejeicao(fx.sessao, resolvida.id, "motivo ok")).rejects.toThrow(
+      "Esta rejeição já foi resolvida",
+    );
+  });
+
+  test("contarRejeicoesEmAberto e o filtro rejeitadas: só as em aberto, por tipo e por filial", async () => {
+    const fxConta = await criarFixtureFinanceiro("BXRC");
+    try {
+      const aberta = await baixaRejeitada(fxConta, "PAGAR");
+      const dispensada = await baixaRejeitada(fxConta, "PAGAR");
+      await dispensarRejeicao(fxConta.sessao, dispensada.baixa.id, "não houve pagamento");
+      const cancelada = await baixaRejeitada(fxConta, "PAGAR");
+      await cancelarParcela(fxConta.sessaoAdmin, cancelada.parcela.id);
+      await baixaRejeitada(fxConta, "RECEBER");
+      await baixaRejeitada(fxOutra, "PAGAR");
+
+      expect(await contarRejeicoesEmAberto(fxConta.filialId, "PAGAR")).toBe(1);
+      expect(await contarRejeicoesEmAberto(fxConta.filialId, "RECEBER")).toBe(1);
+
+      const filtrados = await listarTitulos(fxConta.filialId, "PAGAR", { rejeitadas: true });
+      expect(filtrados.map((t) => t.parcelas[0].id)).toEqual([aberta.parcela.id]);
+      expect(await listarTitulos(fxConta.filialId, "PAGAR")).toHaveLength(3);
+    } finally {
+      await limparFixtureFinanceiro(fxConta);
     }
   });
 });
