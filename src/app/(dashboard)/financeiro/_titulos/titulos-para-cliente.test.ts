@@ -67,6 +67,7 @@ describe("titulosParaCliente", () => {
         numero: 1,
         dataVencimento: vencimento,
         valorAtualizado: 150.25,
+        saldoEmAberto: 150.25,
         status: "ABERTA",
         baixas: [],
         temBaixaPendente: false,
@@ -74,6 +75,24 @@ describe("titulosParaCliente", () => {
     ]);
     expect(titulo.contaBancaria).toEqual({ tipo: "CORRENTE", agencia: "0001", conta: "123-4", banco: { nome: "Banco X" } });
     expect(titulo.documento).toBe("NF 1");
+  });
+
+  it("saldoEmAberto desconta só o valor abatido das baixas aprovadas", () => {
+    const parcela = {
+      ...tituloDoServico.parcelas[0],
+      valorAtualizado: dec("1000.00"),
+      baixas: [
+        baixa("aprovada", "APROVADO", {
+          valorPago: dec("950.00"), valorJuros: dec("0"), valorMulta: dec("0"), valorDesconto: dec("50.00"),
+        }),
+        baixa("rejeitada", "REJEITADO", {
+          valorPago: dec("999.00"), valorJuros: dec("0"), valorMulta: dec("0"), valorDesconto: dec("0"),
+        }),
+      ],
+    };
+    const [titulo] = titulosParaCliente([{ ...tituloDoServico, parcelas: [parcela] }]);
+
+    expect(titulo.parcelas[0].saldoEmAberto).toBe(0);
   });
 
   it("leva todas as baixas, convertidas, inclusive rejeitadas", () => {

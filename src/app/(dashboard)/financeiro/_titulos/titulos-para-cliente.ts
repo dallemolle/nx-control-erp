@@ -1,5 +1,6 @@
 import { nomeDaContaBancaria } from "@/lib/contaBancaria";
 import { rejeicaoEmAberto } from "@/lib/financeiro/rejeicaoEmAberto";
+import { totalAbatido } from "@/lib/financeiro/valorAbatido";
 
 type ValorDecimal = number | string | { toString(): string };
 
@@ -138,6 +139,18 @@ export function titulosParaCliente<T extends TituloDoServico>(titulos: T[]) {
       numero: parcela.numero,
       dataVencimento: parcela.dataVencimento,
       valorAtualizado: numero(parcela.valorAtualizado),
+      saldoEmAberto:
+        numero(parcela.valorAtualizado) -
+        totalAbatido(
+          parcela.baixas
+            .filter((b) => b.statusAprovacao === "APROVADO")
+            .map((b) => ({
+              valorPago: numero(b.valorPago),
+              valorJuros: numero(b.valorJuros),
+              valorMulta: numero(b.valorMulta),
+              valorDesconto: numero(b.valorDesconto),
+            })),
+        ),
       status: parcela.status,
       baixas: baixasParaCliente(parcela),
       temBaixaPendente: parcela.baixas.some((b) => b.statusAprovacao === "PENDENTE"),

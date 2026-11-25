@@ -28,7 +28,7 @@ export function ContasClientePanel({
   podeAprovar: boolean;
   filtroAtivo: boolean;
 }) {
-  const [parcelaBaixaId, setParcelaBaixaId] = useState<string | null>(null);
+  const [parcelaBaixa, setParcelaBaixa] = useState<{ id: string; saldoEmAberto: number } | null>(null);
   const [parcelaRenegociacaoId, setParcelaRenegociacaoId] = useState<string | null>(null);
   const [baixaEstorno, setBaixaEstorno] = useState<BaixaDaParcela | null>(null);
   const [baixaDispensa, setBaixaDispensa] = useState<BaixaDaParcela | null>(null);
@@ -48,17 +48,17 @@ export function ContasClientePanel({
         podeBaixar={podeBaixar}
         podeAprovar={podeAprovar}
         filtroAtivo={filtroAtivo}
-        onAbrirBaixa={setParcelaBaixaId}
+        onAbrirBaixa={setParcelaBaixa}
         onAbrirRenegociacao={setParcelaRenegociacaoId}
         onAbrirEstorno={setBaixaEstorno}
         onAbrirDispensa={setBaixaDispensa}
       />
       <BaixaDialog
         tipo={tipo}
-        parcelaId={parcelaBaixaId}
+        parcela={parcelaBaixa}
         contasBancarias={opcoes.contasBancarias}
-        aberto={parcelaBaixaId !== null}
-        onOpenChange={(aberto) => !aberto && setParcelaBaixaId(null)}
+        aberto={parcelaBaixa !== null}
+        onOpenChange={(aberto) => !aberto && setParcelaBaixa(null)}
       />
       <RenegociarDialog
         tipo={tipo}
