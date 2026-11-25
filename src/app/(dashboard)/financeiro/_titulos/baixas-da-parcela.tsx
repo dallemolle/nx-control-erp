@@ -54,7 +54,7 @@ function BaixaRejeitada({
         {`Baixa de ${formatarData(baixa.data)} · ${formatarMoeda(baixa.valorPago)} · rejeitada${porQuem}: ` +
           `${baixa.motivoRejeicao ?? ""}` +
           (baixa.dispensadaEm
-            ? ` · dispensada${baixa.dispensadaPor ? ` por ${baixa.dispensadaPor}` : ""}: ${baixa.motivoDispensa}`
+            ? ` · dispensada${baixa.dispensadaPor ? ` por ${baixa.dispensadaPor}` : ""}: ${baixa.motivoDispensa ?? ""}`
             : "")}
       </p>
     );

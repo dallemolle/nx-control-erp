@@ -59,16 +59,16 @@ export default async function ContasAReceberPage({ searchParams }: { searchParam
     contasBancarias,
     rejeicoesEmAberto,
   ] = await Promise.all([
-      listarTitulos(sessao.filialId, "RECEBER", filtros),
-      listarClientes(sessao.empresaId),
-      listarCategoriasFinanceiras(sessao.filialId),
-      listarCentrosCusto(sessao.filialId),
-      listarCentrosLucro(sessao.filialId),
-      listarSafras(sessao.filialId),
-      listarProjetos(sessao.filialId),
-      listarContasBancarias(sessao.filialId),
-      contarRejeicoesEmAberto(sessao.filialId, "RECEBER"),
-    ]);
+    listarTitulos(sessao.filialId, "RECEBER", filtros),
+    listarClientes(sessao.empresaId),
+    listarCategoriasFinanceiras(sessao.filialId),
+    listarCentrosCusto(sessao.filialId),
+    listarCentrosLucro(sessao.filialId),
+    listarSafras(sessao.filialId),
+    listarProjetos(sessao.filialId),
+    listarContasBancarias(sessao.filialId),
+    contarRejeicoesEmAberto(sessao.filialId, "RECEBER"),
+  ]);
 
   const opcoes = {
     contrapartes: clientes,
@@ -124,6 +124,7 @@ export default async function ContasAReceberPage({ searchParams }: { searchParam
         quantidade={rejeicoesEmAberto}
         href="/financeiro/contas-a-receber?rejeitadas=1"
         filtroAtivo={filtros.rejeitadas === true}
+        hrefSemFiltro="/financeiro/contas-a-receber"
       />
       <ContasClientePanel
         tipo="RECEBER"

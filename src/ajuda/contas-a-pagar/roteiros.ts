@@ -389,7 +389,15 @@ export const ROTEIROS: readonly Roteiro[] = [
           "pessoas. O Ver deixa na lista só os títulos com rejeição; Limpar filtros mostra todos de novo.",
         preenche: { "lista.p1.baixa": "rejeitada" },
       },
-      { ...ABRIR_TITULO, preenche: { "lista.linhaExemplo": "expandida", "lista.p1.baixa": "rejeitada" } },
+      {
+        ...ABRIR_TITULO,
+        // O filtro do "Ver" continua aplicado nos passos seguintes (valoresAte acumula).
+        preenche: {
+          "lista.linhaExemplo": "expandida",
+          "lista.p1.baixa": "rejeitada",
+          "lista.filtro.rejeitadas": "1",
+        },
+      },
       {
         cena: "lista",
         alvo: "lista.p1.baixa",

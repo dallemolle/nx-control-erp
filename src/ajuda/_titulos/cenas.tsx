@@ -294,7 +294,8 @@ function LinhasDoExemplo({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exe
 
 function CenaLista({ tipo, valores, exemplo }: PropsCena & ComExemplo) {
   const semExemplo = valores["lista.tabela"] === "sem-exemplo";
-  const filtrado = Boolean(valores["lista.filtro.fornecedor"]);
+  const filtroRejeitadas = Boolean(valores["lista.filtro.rejeitadas"]);
+  const filtrado = Boolean(valores["lista.filtro.fornecedor"]) || filtroRejeitadas;
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -318,8 +319,13 @@ function CenaLista({ tipo, valores, exemplo }: PropsCena & ComExemplo) {
           className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm"
         >
           <span className="font-medium">1 baixa rejeitada aguardando novo registro.</span> Confira o motivo na
-          parcela e lance de novo, ou dispense se não houver o que relançar.{" "}
-          <span className="font-medium text-primary">Ver</span>
+          parcela e lance de novo, ou dispense se não houver o que relançar.
+          {!filtroRejeitadas && (
+            <>
+              {" "}
+              <span className="font-medium text-primary">Ver</span>
+            </>
+          )}
         </Alvo>
       )}
       <div className="space-y-4">

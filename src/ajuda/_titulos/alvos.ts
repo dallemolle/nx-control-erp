@@ -11,6 +11,7 @@ export const ALVOS = {
     "lista.filtro.vencimentoDe",
     "lista.filtro.vencimentoAte",
     "lista.filtro.limpar",
+    "lista.filtro.rejeitadas", // só em preenche (o filtro aplicado pelo "Ver"), nunca como alvo de passo
     "lista.tabela",
     "lista.avisoRejeitadas",
     "lista.linhaExemplo",

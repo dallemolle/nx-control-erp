@@ -59,16 +59,16 @@ export default async function ContasAPagarPage({ searchParams }: { searchParams:
     contasBancarias,
     rejeicoesEmAberto,
   ] = await Promise.all([
-      listarTitulos(sessao.filialId, "PAGAR", filtros),
-      listarFornecedores(sessao.empresaId),
-      listarCategoriasFinanceiras(sessao.filialId),
-      listarCentrosCusto(sessao.filialId),
-      listarCentrosLucro(sessao.filialId),
-      listarSafras(sessao.filialId),
-      listarProjetos(sessao.filialId),
-      listarContasBancarias(sessao.filialId),
-      contarRejeicoesEmAberto(sessao.filialId, "PAGAR"),
-    ]);
+    listarTitulos(sessao.filialId, "PAGAR", filtros),
+    listarFornecedores(sessao.empresaId),
+    listarCategoriasFinanceiras(sessao.filialId),
+    listarCentrosCusto(sessao.filialId),
+    listarCentrosLucro(sessao.filialId),
+    listarSafras(sessao.filialId),
+    listarProjetos(sessao.filialId),
+    listarContasBancarias(sessao.filialId),
+    contarRejeicoesEmAberto(sessao.filialId, "PAGAR"),
+  ]);
 
   const opcoes = {
     contrapartes: fornecedores,
@@ -124,6 +124,7 @@ export default async function ContasAPagarPage({ searchParams }: { searchParams:
         quantidade={rejeicoesEmAberto}
         href="/financeiro/contas-a-pagar?rejeitadas=1"
         filtroAtivo={filtros.rejeitadas === true}
+        hrefSemFiltro="/financeiro/contas-a-pagar"
       />
       <ContasClientePanel
         tipo="PAGAR"

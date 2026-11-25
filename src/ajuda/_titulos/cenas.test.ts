@@ -102,6 +102,19 @@ describe("cenas de títulos (exemplo de Contas a pagar)", () => {
     expect(saida).toContain("1 baixa rejeitada aguardando novo registro.");
   });
 
+  test("baixa rejeitada com o filtro de rejeitadas aplicado: só o título do exemplo e aviso sem Ver", () => {
+    const valores = { "lista.p1.baixa": "rejeitada", "lista.filtro.rejeitadas": "1" };
+    const saida = html(CenaLista, valores);
+    expect(saida).toContain(EXEMPLO.documento);
+    for (const outro of EXEMPLO.outrosTitulos) expect(saida).not.toContain(outro.documento);
+    expect(saida).toContain('data-alvo="lista.avisoRejeitadas"');
+    const aviso = saida.slice(saida.indexOf('data-alvo="lista.avisoRejeitadas"'));
+    expect(aviso.slice(0, aviso.indexOf("</div>"))).not.toContain("Ver");
+    // sem o filtro, os outros títulos aparecem e o aviso tem o Ver
+    const semFiltro = html(CenaLista, { "lista.p1.baixa": "rejeitada" });
+    for (const outro of EXEMPLO.outrosTitulos) expect(semFiltro).toContain(outro.documento);
+  });
+
   test("baixa rejeitada e dispensada: linha apagada com a dispensa, sem aviso nem botão", () => {
     const saida = html(CenaLista, { "lista.linhaExemplo": "expandida", "lista.p1.baixa": "dispensada" });
     expect(saida).toContain(EXEMPLO.baixa.motivoDispensa);
