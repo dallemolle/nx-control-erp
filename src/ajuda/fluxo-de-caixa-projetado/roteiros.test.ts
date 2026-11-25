@@ -33,6 +33,16 @@ describe("roteiros de Fluxo de caixa projetado", () => {
     expect(fiscal).not.toContain("Saldo negativo");
   });
 
+  test("a linha Aguardando conciliação liga o saldo conciliado ao saldo de hoje, e a visão filtrada não tem", () => {
+    const html = renderToStaticMarkup(createElement(cenas.painel, { valores: {} }));
+    expect(html).toContain("Aguardando conciliação");
+    expect(html).toContain("R$ 48.862,00");
+    expect(html).toContain("R$ 47.850,00");
+    const fiscal = renderToStaticMarkup(createElement(cenas.painel, { valores: { "painel.classificacao": "Fiscal" } }));
+    expect(html).toContain('data-alvo="linha.aguardando"');
+    expect(fiscal).not.toContain('data-alvo="linha.aguardando"');
+  });
+
   test.each(roteiros.map((r) => [r.id, r] as const))("%s tem conteúdo completo", (_id, roteiro) => {
     expect(roteiro.passos.length).toBeGreaterThan(0);
     expect(roteiro.quandoUsar.trim()).not.toBe("");
