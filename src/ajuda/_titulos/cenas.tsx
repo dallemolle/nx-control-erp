@@ -94,11 +94,47 @@ function Detalhe({ rotulo, valor }: { rotulo: string; valor: string }) {
   );
 }
 
-/** A baixa da parcela 1: pendente (roteiro de pagamento), aprovada (com Estornar) ou já estornada. */
+/**
+ * A baixa da parcela 1: pendente (roteiro de pagamento), aprovada (com Estornar), já estornada, rejeitada em
+ * aberto (com Dispensar) ou rejeitada e dispensada.
+ */
 function BaixaDoExemplo({ estado, exemplo }: { estado: string; exemplo: ExemploTitulos }) {
   const { baixa } = exemplo;
   const estornada = estado === "estornada";
   const pendente = estado === "pendente";
+  if (estado === "rejeitada" || estado === "dispensada") {
+    return (
+      <div className="space-y-1 text-sm">
+        <div className="text-xs font-medium text-muted-foreground">Baixas</div>
+        {estado === "dispensada" ? (
+          <Alvo nome="lista.p1.baixa" className="p-1 text-xs text-muted-foreground">
+            {`Baixa de ${baixa.data} · ${baixa.valorFormatado} · rejeitada por ${baixa.rejeitadaPor}: ` +
+              `${baixa.motivoRejeicao} · dispensada por ${baixa.registradaPor}: ${baixa.motivoDispensa}`}
+          </Alvo>
+        ) : (
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <Alvo nome="lista.p1.baixa" className="p-1">
+              <p>
+                {`Baixa de ${baixa.data} · ${exemplo.conta} · `}
+                <span className="font-medium">{baixa.valorFormatado}</span>
+                {` (${baixa.ajuste})`}
+                <Badge variant="destructive" className="ml-2">
+                  Rejeitada
+                </Badge>
+              </p>
+              <p className="text-xs text-muted-foreground">{`registrada por ${baixa.registradaPor}`}</p>
+              <p className="text-xs">
+                {`rejeitada por ${baixa.rejeitadaPor} em ${baixa.rejeitadaEm}: ${baixa.motivoRejeicao}`}
+              </p>
+            </Alvo>
+            <BotaoSimulado alvo="lista.p1.dispensar" variant="outline" size="sm">
+              Dispensar
+            </BotaoSimulado>
+          </div>
+        )}
+      </div>
+    );
+  }
   return (
     <div className="space-y-1 text-sm">
       <div className="text-xs font-medium text-muted-foreground">Baixas</div>
@@ -140,7 +176,8 @@ function BaixaDoExemplo({ estado, exemplo }: { estado: string; exemplo: ExemploT
 
 function LinhasDoExemplo({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exemplo">) {
   const expandido = valores["lista.linhaExemplo"] === "expandida";
-  // "pendente" (roteiro de pagamento), "aprovada" (parcela 1 paga) ou "estornada" (volta ao status do exemplo).
+  // "pendente" (roteiro de pagamento), "aprovada" (parcela 1 paga), "estornada" (volta ao status do exemplo),
+  // "rejeitada" (aviso no topo e Dispensar) ou "dispensada" (linha apagada, sem aviso).
   const estadoBaixa = valores["lista.p1.baixa"];
   return (
     <>
@@ -275,6 +312,16 @@ function CenaLista({ tipo, valores, exemplo }: PropsCena & ComExemplo) {
         </div>
       </div>
       <BarraDeFiltros tipo={tipo} valores={valores} />
+      {valores["lista.p1.baixa"] === "rejeitada" && (
+        <Alvo
+          nome="lista.avisoRejeitadas"
+          className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm"
+        >
+          <span className="font-medium">1 baixa rejeitada aguardando novo registro.</span> Confira o motivo na
+          parcela e lance de novo, ou dispense se não houver o que relançar.{" "}
+          <span className="font-medium text-primary">Ver</span>
+        </Alvo>
+      )}
       <div className="space-y-4">
         <div className="flex justify-end">
           <BotaoSimulado alvo="lista.importar" variant="outline">
@@ -517,6 +564,36 @@ function CenaEstornar({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exempl
   );
 }
 
+function CenaDispensar({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exemplo">) {
+  const { baixa } = exemplo;
+  return (
+    <JanelaSimulada titulo="Dispensar rejeição">
+      <Alvo nome="dispensa.resumo" className="space-y-2 p-1">
+        <p>{`Baixa de ${baixa.data} · ${exemplo.conta} · ${baixa.valorFormatado}`}</p>
+        <p className="text-muted-foreground">{`Rejeitada por ${baixa.rejeitadaPor}: ${baixa.motivoRejeicao}`}</p>
+        <p className="text-muted-foreground">
+          O aviso de baixa rejeitada some e a parcela continua como está. Se o pagamento aconteceu, registre a baixa de
+          novo em vez de dispensar.
+        </p>
+      </Alvo>
+      <CampoSimulado
+        alvo="dispensa.motivo"
+        rotulo="Por que não vai lançar de novo?"
+        valor={valores["dispensa.motivo"]}
+        placeholder="Ex.: o pagamento não aconteceu"
+      />
+      <div className="flex gap-2">
+        <BotaoSimulado variant="outline" largo>
+          Cancelar
+        </BotaoSimulado>
+        <BotaoSimulado alvo="dispensa.confirmar" largo>
+          Dispensar
+        </BotaoSimulado>
+      </div>
+    </JanelaSimulada>
+  );
+}
+
 /** As cenas de uma tela de títulos (pagar ou receber), preenchidas com o exemplo dela. */
 export function criarCenas(tipo: TipoTela, exemplo: ExemploTitulos) {
   return {
@@ -532,6 +609,9 @@ export function criarCenas(tipo: TipoTela, exemplo: ExemploTitulos) {
     },
     estornar: function Estornar(props: PropsCena) {
       return <CenaEstornar {...props} exemplo={exemplo} />;
+    },
+    dispensar: function Dispensar(props: PropsCena) {
+      return <CenaDispensar {...props} exemplo={exemplo} />;
     },
   };
 }

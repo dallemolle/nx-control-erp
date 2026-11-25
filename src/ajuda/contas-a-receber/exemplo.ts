@@ -37,6 +37,10 @@ export const EXEMPLO = {
     estornadaPor: "João",
     estornadaEm: "16/10/2026 09:40",
     motivoEstorno: "Conta errada: o PIX entrou no Banco do Brasil",
+    rejeitadaPor: "João",
+    rejeitadaEm: "15/10/2026 16:05",
+    motivoRejeicao: "PIX não entrou no extrato do Sicredi",
+    motivoDispensa: "Cliente não pagou: o PIX foi agendado e cancelado",
   },
   outrosTitulos: [
     {
