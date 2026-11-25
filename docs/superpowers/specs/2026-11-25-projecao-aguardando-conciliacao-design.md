@@ -146,6 +146,7 @@ atual)", ano-base do estratégico) continua só com conciliados.
   continua conciliado: descartado (o aviso só detecta se ainda há saldo, e a
   regra atual serve).
 - Lançamento em conta Caixa com data futura fica fora do saldo conciliado
-  (corte em "agora"): descartado (caso raro; comportamento de hoje).
+  (corte em "agora"), e numa transferência Caixa → banco com data futura o lado
+  do banco entra no aguardando: → backlog (item 61; caso raro).
 - Alerta quando o aguardando conciliação fica velho (ex.: mais de 30 dias):
   descartado (a Conciliação já lista os pendentes; enfeite).
