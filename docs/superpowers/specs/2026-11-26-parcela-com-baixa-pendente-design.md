@@ -84,7 +84,10 @@ baixa pendente ou aprovada no título: não mudam.
 - `src/app/(dashboard)/financeiro/_titulos/titulo-table.tsx`: "Renegociar" e
   "Cancelar" não aparecem quando `parcela.temBaixaPendente` (o campo já existe
   e já esconde o "Baixar"). O texto "Baixa aguardando aprovação" continua.
-- As actions já mostram a mensagem de erro do serviço: conferir no plano.
+- A action de renegociar já devolve a mensagem do serviço ao diálogo. A de
+  cancelar é um formulário sem retorno: a recusa só acontece numa corrida
+  (botão visível, baixa registrada no mesmo instante) e cai na página de erro;
+  aceito pela raridade (o botão some quando há pendente).
 
 ### Aprovações
 
