@@ -9,7 +9,7 @@ import { buscarCandidatosAction, confirmarConciliacaoAction, desconciliarAction 
 import { ConciliarGrupoDialog } from "./conciliar-grupo-dialog";
 import { CriarLancamentoDialogForm } from "./criar-lancamento-dialog-form";
 
-type Candidato = { id: string; data: string; valor: string; descricao: string; conciliado: boolean };
+type Candidato = { id: string; data: string; valor: string; descricao: string; conciliado: boolean; valorIgual: boolean; diasDeDiferenca: number; dentroDaTolerancia: boolean; origem: string };
 
 const PRECISA_CANDIDATOS = ["NAO_CONCILIADO", "SUGESTAO", "DIVERGENCIA_VALOR", "DIVERGENCIA_DATA", "DUPLICADO"];
 
@@ -105,13 +105,28 @@ export function LinhaExtratoActions({
     return null;
   }
 
-  const candidatosSelecionaveis = candidatos.filter((c) => !c.conciliado);
+  // O Confirmar (1:1) só aceita lançamento de valor igual ao da linha.
+  const candidatosSelecionaveis = candidatos.filter((c) => !c.conciliado && c.valorIgual);
+  const valorDiferente = candidatos
+    .filter((c) => !c.conciliado && !c.valorIgual && c.dentroDaTolerancia)
+    .sort((a, b) => a.diasDeDiferenca - b.diasDeDiferenca);
+  const maisProximo = valorDiferente[0];
 
   return (
     <div className="flex flex-col items-end gap-2">
       {status === "DUPLICADO" && candidatos.some((c) => c.conciliado) ? (
         <p className="text-xs text-muted-foreground">
           Já existe um lançamento igual conciliado com outra linha — confira antes de criar um novo.
+        </p>
+      ) : null}
+      {candidatosSelecionaveis.length === 0 && maisProximo ? (
+        <p className="max-w-xs text-right text-xs text-muted-foreground">
+          {`Há lançamento com valor diferente: ${maisProximo.descricao} — ${maisProximo.valor} em ${maisProximo.data}` +
+            (valorDiferente.length > 1 ? ` e mais ${valorDiferente.length - 1}` : "") +
+            (maisProximo.origem === "BAIXA"
+              ? ". Se a baixa foi registrada com o valor errado, estorne a baixa em Contas a pagar ou a receber; "
+              : ". Se foi digitado errado, corrija na Tesouraria; ") +
+            "se a diferença é real (tarifa, juros), use Conciliar em grupo com “Lançar a diferença”."}
         </p>
       ) : null}
       {candidatosSelecionaveis.length > 0 && (

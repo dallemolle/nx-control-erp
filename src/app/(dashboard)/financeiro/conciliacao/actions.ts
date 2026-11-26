@@ -95,6 +95,10 @@ export async function buscarCandidatosAction(linhaExtratoId: string) {
     valor: formatarMoeda(c.valor),
     descricao: c.descricao,
     conciliado: c.conciliado,
+    valorIgual: c.valorIgual,
+    diasDeDiferenca: c.diasDeDiferenca,
+    dentroDaTolerancia: c.dentroDaTolerancia,
+    origem: c.origem,
   }));
 }
 

@@ -412,7 +412,7 @@ describe("confirmarConciliacaoManual / desconciliar", () => {
         contaBancariaId: fixture.contaBancariaId,
         data: new Date("2026-08-20T00:00:00Z"),
         tipo: "SAIDA",
-        valor: 300,
+        valor: 150,
         descricao: "Pagamento diverso",
         origem: "MANUAL",
         usuarioId: fixture.usuarioId,
@@ -472,7 +472,7 @@ describe("confirmarConciliacaoManual / desconciliar", () => {
         contaBancariaId: fixture.contaBancariaId,
         data: new Date("2026-08-22T00:00:00Z"),
         tipo: "SAIDA",
-        valor: 500,
+        valor: 150,
         descricao: "Pra desconciliar",
         origem: "MANUAL",
         usuarioId: fixture.usuarioId,
@@ -506,7 +506,7 @@ describe("confirmarConciliacaoManual / desconciliar", () => {
         contaBancariaId: fixture.contaBancariaId,
         data: new Date("2026-08-23T00:00:00Z"),
         tipo: "SAIDA",
-        valor: 600,
+        valor: 150,
         descricao: "Lançamento original",
         origem: "MANUAL",
         usuarioId: fixture.usuarioId,
@@ -1089,5 +1089,136 @@ describe("buscarCandidatosParaGrupo", () => {
     });
 
     await expect(buscarCandidatosParaGrupo(fixture.sessao, linha.id)).rejects.toThrow(/já está conciliada/);
+  });
+});
+
+describe("soma conferida dentro da transação", () => {
+  let fixture: FixtureFinanceiro;
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("CBS", "TESOURARIA");
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fixture);
+    await prisma.$disconnect();
+  });
+
+  async function lancamento(valor: number, tipo: "ENTRADA" | "SAIDA", descricao: string, data = "2026-10-05") {
+    return prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: new Date(`${data}T00:00:00Z`),
+        tipo,
+        valor,
+        descricao,
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+      },
+    });
+  }
+
+  async function importar(transacoes: TransacaoOfx[]) {
+    const extrato = await importarExtratoOfx(fixture.sessao, fixture.contaBancariaId, ofxCom(transacoes));
+    const criadas = await prisma.linhaExtrato.findMany({ where: { extratoImportadoId: extrato.id } });
+    return { extrato, linhas: transacoes.map((t) => criadas.find((l) => l.identificadorBancario === t.fitid)!) };
+  }
+
+  test("1:1: lançamento editado entre a leitura e o vínculo — erro e nada é gravado", async () => {
+    const { linhas: [linha] } = await importar([{ fitid: "SOMA-1", data: "20261005", valor: "-300.00", nome: "TARIFA" }]);
+    const lanc = await lancamento(300, "SAIDA", "Tarifa");
+    const lido = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lanc.id } });
+    await prisma.lancamentoBancario.update({ where: { id: lanc.id }, data: { valor: 310 } });
+    // O serviço recebe a leitura de antes da edição.
+    const espiao = vi.spyOn(prisma.lancamentoBancario, "findFirst").mockResolvedValueOnce(lido);
+    try {
+      await expect(confirmarConciliacaoManual(fixture.sessao, linha.id, lanc.id)).rejects.toThrow(
+        "Algum lançamento mudou enquanto você conciliava. Confira os valores e tente de novo.",
+      );
+    } finally {
+      espiao.mockRestore();
+    }
+    const linhaDepois = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } });
+    expect(linhaDepois.grupoConciliacaoId).toBeNull();
+    const lancDepois = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lanc.id } });
+    expect(lancDepois.conciliado).toBe(false);
+    expect(lancDepois.grupoConciliacaoId).toBeNull();
+  });
+
+  test("automática: lançamento editado depois da classificação — a linha é pulada e a rodada segue", async () => {
+    const { extrato, linhas: [linha] } = await importar([
+      { fitid: "SOMA-AUTO-1", data: "20261006", valor: "-150.00", nome: "TARIFA" },
+    ]);
+    const lanc = await lancamento(150, "SAIDA", "Tarifa automática", "2026-10-06");
+    const candidatosLidos = await prisma.lancamentoBancario.findMany({ where: { id: lanc.id } });
+    await prisma.lancamentoBancario.update({ where: { id: lanc.id }, data: { valor: 160 } });
+    // A busca de candidatos da rodada recebe a leitura de antes da edição.
+    const espiao = vi.spyOn(prisma.lancamentoBancario, "findMany").mockResolvedValueOnce(candidatosLidos);
+    try {
+      const resultado = await conciliarAutomaticamente(fixture.sessao, extrato.id);
+      expect(resultado.conciliadasAutomaticamente).toBe(0);
+    } finally {
+      espiao.mockRestore();
+    }
+    const linhaDepois = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } });
+    expect(linhaDepois.grupoConciliacaoId).toBeNull();
+    expect((await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lanc.id } })).conciliado).toBe(false);
+  });
+
+  test("1:1 com valor diferente é recusado e nada é gravado", async () => {
+    const { linhas: [linha] } = await importar([{ fitid: "VAL-1", data: "20261007", valor: "-990.00", nome: "BOLETO" }]);
+    const lanc = await lancamento(1000, "SAIDA", "Boleto", "2026-10-07");
+    await expect(confirmarConciliacaoManual(fixture.sessao, linha.id, lanc.id)).rejects.toThrow(
+      /tem valor diferente da linha .* Se foi digitado errado, corrija na Tesouraria; se a diferença é real, use Conciliar em grupo com “Lançar a diferença”\./,
+    );
+    expect((await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } })).grupoConciliacaoId).toBeNull();
+  });
+
+  test("1:1 com valor diferente em lançamento de baixa manda estornar a baixa", async () => {
+    const { linhas: [linha] } = await importar([{ fitid: "VAL-2", data: "20261007", valor: "-990.00", nome: "BOLETO" }]);
+    const lanc = await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: new Date("2026-10-07T00:00:00Z"),
+        tipo: "SAIDA",
+        valor: 1000,
+        descricao: "Baixa de boleto",
+        origem: "BAIXA",
+        usuarioId: fixture.usuarioId,
+      },
+    });
+    await expect(confirmarConciliacaoManual(fixture.sessao, linha.id, lanc.id)).rejects.toThrow(
+      /tem valor diferente da linha .* estorne a baixa em Contas a pagar ou a receber/,
+    );
+    expect((await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } })).grupoConciliacaoId).toBeNull();
+  });
+
+  test("1:1 com sentido diferente é recusado", async () => {
+    const { linhas: [linha] } = await importar([{ fitid: "SEN-1", data: "20261008", valor: "-200.00", nome: "PIX" }]);
+    const lanc = await lancamento(200, "ENTRADA", "Recebimento", "2026-10-08");
+    await expect(confirmarConciliacaoManual(fixture.sessao, linha.id, lanc.id)).rejects.toThrow(
+      "O lançamento é uma entrada e a linha do extrato é uma saída.",
+    );
+  });
+
+  test("1:1 com valor igual e data a mais de 3 dias (Divergência de data) passa", async () => {
+    const { linhas: [linha] } = await importar([{ fitid: "DAT-1", data: "20261009", valor: "-75.00", nome: "TARIFA" }]);
+    const lanc = await lancamento(75, "SAIDA", "Tarifa atrasada", "2026-10-19");
+    await confirmarConciliacaoManual(fixture.sessao, linha.id, lanc.id);
+    expect(await lancamentosDoGrupoDaLinha(linha.id)).toEqual([lanc.id]);
+  });
+
+  test("candidatos da linha vêm com valorIgual e diasDeDiferenca", async () => {
+    const { linhas: [linha] } = await importar([{ fitid: "CAN-1", data: "20261012", valor: "-500.00", nome: "BOLETO" }]);
+    const igual = await lancamento(500, "SAIDA", "Boleto certo", "2026-10-14");
+    const diferente = await lancamento(550, "SAIDA", "Boleto errado", "2026-10-12");
+    const longe = await lancamento(520, "SAIDA", "Boleto distante", "2026-10-22");
+    const candidatos = await buscarCandidatosDaLinha(fixture.sessao, linha.id);
+    const porId = new Map(candidatos.map((c) => [c.id, c]));
+    expect(porId.get(igual.id)).toMatchObject({ valorIgual: true, diasDeDiferenca: 2, dentroDaTolerancia: true });
+    expect(porId.get(diferente.id)).toMatchObject({ valorIgual: false, diasDeDiferenca: 0, dentroDaTolerancia: true });
+    expect(porId.get(longe.id)).toMatchObject({ valorIgual: false, diasDeDiferenca: 10, dentroDaTolerancia: false });
   });
 });
