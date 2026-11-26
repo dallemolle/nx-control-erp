@@ -6,6 +6,7 @@ import type { StatusParcela } from "@prisma/client";
 import {
   buscarAguardandoConciliacaoDasFiliais,
   buscarSaldoEmCaixaAteDasFiliais,
+  ehTransferencia,
   fimDoDiaUTC,
   saldoComAguardando,
   type AguardandoConciliacao,
@@ -64,7 +65,7 @@ function somasConciliadasNoPeriodo(filialIds: string[], inicio: Date, fim: Date)
 function totaisDoPeriodo(somas: { tipo: string; origem: string; _sum: { valor: unknown } }[]) {
   const somar = (filtro: (s: { tipo: string; origem: string }) => boolean) =>
     somas.filter(filtro).reduce((total, s) => total + Number(s._sum.valor ?? 0), 0);
-  const transferencia = (s: { origem: string }) => s.origem === "TRANSFERENCIA";
+  const transferencia = (s: { origem: string }) => ehTransferencia(s.origem);
   return {
     entradas: somar((s) => s.tipo === "ENTRADA" && !transferencia(s)),
     saidas: somar((s) => s.tipo === "SAIDA" && !transferencia(s)),

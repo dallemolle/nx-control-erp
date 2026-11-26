@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { saldoRemanescenteParcela } from "./fluxoDeCaixaProjetado";
+import { SEM_TRANSFERENCIA } from "./fluxoDeCaixa";
 import {
   whereLancamentoPorClassificacao,
   whereTituloPorClassificacao,
@@ -67,7 +68,7 @@ async function somarRealizadoPorDimensao(
           filialId,
           conciliado: true,
           // Transferência entre contas não é entrada nem saída de nenhuma dimensão: só move saldo.
-          origem: { not: "TRANSFERENCIA" },
+          ...SEM_TRANSFERENCIA,
           contaBancaria: { ativo: true },
           ...whereLancamentoPorClassificacao(classificacao),
         },

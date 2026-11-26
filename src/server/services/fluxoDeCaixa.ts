@@ -2,6 +2,15 @@ import { prisma } from "@/server/db/client";
 import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { whereLancamentoPorClassificacao, type FiltroClassificacao } from "./classificacaoFiscal";
+import type { OrigemLancamento, Prisma } from "@prisma/client";
+
+/** Transferência entre contas não é entrada nem saída: só move saldo entre contas da filial. */
+export function ehTransferencia(origem: OrigemLancamento | string): boolean {
+  return origem === "TRANSFERENCIA";
+}
+
+/** `where` do Prisma para somas de entradas e saídas: deixa as transferências de fora (o saldo continua com elas). */
+export const SEM_TRANSFERENCIA = { origem: { not: "TRANSFERENCIA" } } satisfies Prisma.LancamentoBancarioWhereInput;
 
 export type Granularidade = "DIA" | "SEMANA" | "MES" | "ANO";
 
@@ -206,7 +215,7 @@ export async function listarFluxoDeCaixaRealizado(
 
   return calcularPeriodosFluxoDeCaixa(
     periodos,
-    lancamentos.map((l) => ({ data: l.data, valor: Number(l.valor), tipo: l.tipo, transferencia: l.origem === "TRANSFERENCIA" })),
+    lancamentos.map((l) => ({ data: l.data, valor: Number(l.valor), tipo: l.tipo, transferencia: ehTransferencia(l.origem) })),
     saldoInicialAbsoluto,
   );
 }
