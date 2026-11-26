@@ -43,9 +43,14 @@ export class RejeicaoNaoDispensavelError extends Error {
   name = "RejeicaoNaoDispensavelError";
 }
 
-const STATUS_QUE_ACEITAM_BAIXA: readonly StatusParcela[] = ["EM_ABERTO", "A_VENCER", "VENCIDO", "PARCIALMENTE_PAGO"];
+export const STATUS_QUE_ACEITAM_BAIXA: readonly StatusParcela[] = [
+  "EM_ABERTO",
+  "A_VENCER",
+  "VENCIDO",
+  "PARCIALMENTE_PAGO",
+];
 
-const ROTULO_PARCELA_FECHADA: Partial<Record<StatusParcela, string>> = {
+export const ROTULO_PARCELA_FECHADA: Partial<Record<StatusParcela, string>> = {
   PAGO: "paga",
   CANCELADO: "cancelada",
   RENEGOCIADO: "renegociada",
@@ -110,6 +115,29 @@ export async function listarBaixasPendentes(filialId: string) {
   });
 }
 
+/**
+ * A parcela não pode ter baixa esperando aprovação. Chame com a parcela já travada (`FOR UPDATE`) na mesma
+ * transação: assim registrar, cancelar e renegociar ao mesmo tempo ficam em fila e o segundo vê o primeiro.
+ */
+export async function garantirSemBaixaPendente(
+  tx: Prisma.TransactionClient,
+  parcelaId: string,
+  antesDe: string,
+): Promise<void> {
+  // Leituras em sequência (sem include): ver "consultas paralelas na transação" no backlog.
+  const pendente = await tx.baixa.findFirst({
+    where: { parcelaId, statusAprovacao: "PENDENTE" },
+    select: { valorPago: true, data: true, usuarioId: true },
+  });
+  if (!pendente) return;
+  const quem = await tx.usuario.findUniqueOrThrow({ where: { id: pendente.usuarioId }, select: { nome: true } });
+  throw new BaixaPendenteError(
+    `Esta parcela já tem uma baixa aguardando aprovação: ${formatarMoeda(pendente.valorPago)} de ` +
+      `${formatarData(pendente.data)}, registrada por ${quem.nome}. ` +
+      `Peça para aprovarem ou rejeitarem essa baixa antes de ${antesDe}.`,
+  );
+}
+
 export async function registrarBaixa(sessao: SessaoAtiva, parcelaId: string, dados: BaixaFormValues) {
   requirePermission(sessao.perfil, "titulo:baixar");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
@@ -137,19 +165,7 @@ export async function registrarBaixa(sessao: SessaoAtiva, parcelaId: string, dad
       );
     }
 
-    // Leituras em sequência (sem include): ver "consultas paralelas na transação" no backlog.
-    const pendente = await tx.baixa.findFirst({
-      where: { parcelaId, statusAprovacao: "PENDENTE" },
-      select: { valorPago: true, data: true, usuarioId: true },
-    });
-    if (pendente) {
-      const quem = await tx.usuario.findUniqueOrThrow({ where: { id: pendente.usuarioId }, select: { nome: true } });
-      throw new BaixaPendenteError(
-        `Esta parcela já tem uma baixa aguardando aprovação: ${formatarMoeda(pendente.valorPago)} de ` +
-          `${formatarData(pendente.data)}, registrada por ${quem.nome}. ` +
-          "Peça para aprovarem ou rejeitarem essa baixa antes de registrar outra.",
-      );
-    }
+    await garantirSemBaixaPendente(tx, parcelaId, "registrar outra");
 
     const baixa = await tx.baixa.create({
       data: {
@@ -210,6 +226,12 @@ export async function efetivarBaixa(tx: Prisma.TransactionClient, contexto: Cont
     where: { id: anterior.parcelaId },
     include: { titulo: true },
   });
+  // Pendência antiga de parcela fechada depois do registro: aprovar geraria lançamento de parcela que não existe mais.
+  if (parcela.status === "CANCELADO" || parcela.status === "RENEGOCIADO") {
+    throw new BaixaParcelaFechadaError(
+      `A parcela desta baixa foi ${ROTULO_PARCELA_FECHADA[parcela.status]}. Rejeite a baixa.`,
+    );
+  }
 
   const baixa = await tx.baixa.update({
     where: { id: baixaId },
