@@ -66,7 +66,7 @@ export default async function FluxoDeCaixaProjetadoPage({
           <BotaoAjuda tela="fluxo-de-caixa-projetado" />
         </div>
         <p className="text-sm text-muted-foreground">
-          Projeção calculada a partir do saldo em caixa conciliado de hoje e
+          Projeção calculada a partir do saldo em caixa conciliado e
           dos títulos a pagar/receber em aberto. A linha &quot;Aguardando
           conciliação&quot; soma o que já foi lançado (baixas aprovadas,
           lançamentos manuais, transferências) e o extrato ainda não

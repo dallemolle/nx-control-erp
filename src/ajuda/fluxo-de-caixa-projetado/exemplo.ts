@@ -5,7 +5,7 @@
  */
 export type Linha = { rotulo: string; entradas: number; saidas: number; tipo?: "aguardando" | "atraso" | "aVencer" };
 
-/** Saldo conciliado de hoje. */
+/** Saldo conciliado. */
 export const SALDO_CONCILIADO = 48_862;
 
 /** A parcela 2 do adubo, paga e aprovada em 19/11, que o extrato ainda não confirmou. */
