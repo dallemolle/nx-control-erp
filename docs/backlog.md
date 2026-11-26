@@ -279,29 +279,6 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   extrato" (manda usar o dia mais recente) e o passo "Veja o quadro de cada
   conta".
 
-### 8. Confirmar 1:1 na Conciliação aceita valor diferente
-
-- **Problema:** `confirmarConciliacaoManual`
-  (`src/server/services/conciliacao.ts`) só confere a conta e se o lançamento
-  está livre: não compara valor nem sentido com a linha do extrato. A caixa de
-  candidatos (`buscarCandidatosLancamento`) traz lançamentos do mesmo sentido em
-  ±30 dias, de qualquer valor.
-- **Exemplo:** linha de R$ 990,00 conciliada com lançamento de R$ 1.000,00. O
-  realizado fica com R$ 1.000,00 e os R$ 10,00 somem.
-- **Impacto:** dado errado no fluxo realizado, escondido pela conciliação.
-  A conciliação em grupo já exige soma exata; o 1:1 é a porta aberta.
-- **Caminhos:** exigir valor e sentido iguais no 1:1 e, se diferente, mandar
-  para "Conciliar em grupo" com "Lançar a diferença"; ou filtrar os candidatos
-  por valor igual e deixar o resto para o grupo.
-- **Cuidados:** linhas em Divergência de valor hoje resolvidas pelo 1:1.
-  Desde a correção de lançamentos (item 6, 2026-11-26) um lançamento solto
-  pode ser editado entre a leitura e o vínculo no 1:1 e na conciliação
-  automática; ao exigir valor igual, conferir de novo dentro da transação,
-  como já faz a conciliação em grupo.
-- **Ao corrigir:** dica do passo "Escolha o lançamento na caixa da linha" em
-  `src/ajuda/conciliacao/roteiros.ts` (roteiro `confirmar-sugestao`) e o
-  "Quando usar" dele (cita Divergência de valor).
-
 ### 9. Reconciliar pendentes ignora Sugestão, Divergência e Duplicado
 
 - **Problema:** `reconciliarPendentes` (`src/server/services/conciliacao.ts`)

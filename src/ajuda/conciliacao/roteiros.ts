@@ -98,9 +98,10 @@ export const ROTEIROS: readonly Roteiro[] = [
           "Nenhum lançamento bate. Ou o movimento ainda não foi lançado (uma tarifa, uma baixa que ninguém " +
           "registrou), ou ele corresponde a vários lançamentos juntos, como o depósito da operadora de cartão.",
         dica:
-          "Outros status: Divergência de valor (há um lançamento com data próxima e valor diferente), " +
-          "Divergência de data (mesmo valor, mas mais de 3 dias de diferença) e Duplicado (o lançamento igual já " +
-          "está conciliado com outra linha: confira se a linha não veio repetida no extrato).",
+          "Outros status: Divergência de valor (há um lançamento com data próxima e valor diferente; se ele foi " +
+          "digitado errado, corrija o valor na Tesouraria, e se a diferença é real, use Conciliar em grupo com " +
+          "“Lançar a diferença”), Divergência de data (mesmo valor, mas mais de 3 dias de diferença) e Duplicado " +
+          "(o lançamento igual já está conciliado com outra linha: confira se a linha não veio repetida no extrato).",
       },
       {
         cena: "lista",
@@ -112,8 +113,9 @@ export const ROTEIROS: readonly Roteiro[] = [
     ],
     eDepois: {
       texto:
-        "Resolva as linhas pendentes com Confirmar (Sugestão e Divergências), Conciliar em grupo (um movimento " +
-        "com vários lançamentos) ou Criar lançamento (o que ainda não foi lançado).",
+        "Resolva as linhas pendentes com Confirmar (Sugestão e Divergência de data), Conciliar em grupo (um " +
+        "movimento com vários lançamentos, ou uma diferença real como uma tarifa) ou Criar lançamento (o que ainda " +
+        "não foi lançado).",
       proximoRoteiro: "confirmar-sugestao",
     },
   }),
@@ -122,8 +124,8 @@ export const ROTEIROS: readonly Roteiro[] = [
     id: "confirmar-sugestao",
     titulo: "Confirmar uma sugestão",
     quandoUsar:
-      "Quando a linha está como Sugestão, Divergência de valor ou Divergência de data e você sabe qual lançamento " +
-      "é o dela.",
+      "Quando a linha está como Sugestão ou Divergência de data e você sabe qual lançamento é o dela. O " +
+      "lançamento precisa ter o mesmo valor da linha.",
     quemPode: QUEM_PODE,
     passos: [
       {
@@ -131,12 +133,13 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "l4.selecionar",
         instrucao: "Escolha o lançamento na caixa da linha",
         explicacao:
-          "A caixa lista os lançamentos da mesma conta, no mesmo sentido e com até 30 dias de diferença, que ainda " +
-          "não foram conciliados. No exemplo, o saque de R$ 2.000,00 é a transferência para o caixa.",
+          "A caixa lista os lançamentos da mesma conta, no mesmo sentido, com o mesmo valor da linha e até 30 " +
+          "dias de diferença, que ainda não foram conciliados. No exemplo, o saque de R$ 2.000,00 é a " +
+          "transferência para o caixa.",
         dica:
-          "Confira se o valor do lançamento é igual ao da linha. O sistema aceita confirmar com valor diferente, " +
-          "e aí o realizado fica com o valor do lançamento, não o do banco. Se o valor não bate, use Conciliar em " +
-          "grupo com “Lançar a diferença”.",
+          "Se só existe lançamento com valor diferente, a caixa não aparece e a linha mostra um aviso com o " +
+          "lançamento encontrado. Se ele foi digitado errado, corrija o valor na Tesouraria e volte para " +
+          "confirmar; se a diferença é real (uma tarifa, juros), use Conciliar em grupo com “Lançar a diferença”.",
         preenche: { "l4.selecionar": CANDIDATO_SAQUE },
       },
       {

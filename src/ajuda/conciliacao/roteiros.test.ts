@@ -18,6 +18,12 @@ describe("roteiros de Conciliação", () => {
     ]);
   });
 
+  test("nenhum texto diz que o Confirmar aceita valor diferente", () => {
+    const textos = JSON.stringify(roteiros);
+    expect(textos).not.toMatch(/aceita confirmar com valor diferente/);
+    expect(textos).toMatch(/corrija o valor na Tesouraria/);
+  });
+
   test("o grupo só zera a diferença com os lançamentos marcados", () => {
     const antes = renderToStaticMarkup(createElement(cenas.grupo, { valores: {} }));
     expect(antes).toContain("Lançar a diferença");

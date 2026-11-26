@@ -1,6 +1,6 @@
 # Confirmar 1:1 na Conciliação só com valor igual
 
-Data: 2026-11-26 · Status: aprovada, aguardando plano
+Data: 2026-11-26 · Status: implementada (2026-11-26)
 
 Item 8 do [backlog](../../backlog.md), seção "Financeiro — lacunas achadas ao
 escrever a ajuda contextual" ("Confirmar 1:1 na Conciliação aceita valor
@@ -88,7 +88,9 @@ quando dá `SomaDoGrupoMudouError`: a linha fica como estava e a rodada segue.
 sentido, ±30 dias, conciliados ou não), porque a tela usa os conciliados para o
 aviso de Duplicado. Cada candidato ganha o campo `valorIgual: boolean`
 (`candidato.valor.equals(linha.valor)`), calculado no serviço, que já tem a
-linha em mãos. `buscarCandidatosAction`
+linha em mãos. O serviço também devolve `diasDeDiferenca` (dias entre a data do
+candidato e a da linha, comparando só o dia), usado para o aviso mostrar o
+candidato de data mais próxima. `buscarCandidatosAction`
 (`src/app/(dashboard)/financeiro/conciliacao/actions.ts`) repassa o campo para a
 tela.
 
@@ -118,7 +120,8 @@ tela.
   valor vai para a Tesouraria ou o grupo.
 - Cenas (`cenas.tsx`): se alguma linha do exemplo estiver em Divergência de
   valor com caixa de Confirmar, ela passa a mostrar o aviso. O plano confere os
-  dados de `exemplo.ts`.
+  dados de `exemplo.ts`. Resultado: as cenas não mudaram (nenhuma linha do
+  exemplo está em Divergência de valor).
 
 ## Dados antigos
 
