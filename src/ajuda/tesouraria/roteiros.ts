@@ -326,8 +326,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "editar.valor",
         instrucao: "Corrija o que estiver errado",
         explicacao:
-          "Todos os campos do lançamento podem mudar: conta, tipo, valor, data, descrição, classificação, " +
-          "categoria e as dimensões.",
+          "Num lançamento ainda não conciliado, todos os campos podem mudar: conta, tipo, valor, data, " +
+          "descrição, classificação, categoria e as dimensões. Num conciliado, veja o selo adiante.",
         preenche: { "editar.valor": DIARIAS.valorCerto },
       },
       {
@@ -343,9 +343,9 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "painel.conciliado",
         instrucao: "Repare no selo Conciliado",
         explicacao:
-          "Ele aparece no lançamento que já foi ligado a uma linha do extrato. Nele, só a descrição e a " +
-          "classificação mudam, e o Excluir fica desabilitado: conta, tipo, valor e data já foram confirmados " +
-          "pelo banco.",
+          "Ele aparece no lançamento que já foi ligado a uma linha do extrato. Num lançamento manual assim, só " +
+          "mudam descrição, classificação, categoria, dimensões e comprovante. Numa transferência, só a " +
+          "descrição. O Excluir fica desabilitado: conta, tipo, valor e data já foram confirmados pelo banco.",
         dica:
           "Se a conciliação estiver errada, desfaça-a na Conciliação (roteiro “Desfazer uma conciliação e " +
           "reprocessar pendentes”). O lançamento volta a ficar solto e pode ser corrigido ou excluído.",
