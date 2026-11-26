@@ -105,7 +105,10 @@ describe("filtro de classificação nos relatórios", () => {
     expect(doMes(gerencial).entradas).toBe(200);
     expect(doMes(gerencial).saidas).toBe(50);
     expect(doMes(todos).entradas).toBe(doMes(fiscal).entradas + doMes(gerencial).entradas);
-    expect(doMes(todos).saidas).toBe(doMes(fiscal).saidas + doMes(gerencial).saidas + 70);
+    // A perna de transferência (70) não é saída: vai para a coluna Transferências.
+    expect(doMes(todos).saidas).toBe(doMes(fiscal).saidas + doMes(gerencial).saidas);
+    expect(doMes(todos).transferencias).toBe(-70);
+    expect(doMes(fiscal).transferencias).toBe(0);
 
     expect(fiscal[0].saldoInicial).toBe(0);
     expect(doMes(fiscal).saldoFinal).toBe(700);
@@ -136,7 +139,7 @@ describe("filtro de classificação nos relatórios", () => {
     const [todos, fiscal, gerencial] = await Promise.all([linhaDaSafra(), linhaDaSafra("FISCAL"), linhaDaSafra("GERENCIAL")]);
 
     expect(todos.entradasRealizadas).toBe(fiscal.entradasRealizadas + gerencial.entradasRealizadas);
-    expect(todos.saidasRealizadas).toBe(fiscal.saidasRealizadas + gerencial.saidasRealizadas + 70);
+    expect(todos.saidasRealizadas).toBe(fiscal.saidasRealizadas + gerencial.saidasRealizadas);
     expect(gerencial.entradasRealizadas).toBe(200);
   });
 
@@ -163,7 +166,7 @@ describe("filtro de classificação nos relatórios", () => {
       (await listarComparativoSafras(fixture.sessao, { classificacao })).find((linha) => linha.safraId === safraId)!;
     const [todos, fiscal, gerencial] = await Promise.all([daSafra(), daSafra("FISCAL"), daSafra("GERENCIAL")]);
 
-    expect(todos.realizado).toBe(fiscal.realizado + gerencial.realizado - 70);
+    expect(todos.realizado).toBe(fiscal.realizado + gerencial.realizado);
     expect(todos.projetado).toBe(fiscal.projetado + gerencial.projetado);
     expect(gerencial.realizado).toBe(150);
   });

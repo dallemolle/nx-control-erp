@@ -22,7 +22,7 @@ function comSaldos(movimentos: readonly Movimento[], saldoInicial: number) {
   return movimentos.map((m) => {
     const inicial = saldo;
     const geracao = m.entradas - m.saidas;
-    saldo = inicial + geracao;
+    saldo = inicial + geracao + (m.transferencias ?? 0);
     return { ...m, inicial, geracao, final: saldo };
   });
 }
@@ -91,6 +91,7 @@ export function CenaPainel({ valores }: PropsCena) {
               <Cabecalho alvo="col.saldoInicial">{`${rotuloSaldo} inicial`}</Cabecalho>
               <Cabecalho alvo="col.entradas">Entradas</Cabecalho>
               <TableHead>Saídas</TableHead>
+              <Cabecalho alvo="col.transferencias">Transferências</Cabecalho>
               <Cabecalho alvo="col.geracao">Geração líquida</Cabecalho>
               <Cabecalho alvo="col.saldoFinal">{`${rotuloSaldo} final`}</Cabecalho>
             </TableRow>
@@ -102,6 +103,7 @@ export function CenaPainel({ valores }: PropsCena) {
                 <TableCell>{moeda(l.inicial)}</TableCell>
                 <TableCell>{moeda(l.entradas)}</TableCell>
                 <TableCell>{moeda(l.saidas)}</TableCell>
+                <TableCell>{moeda(l.transferencias ?? 0)}</TableCell>
                 <TableCell>{moeda(l.geracao)}</TableCell>
                 <TableCell>{moeda(l.final)}</TableCell>
               </TableRow>

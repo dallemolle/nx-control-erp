@@ -77,6 +77,7 @@ export default async function FluxoDeCaixaPage({
             <TableHead>{rotuloSaldo} inicial</TableHead>
             <TableHead>Entradas</TableHead>
             <TableHead>Saídas</TableHead>
+            <TableHead>Transferências</TableHead>
             <TableHead>Geração líquida</TableHead>
             <TableHead>{rotuloSaldo} final</TableHead>
           </TableRow>
@@ -88,6 +89,7 @@ export default async function FluxoDeCaixaPage({
               <TableCell>{formatarMoeda(periodo.saldoInicial)}</TableCell>
               <TableCell>{formatarMoeda(periodo.entradas)}</TableCell>
               <TableCell>{formatarMoeda(periodo.saidas)}</TableCell>
+              <TableCell>{formatarMoeda(periodo.transferencias)}</TableCell>
               <TableCell>{formatarMoeda(periodo.geracaoLiquida)}</TableCell>
               <TableCell>{formatarMoeda(periodo.saldoFinal)}</TableCell>
             </TableRow>

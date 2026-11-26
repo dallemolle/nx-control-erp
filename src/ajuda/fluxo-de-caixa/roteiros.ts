@@ -41,12 +41,18 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "col.entradas",
         instrucao: "Entradas e Saídas: o que entrou e saiu no período",
         explicacao:
-          "Soma dos lançamentos conciliados com data dentro do período: recebimentos, pagamentos, lançamentos " +
-          "avulsos e transferências.",
-        dica:
-          "Uma transferência entre duas contas da filial aparece nas duas colunas (o saque de R$ 2.000 do banco " +
-          "para o caixa é uma saída e uma entrada). Ela não muda a geração líquida, mas aumenta os totais de " +
-          "Entradas e Saídas.",
+          "Soma dos lançamentos conciliados com data dentro do período: recebimentos, pagamentos e lançamentos " +
+          "avulsos. Transferências entre contas da filial não entram: ficam na coluna Transferências.",
+      },
+      {
+        cena: "painel",
+        alvo: "col.transferencias",
+        instrucao: "Transferências: o dinheiro que só trocou de conta",
+        explicacao:
+          "A coluna Transferências mostra o líquido das transferências do período e quase sempre fica em R$ 0,00 " +
+          "(o saque de R$ 2.000 do banco para o Caixa sai de uma conta e entra na outra). Ela só fica diferente " +
+          "de zero quando uma das pernas ainda não foi conciliada: o saldo final conta essa diferença até o " +
+          "extrato chegar.",
       },
       {
         cena: "painel",
@@ -54,13 +60,15 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Geração líquida: entradas menos saídas",
         explicacao:
           "Positiva quando entrou mais do que saiu; negativa quando saiu mais. Em novembro de 2026, " +
-          "R$ 19.400,00 − R$ 20.638,00 = −R$ 1.238,00: o caixa encolheu no mês.",
+          "R$ 17.400,00 − R$ 18.638,00 = −R$ 1.238,00: o caixa encolheu no mês.",
       },
       {
         cena: "painel",
         alvo: "col.saldoFinal",
         instrucao: "Saldo final: quanto sobrou no fim do período",
-        explicacao: "Saldo inicial mais a geração líquida. Os meses que ainda não chegaram repetem o último saldo.",
+        explicacao:
+          "Saldo inicial mais a geração líquida e as transferências. Os meses que ainda não chegaram repetem o " +
+          "último saldo.",
       },
     ],
     eDepois: {

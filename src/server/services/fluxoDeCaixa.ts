@@ -2,17 +2,29 @@ import { prisma } from "@/server/db/client";
 import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { whereLancamentoPorClassificacao, type FiltroClassificacao } from "./classificacaoFiscal";
+import type { OrigemLancamento, Prisma } from "@prisma/client";
+
+/** Transferência entre contas não é entrada nem saída: só move saldo entre contas da filial. */
+export function ehTransferencia(origem: OrigemLancamento | string): boolean {
+  return origem === "TRANSFERENCIA";
+}
+
+/** `where` do Prisma para somas de entradas e saídas: deixa as transferências de fora (o saldo continua com elas). */
+export const SEM_TRANSFERENCIA = { origem: { not: "TRANSFERENCIA" } } satisfies Prisma.LancamentoBancarioWhereInput;
 
 export type Granularidade = "DIA" | "SEMANA" | "MES" | "ANO";
 
 export type SubPeriodo = { inicio: Date; fim: Date };
 
-export type LancamentoParaFluxo = { data: Date; valor: number; tipo: "ENTRADA" | "SAIDA" };
+/** `transferencia`: perna de transferência entre contas (origem TRANSFERENCIA). Não é entrada nem saída, só move o saldo. */
+export type LancamentoParaFluxo = { data: Date; valor: number; tipo: "ENTRADA" | "SAIDA"; transferencia: boolean };
 
 export type PeriodoFluxoDeCaixa = SubPeriodo & {
   saldoInicial: number;
   entradas: number;
   saidas: number;
+  /** Líquido das transferências entre contas no período: quase sempre 0; ≠ 0 quando só uma perna está conciliada. */
+  transferencias: number;
   geracaoLiquida: number;
   saldoFinal: number;
 };
@@ -84,7 +96,8 @@ export function calcularJanela(granularidade: Granularidade, dataReferencia: Dat
  * Agrega os lançamentos (já filtrados pra `conciliado: true` e escopados
  * por filial pelo chamador) em cada sub-período, encadeando o saldo final
  * de um como saldo inicial do próximo — nunca recalcula do zero a cada
- * sub-período.
+ * sub-período. Entradas e saídas não incluem transferências entre contas;
+ * saldo final = inicial + geração líquida + transferências.
  */
 export function calcularPeriodosFluxoDeCaixa(
   periodos: SubPeriodo[],
@@ -95,14 +108,19 @@ export function calcularPeriodosFluxoDeCaixa(
 
   return periodos.map(({ inicio, fim }) => {
     const doPeriodo = lancamentos.filter((l) => l.data >= inicio && l.data <= fim);
-    const entradas = doPeriodo.filter((l) => l.tipo === "ENTRADA").reduce((soma, l) => soma + l.valor, 0);
-    const saidas = doPeriodo.filter((l) => l.tipo === "SAIDA").reduce((soma, l) => soma + l.valor, 0);
+    const somar = (lista: LancamentoParaFluxo[], tipo: "ENTRADA" | "SAIDA") =>
+      lista.filter((l) => l.tipo === tipo).reduce((soma, l) => soma + l.valor, 0);
+    const movimento = doPeriodo.filter((l) => !l.transferencia);
+    const pernas = doPeriodo.filter((l) => l.transferencia);
+    const entradas = somar(movimento, "ENTRADA");
+    const saidas = somar(movimento, "SAIDA");
+    const transferencias = somar(pernas, "ENTRADA") - somar(pernas, "SAIDA");
     const geracaoLiquida = entradas - saidas;
     const saldoInicial = saldoCorrente;
-    const saldoFinal = saldoInicial + geracaoLiquida;
+    const saldoFinal = saldoInicial + geracaoLiquida + transferencias;
     saldoCorrente = saldoFinal;
 
-    return { inicio, fim, saldoInicial, entradas, saidas, geracaoLiquida, saldoFinal };
+    return { inicio, fim, saldoInicial, entradas, saidas, transferencias, geracaoLiquida, saldoFinal };
   });
 }
 
@@ -197,7 +215,7 @@ export async function listarFluxoDeCaixaRealizado(
 
   return calcularPeriodosFluxoDeCaixa(
     periodos,
-    lancamentos.map((l) => ({ data: l.data, valor: Number(l.valor), tipo: l.tipo })),
+    lancamentos.map((l) => ({ data: l.data, valor: Number(l.valor), tipo: l.tipo, transferencia: ehTransferencia(l.origem) })),
     saldoInicialAbsoluto,
   );
 }

@@ -337,6 +337,11 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 
 ### 10. Transferências entre contas inflam entradas e saídas
 
+- **Status:** feito na branch `fix/transferencias-fora-das-somas` (2026-11-26,
+  spec e plano `2026-11-26-transferencias-fora-das-somas*`): transferências
+  fora de entradas e saídas no realizado (coluna Transferências), no
+  dashboard (gráfico e geração do mês), no ano-base do estratégico e no fluxo
+  por dimensão; saldos continuam com elas.
 - **Problema:** a transferência gera uma SAIDA e uma ENTRADA
   (`criarTransferencia`, origem TRANSFERENCIA). Na visão "Todos", as somas por
   tipo não tiram essas duas pernas: o dinheiro que só trocou de conta aparece
@@ -553,6 +558,22 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   da conferência, dentro da mesma transação.
 - **Cuidados:** ordem fixa (`ORDER BY id`) para não criar deadlock com a
   confirmação de repasses.
+
+### 63. Ano-base do estratégico conta empréstimos e aportes como receita
+
+- **Problema:** `buscarAnoBaseConsolidado` (`src/server/services/fluxoDeCaixaEstrategico.ts`)
+  soma todas as entradas e saídas conciliadas dos últimos 12 meses (sem as
+  transferências desde 2026-11-26). Empréstimo recebido, aporte de sócio e
+  outras entradas avulsas que não são receita entram na `receitaBase`; a
+  amortização do empréstimo entra no `custoBase`.
+- **Exemplo:** um custeio de R$ 100.000,00 recebido em março aumenta a receita
+  do ano-base em R$ 100.000,00; a projeção de 5 anos cresce essa "receita"
+  todo ano.
+- **Impacto:** projeção estratégica distorcida quando a fazenda se financia.
+- **Caminhos:** basear receita e custo nas categorias (RECEITA e DESPESA) dos
+  lançamentos e das baixas; mostrar à parte o que ficou sem categoria.
+- **Cuidados:** baixa de título sem categoria e lançamento avulso sem
+  categoria somem da base; avisar quanto ficou de fora.
 
 ## Controladoria — lacunas achadas ao escrever a ajuda contextual
 

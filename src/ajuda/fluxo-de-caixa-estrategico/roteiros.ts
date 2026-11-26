@@ -34,9 +34,9 @@ export const ROTEIROS: readonly Roteiro[] = [
           "é o ano-base mais o crescimento, o Ano 2 é o Ano 1 mais o crescimento, e assim por diante. No exemplo, " +
           "R$ 220.000,00 de receita com 5% a.a. viram R$ 231.000,00 no Ano 1.",
         dica:
-          "O ano-base soma todas as entradas e saídas conciliadas, inclusive transferências entre contas e " +
-          "empréstimos recebidos, que não são receita nem custo. Se a fazenda teve muito disso no último ano, a " +
-          "projeção fica distorcida.",
+          "O ano-base soma as entradas e saídas conciliadas, sem as transferências entre contas. Empréstimos " +
+          "recebidos e aportes de sócio lançados como entrada entram como receita: se a fazenda teve muito disso " +
+          "no último ano, a projeção fica distorcida.",
       },
       {
         cena: "painel",

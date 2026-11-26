@@ -3,7 +3,12 @@ import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { registrarAuditoria, type ClientePrisma } from "@/server/audit/registrar";
 import type { TipoCenarioEstrategico } from "@prisma/client";
-import { buscarAguardandoConciliacaoDasFiliais, buscarSaldoEmCaixaAteDasFiliais, saldoComAguardando } from "./fluxoDeCaixa";
+import {
+  buscarAguardandoConciliacaoDasFiliais,
+  buscarSaldoEmCaixaAteDasFiliais,
+  saldoComAguardando,
+  SEM_TRANSFERENCIA,
+} from "./fluxoDeCaixa";
 import { idsDasFiliaisAtivas } from "./filiaisConsolidadas";
 import { whereLancamentoPorClassificacao, type FiltroClassificacao } from "./classificacaoFiscal";
 
@@ -97,6 +102,8 @@ export async function garantirCenariosEstrategicos(empresaId: string, db: Client
  * é único e não se divide entre fiscal e gerencial (decisão FG5, igual ao
  * fluxo realizado filtrado).
  *
+ * Transferências entre contas não entram na receita nem no custo (só movem saldo).
+ *
  * O saldo de partida é o saldo contábil de hoje (conciliado + o que aguarda conciliação), o mesmo de onde parte o Fluxo de caixa projetado; o ano-base continua só com conciliados.
  */
 export async function buscarAnoBaseConsolidado(
@@ -120,6 +127,7 @@ export async function buscarAnoBaseConsolidado(
       where: {
         filialId: { in: filialIds },
         conciliado: true,
+        ...SEM_TRANSFERENCIA,
         data: { gte: inicioJanela, lte: hoje },
         contaBancaria: { ativo: true },
         ...whereLancamentoPorClassificacao(opcoes.classificacao),
