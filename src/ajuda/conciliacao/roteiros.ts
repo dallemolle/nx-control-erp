@@ -261,8 +261,9 @@ export const ROTEIROS: readonly Roteiro[] = [
     ],
     eDepois: {
       texto:
-        "O lançamento aparece na Tesouraria com a origem Manual, e a linha fica Conciliado. Ele não pode ser " +
-        "editado nem excluído depois: confira antes de salvar.",
+        "O lançamento aparece na Tesouraria com a origem Manual e o selo Conciliado, e a linha fica Conciliado. " +
+        "Descrição, classificação, categoria, dimensões e comprovante podem ser corrigidos depois na " +
+        "Tesouraria; para mudar conta, tipo, valor ou data, ou excluir, desfaça a conciliação antes.",
       proximoRoteiro: "desconciliar",
     },
   }),

@@ -15,14 +15,21 @@ import { tiposDeComprovanteDa } from "@/lib/classificacaoFiscal";
 export function CamposClassificacaoLancamento({
   comNumero = false,
   sufixoId = "",
+  inicial,
 }: {
   comNumero?: boolean;
   /** Para formulários repetidos na mesma página (ex.: um por linha do extrato). */
   sufixoId?: string;
+  /** Valores de um lançamento existente, na edição. */
+  inicial?: {
+    classificacaoFiscal: ClassificacaoFiscal;
+    tipoComprovante: string | null;
+    numeroComprovante: string | null;
+  };
 }) {
   const id = (campo: string) => (sufixoId ? `${campo}-${sufixoId}` : campo);
-  const [classificacao, setClassificacao] = useState<ClassificacaoFiscal>("FISCAL");
-  const [tipo, setTipo] = useState<string>(SEM_VALOR);
+  const [classificacao, setClassificacao] = useState<ClassificacaoFiscal>(inicial?.classificacaoFiscal ?? "FISCAL");
+  const [tipo, setTipo] = useState<string>(inicial?.tipoComprovante ?? SEM_VALOR);
 
   const tiposDoGrupo = tiposDeComprovanteDa(classificacao);
   const tipoAtual = tiposDoGrupo.includes(tipo as TipoComprovante) ? tipo : SEM_VALOR;
@@ -66,7 +73,8 @@ export function CamposClassificacaoLancamento({
       {comNumero ? (
         <div className="space-y-2">
           <Label htmlFor={id("numeroComprovante")}>Nº do comprovante</Label>
-          <Input id={id("numeroComprovante")} name="numeroComprovante" placeholder="Opcional" />
+          <Input id={id("numeroComprovante")} name="numeroComprovante" placeholder="Opcional"
+            defaultValue={inicial?.numeroComprovante ?? ""} />
         </div>
       ) : null}
     </>

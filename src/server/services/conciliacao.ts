@@ -630,6 +630,19 @@ export async function conciliarEmGrupo(
       linhaIds,
       lancamentoIds: lancamentoDiferencaId ? [...lancamentoIds, lancamentoDiferencaId] : lancamentoIds,
     });
+
+    // Os lançamentos agora podem ser editados: com as linhas travadas pelo vínculo, confere de novo a soma
+    // com o que está gravado. Se algo mudou desde a leitura, o erro desfaz a transação inteira.
+    const idsDosLancamentos = lancamentoDiferencaId ? [...lancamentoIds, lancamentoDiferencaId] : lancamentoIds;
+    const linhasAtuais = await tx.linhaExtrato.findMany({ where: { id: { in: linhaIds } } });
+    const lancamentosAtuais = await tx.lancamentoBancario.findMany({ where: { id: { in: idsDosLancamentos } } });
+    const diferencaAtual = diferencaDoGrupo(
+      linhasAtuais.map((l) => ({ valor: Number(l.valor), tipo: l.tipo })),
+      lancamentosAtuais.map((l) => ({ valor: Number(l.valor), tipo: l.tipo })),
+    );
+    if (diferencaAtual !== 0) {
+      throw new Error("Algum lançamento mudou enquanto você conciliava. Confira os valores e tente de novo.");
+    }
     return { grupoConciliacaoId, lancamentoDiferencaId };
   });
 

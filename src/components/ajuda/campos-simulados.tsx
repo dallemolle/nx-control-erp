@@ -116,16 +116,26 @@ export function BotaoSimulado({
   variant,
   size,
   largo,
+  disabled,
   className,
   children,
 }: VariantProps<typeof buttonVariants> & {
   alvo?: string;
+  /** Aparência de botão desabilitado. */
+  disabled?: boolean;
   /** Ocupa a largura toda, como os botões de enviar dos formulários. */
   largo?: boolean;
   className?: string;
   children: ReactNode;
 }) {
-  const botao = <span className={cn(buttonVariants({ variant, size }), largo && "w-full", className)}>{children}</span>;
+  const botao = (
+    <span
+      aria-disabled={disabled || undefined}
+      className={cn(buttonVariants({ variant, size }), largo && "w-full", disabled && "opacity-50", className)}
+    >
+      {children}
+    </span>
+  );
   return alvo ? (
     <Alvo nome={alvo} className={largo ? "flex w-full" : "inline-flex"}>
       {botao}

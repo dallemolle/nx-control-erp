@@ -11,6 +11,8 @@ export const ALVOS = {
     "painel.classificacao",
     "painel.tabela",
     "painel.origem",
+    "painel.acoes",
+    "painel.conciliado",
   ],
   lancamento: [
     "lanc.conta",
@@ -27,4 +29,6 @@ export const ALVOS = {
   ],
   transferencia: ["transf.origem", "transf.destino", "transf.data", "transf.valor", "transf.descricao", "transf.salvar"],
   saldo: ["saldo.conta", "saldo.data", "saldo.valor", "saldo.salvar"],
+  editar: ["editar.valor", "editar.salvar"],
+  excluir: ["excluir.motivo", "excluir.confirmar"],
 } as const;
