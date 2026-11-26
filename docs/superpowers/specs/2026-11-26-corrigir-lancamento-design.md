@@ -1,6 +1,6 @@
 # Corrigir e excluir lançamento manual e transferência
 
-Data: 2026-11-26 · Status: aprovada, aguardando plano
+Data: 2026-11-26 · Status: implementada (2026-11-26)
 
 Item 6 do [backlog](../../backlog.md), seção "Financeiro — lacunas achadas ao
 escrever a ajuda contextual" ("Lançamento manual e transferência não podem ser
@@ -125,8 +125,8 @@ além do grupo de conciliação, por isso o `delete` não deixa órfãos.
 
 `editarLancamentoManualAction`, `editarTransferenciaAction` e
 `excluirLancamentoAction`, no mesmo padrão das existentes: o id vem do
-`formData`, os dados passam pelos schemas de criação, e o motivo por um schema
-novo (`exclusaoLancamentoSchema`, `motivo` com `trim().min(1)`).
+`formData`, os dados passam pelos schemas de criação, e o motivo é validado no
+serviço (`trim()` não vazio), sem `exclusaoLancamentoSchema`.
 `revalidatePath("/financeiro/tesouraria")`.
 
 ## Tela da Tesouraria
@@ -172,8 +172,9 @@ as duas contas) e o campo **Motivo**, obrigatório.
     anulação pelo Editar e Excluir;
   - novo roteiro **"Corrigir ou excluir um lançamento"** (`corrigir-lancamento`),
     com passos para Editar, Excluir com motivo, o selo Conciliado e o caminho
-    pela Conciliação (Desconciliar). Exemplo: a tarifa de R$ 45,90 lançada
-    como R$ 459,00, nos dados de `exemplo.ts`;
+    pela Conciliação (Desconciliar). Exemplo: as diárias da colheita lançadas
+    como R$ 650,00 em vez de R$ 560,00 (a tarifa, na história da ajuda, ainda
+    não foi lançada);
   - `cenas.tsx` e `alvos.ts`: coluna de ações e selo na cena da lista.
 - `src/ajuda/conciliacao/roteiros.ts` (linha 265): o "E depois?" do
   `criar-lancamento` passa a dizer que a correção é feita na Tesouraria, e

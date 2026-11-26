@@ -1,16 +1,12 @@
 import { construtorDeRoteiros, type Roteiro } from "@/ajuda/tipos";
 import type { ALVOS } from "./alvos";
-import { BANCO, CAIXA, SAQUE, SALDO, TARIFA } from "./exemplo";
+import { BANCO, CAIXA, DIARIAS, SAQUE, SALDO, TARIFA } from "./exemplo";
 
 const roteiro = construtorDeRoteiros<typeof ALVOS>();
 
 const QUEM_LANCA =
   "Quem pode: perfis Administrador e Tesouraria, com permissão de alteração na filial. Os perfis Financeiro, " +
   "Gestor, Auditor e Consulta só veem a tela, sem os botões.";
-
-const SEM_CORRECAO =
-  "Depois de salvo, o lançamento não pode ser editado nem excluído pela tela. Confira conta, tipo, valor e data " +
-  "antes de clicar.";
 
 export const ROTEIROS: readonly Roteiro[] = [
   roteiro({
@@ -109,7 +105,9 @@ export const ROTEIROS: readonly Roteiro[] = [
         cena: "lancamento",
         alvo: "lanc.salvar",
         instrucao: "Clique em Salvar",
-        explicacao: SEM_CORRECAO,
+        explicacao:
+          "O lançamento entra na lista na hora. Se errar, dá para corrigir ou excluir depois pela própria lista " +
+          "(roteiro “Corrigir ou excluir um lançamento”).",
       },
     ],
     eDepois: {
@@ -170,8 +168,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "transf.salvar",
         instrucao: "Clique em Salvar",
         explicacao:
-          "Depois de salva, a transferência não pode ser editada nem excluída pela tela. Confira as contas, o " +
-          "valor e a data antes de clicar.",
+          "A transferência entra na lista como dois lançamentos. Se errar, Editar ou Excluir em qualquer um dos " +
+          "dois lados corrige a transferência inteira.",
       },
     ],
     eDepois: {
@@ -299,9 +297,80 @@ export const ROTEIROS: readonly Roteiro[] = [
     ],
     eDepois: {
       texto:
-        "Lançou errado? O sistema ainda não edita nem exclui lançamentos. Até lá, anule o errado com um " +
-        "lançamento avulso de mesmo valor no sentido contrário (mesma conta e categoria, explicando na descrição) " +
-        "e lance o certo. Para conferir com o banco, use o roteiro “Conferir o saldo com o extrato”.",
+        "Lançou errado? Os lançamentos Manuais e as Transferências têm Editar e Excluir na própria linha. Para " +
+        "conferir com o banco, use o roteiro “Conferir o saldo com o extrato”.",
+      proximoRoteiro: "corrigir-lancamento",
+    },
+  }),
+
+  roteiro({
+    id: "corrigir-lancamento",
+    titulo: "Corrigir ou excluir um lançamento",
+    quandoUsar:
+      "Quando um lançamento manual ou uma transferência foi salvo com conta, valor, data, descrição ou " +
+      "classificação errados, ou nem deveria existir. Lançamentos de origem Baixa não aparecem com esses botões: " +
+      "eles se corrigem estornando a baixa, em Contas a pagar ou a receber.",
+    quemPode: QUEM_LANCA,
+    passos: [
+      {
+        cena: "painel",
+        alvo: "painel.acoes",
+        instrucao: "Na linha do lançamento, clique em Editar",
+        explicacao:
+          `No exemplo, as diárias da colheita foram lançadas como R$ ${DIARIAS.valorErrado}, mas foram ` +
+          `R$ ${DIARIAS.valorCerto}. Numa transferência, Editar em qualquer um dos dois lados abre a ` +
+          "transferência inteira.",
+      },
+      {
+        cena: "editar",
+        alvo: "editar.valor",
+        instrucao: "Corrija o que estiver errado",
+        explicacao:
+          "Todos os campos do lançamento podem mudar: conta, tipo, valor, data, descrição, classificação, " +
+          "categoria e as dimensões.",
+        preenche: { "editar.valor": DIARIAS.valorCerto },
+      },
+      {
+        cena: "editar",
+        alvo: "editar.salvar",
+        instrucao: "Clique em Salvar",
+        explicacao:
+          "O saldo, o fluxo de caixa e o orçamento passam a usar o valor novo. A Auditoria guarda o antes e o " +
+          "depois, com quem mudou e quando.",
+      },
+      {
+        cena: "painel",
+        alvo: "painel.conciliado",
+        instrucao: "Repare no selo Conciliado",
+        explicacao:
+          "Ele aparece no lançamento que já foi ligado a uma linha do extrato. Nele, só a descrição e a " +
+          "classificação mudam, e o Excluir fica desabilitado: conta, tipo, valor e data já foram confirmados " +
+          "pelo banco.",
+        dica:
+          "Se a conciliação estiver errada, desfaça-a na Conciliação (roteiro “Desfazer uma conciliação e " +
+          "reprocessar pendentes”). O lançamento volta a ficar solto e pode ser corrigido ou excluído.",
+      },
+      {
+        cena: "excluir",
+        alvo: "excluir.motivo",
+        instrucao: "Para excluir, clique em Excluir e escreva o motivo",
+        explicacao: "O motivo é obrigatório. Numa transferência, os dois lados saem juntos.",
+        preenche: { "excluir.motivo": DIARIAS.motivo },
+      },
+      {
+        cena: "excluir",
+        alvo: "excluir.confirmar",
+        instrucao: "Confirme em Excluir",
+        explicacao:
+          "O lançamento sai da lista e dos relatórios. A Auditoria guarda o lançamento inteiro, quem excluiu, " +
+          "quando e o motivo.",
+      },
+    ],
+    eDepois: {
+      texto:
+        "Confira o saldo da conta no quadro do alto da tela. Se tinha informado o saldo do banco, a diferença já " +
+        "considera a correção.",
+      proximoRoteiro: "conferir-saldo",
     },
   }),
 ];

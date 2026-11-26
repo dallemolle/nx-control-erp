@@ -48,6 +48,8 @@ export const LANCAMENTOS = [
     tipo: "Saída",
     valor: "R$ 2.000,00",
     origem: "Transferência",
+    conciliado: true,
+    acoes: true,
     descricao: SAQUE.descricao,
   },
   {
@@ -56,6 +58,7 @@ export const LANCAMENTOS = [
     tipo: "Entrada",
     valor: "R$ 2.000,00",
     origem: "Transferência",
+    acoes: true,
     descricao: SAQUE.descricao,
   },
   {
@@ -65,6 +68,15 @@ export const LANCAMENTOS = [
     valor: "R$ 650,00",
     origem: "Manual",
     classificacao: "Gerencial",
+    acoes: true,
     descricao: "Diárias da colheita",
   },
 ] as const;
+
+/** Lançamento corrigido no roteiro "Corrigir ou excluir um lançamento". */
+export const DIARIAS = {
+  descricao: "Diárias da colheita",
+  valorErrado: "650,00",
+  valorCerto: "560,00",
+  motivo: "Lançado em duplicidade",
+} as const;

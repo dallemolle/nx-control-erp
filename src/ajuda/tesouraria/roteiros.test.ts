@@ -7,8 +7,26 @@ import { ajudaTesouraria } from "./index";
 const { roteiros, cenas } = ajudaTesouraria;
 
 describe("roteiros de Tesouraria", () => {
-  test("são os 4 roteiros, com ids únicos", () => {
-    expect(roteiros.map((r) => r.id)).toEqual(["lancar-avulso", "transferir", "conferir-saldo", "ver-lancamentos"]);
+  test("são os 5 roteiros, com ids únicos", () => {
+    expect(roteiros.map((r) => r.id)).toEqual([
+      "lancar-avulso",
+      "transferir",
+      "conferir-saldo",
+      "ver-lancamentos",
+      "corrigir-lancamento",
+    ]);
+  });
+
+  test("a lista mostra o selo Conciliado e as ações só em Manual e Transferência", () => {
+    const html = renderToStaticMarkup(createElement(cenas.painel, { valores: {} }));
+    expect(html).toContain("Conciliado");
+    expect(html).toContain('data-alvo="painel.acoes"');
+    expect(html.match(/>Editar</g)?.length).toBe(3); // 2 lados do saque + diárias; a baixa fica sem
+  });
+
+  test("nenhum texto diz mais que o lançamento não pode ser corrigido", () => {
+    const textos = JSON.stringify(roteiros);
+    expect(textos).not.toMatch(/não pode ser editad|sentido contrário/);
   });
 
   test("a diferença só aparece depois de informar o saldo do banco", () => {

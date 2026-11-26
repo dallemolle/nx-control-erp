@@ -35,7 +35,7 @@ describe("registro da ajuda", () => {
 
   test("tesouraria tem ajuda", async () => {
     expect(tituloDaAjuda("tesouraria")).toBe("Tesouraria");
-    expect((await carregarAjuda("tesouraria")).roteiros.length).toBe(4);
+    expect((await carregarAjuda("tesouraria")).roteiros.length).toBe(5);
   });
 
   test("conciliação tem ajuda", async () => {

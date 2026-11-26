@@ -259,28 +259,6 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 - **Ao corrigir:** dica do passo "Clique em Rejeitar" no `rejeitar-baixa`
   (`src/ajuda/aprovacoes/roteiros.ts`): manda avisar a pessoa por fora.
 
-### 6. Lançamento manual e transferência não podem ser corrigidos
-
-- **Problema:** não há edição nem exclusão de `LancamentoBancario`
-  (`src/server/services/lancamentoBancario.ts`), seja manual (Tesouraria ou
-  Conciliação) ou transferência.
-- **Exemplo:** lançou a tarifa de R$ 45,90 como R$ 459,00. A saída fica errada
-  no saldo, no fluxo e no orçamento.
-- **Contorno atual:** a ajuda manda anular com um lançamento de mesmo valor no
-  sentido contrário e lançar o certo. Isso deixa dois registros falsos no fluxo
-  de caixa, na categoria e na conciliação (a anulação não tem linha no extrato).
-- **Impacto:** dado errado sem correção; mesma família do item 3.
-- **Caminhos:** excluir (enquanto não conciliado) e estornar (depois), com
-  motivo e auditoria; editar descrição, categoria e dimensões sempre (não mexem
-  no saldo); para transferência, os dois lados juntos (`transferenciaId`).
-- **Cuidados:** lançamento conciliado (grupo de conciliação); lançamento
-  criado pela "diferença" de um grupo; lançamentos de baixa (origem BAIXA) não
-  entram aqui, são o item 3.
-- **Ao corrigir:** `src/ajuda/tesouraria/roteiros.ts` (constante
-  `SEM_CORRECAO`, passo "Clique em Salvar" do `transferir`, "E depois?" do
-  `ver-lancamentos` com o contorno); `src/ajuda/conciliacao/roteiros.ts`
-  ("E depois?" do `criar-lancamento`); manual, seção 3.3.
-
 ### 7. Diferença da Tesouraria compara datas diferentes
 
 - **Problema:** o quadro da conta

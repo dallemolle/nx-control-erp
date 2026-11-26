@@ -11,7 +11,7 @@ import {
   SelectSimulado,
 } from "@/components/ajuda/campos-simulados";
 import type { PropsCena } from "@/ajuda/tipos";
-import { BANCO, CAIXA, LANCAMENTOS, SALDO } from "./exemplo";
+import { BANCO, CAIXA, DIARIAS, LANCAMENTOS, SALDO } from "./exemplo";
 
 // Espelho de src/app/(dashboard)/financeiro/tesouraria/*. Mudou um rótulo ou campo lá? Ajuste aqui também.
 
@@ -111,6 +111,7 @@ export function CenaPainel({ valores }: PropsCena) {
               </TableHead>
               <TableHead>Classificação</TableHead>
               <TableHead>Descrição</TableHead>
+              <TableHead className="w-0" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -128,6 +129,11 @@ export function CenaPainel({ valores }: PropsCena) {
                 <TableCell>{l.valor}</TableCell>
                 <TableCell>
                   <Badge variant="outline">{l.origem}</Badge>
+                  {"conciliado" in l && l.conciliado ? (
+                    <Alvo nome="painel.conciliado" className="ml-1 inline-block">
+                      <Badge variant="secondary">Conciliado</Badge>
+                    </Alvo>
+                  ) : null}
                 </TableCell>
                 <TableCell>
                   {"classificacao" in l ? (
@@ -138,6 +144,30 @@ export function CenaPainel({ valores }: PropsCena) {
                   ) : null}
                 </TableCell>
                 <TableCell>{l.descricao}</TableCell>
+                <TableCell>
+                  {"acoes" in l && l.acoes ? (
+                    l.descricao === DIARIAS.descricao ? (
+                      <Alvo nome="painel.acoes" className="inline-flex gap-1">
+                        <BotaoSimulado variant="ghost" size="sm">
+                          Editar
+                        </BotaoSimulado>
+                        <BotaoSimulado variant="ghost" size="sm">
+                          Excluir
+                        </BotaoSimulado>
+                      </Alvo>
+                    ) : (
+                      <div className="flex gap-1">
+                        <BotaoSimulado variant="ghost" size="sm">
+                          Editar
+                        </BotaoSimulado>
+                        {/* a transferência do saque tem um lado conciliado: o Excluir fica desabilitado nos dois */}
+                        <BotaoSimulado variant="ghost" size="sm" disabled>
+                          Excluir
+                        </BotaoSimulado>
+                      </div>
+                    )
+                  ) : null}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -202,6 +232,47 @@ export function CenaTransferencia({ valores }: PropsCena) {
       <CampoSimulado alvo="transf.descricao" rotulo="Descrição" valor={valores["transf.descricao"]} />
       <BotaoSimulado alvo="transf.salvar" largo>
         Salvar
+      </BotaoSimulado>
+    </JanelaSimulada>
+  );
+}
+
+export function CenaEditar({ valores }: PropsCena) {
+  return (
+    <JanelaSimulada titulo="Editar lançamento">
+      <SelectSimulado rotulo="Conta bancária" valor={CAIXA} />
+      <div className="grid grid-cols-2 gap-4">
+        <SelectSimulado rotulo="Tipo" valor="Saída" />
+        <CampoSimulado alvo="editar.valor" rotulo="Valor" valor={valores["editar.valor"] ?? DIARIAS.valorErrado} />
+      </div>
+      <CampoSimulado rotulo="Data" valor="18/11/2026" />
+      <CampoSimulado rotulo="Descrição" valor={DIARIAS.descricao} />
+      <div className="grid grid-cols-2 gap-4">
+        <SelectSimulado rotulo="Classificação" valor="Gerencial (sem nota)" />
+        <SelectSimulado rotulo="Comprovante" valor="Nenhum" />
+      </div>
+      <BotaoSimulado alvo="editar.salvar" largo>
+        Salvar
+      </BotaoSimulado>
+    </JanelaSimulada>
+  );
+}
+
+export function CenaExcluir({ valores }: PropsCena) {
+  return (
+    <JanelaSimulada titulo="Excluir lançamento">
+      <p className="text-sm">{`18/11/2026 · ${CAIXA} · R$ ${DIARIAS.valorErrado}`}</p>
+      <p className="text-sm text-muted-foreground">
+        O lançamento sai da conta e dos relatórios. A exclusão fica registrada na Auditoria, com o motivo.
+      </p>
+      <CampoSimulado
+        alvo="excluir.motivo"
+        rotulo="Motivo"
+        valor={valores["excluir.motivo"]}
+        placeholder="Ex.: valor digitado errado"
+      />
+      <BotaoSimulado alvo="excluir.confirmar" variant="destructive" largo>
+        Excluir
       </BotaoSimulado>
     </JanelaSimulada>
   );
