@@ -294,7 +294,12 @@ async function sincronizarStatusDasParcelas(titulos: TituloListado[]): Promise<v
   }
 
   for (const [status, ids] of idsPorStatus) {
-    await prisma.parcela.updateMany({ where: { id: { in: ids } }, data: { status } });
+    // Nunca sobrescreve estado terminal: a lista leu o status antes, e um cancelamento ou renegociação pode ter
+    // sido gravado no meio (sem esta condição, a lista "descancelaria" a parcela).
+    await prisma.parcela.updateMany({
+      where: { id: { in: ids }, status: { notIn: ["CANCELADO", "RENEGOCIADO"] } },
+      data: { status },
+    });
   }
 }
 
