@@ -10,6 +10,7 @@ import {
   resolverClassificacao,
 } from "@/server/services/classificacaoFiscal";
 import type { SessaoAtiva } from "@/server/auth/sessao";
+import { garantirSemBaixaPendente } from "./baixa";
 import {
   argumentosDeCursor,
   CursorInvalidoError,
@@ -540,28 +541,36 @@ export async function cancelarParcela(sessao: SessaoAtiva, parcelaId: string) {
   requirePermission(sessao.perfil, "titulo:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
-  const anterior = await prisma.parcela.findFirstOrThrow({
-    where: { id: parcelaId, titulo: { filialId: sessao.filialId } },
+  await prisma.parcela.findFirstOrThrow({ where: { id: parcelaId, titulo: { filialId: sessao.filialId } } });
+
+  return prisma.$transaction(async (tx) => {
+    // Trava a parcela: um registro de baixa ao mesmo tempo fica em fila e um vê o outro.
+    await tx.$queryRaw`SELECT id FROM parcelas WHERE id = ${parcelaId} FOR UPDATE`;
+    const anterior = await tx.parcela.findUniqueOrThrow({ where: { id: parcelaId } });
+
+    // CANCELADO e RENEGOCIADO são estados terminais: sobrescrever um RENEGOCIADO
+    // apagaria o sentido da cadeia de renegociação (`parcelaOrigemId`).
+    if (anterior.status === "CANCELADO" || anterior.status === "RENEGOCIADO") {
+      throw new Error("Não é possível cancelar uma parcela já renegociada ou cancelada");
+    }
+    await garantirSemBaixaPendente(tx, parcelaId, "cancelar a parcela");
+
+    const parcela = await tx.parcela.update({ where: { id: parcelaId }, data: { status: "CANCELADO" } });
+
+    await registrarAuditoria(
+      {
+        empresaId: sessao.empresaId,
+        filialId: sessao.filialId,
+        usuarioId: sessao.usuarioId,
+        entidade: "Parcela",
+        entidadeId: parcelaId,
+        acao: "CANCELAR",
+        anterior: { status: anterior.status },
+        novo: { status: "CANCELADO" },
+      },
+      tx,
+    );
+
+    return parcela;
   });
-
-  // CANCELADO e RENEGOCIADO são estados terminais: sobrescrever um RENEGOCIADO
-  // apagaria o sentido da cadeia de renegociação (`parcelaOrigemId`).
-  if (anterior.status === "CANCELADO" || anterior.status === "RENEGOCIADO") {
-    throw new Error("Não é possível cancelar uma parcela já renegociada ou cancelada");
-  }
-
-  const parcela = await prisma.parcela.update({ where: { id: parcelaId }, data: { status: "CANCELADO" } });
-
-  await registrarAuditoria({
-    empresaId: sessao.empresaId,
-    filialId: sessao.filialId,
-    usuarioId: sessao.usuarioId,
-    entidade: "Parcela",
-    entidadeId: parcelaId,
-    acao: "CANCELAR",
-    anterior: { status: anterior.status },
-    novo: { status: "CANCELADO" },
-  });
-
-  return parcela;
 }

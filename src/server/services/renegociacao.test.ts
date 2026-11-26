@@ -3,6 +3,7 @@ import { prisma } from "@/server/db/client";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
 import { criarTitulo } from "./titulo";
 import { renegociarParcela } from "./renegociacao";
+import { registrarBaixa, BaixaPendenteError } from "./baixa";
 
 describe("renegociarParcela", () => {
   let fixture: FixtureFinanceiro;
@@ -15,6 +16,23 @@ describe("renegociarParcela", () => {
     await limparFixtureFinanceiro(fixture);
     await prisma.$disconnect();
   });
+
+  async function criarTituloVencido(valor: number) {
+    return criarTitulo(fixture.sessao, "PAGAR", {
+      contraparteId: fixture.fornecedorId,
+      documento: "NF-RENEG-VENCIDO",
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: "",
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: new Date("2020-01-01"), valorOriginal: valor }],
+    });
+  }
 
   test("marca a parcela original como RENEGOCIADO e cria novas parcelas linkadas", async () => {
     const titulo = await criarTitulo(fixture.sessao, "PAGAR", {
@@ -65,5 +83,40 @@ describe("renegociarParcela", () => {
     await expect(renegociarParcela(fixture.sessao, titulo.parcelas[0].id, [])).rejects.toThrow(
       "Informe ao menos uma nova parcela",
     );
+  });
+
+  test("com baixa pendente é recusado, dizendo qual é a baixa", async () => {
+    const original = (await criarTituloVencido(1000)).parcelas[0];
+    await registrarBaixa(fixture.sessaoAdmin, original.id, {
+      data: new Date("2026-10-14T00:00:00Z"),
+      valorPago: 300,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fixture.contaBancariaId,
+    });
+
+    const tentativa = renegociarParcela(fixture.sessao, original.id, [
+      { dataVencimento: new Date("2099-01-01"), valorOriginal: 1000 },
+    ]);
+
+    await expect(tentativa).rejects.toThrow(BaixaPendenteError);
+    await expect(tentativa).rejects.toThrow("antes de renegociar a parcela.");
+    expect((await prisma.parcela.findUniqueOrThrow({ where: { id: original.id } })).status).not.toBe("RENEGOCIADO");
+    expect(await prisma.parcela.count({ where: { parcelaOrigemId: original.id } })).toBe(0);
+  });
+
+  test.each([
+    ["PAGO", "paga"],
+    ["CANCELADO", "cancelada"],
+    ["RENEGOCIADO", "renegociada"],
+  ] as const)("parcela %s não é renegociada", async (status, rotulo) => {
+    const original = (await criarTituloVencido(1000)).parcelas[0];
+    await prisma.parcela.update({ where: { id: original.id }, data: { status } });
+
+    await expect(
+      renegociarParcela(fixture.sessao, original.id, [{ dataVencimento: new Date("2099-01-01"), valorOriginal: 1000 }]),
+    ).rejects.toThrow(`Esta parcela está ${rotulo} e não pode ser renegociada`);
+    expect(await prisma.parcela.count({ where: { parcelaOrigemId: original.id } })).toBe(0);
   });
 });

@@ -5,6 +5,8 @@ import { SEM_VALOR } from "@/lib/schemas/enums";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
 import { criarTitulo, criarTituloInterno, atualizarTitulo, listarTitulos, alterarVencimentoParcela, cancelarParcela, parcelaBateFiltroDeParcela } from "./titulo";
 import { renegociarParcela } from "./renegociacao";
+import { registrarBaixa, BaixaPendenteError } from "./baixa";
+import { formatarMoeda } from "@/lib/formatacao";
 
 describe("parcelaBateFiltroDeParcela (pura)", () => {
   test("sem filtro nenhum, sempre bate", () => {
@@ -398,6 +400,42 @@ describe("titulo (filial-scoped)", () => {
     await expect(cancelarParcela(fixture.sessao, titulo.parcelas[0].id)).rejects.toThrow(
       /já renegociada ou cancelada/,
     );
+  });
+
+  test("cancelar parcela com baixa pendente é recusado, dizendo qual é a baixa", async () => {
+    const titulo = await criarTitulo(fixture.sessao, "PAGAR", {
+      contraparteId: fixture.fornecedorId,
+      documento: "NF-CANCEL-BAIXA-PEND",
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: "",
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: new Date(), valorOriginal: 1000 }],
+    });
+    const parcelaId = titulo.parcelas[0].id;
+    await registrarBaixa(fixture.sessaoAdmin, parcelaId, {
+      data: new Date("2026-10-14T00:00:00Z"),
+      valorPago: 300,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fixture.contaBancariaId,
+    });
+    const admin = await prisma.usuario.findUniqueOrThrow({ where: { id: fixture.sessaoAdmin.usuarioId } });
+
+    const tentativa = cancelarParcela(fixture.sessao, parcelaId);
+
+    await expect(tentativa).rejects.toThrow(BaixaPendenteError);
+    await expect(tentativa).rejects.toThrow(
+      `Esta parcela já tem uma baixa aguardando aprovação: ${formatarMoeda(300)} de 14/10/2026, ` +
+        `registrada por ${admin.nome}. Peça para aprovarem ou rejeitarem essa baixa antes de cancelar a parcela.`,
+    );
+    expect((await prisma.parcela.findUniqueOrThrow({ where: { id: parcelaId } })).status).not.toBe("CANCELADO");
   });
 
   test("listarTitulos filtra por categoria", async () => {
