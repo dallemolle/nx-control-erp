@@ -139,8 +139,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Veja o que mudou",
         explicacao:
           "Na visão Fiscal do exemplo, a Lavoura perde os R$ 300,00 do recibo da mão de obra (gerencial), e o " +
-          "“Não classificado” perde a parte gerencial das vendas. Diferente das telas de fluxo de caixa do Financeiro, aqui não aparece aviso de " +
-          "visão filtrada: confira o filtro antes de tirar conclusões.",
+          "“Não classificado” perde a parte gerencial das vendas. Diferente das telas de fluxo de caixa do Financeiro, aqui não " +
+          "aparece aviso de visão filtrada: confira o filtro antes de tirar conclusões.",
       },
       {
         cena: "painel",

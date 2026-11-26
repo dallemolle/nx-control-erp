@@ -61,7 +61,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         cena: "painel",
         alvo: "col.saldoFinal",
         instrucao: "Saldo final: quanto sobrou no fim do período",
-        explicacao: "Saldo inicial mais a geração líquida. Os meses que ainda não chegaram repetem o último saldo.",
+        explicacao:
+          "Saldo inicial mais a geração líquida e as transferências. Os meses que ainda não chegaram repetem o último saldo.",
       },
     ],
     eDepois: {

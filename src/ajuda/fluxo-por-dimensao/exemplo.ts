@@ -46,7 +46,10 @@ export const POR_CENTRO_DE_CUSTO_FISCAL: readonly LinhaExemplo[] = [
   linha("nao-classificado", "Não classificado", [18000, 0, 4000, 0]),
 ];
 
-/** O mesmo dinheiro cortado por safra (sem o saque, que é transferência): o adubo e as vendas são da 2025/26; a mão de obra, da 2026/27. */
+/**
+ * O mesmo dinheiro cortado por safra (sem o saque, que é transferência): o adubo e as vendas são da 2025/26;
+ * a mão de obra, da 2026/27.
+ */
 export const POR_SAFRA: readonly LinhaExemplo[] = [
   linha("safra-2025", "2025/26", [23500, 800, 4000, 1000]),
   linha("safra-2026", "2026/27", [0, 300, 0, 0]),
