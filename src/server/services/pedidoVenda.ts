@@ -1,3 +1,4 @@
+import { travarParcelasDosTitulos } from "./travaParcelas";
 import { Prisma, type ClassificacaoFiscal, type StatusPedidoVenda } from "@prisma/client";
 import { prisma } from "@/server/db/client";
 import { requireAlteracaoFilial, requirePermission } from "@/server/auth/permissions";
@@ -408,11 +409,15 @@ export async function cancelarPedido(sessao: SessaoAtiva, id: string, motivo: st
   if (motivoLimpo.length < 3) throw new Error("Informe o motivo do cancelamento");
 
   await prisma.$transaction(async (tx) => {
+    // Trava o pedido (dois cancelamentos ao mesmo tempo ficam em fila e o segundo o vê
+    // cancelado) e depois as parcelas: uma baixa registrada ao mesmo tempo também trava a
+    // parcela, então ou entra antes e é vista na conferência, ou vê a parcela cancelada.
+    await tx.$queryRaw`SELECT id FROM pedidos_venda WHERE id = ${id} FOR UPDATE`;
     const pedido = await tx.pedidoVenda.findFirstOrThrow({
       where: { id, filialId: sessao.filialId },
       include: { itens: true },
     });
-    // Conferido dentro da transação: uma baixa lançada no meio não escapa.
+    await travarParcelasDosTitulos(tx, [pedido.tituloId, pedido.tituloTaxaId]);
     const situacao = await situacaoParaCancelar(pedido, tx);
     if (!situacao.pode) throw new Error(situacao.motivo);
 

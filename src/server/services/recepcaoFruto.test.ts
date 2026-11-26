@@ -18,6 +18,7 @@ import {
 } from "./recepcaoFruto";
 import { registrarMovimento } from "./estoque";
 import { adicionarConsumo, criarOP } from "./ordemProducao";
+import { registrarBaixa } from "./baixa";
 import { cabecalhoOPSchema, consumoSchema } from "@/lib/schemas/ordemProducao";
 
 const MSG_SEM_CATEGORIA =
@@ -290,6 +291,50 @@ describe("recepção de fruto", () => {
     await expect(cancelarRecepcao(fx.sessao("PRODUCAO"), r.recepcaoId, "Erro")).rejects.toThrow(
       "A conta a pagar já tem pagamento registrado; não é possível excluir a recepção",
     );
+  });
+
+  test("concorrência: excluir e registrar baixa ao mesmo tempo não deixa baixa em parcela cancelada", async () => {
+    const banco = await prisma.banco.findFirstOrThrow();
+    const conta = await prisma.contaBancaria.create({
+      data: { filialId: fx.filialAId, bancoId: banco.id, agencia: "1", conta: `R-${Date.now()}`, tipo: "CORRENTE" },
+    });
+    for (let i = 0; i < 5; i++) {
+      const r = await criarRecepcao(fx.sessao("PRODUCAO"), terceiro());
+      const parcela = await prisma.parcela.findFirstOrThrow({ where: { tituloId: r.tituloId! } });
+      const [cancelamento, baixa] = await Promise.allSettled([
+        cancelarRecepcao(fx.sessao("PRODUCAO"), r.recepcaoId, "Lançada por engano"),
+        registrarBaixa(fx.sessao("FINANCEIRO"), parcela.id, {
+          data: new Date("2026-11-10"),
+          valorPago: 240,
+          valorJuros: 0,
+          valorMulta: 0,
+          valorDesconto: 0,
+          contaBancariaId: conta.id,
+        }),
+      ]);
+      expect([cancelamento.status, baixa.status].sort()).toEqual(["fulfilled", "rejected"]);
+      const gravada = await prisma.parcela.findUniqueOrThrow({ where: { id: parcela.id } });
+      const ativas = await prisma.baixa.count({
+        where: { parcelaId: parcela.id, statusAprovacao: { in: ["PENDENTE", "APROVADO"] } },
+      });
+      if (cancelamento.status === "fulfilled") {
+        expect(gravada.status).toBe("CANCELADO");
+        expect(ativas).toBe(0);
+      } else {
+        expect(String(cancelamento.reason)).toContain("A conta a pagar já tem pagamento registrado");
+        expect(ativas).toBe(1);
+      }
+    }
+  });
+
+  test("concorrência: duas exclusões ao mesmo tempo estornam o lote uma vez só", async () => {
+    const r = await criarRecepcao(fx.sessao("PRODUCAO"), propria());
+    const resultados = await Promise.allSettled([
+      cancelarRecepcao(fx.sessao("PRODUCAO"), r.recepcaoId, "Lançada por engano"),
+      cancelarRecepcao(fx.sessao("PRODUCAO"), r.recepcaoId, "Lançada por engano"),
+    ]);
+    expect(resultados.map((x) => x.status).sort()).toEqual(["fulfilled", "rejected"]);
+    expect(await prisma.movimentoEstoque.count({ where: { loteId: r.loteId, tipo: "ESTORNO_RECEPCAO" } })).toBe(1);
   });
 
   test("baixa estornada não impede cancelar a recepção", async () => {
