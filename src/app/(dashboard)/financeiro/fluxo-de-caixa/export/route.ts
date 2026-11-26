@@ -26,6 +26,7 @@ type LinhaExport = {
   saldoInicial: number;
   entradas: number;
   saidas: number;
+  transferencias: number;
   geracaoLiquida: number;
   saldoFinal: number;
 };
@@ -37,6 +38,7 @@ function colunas(filtrado: boolean): ColunaExport<LinhaExport>[] {
     { rotulo: filtrado ? "Acumulado inicial" : "Saldo inicial", valor: (l) => l.saldoInicial },
     { rotulo: "Entradas", valor: (l) => l.entradas },
     { rotulo: "Saídas", valor: (l) => l.saidas },
+    { rotulo: "Transferências", valor: (l) => l.transferencias },
     { rotulo: "Geração líquida", valor: (l) => l.geracaoLiquida },
     { rotulo: filtrado ? "Acumulado final" : "Saldo final", valor: (l) => l.saldoFinal },
   ];
@@ -60,6 +62,7 @@ export async function GET(request: Request) {
     saldoInicial: periodo.saldoInicial,
     entradas: periodo.entradas,
     saidas: periodo.saidas,
+    transferencias: periodo.transferencias,
     geracaoLiquida: periodo.geracaoLiquida,
     saldoFinal: periodo.saldoFinal,
   }));

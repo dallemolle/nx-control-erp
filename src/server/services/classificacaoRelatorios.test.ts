@@ -105,7 +105,10 @@ describe("filtro de classificação nos relatórios", () => {
     expect(doMes(gerencial).entradas).toBe(200);
     expect(doMes(gerencial).saidas).toBe(50);
     expect(doMes(todos).entradas).toBe(doMes(fiscal).entradas + doMes(gerencial).entradas);
-    expect(doMes(todos).saidas).toBe(doMes(fiscal).saidas + doMes(gerencial).saidas + 70);
+    // A perna de transferência (70) não é saída: vai para a coluna Transferências.
+    expect(doMes(todos).saidas).toBe(doMes(fiscal).saidas + doMes(gerencial).saidas);
+    expect(doMes(todos).transferencias).toBe(-70);
+    expect(doMes(fiscal).transferencias).toBe(0);
 
     expect(fiscal[0].saldoInicial).toBe(0);
     expect(doMes(fiscal).saldoFinal).toBe(700);
