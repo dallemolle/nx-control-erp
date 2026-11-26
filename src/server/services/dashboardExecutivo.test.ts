@@ -176,6 +176,28 @@ describe("buscarIndicadoresExecutivos (integração)", () => {
     expect(indicadores.caixaDisponivel).toBe(1300);
   });
 
+  test("transferência não entra na geração de caixa do mês", async () => {
+    const antes = await buscarIndicadoresExecutivos(sessaoGestor);
+    for (const [tipo, valor] of [["SAIDA", 5000], ["ENTRADA", 3000]] as const) {
+      await prisma.lancamentoBancario.create({
+        data: {
+          filialId: fixture.filialId,
+          contaBancariaId: fixture.contaBancariaId,
+          data: hoje,
+          tipo,
+          valor,
+          descricao: "Perna de transferência",
+          origem: "TRANSFERENCIA",
+          usuarioId: fixture.usuarioId,
+          conciliado: true,
+        },
+      });
+    }
+    const depois = await buscarIndicadoresExecutivos(sessaoGestor);
+    expect(depois.geracaoDeCaixaMesAtual).toBeCloseTo(antes.geracaoDeCaixaMesAtual, 2);
+    expect(depois.caixaDisponivel - antes.caixaDisponivel).toBeCloseTo(-2000, 2);
+  });
+
   test("contasAPagarEmAberto, obrigacoes7Dias e obrigacoes30Dias separam por janela de vencimento", async () => {
     await criarTitulo(fixture.sessaoAdmin, "PAGAR", {
       contraparteId: fixture.fornecedorId,
@@ -454,6 +476,31 @@ describe("buscarGraficosExecutivos (integração)", () => {
     const graficos = await buscarGraficosExecutivos(sessaoGestor);
     const pontoDoMesAtual = graficos.entradasSaidas[graficos.entradasSaidas.length - 1];
     expect(pontoDoMesAtual.entradas).toBeGreaterThanOrEqual(700);
+  });
+
+  test("transferência fica fora das barras e dentro do saldo", async () => {
+    const antes = await buscarGraficosExecutivos(sessaoGestor);
+    for (const [tipo, valor] of [["SAIDA", 5000], ["ENTRADA", 3000]] as const) {
+      await prisma.lancamentoBancario.create({
+        data: {
+          filialId: fixture.filialId,
+          contaBancariaId: fixture.contaBancariaId,
+          data: hoje,
+          tipo,
+          valor,
+          descricao: "Perna de transferência (gráfico)",
+          origem: "TRANSFERENCIA",
+          usuarioId: fixture.usuarioId,
+          conciliado: true,
+        },
+      });
+    }
+    const depois = await buscarGraficosExecutivos(sessaoGestor);
+    const barraAntes = antes.entradasSaidas.at(-1)!;
+    const barraDepois = depois.entradasSaidas.at(-1)!;
+    expect(barraDepois.entradas).toBeCloseTo(barraAntes.entradas, 2);
+    expect(barraDepois.saidas).toBeCloseTo(barraAntes.saidas, 2);
+    expect(depois.evolucaoSaldo.at(-1)!.saldo - antes.evolucaoSaldo.at(-1)!.saldo).toBeCloseTo(-2000, 2);
   });
 
   test("aging classifica parcela vencida na faixa certa de dias de atraso", async () => {

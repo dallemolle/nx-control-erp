@@ -63,7 +63,14 @@ async function somarRealizadoPorDimensao(
   const lancamentos = await prisma.lancamentoBancario.findMany({
     where: {
       AND: [
-        { filialId, conciliado: true, contaBancaria: { ativo: true }, ...whereLancamentoPorClassificacao(classificacao) },
+        {
+          filialId,
+          conciliado: true,
+          // Transferência entre contas não é entrada nem saída de nenhuma dimensão: só move saldo.
+          origem: { not: "TRANSFERENCIA" },
+          contaBancaria: { ativo: true },
+          ...whereLancamentoPorClassificacao(classificacao),
+        },
         filtro,
       ],
     },

@@ -248,9 +248,9 @@ describe("buscarAnoBaseConsolidado / listarProjecaoEstrategica com classificaç�
     await prisma.$disconnect();
   });
 
-  test("sem filtro: todo o movimento e o saldo bancário real", async () => {
+  test("sem filtro: movimento sem transferências e o saldo bancário real", async () => {
     expect(await buscarAnoBaseConsolidado(fixture.empresaId)).toEqual({
-      receitaBase: 1350,
+      receitaBase: 1300,
       custoBase: 100,
       saldoCaixaBase: 1250,
     });
@@ -291,7 +291,7 @@ describe("buscarAnoBaseConsolidado / listarProjecaoEstrategica com classificaç�
       },
     });
     expect(await buscarAnoBaseConsolidado(fixture.empresaId)).toEqual({
-      receitaBase: 1350,
+      receitaBase: 1300,
       custoBase: 100,
       saldoCaixaBase: 1050,
     });

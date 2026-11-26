@@ -139,7 +139,7 @@ describe("filtro de classificação nos relatórios", () => {
     const [todos, fiscal, gerencial] = await Promise.all([linhaDaSafra(), linhaDaSafra("FISCAL"), linhaDaSafra("GERENCIAL")]);
 
     expect(todos.entradasRealizadas).toBe(fiscal.entradasRealizadas + gerencial.entradasRealizadas);
-    expect(todos.saidasRealizadas).toBe(fiscal.saidasRealizadas + gerencial.saidasRealizadas + 70);
+    expect(todos.saidasRealizadas).toBe(fiscal.saidasRealizadas + gerencial.saidasRealizadas);
     expect(gerencial.entradasRealizadas).toBe(200);
   });
 
@@ -166,7 +166,7 @@ describe("filtro de classificação nos relatórios", () => {
       (await listarComparativoSafras(fixture.sessao, { classificacao })).find((linha) => linha.safraId === safraId)!;
     const [todos, fiscal, gerencial] = await Promise.all([daSafra(), daSafra("FISCAL"), daSafra("GERENCIAL")]);
 
-    expect(todos.realizado).toBe(fiscal.realizado + gerencial.realizado - 70);
+    expect(todos.realizado).toBe(fiscal.realizado + gerencial.realizado);
     expect(todos.projetado).toBe(fiscal.projetado + gerencial.projetado);
     expect(gerencial.realizado).toBe(150);
   });

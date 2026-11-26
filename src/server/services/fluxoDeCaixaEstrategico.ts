@@ -97,6 +97,8 @@ export async function garantirCenariosEstrategicos(empresaId: string, db: Client
  * é único e não se divide entre fiscal e gerencial (decisão FG5, igual ao
  * fluxo realizado filtrado).
  *
+ * Transferências entre contas não entram na receita nem no custo (só movem saldo).
+ *
  * O saldo de partida é o saldo contábil de hoje (conciliado + o que aguarda conciliação), o mesmo de onde parte o Fluxo de caixa projetado; o ano-base continua só com conciliados.
  */
 export async function buscarAnoBaseConsolidado(
@@ -120,6 +122,7 @@ export async function buscarAnoBaseConsolidado(
       where: {
         filialId: { in: filialIds },
         conciliado: true,
+        origem: { not: "TRANSFERENCIA" },
         data: { gte: inicioJanela, lte: hoje },
         contaBancaria: { ativo: true },
         ...whereLancamentoPorClassificacao(opcoes.classificacao),
