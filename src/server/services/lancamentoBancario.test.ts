@@ -10,6 +10,7 @@ import {
   buscarUltimoSaldoInformado,
   listarLancamentos,
   editarLancamentoManual,
+  editarTransferencia,
 } from "./lancamentoBancario";
 import { ErroClassificacaoFiscal } from "./classificacaoFiscal";
 
@@ -502,5 +503,93 @@ describe("editarLancamentoManual", () => {
     }
     const depois = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lanc.id } });
     expect(Number(depois.valor)).toBe(459);
+  });
+});
+
+describe("editarTransferencia", () => {
+  let fx: FixtureFinanceiro;
+  let contaDestinoId: string;
+  let contaCaixaId: string;
+
+  beforeAll(async () => {
+    fx = await criarFixtureFinanceiro("LBX", "TESOURARIA");
+    const destino = await prisma.contaBancaria.create({
+      data: { filialId: fx.filialId, bancoId: fx.bancoId, agencia: "0002", conta: "destino-lbx", saldoInicial: 0 },
+    });
+    contaDestinoId = destino.id;
+    const caixa = await prisma.contaBancaria.create({
+      data: { filialId: fx.filialId, bancoId: fx.bancoId, agencia: "0000", conta: "caixa-lbx", tipo: "CAIXA", saldoInicial: 0 },
+    });
+    contaCaixaId = caixa.id;
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fx);
+  });
+
+  async function conciliar(lancamentoId: string) {
+    const lanc = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lancamentoId } });
+    const grupo = await prisma.grupoConciliacao.create({
+      data: { filialId: fx.filialId, contaBancariaId: lanc.contaBancariaId, usuarioId: fx.usuarioId },
+    });
+    await prisma.lancamentoBancario.update({
+      where: { id: lancamentoId },
+      data: { grupoConciliacaoId: grupo.id, conciliado: true },
+    });
+    return grupo.id;
+  }
+
+  function dadosTransf(overrides: Partial<Parameters<typeof criarTransferencia>[1]> = {}) {
+    return {
+      contaOrigemId: fx.contaBancariaId,
+      contaDestinoId,
+      data: new Date("2026-11-18T00:00:00Z"),
+      valor: 2000,
+      descricao: "Saque para o caixa",
+      ...overrides,
+    };
+  }
+
+  test("sem grupo, muda contas, data e valor nos dois lados e audita", async () => {
+    const { saida, entrada } = await criarTransferencia(fx.sessao, dadosTransf());
+    await editarTransferencia(
+      fx.sessao,
+      saida.transferenciaId!,
+      dadosTransf({ contaDestinoId: contaCaixaId, valor: 1500, data: new Date("2026-11-19T00:00:00Z"), descricao: "Saque corrigido" }),
+    );
+
+    const novaSaida = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: saida.id } });
+    const novaEntrada = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: entrada.id } });
+    expect(Number(novaSaida.valor)).toBe(1500);
+    expect(Number(novaEntrada.valor)).toBe(1500);
+    expect(novaEntrada.contaBancariaId).toBe(contaCaixaId);
+    expect(novaEntrada.conciliado).toBe(true); // lado Caixa
+    expect(novaSaida.conciliado).toBe(false);
+    expect(novaSaida.data.toISOString().slice(0, 10)).toBe("2026-11-19");
+    expect(novaEntrada.descricao).toBe("Saque corrigido");
+
+    const log = await prisma.auditLog.findFirstOrThrow({ where: { entidadeId: saida.id, acao: "EDITAR_TRANSFERENCIA" } });
+    expect(log.valorNovo).toMatchObject({ valor: "1500", contaDestinoId: contaCaixaId });
+  });
+
+  test("com um lado no grupo, só a descrição muda", async () => {
+    const { saida, entrada } = await criarTransferencia(fx.sessao, dadosTransf());
+    await conciliar(saida.id);
+
+    await editarTransferencia(fx.sessao, saida.transferenciaId!, dadosTransf({ descricao: "Saque de novembro" }));
+    const novaEntrada = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: entrada.id } });
+    expect(novaEntrada.descricao).toBe("Saque de novembro");
+
+    await expect(
+      editarTransferencia(fx.sessao, saida.transferenciaId!, dadosTransf({ valor: 1500 })),
+    ).rejects.toThrow(/Esta transferência está conciliada com o extrato \(lado de .+\): só a descrição pode mudar/);
+    const intacta = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: entrada.id } });
+    expect(Number(intacta.valor)).toBe(2000);
+  });
+
+  test("transferência de outra filial não é encontrada", async () => {
+    await expect(editarTransferencia(fx.sessao, crypto.randomUUID(), dadosTransf())).rejects.toThrow(
+      "Transferência não encontrada na filial ativa",
+    );
   });
 });

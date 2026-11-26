@@ -21,6 +21,7 @@ import {
   type Paginacao,
 } from "@/server/services/paginacao";
 import { validarReferenciasDoLancamento } from "@/server/services/referenciasDoLancamento";
+import { nomeDaContaBancaria } from "@/lib/contaBancaria";
 import { Prisma, type LancamentoBancario, type TipoComprovante } from "@prisma/client";
 
 function normalizarOpcional<T extends string>(valor: T | typeof SEM_VALOR | undefined): T | null {
@@ -349,6 +350,88 @@ export async function editarLancamentoManual(sessao: SessaoAtiva, id: string, da
   });
 
   return gravado;
+}
+
+const INCLUI_CONTA = { contaBancaria: { include: { banco: true } } } as const;
+
+async function buscarLadosDaTransferencia(filialId: string, transferenciaId: string) {
+  const lados = await prisma.lancamentoBancario.findMany({
+    where: { transferenciaId, filialId, origem: "TRANSFERENCIA" },
+    include: INCLUI_CONTA,
+  });
+  const saida = lados.find((l) => l.tipo === "SAIDA");
+  const entrada = lados.find((l) => l.tipo === "ENTRADA");
+  if (lados.length !== 2 || !saida || !entrada) throw new Error("Transferência não encontrada na filial ativa");
+  return { saida, entrada };
+}
+
+/** Corrige os dois lados juntos. Com algum lado ligado ao extrato, só a descrição muda. */
+export async function editarTransferencia(sessao: SessaoAtiva, transferenciaId: string, dados: TransferenciaFormValues) {
+  requirePermission(sessao.perfil, "lancamento:escrever");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
+
+  const { saida, entrada } = await buscarLadosDaTransferencia(sessao.filialId, transferenciaId);
+  const contaOrigem = await buscarContaDaFilial(sessao.filialId, dados.contaOrigemId);
+  const contaDestino = await buscarContaDaFilial(sessao.filialId, dados.contaDestinoId);
+
+  const valor = new Prisma.Decimal(dados.valor);
+  const mesmoDia = mesmoDiaUtc(dados.data, saida.data);
+  const mudouMovimento =
+    contaOrigem.id !== saida.contaBancariaId ||
+    contaDestino.id !== entrada.contaBancariaId ||
+    !mesmoDia ||
+    !valor.equals(saida.valor);
+  const ladoConciliado = [saida, entrada].find((l) => l.grupoConciliacaoId !== null);
+  if (ladoConciliado && mudouMovimento) {
+    throw new Error(
+      `Esta transferência está conciliada com o extrato (lado de ${nomeDaContaBancaria(ladoConciliado.contaBancaria)}): ` +
+        "só a descrição pode mudar. Desconcilie na Conciliação para mudar contas, data ou valor.",
+    );
+  }
+
+  const data = mesmoDia ? saida.data : dados.data;
+  const lados = [
+    { lado: saida, conta: contaOrigem },
+    { lado: entrada, conta: contaDestino },
+  ];
+
+  await prisma.$transaction(async (tx) => {
+    // Em sequência (nada de Promise.all dentro da transação).
+    for (const { lado, conta } of lados) {
+      const { count } = await tx.lancamentoBancario.updateMany({
+        where: { id: lado.id, filialId: sessao.filialId, grupoConciliacaoId: lado.grupoConciliacaoId },
+        data: ladoConciliado
+          ? { descricao: dados.descricao }
+          : { descricao: dados.descricao, contaBancariaId: conta.id, data, valor, conciliado: conta.tipo === "CAIXA" },
+      });
+      if (count === 0) throw new Error(MSG_CORRIDA_CONCILIACAO);
+    }
+  });
+
+  await registrarAuditoria({
+    empresaId: sessao.empresaId,
+    filialId: sessao.filialId,
+    usuarioId: sessao.usuarioId,
+    entidade: "LancamentoBancario",
+    entidadeId: saida.id,
+    acao: "EDITAR_TRANSFERENCIA",
+    anterior: {
+      transferenciaId,
+      contaOrigemId: saida.contaBancariaId,
+      contaDestinoId: entrada.contaBancariaId,
+      data: saida.data,
+      valor: saida.valor,
+      descricao: saida.descricao,
+    },
+    novo: {
+      transferenciaId,
+      contaOrigemId: ladoConciliado ? saida.contaBancariaId : contaOrigem.id,
+      contaDestinoId: ladoConciliado ? entrada.contaBancariaId : contaDestino.id,
+      data: ladoConciliado ? saida.data : data,
+      valor: ladoConciliado ? saida.valor : valor,
+      descricao: dados.descricao,
+    },
+  });
 }
 
 export async function informarSaldoBancario(sessao: SessaoAtiva, dados: SaldoBancarioFormValues) {
