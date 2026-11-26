@@ -395,6 +395,30 @@ describe("baixa (fluxo de aprovação)", () => {
     );
   });
 
+  test.each([
+    ["CANCELADO", "cancelada"],
+    ["RENEGOCIADO", "renegociada"],
+  ] as const)("aprovar baixa pendente de parcela %s é recusado, sem lançamento", async (status, rotulo) => {
+    const parcela = await criarParcelaDeTeste(fixtureTesouraria, 500);
+    const baixa = await registrarBaixa(fixtureTesouraria.sessao, parcela.id, {
+      data: new Date("2026-10-14T00:00:00Z"),
+      valorPago: 500,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fixtureTesouraria.contaBancariaId,
+    });
+    // Pendência antiga: a parcela foi fechada antes desta regra existir.
+    await prisma.parcela.update({ where: { id: parcela.id }, data: { status } });
+
+    const tentativa = aprovarBaixa(fixtureTesouraria.sessao, baixa.id);
+
+    await expect(tentativa).rejects.toThrow(BaixaParcelaFechadaError);
+    await expect(tentativa).rejects.toThrow(`A parcela desta baixa foi ${rotulo}. Rejeite a baixa.`);
+    expect((await prisma.baixa.findUniqueOrThrow({ where: { id: baixa.id } })).statusAprovacao).toBe("PENDENTE");
+    expect(await prisma.lancamentoBancario.count({ where: { baixaId: baixa.id } })).toBe(0);
+  });
+
   describe("uma baixa pendente por parcela", () => {
     const dadosBaixa = (valorPago: number, data = new Date()) => ({
       data,

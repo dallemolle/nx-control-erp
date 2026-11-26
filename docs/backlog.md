@@ -470,6 +470,12 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 
 ### 59. Cancelar ou renegociar parcela com baixa pendente
 
+- **Status:** feito na branch `fix/parcela-com-baixa-pendente` (2026-11-26, spec
+  e plano `2026-11-26-parcela-com-baixa-pendente*`): cancelar e renegociar
+  recusam parcela com baixa pendente (e somem da tela); renegociar só parcela
+  em aberto; aprovar baixa de parcela cancelada/renegociada é recusado, com
+  aviso em Aprovações.
+
 - **Problema:** cancelar a parcela e renegociar não olham as baixas pendentes
   dela.
 - **Onde:** `cancelarParcela` em `src/server/services/titulo.ts`;
@@ -489,6 +495,9 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   mudar o que o usuário vê.
 
 ### 60. Repasse de cartão trava parcelas sem ordem
+
+- **Status:** feito na branch `fix/parcela-com-baixa-pendente` (2026-11-26):
+  `ORDER BY id` no `FOR UPDATE`.
 
 - **Problema:** `confirmarRepasses` (`src/server/services/repasseCartao.ts`,
   ~linha 111) faz `SELECT id FROM parcelas WHERE id IN (...) FOR UPDATE` sem
@@ -520,6 +529,30 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   nenhum dos lados (saldo inicial + todos os lançamentos das contas ativas,
   como `calcularSaldoContabil` da Tesouraria); ou cortar os dois lados em hoje.
 - **Cuidados:** o Fluxo de caixa realizado continua com o corte.
+
+### 62. Cancelar pedido e excluir recepção não travam as parcelas
+
+- **Problema:** `cancelarPedido` (`src/server/services/pedidoVenda.ts`,
+  `situacaoParaCancelar` + `updateMany` das parcelas) e `cancelarRecepcao`
+  (`src/server/services/recepcaoFruto.ts`, `verificarCancelamento` +
+  `updateMany`) conferem baixas pendentes/aprovadas sem travar as parcelas do
+  título; uma baixa registrada no mesmo instante (que trava a parcela com
+  `FOR UPDATE`) pode ser gravada depois da conferência e antes do cancelamento.
+  O comentário "uma baixa lançada no meio não escapa" não é estritamente
+  verdade.
+- **Onde:** `src/server/services/pedidoVenda.ts` e
+  `src/server/services/recepcaoFruto.ts`.
+- **Exemplo:** Maria registra a baixa da parcela 1 do pedido 131 no mesmo
+  segundo em que o pedido é cancelado; a parcela fica CANCELADO com uma baixa
+  pendente.
+- **Impacto:** raro; desde 2026-11-26 a aprovação recusa baixa de parcela
+  cancelada e Aprovações mostra o aviso para rejeitar, então não sai
+  lançamento errado.
+- **Caminhos:** travar as parcelas do título com
+  `SELECT id FROM parcelas WHERE "tituloId" = ... ORDER BY id FOR UPDATE` antes
+  da conferência, dentro da mesma transação.
+- **Cuidados:** ordem fixa (`ORDER BY id`) para não criar deadlock com a
+  confirmação de repasses.
 
 ## Controladoria — lacunas achadas ao escrever a ajuda contextual
 

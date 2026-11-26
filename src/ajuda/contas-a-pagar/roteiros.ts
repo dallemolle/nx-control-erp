@@ -491,7 +491,7 @@ export const ROTEIROS: readonly Roteiro[] = [
     titulo: "Renegociar uma parcela vencida",
     quandoUsar:
       "Quando uma parcela venceu e foi combinado pagar de outro jeito: em mais vezes, com outro valor ou em outras " +
-      "datas. O botão Renegociar só aparece em parcela vencida.",
+      "datas. O botão Renegociar só aparece em parcela vencida e sem baixa aguardando aprovação.",
     quemPode: QUEM_LANCA,
     passos: [
       ABRIR_TITULO,
@@ -557,7 +557,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Clique em “Cancelar” na parcela",
         explicacao: "Atenção: o sistema não pergunta se você tem certeza. O clique já cancela a parcela.",
         dica:
-          "Mudou só a data? Não cancele: use Alterar vencimento. Combinou pagar de outro jeito? Use Renegociar.",
+          "Mudou só a data? Não cancele: use Alterar vencimento. Combinou pagar de outro jeito? Use Renegociar." +
+          " Com baixa aguardando aprovação, Cancelar não aparece: peça para aprovarem ou rejeitarem a baixa antes.",
       },
     ],
     eDepois: {
