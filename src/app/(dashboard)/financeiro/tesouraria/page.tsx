@@ -21,6 +21,8 @@ import { ExportarLinks } from "../../_shared/exportar-links";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
 import { nomeDaContaBancaria } from "@/lib/contaBancaria";
 import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
+import { montarEditaveis, opcoesComAtual } from "@/lib/lancamentoEditavel";
+import { AcoesDoLancamento, type OpcoesDoLancamento } from "./acoes-do-lancamento";
 
 const ORIGEM_LABEL: Record<string, string> = {
   MANUAL: "Manual",
@@ -55,6 +57,32 @@ export default async function TesourariaPage({
     id: conta.id,
     nome: nomeDaContaBancaria(conta),
   }));
+
+  const editaveis = podeEscrever ? montarEditaveis(lancamentos) : {};
+  const porId = <T extends { id: string; nome: string }>(lista: readonly T[], id: string | null) =>
+    id ? (lista.find((item) => item.id === id) ?? null) : null;
+  const ativos = <T extends { ativo: boolean }>(lista: readonly T[]) => lista.filter((item) => item.ativo);
+
+  /** Opções do diálogo de edição: as ativas mais o que já está gravado no lançamento. */
+  function opcoesDe(lancamento: (typeof lancamentos)[number]): OpcoesDoLancamento {
+    const editavel = editaveis[lancamento.id];
+    const contaAtual = { id: lancamento.contaBancariaId, nome: nomeDaContaBancaria(lancamento.contaBancaria) };
+    const contasBancarias =
+      editavel?.tipo === "transferencia"
+        ? opcoesComAtual(
+            opcoesComAtual(opcoesContasBancarias, { id: editavel.contaOrigemId, nome: editavel.contaOrigemNome }),
+            { id: editavel.contaDestinoId, nome: editavel.contaDestinoNome },
+          )
+        : opcoesComAtual(opcoesContasBancarias, contaAtual);
+    return {
+      contasBancarias,
+      categorias: opcoesComAtual(ativos(categorias), porId(categorias, lancamento.categoriaFinanceiraId)),
+      centrosCusto: opcoesComAtual(ativos(centrosCusto), porId(centrosCusto, lancamento.centroCustoId)),
+      centrosLucro: opcoesComAtual(ativos(centrosLucro), porId(centrosLucro, lancamento.centroLucroId)),
+      safras: opcoesComAtual(ativos(safras), porId(safras, lancamento.safraId)),
+      projetos: opcoesComAtual(ativos(projetos), porId(projetos, lancamento.projetoId)),
+    };
+  }
 
   return (
     <div className="space-y-6">
@@ -138,6 +166,7 @@ export default async function TesourariaPage({
             <TableHead>Origem</TableHead>
             <TableHead>Classificação</TableHead>
             <TableHead>Descrição</TableHead>
+            {podeEscrever ? <TableHead className="w-0" /> : null}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -155,6 +184,11 @@ export default async function TesourariaPage({
               <TableCell>{formatarMoeda(lancamento.valor)}</TableCell>
               <TableCell>
                 <Badge variant="outline">{ORIGEM_LABEL[lancamento.origem]}</Badge>
+                {lancamento.grupoConciliacaoId ? (
+                  <Badge variant="secondary" className="ml-1">
+                    Conciliado
+                  </Badge>
+                ) : null}
               </TableCell>
               <TableCell>
                 <BadgeClassificacao classificacao={lancamento.classificacaoFiscal} />
@@ -163,6 +197,13 @@ export default async function TesourariaPage({
                 ) : null}
               </TableCell>
               <TableCell>{lancamento.descricao}</TableCell>
+              {podeEscrever ? (
+                <TableCell>
+                  {editaveis[lancamento.id] ? (
+                    <AcoesDoLancamento editavel={editaveis[lancamento.id]} opcoes={opcoesDe(lancamento)} />
+                  ) : null}
+                </TableCell>
+              ) : null}
             </TableRow>
           ))}
         </TableBody>
