@@ -21,7 +21,7 @@ import {
   type Paginacao,
 } from "@/server/services/paginacao";
 import { validarReferenciasDoLancamento } from "@/server/services/referenciasDoLancamento";
-import type { Prisma, TipoComprovante } from "@prisma/client";
+import { Prisma, type LancamentoBancario, type TipoComprovante } from "@prisma/client";
 
 function normalizarOpcional<T extends string>(valor: T | typeof SEM_VALOR | undefined): T | null {
   return valor && valor.length > 0 && valor !== SEM_VALOR ? valor : null;
@@ -37,6 +37,38 @@ async function buscarContaDaFilial(filialId: string, contaBancariaId: string) {
     throw new Error("Conta bancária não pertence à filial ativa");
   }
   return conta;
+}
+
+export const MSG_LANCAMENTO_NAO_ENCONTRADO = "Lançamento não encontrado na filial ativa";
+export const MSG_BAIXA_NAO_SE_CORRIGE = "Lançamento de baixa: corrija estornando a baixa";
+export const MSG_CORRIDA_CONCILIACAO =
+  "O lançamento foi conciliado ou desconciliado agora há pouco. Abra de novo e confira.";
+const MSG_MANUAL_CONCILIADO_EDITAR =
+  "Este lançamento está conciliado com o extrato: só descrição e classificação podem mudar. " +
+  "Desconcilie na Conciliação para mudar conta, tipo, data ou valor.";
+
+/** O formulário manda só o dia (meia-noite UTC); a linha do extrato pode ter hora. */
+function mesmoDiaUtc(a: Date, b: Date): boolean {
+  return a.toISOString().slice(0, 10) === b.toISOString().slice(0, 10);
+}
+
+/** Campos que a correção pode mudar, no formato gravado na auditoria. */
+function camposEditaveis(l: LancamentoBancario) {
+  return {
+    contaBancariaId: l.contaBancariaId,
+    tipo: l.tipo,
+    data: l.data,
+    valor: l.valor,
+    descricao: l.descricao,
+    categoriaFinanceiraId: l.categoriaFinanceiraId,
+    centroCustoId: l.centroCustoId,
+    centroLucroId: l.centroLucroId,
+    safraId: l.safraId,
+    projetoId: l.projetoId,
+    classificacaoFiscal: l.classificacaoFiscal,
+    tipoComprovante: l.tipoComprovante,
+    numeroComprovante: l.numeroComprovante,
+  };
 }
 
 /** `id` desempata lançamentos da mesma data — sem ele a paginação repete ou pula itens. */
@@ -238,6 +270,85 @@ export async function criarTransferencia(sessao: SessaoAtiva, dados: Transferenc
   });
 
   return { saida, entrada };
+}
+
+/**
+ * Corrige um lançamento manual. Ligado ao extrato (com grupo de conciliação),
+ * só a classificação muda: conta, tipo, data e valor foram confirmados pelo
+ * banco, e para mudá-los é preciso desconciliar antes.
+ */
+export async function editarLancamentoManual(sessao: SessaoAtiva, id: string, dados: LancamentoManualFormValues) {
+  requirePermission(sessao.perfil, "lancamento:escrever");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
+
+  const atual = await prisma.lancamentoBancario.findFirst({ where: { id, filialId: sessao.filialId } });
+  if (!atual) throw new Error(MSG_LANCAMENTO_NAO_ENCONTRADO);
+  if (atual.origem === "BAIXA") throw new Error(MSG_BAIXA_NAO_SE_CORRIGE);
+  if (atual.origem === "TRANSFERENCIA") {
+    throw new Error("Transferência: corrija pela transferência, que muda os dois lados juntos");
+  }
+
+  const conta = await buscarContaDaFilial(sessao.filialId, dados.contaBancariaId);
+
+  const referencias = {
+    categoriaFinanceiraId: normalizarOpcional(dados.categoriaFinanceiraId),
+    centroCustoId: normalizarOpcional(dados.centroCustoId),
+    centroLucroId: normalizarOpcional(dados.centroLucroId),
+    safraId: normalizarOpcional(dados.safraId),
+    projetoId: normalizarOpcional(dados.projetoId),
+  };
+  await validarReferenciasDoLancamento(sessao.filialId, referencias);
+
+  const classificacaoFiscal = dados.classificacaoFiscal ?? "FISCAL";
+  const tipoComprovante = normalizarOpcional(dados.tipoComprovante) as TipoComprovante | null;
+  garantirComprovanteValido({ classificacaoFiscal, tipoComprovante });
+
+  const valor = new Prisma.Decimal(dados.valor);
+  const mesmoDia = mesmoDiaUtc(dados.data, atual.data);
+  const mudouMovimento =
+    conta.id !== atual.contaBancariaId || dados.tipo !== atual.tipo || !mesmoDia || !valor.equals(atual.valor);
+  const ligadoAoExtrato = atual.grupoConciliacaoId !== null;
+  if (ligadoAoExtrato && mudouMovimento) throw new Error(MSG_MANUAL_CONCILIADO_EDITAR);
+
+  const novo = {
+    descricao: dados.descricao,
+    ...referencias,
+    classificacaoFiscal,
+    tipoComprovante,
+    numeroComprovante: normalizarOpcional(dados.numeroComprovante),
+    ...(ligadoAoExtrato
+      ? {}
+      : {
+          contaBancariaId: conta.id,
+          tipo: dados.tipo,
+          data: mesmoDia ? atual.data : dados.data,
+          valor,
+          // Mesma regra da criação: dinheiro em espécie não tem extrato.
+          conciliado: conta.tipo === "CAIXA",
+        }),
+  };
+
+  // O filtro pelo grupo lido evita gravar por cima de uma conciliação (ou desconciliação) feita no meio do caminho.
+  const { count } = await prisma.lancamentoBancario.updateMany({
+    where: { id, filialId: sessao.filialId, grupoConciliacaoId: atual.grupoConciliacaoId },
+    data: novo,
+  });
+  if (count === 0) throw new Error(MSG_CORRIDA_CONCILIACAO);
+
+  const gravado = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id } });
+
+  await registrarAuditoria({
+    empresaId: sessao.empresaId,
+    filialId: sessao.filialId,
+    usuarioId: sessao.usuarioId,
+    entidade: "LancamentoBancario",
+    entidadeId: id,
+    acao: "EDITAR",
+    anterior: camposEditaveis(atual),
+    novo: camposEditaveis(gravado),
+  });
+
+  return gravado;
 }
 
 export async function informarSaldoBancario(sessao: SessaoAtiva, dados: SaldoBancarioFormValues) {

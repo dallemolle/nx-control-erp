@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 import { prisma } from "@/server/db/client";
 import { PermissionError } from "@/server/auth/permissions";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
@@ -9,6 +9,7 @@ import {
   informarSaldoBancario,
   buscarUltimoSaldoInformado,
   listarLancamentos,
+  editarLancamentoManual,
 } from "./lancamentoBancario";
 import { ErroClassificacaoFiscal } from "./classificacaoFiscal";
 
@@ -338,5 +339,168 @@ describe("classificação fiscal × gerencial em lançamentos", () => {
     expect(fiscais.every((lancamento) => lancamento.classificacaoFiscal === "FISCAL")).toBe(true);
     expect(gerenciais.every((lancamento) => lancamento.classificacaoFiscal === "GERENCIAL")).toBe(true);
     expect(fiscais.length + gerenciais.length + transferencias.length).toBe(todos.length);
+  });
+});
+
+describe("editarLancamentoManual", () => {
+  let fx: FixtureFinanceiro;
+  let contaCaixaId: string;
+
+  beforeAll(async () => {
+    fx = await criarFixtureFinanceiro("LBE", "TESOURARIA");
+    const caixa = await prisma.contaBancaria.create({
+      data: { filialId: fx.filialId, bancoId: fx.bancoId, agencia: "0000", conta: "caixa-lbe", tipo: "CAIXA", saldoInicial: 0 },
+    });
+    contaCaixaId = caixa.id;
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fx);
+  });
+
+  function dadosBase(overrides: Partial<Parameters<typeof criarLancamentoManual>[1]> = {}) {
+    return {
+      contaBancariaId: fx.contaBancariaId,
+      data: new Date("2026-11-20T00:00:00Z"),
+      tipo: "SAIDA" as const,
+      valor: 459,
+      descricao: "Tarifa de manutenção",
+      categoriaFinanceiraId: fx.categoriaFinanceiraId,
+      ...overrides,
+    };
+  }
+
+  async function conciliar(lancamentoId: string) {
+    const lanc = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lancamentoId } });
+    const grupo = await prisma.grupoConciliacao.create({
+      data: { filialId: fx.filialId, contaBancariaId: lanc.contaBancariaId, usuarioId: fx.usuarioId },
+    });
+    await prisma.lancamentoBancario.update({
+      where: { id: lancamentoId },
+      data: { grupoConciliacaoId: grupo.id, conciliado: true },
+    });
+    return grupo.id;
+  }
+
+  test("sem grupo, corrige o valor e todos os campos, e audita antes e depois", async () => {
+    const lanc = await criarLancamentoManual(fx.sessao, dadosBase());
+    const editado = await editarLancamentoManual(fx.sessao, lanc.id, dadosBase({ valor: 45.9, descricao: "Tarifa corrigida", tipo: "SAIDA" }));
+
+    expect(Number(editado.valor)).toBe(45.9);
+    expect(editado.descricao).toBe("Tarifa corrigida");
+
+    const log = await prisma.auditLog.findFirstOrThrow({ where: { entidadeId: lanc.id, acao: "EDITAR" } });
+    expect(log.valorAnterior).toMatchObject({ valor: "459", descricao: "Tarifa de manutenção" });
+    expect(log.valorNovo).toMatchObject({ valor: "45.9", descricao: "Tarifa corrigida" });
+  });
+
+  test("trocar de banco para Caixa deixa conciliado; de Caixa para banco, não", async () => {
+    const lanc = await criarLancamentoManual(fx.sessao, dadosBase());
+    expect(lanc.conciliado).toBe(false);
+
+    const noCaixa = await editarLancamentoManual(fx.sessao, lanc.id, dadosBase({ contaBancariaId: contaCaixaId }));
+    expect(noCaixa.conciliado).toBe(true);
+    expect(noCaixa.grupoConciliacaoId).toBeNull();
+
+    const deVolta = await editarLancamentoManual(fx.sessao, lanc.id, dadosBase());
+    expect(deVolta.conciliado).toBe(false);
+  });
+
+  test("com grupo, muda descrição e categoria, mas não valor, data, tipo ou conta", async () => {
+    const lanc = await criarLancamentoManual(fx.sessao, dadosBase());
+    const grupoId = await conciliar(lanc.id);
+
+    const editado = await editarLancamentoManual(
+      fx.sessao,
+      lanc.id,
+      dadosBase({ descricao: "Tarifa de novembro", categoriaFinanceiraId: "__nenhum__" }),
+    );
+    expect(editado.descricao).toBe("Tarifa de novembro");
+    expect(editado.categoriaFinanceiraId).toBeNull();
+    expect(editado.grupoConciliacaoId).toBe(grupoId);
+    expect(editado.conciliado).toBe(true);
+
+    for (const mudanca of [
+      { valor: 45.9 },
+      { data: new Date("2026-11-21T00:00:00Z") },
+      { tipo: "ENTRADA" as const },
+      { contaBancariaId: contaCaixaId },
+    ]) {
+      await expect(editarLancamentoManual(fx.sessao, lanc.id, dadosBase(mudanca))).rejects.toThrow(
+        /conciliado com o extrato: só descrição e classificação podem mudar/,
+      );
+    }
+  });
+
+  test("com grupo, data no mesmo dia em outro horário não conta como mudança", async () => {
+    const lanc = await criarLancamentoManual(fx.sessao, dadosBase({ data: new Date("2026-11-20T15:30:00Z") }));
+    await conciliar(lanc.id);
+    const editado = await editarLancamentoManual(fx.sessao, lanc.id, dadosBase({ descricao: "Mesmo dia" }));
+    expect(editado.data.toISOString()).toBe("2026-11-20T15:30:00.000Z");
+  });
+
+  test("origem BAIXA e TRANSFERENCIA são recusadas", async () => {
+    const { saida } = await criarTransferencia(fx.sessao, {
+      contaOrigemId: fx.contaBancariaId,
+      contaDestinoId: contaCaixaId,
+      data: new Date("2026-11-20T00:00:00Z"),
+      valor: 100,
+      descricao: "Saque",
+    });
+    await expect(editarLancamentoManual(fx.sessao, saida.id, dadosBase())).rejects.toThrow(/Transferência/);
+
+    const lanc = await criarLancamentoManual(fx.sessao, dadosBase());
+    await prisma.lancamentoBancario.update({ where: { id: lanc.id }, data: { origem: "BAIXA" } });
+    await expect(editarLancamentoManual(fx.sessao, lanc.id, dadosBase())).rejects.toThrow(
+      "Lançamento de baixa: corrija estornando a baixa",
+    );
+  });
+
+  test("lançamento de outra filial não é encontrado; conta de outra filial é recusada", async () => {
+    const outra = await criarFixtureFinanceiro("LBE2", "TESOURARIA");
+    try {
+      const lancOutra = await criarLancamentoManual(outra.sessao, {
+        ...dadosBase(),
+        contaBancariaId: outra.contaBancariaId,
+        categoriaFinanceiraId: "__nenhum__",
+      });
+      await expect(editarLancamentoManual(fx.sessao, lancOutra.id, dadosBase())).rejects.toThrow(
+        "Lançamento não encontrado na filial ativa",
+      );
+
+      const meu = await criarLancamentoManual(fx.sessao, dadosBase());
+      await expect(
+        editarLancamentoManual(fx.sessao, meu.id, dadosBase({ contaBancariaId: outra.contaBancariaId })),
+      ).rejects.toThrow(/não pertence à filial ativa/);
+      await expect(
+        editarLancamentoManual(fx.sessao, meu.id, dadosBase({ categoriaFinanceiraId: outra.categoriaFinanceiraId })),
+      ).rejects.toThrow(/não pertence à filial ativa/);
+    } finally {
+      await limparFixtureFinanceiro(outra);
+    }
+  });
+
+  test("perfil sem lancamento:escrever é recusado", async () => {
+    const lanc = await criarLancamentoManual(fx.sessao, dadosBase());
+    await expect(
+      editarLancamentoManual({ ...fx.sessao, perfil: "FINANCEIRO" }, lanc.id, dadosBase()),
+    ).rejects.toThrow(PermissionError);
+  });
+
+  test("se o lançamento ganhar grupo entre a leitura e a gravação, nada é gravado", async () => {
+    const lanc = await criarLancamentoManual(fx.sessao, dadosBase());
+    const lido = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lanc.id } });
+    await conciliar(lanc.id);
+    // Simula a leitura feita antes da conciliação.
+    const espiao = vi.spyOn(prisma.lancamentoBancario, "findFirst").mockResolvedValueOnce(lido);
+    try {
+      await expect(editarLancamentoManual(fx.sessao, lanc.id, dadosBase({ valor: 45.9 }))).rejects.toThrow(
+        /conciliado ou desconciliado agora há pouco/,
+      );
+    } finally {
+      espiao.mockRestore();
+    }
+    const depois = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lanc.id } });
+    expect(Number(depois.valor)).toBe(459);
   });
 });
