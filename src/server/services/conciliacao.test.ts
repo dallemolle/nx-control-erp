@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 import { classificarLinhaExtrato, type CandidatoParaClassificar } from "./conciliacao";
 import { prisma } from "@/server/db/client";
 import { PermissionError } from "@/server/auth/permissions";
@@ -901,6 +901,29 @@ describe("conciliarEmGrupo", () => {
     } finally {
       await limparFixtureFinanceiro(outra);
     }
+  });
+
+  test("lançamento editado entre a leitura e o vínculo: erro e nada é gravado", async () => {
+    const [pix] = await linhas([{ fitid: "GRP-RACE-1", data: "20260910", valor: "1000.00", nome: "PIX" }]);
+    const p1 = await lancamento(600, "ENTRADA", "Parcela 1");
+    const p2 = await lancamento(400, "ENTRADA", "Parcela 2");
+    const lidos = await prisma.lancamentoBancario.findMany({ where: { id: { in: [p1.id, p2.id] } } });
+    // O valor muda no banco depois da leitura que o serviço vai receber.
+    await prisma.lancamentoBancario.update({ where: { id: p2.id }, data: { valor: 350 } });
+    const espiao = vi.spyOn(prisma.lancamentoBancario, "findMany").mockResolvedValueOnce(lidos);
+    try {
+      await expect(
+        conciliarEmGrupo(fixture.sessao, { linhaIds: [pix.id], lancamentoIds: [p1.id, p2.id] }),
+      ).rejects.toThrow("Algum lançamento mudou enquanto você conciliava. Confira os valores e tente de novo.");
+    } finally {
+      espiao.mockRestore();
+    }
+    const linha = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: pix.id } });
+    expect(linha.grupoConciliacaoId).toBeNull();
+    expect(linha.status).toBe("NAO_CONCILIADO");
+    const lancs = await prisma.lancamentoBancario.findMany({ where: { id: { in: [p1.id, p2.id] } } });
+    expect(lancs.every((l) => !l.conciliado && l.grupoConciliacaoId === null)).toBe(true);
+    expect(await prisma.grupoConciliacao.count({ where: { filialId: fixture.filialId, linhas: { some: { id: pix.id } } } })).toBe(0);
   });
 
   test("rejeita item já conciliado", async () => {
