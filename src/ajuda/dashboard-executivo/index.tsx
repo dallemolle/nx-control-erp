@@ -379,7 +379,7 @@ export const ajudaDashboardExecutivo: DefinicaoAjuda = {
           instrucao: "Geração de caixa do mês",
           explicacao:
             "Entradas menos saídas conciliadas desde o dia 1º. Em novembro: R$ 18.400,00 − R$ 11.250,00 = " +
-            `${moeda(INDICADORES.geracaoDeCaixaMesAtual)}.`,
+            `${moeda(INDICADORES.geracaoDeCaixaMesAtual)}. Transferências entre contas não entram.`,
         },
         {
           cena: "painel",
@@ -487,8 +487,8 @@ export const ajudaDashboardExecutivo: DefinicaoAjuda = {
             "Uma dupla de barras por mês, dos últimos 6, com o mês atual no fim. Só lançamentos conciliados. Passe o " +
             "mouse numa barra para ver o valor.",
           dica:
-            "Transferência entre contas da empresa aparece como entrada e como saída e infla as duas barras (o " +
-            "saldo não muda).",
+            "Transferências entre contas da empresa não entram nas barras: só movem saldo, e a Evolução do saldo " +
+            "continua com elas.",
         },
         {
           cena: "painel",

@@ -15,6 +15,7 @@ describe("roteiros de Fluxo de caixa", () => {
     const html = renderToStaticMarkup(createElement(cenas.painel, { valores: {} }));
     expect(html).toContain("novembro de 2026");
     expect(html).toContain("-R$ 1.238,00");
+    expect(html).toContain("Transferências");
   });
 
   test("as semanas de novembro terminam no mesmo saldo que o mês", () => {
