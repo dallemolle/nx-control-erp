@@ -119,4 +119,16 @@ describe("renegociarParcela", () => {
     ).rejects.toThrow(`Esta parcela está ${rotulo} e não pode ser renegociada`);
     expect(await prisma.parcela.count({ where: { parcelaOrigemId: original.id } })).toBe(0);
   });
+
+  test.each(["EM_ABERTO", "A_VENCER", "PARCIALMENTE_PAGO"] as const)("parcela %s em aberto é renegociada", async (status) => {
+    const original = (await criarTituloVencido(1000)).parcelas[0];
+    await prisma.parcela.update({ where: { id: original.id }, data: { status } });
+
+    const novas = await renegociarParcela(fixture.sessao, original.id, [
+      { dataVencimento: new Date("2099-01-01"), valorOriginal: 1000 },
+    ]);
+
+    expect(novas).toHaveLength(1);
+    expect((await prisma.parcela.findUniqueOrThrow({ where: { id: original.id } })).status).toBe("RENEGOCIADO");
+  });
 });
