@@ -411,31 +411,33 @@ export async function editarTransferencia(sessao: SessaoAtiva, transferenciaId: 
       });
       if (count === 0) throw new Error(MSG_CORRIDA_CONCILIACAO);
     }
-  });
-
-  await registrarAuditoria({
-    empresaId: sessao.empresaId,
-    filialId: sessao.filialId,
-    usuarioId: sessao.usuarioId,
-    entidade: "LancamentoBancario",
-    entidadeId: saida.id,
-    acao: "EDITAR_TRANSFERENCIA",
-    anterior: {
-      transferenciaId,
-      contaOrigemId: saida.contaBancariaId,
-      contaDestinoId: entrada.contaBancariaId,
-      data: saida.data,
-      valor: saida.valor,
-      descricao: saida.descricao,
-    },
-    novo: {
-      transferenciaId,
-      contaOrigemId: ladoConciliado ? saida.contaBancariaId : contaOrigem.id,
-      contaDestinoId: ladoConciliado ? entrada.contaBancariaId : contaDestino.id,
-      data: ladoConciliado ? saida.data : data,
-      valor: ladoConciliado ? saida.valor : valor,
-      descricao: dados.descricao,
-    },
+    await registrarAuditoria(
+      {
+        empresaId: sessao.empresaId,
+        filialId: sessao.filialId,
+        usuarioId: sessao.usuarioId,
+        entidade: "LancamentoBancario",
+        entidadeId: saida.id,
+        acao: "EDITAR_TRANSFERENCIA",
+        anterior: {
+          transferenciaId,
+          contaOrigemId: saida.contaBancariaId,
+          contaDestinoId: entrada.contaBancariaId,
+          data: saida.data,
+          valor: saida.valor,
+          descricao: saida.descricao,
+        },
+        novo: {
+          transferenciaId,
+          contaOrigemId: ladoConciliado ? saida.contaBancariaId : contaOrigem.id,
+          contaDestinoId: ladoConciliado ? entrada.contaBancariaId : contaDestino.id,
+          data: ladoConciliado ? saida.data : data,
+          valor: ladoConciliado ? saida.valor : valor,
+          descricao: dados.descricao,
+        },
+      },
+      tx,
+    );
   });
 }
 
@@ -450,6 +452,7 @@ export async function excluirLancamento(sessao: SessaoAtiva, id: string, motivo:
 
   const motivoLimpo = motivo.trim();
   if (!motivoLimpo) throw new Error("Informe o motivo da exclusão");
+  if (motivoLimpo.length > 500) throw new Error("O motivo pode ter até 500 caracteres");
 
   const alvo = await prisma.lancamentoBancario.findFirst({
     where: { id, filialId: sessao.filialId },
@@ -474,28 +477,30 @@ export async function excluirLancamento(sessao: SessaoAtiva, id: string, motivo:
   }
 
   const ids = lados.map((l) => l.id);
-  await prisma.$transaction(async (tx) => {
-    const { count } = await tx.lancamentoBancario.deleteMany({
-      where: { id: { in: ids }, filialId: sessao.filialId, grupoConciliacaoId: null },
-    });
-    if (count !== ids.length) throw new Error(MSG_CORRIDA_CONCILIACAO);
-  });
-
   const semConta = lados.map((l) => {
     const { contaBancaria, ...registro } = l;
     void contaBancaria;
     return registroParaAuditoria(registro);
   });
   const saida = lados.find((l) => l.tipo === "SAIDA") ?? alvo;
-  await registrarAuditoria({
-    empresaId: sessao.empresaId,
-    filialId: sessao.filialId,
-    usuarioId: sessao.usuarioId,
-    entidade: "LancamentoBancario",
-    entidadeId: ehTransferencia ? saida.id : alvo.id,
-    acao: ehTransferencia ? "EXCLUIR_TRANSFERENCIA" : "EXCLUIR",
-    anterior: ehTransferencia ? { transferenciaId: alvo.transferenciaId, lancamentos: semConta } : semConta[0],
-    novo: { motivo: motivoLimpo },
+  await prisma.$transaction(async (tx) => {
+    const { count } = await tx.lancamentoBancario.deleteMany({
+      where: { id: { in: ids }, filialId: sessao.filialId, grupoConciliacaoId: null },
+    });
+    if (count !== ids.length) throw new Error(MSG_CORRIDA_CONCILIACAO);
+    await registrarAuditoria(
+      {
+        empresaId: sessao.empresaId,
+        filialId: sessao.filialId,
+        usuarioId: sessao.usuarioId,
+        entidade: "LancamentoBancario",
+        entidadeId: ehTransferencia ? saida.id : alvo.id,
+        acao: ehTransferencia ? "EXCLUIR_TRANSFERENCIA" : "EXCLUIR",
+        anterior: ehTransferencia ? { transferenciaId: alvo.transferenciaId, lancamentos: semConta } : semConta[0],
+        novo: { motivo: motivoLimpo },
+      },
+      tx,
+    );
   });
 }
 

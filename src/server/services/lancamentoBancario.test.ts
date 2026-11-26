@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 import { prisma } from "@/server/db/client";
-import { PermissionError } from "@/server/auth/permissions";
+import { FilialSomenteLeituraError, PermissionError } from "@/server/auth/permissions";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
 import {
   criarLancamentoManual,
@@ -642,6 +642,62 @@ describe("excluirLancamento", () => {
       valor: 10, descricao: "Qualquer", categoriaFinanceiraId: "__nenhum__",
     });
     await expect(excluirLancamento(fx.sessao, lanc.id, "   ")).rejects.toThrow("Informe o motivo da exclusão");
+    expect(await prisma.lancamentoBancario.findUnique({ where: { id: lanc.id } })).not.toBeNull();
+  });
+
+  test("motivo com mais de 500 caracteres é recusado", async () => {
+    const lanc = await criarLancamentoManual(fx.sessao, {
+      contaBancariaId: fx.contaBancariaId, data: new Date(), tipo: "SAIDA",
+      valor: 10, descricao: "Qualquer", categoriaFinanceiraId: "__nenhum__",
+    });
+    await expect(excluirLancamento(fx.sessao, lanc.id, "a".repeat(501))).rejects.toThrow(
+      "O motivo pode ter até 500 caracteres",
+    );
+    await excluirLancamento(fx.sessao, lanc.id, "a".repeat(500));
+    expect(await prisma.lancamentoBancario.findUnique({ where: { id: lanc.id } })).toBeNull();
+  });
+
+  test("perfil sem lancamento:escrever é recusado", async () => {
+    const lanc = await criarLancamentoManual(fx.sessao, {
+      contaBancariaId: fx.contaBancariaId, data: new Date(), tipo: "SAIDA",
+      valor: 10, descricao: "Sem permissão", categoriaFinanceiraId: "__nenhum__",
+    });
+    await expect(excluirLancamento({ ...fx.sessao, perfil: "FINANCEIRO" }, lanc.id, "x")).rejects.toThrow(
+      PermissionError,
+    );
+    expect(await prisma.lancamentoBancario.findUnique({ where: { id: lanc.id } })).not.toBeNull();
+  });
+
+  test("filial somente leitura é recusada", async () => {
+    const lanc = await criarLancamentoManual(fx.sessao, {
+      contaBancariaId: fx.contaBancariaId, data: new Date(), tipo: "SAIDA",
+      valor: 10, descricao: "Somente leitura", categoriaFinanceiraId: "__nenhum__",
+    });
+    await expect(excluirLancamento(fx.sessaoSomenteLeitura, lanc.id, "x")).rejects.toThrow(
+      FilialSomenteLeituraError,
+    );
+    expect(await prisma.lancamentoBancario.findUnique({ where: { id: lanc.id } })).not.toBeNull();
+  });
+
+  test("se o lançamento ganhar grupo entre a leitura e a exclusão, nada é apagado", async () => {
+    const lanc = await criarLancamentoManual(fx.sessao, {
+      contaBancariaId: fx.contaBancariaId, data: new Date(), tipo: "SAIDA",
+      valor: 10, descricao: "Corrida", categoriaFinanceiraId: "__nenhum__",
+    });
+    const lido = await prisma.lancamentoBancario.findFirstOrThrow({
+      where: { id: lanc.id },
+      include: { contaBancaria: { include: { banco: true } } },
+    });
+    await conciliar(lanc.id);
+    // Simula a leitura feita antes da conciliação.
+    const espiao = vi.spyOn(prisma.lancamentoBancario, "findFirst").mockResolvedValueOnce(lido);
+    try {
+      await expect(excluirLancamento(fx.sessao, lanc.id, "errado")).rejects.toThrow(
+        /conciliado ou desconciliado agora há pouco/,
+      );
+    } finally {
+      espiao.mockRestore();
+    }
     expect(await prisma.lancamentoBancario.findUnique({ where: { id: lanc.id } })).not.toBeNull();
   });
 

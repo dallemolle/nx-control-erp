@@ -61,7 +61,11 @@ export function ExcluirLancamentoDialog({
             <Input
               id="motivo-exclusao"
               value={motivo}
-              onChange={(evento) => setMotivo(evento.target.value)}
+              maxLength={500}
+              onChange={(evento) => {
+                setMotivo(evento.target.value);
+                setErro(undefined);
+              }}
               placeholder="Ex.: valor digitado errado"
             />
           </div>
