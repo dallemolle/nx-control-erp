@@ -72,6 +72,11 @@ function camposEditaveis(l: LancamentoBancario) {
   };
 }
 
+/** O registro inteiro (sem relações), para a auditoria da exclusão. */
+function registroParaAuditoria(l: LancamentoBancario) {
+  return { ...l, valor: l.valor.toString(), data: l.data.toISOString(), criadoEm: l.criadoEm.toISOString() };
+}
+
 /** `id` desempata lançamentos da mesma data — sem ele a paginação repete ou pula itens. */
 const ORDEM_LISTAGEM_LANCAMENTOS: Prisma.LancamentoBancarioOrderByWithRelationInput[] = [
   { data: "desc" },
@@ -431,6 +436,66 @@ export async function editarTransferencia(sessao: SessaoAtiva, transferenciaId: 
       valor: ladoConciliado ? saida.valor : valor,
       descricao: dados.descricao,
     },
+  });
+}
+
+/**
+ * Apaga um lançamento manual, ou os dois lados de uma transferência. A
+ * auditoria guarda o registro inteiro e o motivo. Ligado ao extrato não se
+ * exclui: desconcilie antes.
+ */
+export async function excluirLancamento(sessao: SessaoAtiva, id: string, motivo: string) {
+  requirePermission(sessao.perfil, "lancamento:escrever");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
+
+  const motivoLimpo = motivo.trim();
+  if (!motivoLimpo) throw new Error("Informe o motivo da exclusão");
+
+  const alvo = await prisma.lancamentoBancario.findFirst({
+    where: { id, filialId: sessao.filialId },
+    include: INCLUI_CONTA,
+  });
+  if (!alvo) throw new Error(MSG_LANCAMENTO_NAO_ENCONTRADO);
+  if (alvo.origem === "BAIXA") throw new Error(MSG_BAIXA_NAO_SE_CORRIGE);
+
+  const ehTransferencia = alvo.origem === "TRANSFERENCIA" && alvo.transferenciaId !== null;
+  const lados = ehTransferencia
+    ? Object.values(await buscarLadosDaTransferencia(sessao.filialId, alvo.transferenciaId!))
+    : [alvo];
+
+  const conciliado = lados.find((l) => l.grupoConciliacaoId !== null);
+  if (conciliado) {
+    throw new Error(
+      ehTransferencia
+        ? `Esta transferência está conciliada com o extrato (lado de ${nomeDaContaBancaria(conciliado.contaBancaria)}). ` +
+            "Desconcilie na Conciliação antes de excluir."
+        : "Este lançamento está conciliado com o extrato. Desconcilie na Conciliação antes de excluir.",
+    );
+  }
+
+  const ids = lados.map((l) => l.id);
+  await prisma.$transaction(async (tx) => {
+    const { count } = await tx.lancamentoBancario.deleteMany({
+      where: { id: { in: ids }, filialId: sessao.filialId, grupoConciliacaoId: null },
+    });
+    if (count !== ids.length) throw new Error(MSG_CORRIDA_CONCILIACAO);
+  });
+
+  const semConta = lados.map((l) => {
+    const { contaBancaria, ...registro } = l;
+    void contaBancaria;
+    return registroParaAuditoria(registro);
+  });
+  const saida = lados.find((l) => l.tipo === "SAIDA") ?? alvo;
+  await registrarAuditoria({
+    empresaId: sessao.empresaId,
+    filialId: sessao.filialId,
+    usuarioId: sessao.usuarioId,
+    entidade: "LancamentoBancario",
+    entidadeId: ehTransferencia ? saida.id : alvo.id,
+    acao: ehTransferencia ? "EXCLUIR_TRANSFERENCIA" : "EXCLUIR",
+    anterior: ehTransferencia ? { transferenciaId: alvo.transferenciaId, lancamentos: semConta } : semConta[0],
+    novo: { motivo: motivoLimpo },
   });
 }
 

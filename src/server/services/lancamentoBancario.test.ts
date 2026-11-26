@@ -11,6 +11,7 @@ import {
   listarLancamentos,
   editarLancamentoManual,
   editarTransferencia,
+  excluirLancamento,
 } from "./lancamentoBancario";
 import { ErroClassificacaoFiscal } from "./classificacaoFiscal";
 
@@ -590,6 +591,102 @@ describe("editarTransferencia", () => {
   test("transferência de outra filial não é encontrada", async () => {
     await expect(editarTransferencia(fx.sessao, crypto.randomUUID(), dadosTransf())).rejects.toThrow(
       "Transferência não encontrada na filial ativa",
+    );
+  });
+});
+
+describe("excluirLancamento", () => {
+  let fx: FixtureFinanceiro;
+  let contaDestinoId: string;
+
+  beforeAll(async () => {
+    fx = await criarFixtureFinanceiro("LBD", "TESOURARIA");
+    const destino = await prisma.contaBancaria.create({
+      data: { filialId: fx.filialId, bancoId: fx.bancoId, agencia: "0002", conta: "destino-lbd", saldoInicial: 0 },
+    });
+    contaDestinoId = destino.id;
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fx);
+  });
+
+  async function conciliar(lancamentoId: string) {
+    const lanc = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lancamentoId } });
+    const grupo = await prisma.grupoConciliacao.create({
+      data: { filialId: fx.filialId, contaBancariaId: lanc.contaBancariaId, usuarioId: fx.usuarioId },
+    });
+    await prisma.lancamentoBancario.update({
+      where: { id: lancamentoId },
+      data: { grupoConciliacaoId: grupo.id, conciliado: true },
+    });
+    return grupo.id;
+  }
+
+  test("exclui lançamento manual sem grupo, com motivo na auditoria", async () => {
+    const lanc = await criarLancamentoManual(fx.sessao, {
+      contaBancariaId: fx.contaBancariaId, data: new Date("2026-11-20T00:00:00Z"), tipo: "SAIDA",
+      valor: 459, descricao: "Tarifa digitada errada", categoriaFinanceiraId: "__nenhum__",
+    });
+    await excluirLancamento(fx.sessao, lanc.id, "  valor digitado errado  ");
+
+    expect(await prisma.lancamentoBancario.findUnique({ where: { id: lanc.id } })).toBeNull();
+    const log = await prisma.auditLog.findFirstOrThrow({ where: { entidadeId: lanc.id, acao: "EXCLUIR" } });
+    expect(log.valorNovo).toMatchObject({ motivo: "valor digitado errado" });
+    expect(log.valorAnterior).toMatchObject({ descricao: "Tarifa digitada errada", valor: "459" });
+  });
+
+  test("motivo vazio ou só espaços é recusado", async () => {
+    const lanc = await criarLancamentoManual(fx.sessao, {
+      contaBancariaId: fx.contaBancariaId, data: new Date(), tipo: "SAIDA",
+      valor: 10, descricao: "Qualquer", categoriaFinanceiraId: "__nenhum__",
+    });
+    await expect(excluirLancamento(fx.sessao, lanc.id, "   ")).rejects.toThrow("Informe o motivo da exclusão");
+    expect(await prisma.lancamentoBancario.findUnique({ where: { id: lanc.id } })).not.toBeNull();
+  });
+
+  test("lançamento com grupo não é excluído", async () => {
+    const lanc = await criarLancamentoManual(fx.sessao, {
+      contaBancariaId: fx.contaBancariaId, data: new Date(), tipo: "SAIDA",
+      valor: 10, descricao: "Conciliado", categoriaFinanceiraId: "__nenhum__",
+    });
+    await conciliar(lanc.id);
+    await expect(excluirLancamento(fx.sessao, lanc.id, "errado")).rejects.toThrow(
+      "Este lançamento está conciliado com o extrato. Desconcilie na Conciliação antes de excluir.",
+    );
+  });
+
+  test("excluir um lado da transferência apaga os dois", async () => {
+    const { saida, entrada } = await criarTransferencia(fx.sessao, {
+      contaOrigemId: fx.contaBancariaId, contaDestinoId, data: new Date(), valor: 300, descricao: "TED errada",
+    });
+    await excluirLancamento(fx.sessao, entrada.id, "TED não aconteceu");
+
+    expect(await prisma.lancamentoBancario.count({ where: { id: { in: [saida.id, entrada.id] } } })).toBe(0);
+    const log = await prisma.auditLog.findFirstOrThrow({ where: { entidadeId: saida.id, acao: "EXCLUIR_TRANSFERENCIA" } });
+    expect(log.valorNovo).toMatchObject({ motivo: "TED não aconteceu" });
+  });
+
+  test("transferência com um lado no grupo: nenhum lado é apagado", async () => {
+    const { saida, entrada } = await criarTransferencia(fx.sessao, {
+      contaOrigemId: fx.contaBancariaId, contaDestinoId, data: new Date(), valor: 300, descricao: "TED conciliada",
+    });
+    await conciliar(entrada.id);
+    await expect(excluirLancamento(fx.sessao, saida.id, "errado")).rejects.toThrow(
+      /Esta transferência está conciliada com o extrato \(lado de .+\)\. Desconcilie na Conciliação antes de excluir\./,
+    );
+    expect(await prisma.lancamentoBancario.count({ where: { id: { in: [saida.id, entrada.id] } } })).toBe(2);
+  });
+
+  test("origem BAIXA é recusada; outra filial não é encontrada", async () => {
+    const lanc = await criarLancamentoManual(fx.sessao, {
+      contaBancariaId: fx.contaBancariaId, data: new Date(), tipo: "SAIDA",
+      valor: 10, descricao: "Vira baixa", categoriaFinanceiraId: "__nenhum__",
+    });
+    await prisma.lancamentoBancario.update({ where: { id: lanc.id }, data: { origem: "BAIXA" } });
+    await expect(excluirLancamento(fx.sessao, lanc.id, "x")).rejects.toThrow("Lançamento de baixa: corrija estornando a baixa");
+    await expect(excluirLancamento(fx.sessao, crypto.randomUUID(), "x")).rejects.toThrow(
+      "Lançamento não encontrado na filial ativa",
     );
   });
 });
