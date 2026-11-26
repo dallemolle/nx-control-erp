@@ -294,6 +294,10 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   para "Conciliar em grupo" com "Lançar a diferença"; ou filtrar os candidatos
   por valor igual e deixar o resto para o grupo.
 - **Cuidados:** linhas em Divergência de valor hoje resolvidas pelo 1:1.
+  Desde a correção de lançamentos (item 6, 2026-11-26) um lançamento solto
+  pode ser editado entre a leitura e o vínculo no 1:1 e na conciliação
+  automática; ao exigir valor igual, conferir de novo dentro da transação,
+  como já faz a conciliação em grupo.
 - **Ao corrigir:** dica do passo "Escolha o lançamento na caixa da linha" em
   `src/ajuda/conciliacao/roteiros.ts` (roteiro `confirmar-sugestao`) e o
   "Quando usar" dele (cita Divergência de valor).
@@ -552,6 +556,23 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   lançamentos e das baixas; mostrar à parte o que ficou sem categoria.
 - **Cuidados:** baixa de título sem categoria e lançamento avulso sem
   categoria somem da base; avisar quanto ficou de fora.
+
+### 64. Lista da Tesouraria sem paginação, com opções de edição em cada linha
+
+- **Problema:** a lista da Tesouraria carrega todos os lançamentos da filial e,
+  desde 2026-11-26, cada linha editável leva para o navegador as listas de
+  contas, categorias e dimensões do diálogo de edição (`opcoesDe`).
+- **Exemplo:** filial com milhares de lançamentos: o HTML da página repete as
+  mesmas listas em cada linha e a página fica pesada.
+- **Onde:** `src/app/(dashboard)/financeiro/tesouraria/page.tsx` (`opcoesDe`).
+- **Impacto:** lentidão ao abrir a Tesouraria e consumo de memória no
+  navegador, crescendo com o número de lançamentos.
+- **Caminhos:** paginar ou filtrar a lista por período; mandar as listas uma
+  vez só e, por linha, apenas o cadastro inativo que faltar.
+- **Cuidados:** saldo e totais da tela dependem da lista completa; ao paginar,
+  calcular no servidor. A linha editada precisa seguir mostrando o cadastro
+  inativo que ela já usa.
+- **Ao corrigir:** conferir se a ajuda da Tesouraria cita a lista inteira.
 
 ## Controladoria — lacunas achadas ao escrever a ajuda contextual
 

@@ -327,7 +327,7 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Corrija o que estiver errado",
         explicacao:
           "Num lançamento ainda não conciliado, todos os campos podem mudar: conta, tipo, valor, data, " +
-          "descrição, classificação, categoria e as dimensões. Num conciliado, veja o selo adiante.",
+          "descrição, classificação, categoria, as dimensões e o comprovante. Num conciliado, veja o selo adiante.",
         preenche: { "editar.valor": DIARIAS.valorCerto },
       },
       {

@@ -100,7 +100,7 @@ export default async function TesourariaPage({
           <div className="flex flex-wrap gap-2">
             <LancamentoDialogForm
               contasBancarias={opcoesContasBancarias}
-              categorias={categorias}
+              categorias={categorias.filter((c) => c.ativo)}
               centrosCusto={centrosCusto.filter((c) => c.ativo)}
               centrosLucro={centrosLucro.filter((c) => c.ativo)}
               safras={safras.filter((s) => s.ativo)}

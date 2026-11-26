@@ -224,5 +224,8 @@ auditoria).
 - **Lançamentos de origem `BAIXA`:** feito (item 3, estorno de baixa).
 - **Status "excluído" visível na lista:** descartado (decisão 3). A
   auditoria guarda o registro e o motivo.
+- **Lista da Tesouraria sem paginação e opções por linha:** backlog (item 64).
+- **Corrida entre edição e conciliação 1:1/automática:** backlog (item 8,
+  Cuidados).
 
 Backlog: o item 6 sai de `docs/backlog.md` nesta branch.
