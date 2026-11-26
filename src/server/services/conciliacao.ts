@@ -35,6 +35,12 @@ function dentroDaJanela(dataCandidato: Date, dataLinha: Date, dias: number): boo
   return Math.abs(dataCandidato.getTime() - dataLinha.getTime()) <= dias * UM_DIA_MS;
 }
 
+/** Dias entre duas datas, comparando só o dia (UTC): a linha do OFX vem com hora, o lançamento não. */
+function diasEntre(a: Date, b: Date): number {
+  const dia = (d: Date) => Date.parse(d.toISOString().slice(0, 10));
+  return Math.round(Math.abs(dia(a) - dia(b)) / UM_DIA_MS);
+}
+
 function janelaDeBusca(data: Date): { gte: Date; lte: Date } {
   return {
     gte: new Date(data.getTime() - JANELA_BUSCA_DIAS * UM_DIA_MS),
@@ -356,7 +362,13 @@ export async function buscarCandidatosDaLinha(sessao: SessaoAtiva, linhaExtratoI
   if (!linha) {
     throw new Error("Linha de extrato não pertence à filial ativa");
   }
-  return buscarCandidatosLancamento(linha.contaBancariaId, linha.tipo, linha.data);
+  const candidatos = await buscarCandidatosLancamento(linha.contaBancariaId, linha.tipo, linha.data);
+  // O Confirmar (1:1) só aceita valor igual; os outros servem para o aviso da tela.
+  return candidatos.map((c) => ({
+    ...c,
+    valorIgual: c.valor.equals(linha.valor),
+    diasDeDiferenca: diasEntre(c.data, linha.data),
+  }));
 }
 
 export async function confirmarConciliacaoManual(
@@ -382,6 +394,17 @@ export async function confirmarConciliacaoManual(
   });
   if (!lancamento) {
     throw new Error("Lançamento não encontrado, de outra conta bancária, ou já conciliado");
+  }
+  const sentido = (tipo: TipoLancamento) => (tipo === "ENTRADA" ? "uma entrada" : "uma saída");
+  if (lancamento.tipo !== linha.tipo) {
+    throw new Error(`O lançamento é ${sentido(lancamento.tipo)} e a linha do extrato é ${sentido(linha.tipo)}.`);
+  }
+  if (!lancamento.valor.equals(linha.valor)) {
+    throw new Error(
+      `O lançamento tem valor diferente da linha (${formatarMoeda(lancamento.valor)} no lançamento, ` +
+        `${formatarMoeda(linha.valor)} no extrato). Se foi digitado errado, corrija na Tesouraria; ` +
+        "se a diferença é real, use Conciliar em grupo com “Lançar a diferença”.",
+    );
   }
 
   const grupoConciliacaoId = await prisma.$transaction((tx) =>

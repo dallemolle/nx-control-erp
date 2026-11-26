@@ -1165,4 +1165,38 @@ describe("soma conferida dentro da transação", () => {
     expect(linhaDepois.grupoConciliacaoId).toBeNull();
     expect((await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lanc.id } })).conciliado).toBe(false);
   });
+
+  test("1:1 com valor diferente é recusado e nada é gravado", async () => {
+    const { linhas: [linha] } = await importar([{ fitid: "VAL-1", data: "20261007", valor: "-990.00", nome: "BOLETO" }]);
+    const lanc = await lancamento(1000, "SAIDA", "Boleto", "2026-10-07");
+    await expect(confirmarConciliacaoManual(fixture.sessao, linha.id, lanc.id)).rejects.toThrow(
+      /tem valor diferente da linha .* Se foi digitado errado, corrija na Tesouraria; se a diferença é real, use Conciliar em grupo com “Lançar a diferença”\./,
+    );
+    expect((await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } })).grupoConciliacaoId).toBeNull();
+  });
+
+  test("1:1 com sentido diferente é recusado", async () => {
+    const { linhas: [linha] } = await importar([{ fitid: "SEN-1", data: "20261008", valor: "-200.00", nome: "PIX" }]);
+    const lanc = await lancamento(200, "ENTRADA", "Recebimento", "2026-10-08");
+    await expect(confirmarConciliacaoManual(fixture.sessao, linha.id, lanc.id)).rejects.toThrow(
+      "O lançamento é uma entrada e a linha do extrato é uma saída.",
+    );
+  });
+
+  test("1:1 com valor igual e data a mais de 3 dias (Divergência de data) passa", async () => {
+    const { linhas: [linha] } = await importar([{ fitid: "DAT-1", data: "20261009", valor: "-75.00", nome: "TARIFA" }]);
+    const lanc = await lancamento(75, "SAIDA", "Tarifa atrasada", "2026-10-19");
+    await confirmarConciliacaoManual(fixture.sessao, linha.id, lanc.id);
+    expect(await lancamentosDoGrupoDaLinha(linha.id)).toEqual([lanc.id]);
+  });
+
+  test("candidatos da linha vêm com valorIgual e diasDeDiferenca", async () => {
+    const { linhas: [linha] } = await importar([{ fitid: "CAN-1", data: "20261012", valor: "-500.00", nome: "BOLETO" }]);
+    const igual = await lancamento(500, "SAIDA", "Boleto certo", "2026-10-14");
+    const diferente = await lancamento(550, "SAIDA", "Boleto errado", "2026-10-12");
+    const candidatos = await buscarCandidatosDaLinha(fixture.sessao, linha.id);
+    const porId = new Map(candidatos.map((c) => [c.id, c]));
+    expect(porId.get(igual.id)).toMatchObject({ valorIgual: true, diasDeDiferenca: 2 });
+    expect(porId.get(diferente.id)).toMatchObject({ valorIgual: false, diasDeDiferenca: 0 });
+  });
 });
