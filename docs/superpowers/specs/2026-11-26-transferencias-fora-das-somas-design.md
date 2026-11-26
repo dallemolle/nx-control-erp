@@ -1,6 +1,6 @@
 # Transferências entre contas fora das entradas e saídas
 
-Data: 2026-11-26 · Status: aprovada
+Data: 2026-11-26 · Status: implementada (2026-11-26)
 
 Item 10 do [backlog](../../backlog.md), seção "Financeiro — lacunas achadas ao
 escrever a ajuda contextual" ("Transferências entre contas inflam entradas e
