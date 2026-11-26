@@ -297,4 +297,33 @@ describe("buscarAnoBaseConsolidado / listarProjecaoEstrategica com classificaç�
     });
     expect((await buscarAnoBaseConsolidado(fixture.empresaId, { classificacao: "GERENCIAL" })).saldoCaixaBase).toBe(0);
   });
+
+  test("data futura: transferência do Caixa não muda o saldo de partida e lançamento no Caixa entra", async () => {
+    const futura = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
+    const lancamento = (tipo: "ENTRADA" | "SAIDA", valor: number, conciliado: boolean, descricao: string) =>
+      prisma.lancamentoBancario.create({
+        data: {
+          filialId: fixture.filialId,
+          contaBancariaId: fixture.contaBancariaId,
+          data: futura,
+          tipo,
+          valor,
+          descricao,
+          origem: "MANUAL",
+          usuarioId: fixture.usuarioId,
+          conciliado,
+          classificacaoFiscal: "GERENCIAL",
+        },
+      });
+    const antes = await buscarAnoBaseConsolidado(fixture.empresaId);
+    await lancamento("SAIDA", 2000, true, "Transferência futura — lado do Caixa");
+    await lancamento("ENTRADA", 2000, false, "Transferência futura — lado do banco");
+    expect((await buscarAnoBaseConsolidado(fixture.empresaId)).saldoCaixaBase).toBeCloseTo(antes.saldoCaixaBase, 2);
+
+    await lancamento("SAIDA", 300, true, "Despesa futura no Caixa");
+    const depois = await buscarAnoBaseConsolidado(fixture.empresaId);
+    expect(depois.saldoCaixaBase - antes.saldoCaixaBase).toBeCloseTo(-300, 2);
+    // O ano-base (realizado) continua com o corte em hoje.
+    expect(depois.custoBase).toBe(antes.custoBase);
+  });
 });

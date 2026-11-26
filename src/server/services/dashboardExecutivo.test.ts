@@ -371,6 +371,34 @@ describe("buscarIndicadoresExecutivos (integração)", () => {
     expect(depois.geracaoDeCaixaMesAtual).toBeCloseTo(antes.geracaoDeCaixaMesAtual, 2);
   });
 
+  test("data futura: transferência do Caixa não muda o caixa disponível e lançamento no Caixa entra", async () => {
+    const futura = new Date(hoje.getTime() + 15 * 24 * 60 * 60 * 1000);
+    const lancamento = (tipo: "ENTRADA" | "SAIDA", valor: number, conciliado: boolean, descricao: string) =>
+      prisma.lancamentoBancario.create({
+        data: {
+          filialId: fixture.filialId,
+          contaBancariaId: fixture.contaBancariaId,
+          data: futura,
+          tipo,
+          valor,
+          descricao,
+          origem: "MANUAL",
+          usuarioId: fixture.usuarioId,
+          conciliado,
+        },
+      });
+    const antes = await buscarIndicadoresExecutivos(sessaoGestor);
+    await lancamento("SAIDA", 2000, true, "Transferência futura — lado do Caixa");
+    await lancamento("ENTRADA", 2000, false, "Transferência futura — lado do banco");
+    const comTransferencia = await buscarIndicadoresExecutivos(sessaoGestor);
+    expect(comTransferencia.caixaDisponivel).toBeCloseTo(antes.caixaDisponivel, 2);
+    expect(comTransferencia.saldoProjetado30Dias).toBeCloseTo(antes.saldoProjetado30Dias, 2);
+
+    await lancamento("SAIDA", 300, true, "Despesa futura no Caixa");
+    const comDespesa = await buscarIndicadoresExecutivos(sessaoGestor);
+    expect(comDespesa.caixaDisponivel - antes.caixaDisponivel).toBeCloseTo(-300, 2);
+  });
+
   test("baixa aprovada e não conciliada: sai das obrigações, entra no aguardando e o saldo projetado não muda", async () => {
     const titulo = await criarTitulo(fixture.sessaoAdmin, "PAGAR", {
       contraparteId: fixture.fornecedorId,

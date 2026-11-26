@@ -5,7 +5,7 @@ import { registrarAuditoria, type ClientePrisma } from "@/server/audit/registrar
 import type { TipoCenarioEstrategico } from "@prisma/client";
 import {
   buscarAguardandoConciliacaoDasFiliais,
-  buscarSaldoEmCaixaAteDasFiliais,
+  buscarSaldoConciliadoDasFiliais,
   saldoComAguardando,
   SEM_TRANSFERENCIA,
 } from "./fluxoDeCaixa";
@@ -119,7 +119,7 @@ export async function buscarAnoBaseConsolidado(
     opcoes.classificacao
       ? Promise.resolve(0)
       : Promise.all([
-          buscarSaldoEmCaixaAteDasFiliais(filialIds, hoje),
+          buscarSaldoConciliadoDasFiliais(filialIds),
           buscarAguardandoConciliacaoDasFiliais(filialIds),
         ]).then(([conciliado, aguardando]) => saldoComAguardando(conciliado, aguardando)),
     prisma.lancamentoBancario.groupBy({

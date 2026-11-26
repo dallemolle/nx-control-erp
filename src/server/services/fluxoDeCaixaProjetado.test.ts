@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { prisma } from "@/server/db/client";
 import type { TipoTitulo } from "@prisma/client";
-import { buscarSaldoEmCaixaAte, calcularJanela } from "./fluxoDeCaixa";
+import { buscarSaldoConciliado, calcularJanela } from "./fluxoDeCaixa";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
 import { criarTitulo } from "./titulo";
 import { registrarBaixa, aprovarBaixa } from "./baixa";
@@ -541,7 +541,7 @@ describe("buscarParcelasEmAbertoNoPeriodo / listarFluxoDeCaixaProjetado (integra
     }
   });
 
-  test("Aguardando conciliação parte do saldo conciliado de hoje, e Em atraso e os meses encadeiam a partir dela", async () => {
+  test("Aguardando conciliação parte do saldo conciliado, e Em atraso e os meses encadeiam a partir dela", async () => {
     await prisma.lancamentoBancario.create({
       data: {
         filialId: fixture.filialId,
@@ -559,7 +559,7 @@ describe("buscarParcelasEmAbertoNoPeriodo / listarFluxoDeCaixaProjetado (integra
     const agora = new Date();
     const [{ aguardandoConciliacao, emAtraso, periodos }, saldoDireto] = await Promise.all([
       listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", agora),
-      buscarSaldoEmCaixaAte(fixture.filialId, agora),
+      buscarSaldoConciliado(fixture.filialId),
     ]);
 
     expect(saldoDireto).toBeGreaterThanOrEqual(5000);
@@ -588,6 +588,37 @@ describe("buscarParcelasEmAbertoNoPeriodo / listarFluxoDeCaixaProjetado (integra
 
     expect(depois.aguardandoConciliacao!.saidasProjetadas - antes.aguardandoConciliacao!.saidasProjetadas).toBeCloseTo(1012, 2);
     expect(depois.periodos.at(-1)!.saldoFinal).toBeCloseTo(antes.periodos.at(-1)!.saldoFinal, 2);
+  });
+
+  test("data futura: transferência do Caixa não muda a projeção e lançamento no Caixa entra", async () => {
+    const agora = new Date();
+    const futura = new Date(Date.UTC(agora.getUTCFullYear(), agora.getUTCMonth(), agora.getUTCDate() + 15));
+    const lancamento = (tipo: "ENTRADA" | "SAIDA", valor: number, conciliado: boolean, descricao: string) =>
+      prisma.lancamentoBancario.create({
+        data: {
+          filialId: fixture.filialId,
+          contaBancariaId: fixture.contaBancariaId,
+          data: futura,
+          tipo,
+          valor,
+          descricao,
+          origem: "MANUAL",
+          usuarioId: fixture.usuarioId,
+          conciliado,
+        },
+      });
+    const antes = await listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", agora);
+
+    // Transferência Caixa → banco: o lado do Caixa nasce conciliado, o do banco não.
+    await lancamento("SAIDA", 2000, true, "Transferência futura — lado do Caixa");
+    await lancamento("ENTRADA", 2000, false, "Transferência futura — lado do banco");
+    const comTransferencia = await listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", agora);
+    expect(comTransferencia.periodos.at(-1)!.saldoFinal).toBeCloseTo(antes.periodos.at(-1)!.saldoFinal, 2);
+
+    // Lançamento manual no Caixa com data futura (nasce conciliado).
+    await lancamento("SAIDA", 300, true, "Despesa futura no Caixa");
+    const comDespesa = await listarFluxoDeCaixaProjetado(fixture.sessao, "MOVEL", agora);
+    expect(comDespesa.periodos.at(-1)!.saldoFinal - antes.periodos.at(-1)!.saldoFinal).toBeCloseTo(-300, 2);
   });
 
   test("visão filtrada não tem a linha Aguardando conciliação", async () => {

@@ -130,6 +130,23 @@ export async function buscarSaldoEmCaixaAte(filialId: string, data: Date): Promi
 
 /** Saldo somado de várias filiais (consolidação por empresa) em 2 queries, sem loop por filial. */
 export async function buscarSaldoEmCaixaAteDasFiliais(filialIds: string[], data: Date): Promise<number> {
+  return somarSaldoConciliado(filialIds, data);
+}
+
+/**
+ * Saldo conciliado sem corte de data, para as projeções: somado ao que aguarda conciliação (também sem corte), dá o
+ * saldo contábil da Tesouraria. Com corte só de um lado, uma transferência Caixa → banco com data futura (o lado do
+ * Caixa nasce conciliado, o do banco não) contaria só a entrada até a data chegar.
+ */
+export async function buscarSaldoConciliadoDasFiliais(filialIds: string[]): Promise<number> {
+  return somarSaldoConciliado(filialIds);
+}
+
+export async function buscarSaldoConciliado(filialId: string): Promise<number> {
+  return somarSaldoConciliado([filialId]);
+}
+
+async function somarSaldoConciliado(filialIds: string[], ate?: Date): Promise<number> {
   const filtroFilial = { filialId: { in: filialIds } };
 
   // "-1ms antes do início da janela" (ver chamador) só é exato porque
@@ -139,7 +156,12 @@ export async function buscarSaldoEmCaixaAteDasFiliais(filialIds: string[], data:
     prisma.contaBancaria.aggregate({ where: { ...filtroFilial, ativo: true }, _sum: { saldoInicial: true } }),
     prisma.lancamentoBancario.groupBy({
       by: ["tipo"],
-      where: { ...filtroFilial, conciliado: true, data: { lte: data }, contaBancaria: { ativo: true } },
+      where: {
+        ...filtroFilial,
+        conciliado: true,
+        ...(ate ? { data: { lte: ate } } : {}),
+        contaBancaria: { ativo: true },
+      },
       _sum: { valor: true },
     }),
   ]);

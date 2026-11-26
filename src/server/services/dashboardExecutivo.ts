@@ -5,6 +5,7 @@ import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { StatusParcela } from "@prisma/client";
 import {
   buscarAguardandoConciliacaoDasFiliais,
+  buscarSaldoConciliadoDasFiliais,
   buscarSaldoEmCaixaAteDasFiliais,
   ehTransferencia,
   fimDoDiaUTC,
@@ -176,7 +177,7 @@ export async function buscarIndicadoresExecutivos(sessao: SessaoAtiva): Promise<
   const { hoje, fimDeHoje, inicioMesAtual } = diaDeHoje();
 
   const [caixaConciliado, aguardandoConciliacao, parcelasEmAberto, somasMes] = await Promise.all([
-    buscarSaldoEmCaixaAteDasFiliais(filialIds, fimDeHoje),
+    buscarSaldoConciliadoDasFiliais(filialIds),
     buscarAguardandoConciliacaoDasFiliais(filialIds),
     buscarParcelasEmAbertoDasFiliais(filialIds),
     somasConciliadasNoPeriodo(filialIds, inicioMesAtual, fimDeHoje),

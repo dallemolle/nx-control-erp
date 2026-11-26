@@ -49,7 +49,7 @@ export function CenaPainel({ valores }: PropsCena) {
       <div>
         <p className="text-lg font-semibold">Fluxo de caixa projetado</p>
         <p className="text-sm text-muted-foreground">
-          Projeção calculada a partir do saldo em caixa conciliado de hoje e dos títulos a pagar/receber em aberto. A
+          Projeção calculada a partir do saldo em caixa conciliado e dos títulos a pagar/receber em aberto. A
           linha &quot;Aguardando conciliação&quot; soma o que já foi lançado (baixas aprovadas, lançamentos manuais,
           transferências) e o extrato ainda não confirmou, e termina no saldo contábil da Tesouraria. Parcelas em
           aberto vencidas antes do período (ou antes de hoje, num período futuro) entram na linha &quot;Em

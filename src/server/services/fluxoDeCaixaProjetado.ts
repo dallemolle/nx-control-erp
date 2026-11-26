@@ -3,7 +3,7 @@ import { valoresDaBaixa } from "@/server/services/parcela";
 import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { TipoTitulo } from "@prisma/client";
-import { buscarAguardandoConciliacao, buscarSaldoEmCaixaAte, calcularJanela, fimDoDiaUTC, type AguardandoConciliacao, type SubPeriodo } from "./fluxoDeCaixa";
+import { buscarAguardandoConciliacao, buscarSaldoConciliado, calcularJanela, fimDoDiaUTC, type AguardandoConciliacao, type SubPeriodo } from "./fluxoDeCaixa";
 import { totalAbatido, type ValoresDaBaixa } from "@/lib/financeiro/valorAbatido";
 import { whereTituloPorClassificacao, type FiltroClassificacao } from "./classificacaoFiscal";
 
@@ -230,7 +230,7 @@ export async function listarFluxoDeCaixaProjetado(
   const janelaFutura = inicioDaJanela > inicioDeHoje;
 
   const [saldoInicialAbsoluto, aguardandoConciliacao, parcelas, atrasadas, aVencerAntes] = await Promise.all([
-    opcoes.classificacao ? Promise.resolve(0) : buscarSaldoEmCaixaAte(sessao.filialId, agora),
+    opcoes.classificacao ? Promise.resolve(0) : buscarSaldoConciliado(sessao.filialId),
     opcoes.classificacao ? Promise.resolve(undefined) : buscarAguardandoConciliacao(sessao.filialId),
     buscarParcelasEmAbertoNoPeriodo(sessao.filialId, inicioDaJanela, fimDaJanela, opcoes.classificacao),
     buscarParcelasEmAbertoVencidasAntes(sessao.filialId, corte, opcoes.classificacao),

@@ -27,10 +27,11 @@ export const ROTEIROS: readonly Roteiro[] = [
       {
         cena: "painel",
         alvo: "col.saldoInicial",
-        instrucao: "O ponto de partida é o saldo conciliado de hoje",
+        instrucao: "O ponto de partida é o saldo conciliado",
         explicacao:
-          "O saldo inicial da primeira linha é o saldo em caixa de hoje que o extrato já confirmou, somando todas " +
-          "as contas ativas da filial (o mesmo do Fluxo de caixa).",
+          "O saldo inicial da primeira linha é o saldo em caixa que o extrato já confirmou, somando todas as " +
+          "contas ativas da filial. A conta Caixa não tem extrato: nela entra tudo o que foi lançado, também com " +
+          "data futura.",
       },
       {
         cena: "painel",
