@@ -39,7 +39,10 @@ export const POR_CENTRO_DE_CUSTO: readonly LinhaExemplo[] = [
   linha("nao-classificado", "Não classificado", [23500, 0, 4000, 0]),
 ];
 
-/** Visão Fiscal: saem o recibo gerencial e a venda gerencial (o saque, transferência, não entra em nenhuma visão). */
+/**
+ * Visão Fiscal: saem o recibo gerencial e a venda gerencial (o saque, transferência, não entra em nenhuma
+ * visão).
+ */
 export const POR_CENTRO_DE_CUSTO_FISCAL: readonly LinhaExemplo[] = [
   linha("administracao", "Administração", [0, 45.9, 0, 580]),
   linha("lavoura", "Lavoura", [0, 800, 0, 1000]),

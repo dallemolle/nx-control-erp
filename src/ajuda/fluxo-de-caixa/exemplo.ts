@@ -30,15 +30,15 @@ export const POR_MES_FISCAL: readonly Movimento[] = POR_MES.map((m, i) => ({
 
 /**
  * Novembro de 2026 por semana, batendo com o mês: a semana de 26/10 só tem movimento de outubro, e as de
- * novembro somam as entradas e saídas de novembro (sem o saque de R$ 2.000 do banco para o Caixa, que é
- * transferência e fica fora das duas colunas).
+ * novembro somam as entradas e saídas de novembro (sem o saque de R$ 2.000 do banco para o Caixa, dia 18, na
+ * semana de 16/11: é transferência e fica fora das duas colunas).
  */
 export const SALDO_ANTES_DAS_SEMANAS = 49_250;
 export const POR_SEMANA: readonly Movimento[] = [
   { periodo: "Semana de 26/10/2026 a 01/11/2026", entradas: 4_100, saidas: 3_250 },
-  { periodo: "Semana de 02/11/2026 a 08/11/2026", entradas: 7_300, saidas: 8_100 },
+  { periodo: "Semana de 02/11/2026 a 08/11/2026", entradas: 9_300, saidas: 10_100 },
   { periodo: "Semana de 09/11/2026 a 15/11/2026", entradas: 3_900, saidas: 4_800 },
-  { periodo: "Semana de 16/11/2026 a 22/11/2026", entradas: 6_200, saidas: 5_738 },
+  { periodo: "Semana de 16/11/2026 a 22/11/2026", entradas: 4_200, saidas: 3_738 },
   { periodo: "Semana de 23/11/2026 a 29/11/2026", entradas: 0, saidas: 0 },
   { periodo: "Semana de 30/11/2026 a 06/12/2026", entradas: 0, saidas: 0 },
 ];

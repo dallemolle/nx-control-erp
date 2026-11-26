@@ -43,7 +43,12 @@ export const ROTEIROS: readonly Roteiro[] = [
         explicacao:
           "Soma dos lançamentos conciliados com data dentro do período: recebimentos, pagamentos e lançamentos " +
           "avulsos. Transferências entre contas da filial não entram: ficam na coluna Transferências.",
-        dica:
+      },
+      {
+        cena: "painel",
+        alvo: "col.transferencias",
+        instrucao: "Transferências: o dinheiro que só trocou de conta",
+        explicacao:
           "A coluna Transferências mostra o líquido das transferências do período e quase sempre fica em R$ 0,00 " +
           "(o saque de R$ 2.000 do banco para o Caixa sai de uma conta e entra na outra). Ela só fica diferente " +
           "de zero quando uma das pernas ainda não foi conciliada: o saldo final conta essa diferença até o " +
@@ -62,7 +67,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "col.saldoFinal",
         instrucao: "Saldo final: quanto sobrou no fim do período",
         explicacao:
-          "Saldo inicial mais a geração líquida e as transferências. Os meses que ainda não chegaram repetem o último saldo.",
+          "Saldo inicial mais a geração líquida e as transferências. Os meses que ainda não chegaram repetem o " +
+          "último saldo.",
       },
     ],
     eDepois: {

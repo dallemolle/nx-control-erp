@@ -91,7 +91,7 @@ export function CenaPainel({ valores }: PropsCena) {
               <Cabecalho alvo="col.saldoInicial">{`${rotuloSaldo} inicial`}</Cabecalho>
               <Cabecalho alvo="col.entradas">Entradas</Cabecalho>
               <TableHead>Saídas</TableHead>
-              <TableHead>Transferências</TableHead>
+              <Cabecalho alvo="col.transferencias">Transferências</Cabecalho>
               <Cabecalho alvo="col.geracao">Geração líquida</Cabecalho>
               <Cabecalho alvo="col.saldoFinal">{`${rotuloSaldo} final`}</Cabecalho>
             </TableRow>
