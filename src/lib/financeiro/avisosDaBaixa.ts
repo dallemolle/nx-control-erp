@@ -8,6 +8,7 @@ export const DIAS_LIMITE_DATA_ANTIGA = 30;
 const UM_DIA_MS = 24 * 60 * 60 * 1000;
 
 export type TipoAvisoBaixa =
+  | "PARCELA_FECHADA"
   | "DATA_FUTURA"
   | "DATA_ANTIGA"
   | "PARCELA_PAGA"
@@ -36,16 +37,24 @@ export type DadosAvisoBaixa = {
   outrasPendentes: number;
   /** Hoje como data de calendário (`hojeDeCalendario()`). */
   hoje: Date;
+  /** Status gravado da parcela. Cancelada ou renegociada: a aprovação é recusada e o aviso manda rejeitar. */
+  statusParcela?: string;
 };
 
 const centavos = (valor: number) => Math.round(valor * 100);
 
 /**
- * O que merece atenção de quem aprova a baixa. Só informa: a aprovação não é bloqueada.
- * Ordem: data, valor, outra baixa pendente.
+ * O que merece atenção de quem aprova a baixa.
+ * Ordem: parcela fechada, data, valor, outra baixa pendente. Só informa, exceto parcela fechada: essa a aprovação recusa.
  */
 export function avisosDaBaixa(dados: DadosAvisoBaixa): AvisoBaixa[] {
   const avisos: AvisoBaixa[] = [];
+
+  const fechada =
+    dados.statusParcela === "CANCELADO" ? "cancelada" : dados.statusParcela === "RENEGOCIADO" ? "renegociada" : null;
+  if (fechada) {
+    avisos.push({ tipo: "PARCELA_FECHADA", texto: `Parcela ${fechada}: rejeite esta baixa` });
+  }
 
   // A API aceita data com hora: vale o dia de calendário UTC.
   const d = dados.data;
@@ -62,7 +71,9 @@ export function avisosDaBaixa(dados: DadosAvisoBaixa): AvisoBaixa[] {
   const saldo = centavos(dados.valorParcela) - centavos(dados.totalAprovado);
   const esperado = saldo + centavos(dados.valorJuros) + centavos(dados.valorMulta) - centavos(dados.valorDesconto);
   const pago = centavos(dados.valorPago);
-  if (saldo <= 0) {
+  if (fechada) {
+    // Avisos de valor não fazem sentido: a baixa deve ser rejeitada.
+  } else if (saldo <= 0) {
     avisos.push({ tipo: "PARCELA_PAGA", texto: "A parcela já está paga" });
   } else if (pago < esperado) {
     const sentido = dados.tipoTitulo === "PAGAR" ? "Pagamento" : "Recebimento";

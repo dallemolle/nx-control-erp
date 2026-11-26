@@ -88,7 +88,7 @@ export const ROTEIROS: readonly Roteiro[] = [
     titulo: "Quando a baixa tem um aviso",
     quandoUsar:
       "Quando aparece um triângulo amarelo com um aviso embaixo do título da baixa. O aviso aponta o que costuma " +
-      "ser erro de digitação, no valor ou na data, mas não impede a aprovação: quem decide é você.",
+      "ser erro de digitação, no valor ou na data, e, com uma exceção, não impede a aprovação: quem decide é você.",
     quemPode: QUEM_APROVA,
     passos: [
       {
@@ -119,7 +119,9 @@ export const ROTEIROS: readonly Roteiro[] = [
         dica:
           "Pagamento parcial pode estar certo, quando foi combinado pagar em partes. “A parcela já está paga” e " +
           "“Há outra baixa pendente nesta parcela” só aparecem em baixas registradas antes de o sistema impedir a " +
-          "segunda baixa na mesma parcela: confira se não é o mesmo pagamento lançado duas vezes.",
+          "segunda baixa na mesma parcela: confira se não é o mesmo pagamento lançado duas vezes. " +
+          "“Parcela cancelada: rejeite esta baixa” (ou renegociada) é o único aviso que impede a aprovação: a " +
+          "parcela foi fechada depois de a baixa ser registrada, então rejeite a baixa.",
       },
     ],
     eDepois: {

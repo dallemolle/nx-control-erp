@@ -115,6 +115,21 @@ describe("avisosDaBaixa", () => {
       "OUTRA_PENDENTE",
     ]);
   });
+
+  it.each([
+    ["CANCELADO", "Parcela cancelada: rejeite esta baixa"],
+    ["RENEGOCIADO", "Parcela renegociada: rejeite esta baixa"],
+  ])("parcela %s: aviso próprio, primeiro, sem os avisos de valor", (statusParcela, texto) => {
+    const avisos = avisosDaBaixa({ ...BASE, valorPago: 1, statusParcela });
+    expect(avisos[0]).toEqual({ tipo: "PARCELA_FECHADA", texto });
+    expect(avisos.map((a) => a.tipo)).not.toContain("PARCIAL");
+    expect(avisos.map((a) => a.tipo)).not.toContain("PARCELA_PAGA");
+    expect(avisos.map((a) => a.tipo)).not.toContain("ACIMA_DO_SALDO");
+  });
+
+  it("parcela em aberto não gera o aviso de parcela fechada", () => {
+    expect(tipos({ statusParcela: "VENCIDO" })).not.toContain("PARCELA_FECHADA");
+  });
 });
 
 describe("resumirBaixasDaParcela", () => {
