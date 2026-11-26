@@ -256,14 +256,16 @@ function LinhasDoExemplo({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exe
                             Baixar
                           </BotaoSimulado>
                         )}
-                        {parcela.status === "VENCIDO" && (
+                        {parcela.status === "VENCIDO" && !pendente && (
                           <BotaoSimulado alvo={`${p}.renegociar`} variant="outline" size="sm">
                             Renegociar
                           </BotaoSimulado>
                         )}
-                        <BotaoSimulado alvo={`${p}.cancelar`} variant="outline" size="sm">
-                          Cancelar
-                        </BotaoSimulado>
+                        {!pendente && (
+                          <BotaoSimulado alvo={`${p}.cancelar`} variant="outline" size="sm">
+                            Cancelar
+                          </BotaoSimulado>
+                        )}
                       </div>
                     )}
                   </TableCell>

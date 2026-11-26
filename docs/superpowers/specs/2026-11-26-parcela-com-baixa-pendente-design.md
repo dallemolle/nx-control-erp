@@ -1,6 +1,6 @@
 # Parcela com baixa pendente não é cancelada nem renegociada
 
-Data: 2026-11-26 · Status: aprovada
+Data: 2026-11-26 · Status: implementada (2026-11-26)
 
 Itens 59 e 60 do [backlog](../../backlog.md), seção "Financeiro — lacunas
 achadas ao escrever a ajuda contextual" ("Cancelar ou renegociar parcela com

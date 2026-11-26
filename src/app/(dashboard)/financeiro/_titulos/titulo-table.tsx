@@ -302,7 +302,7 @@ export function TituloTable({
                               Baixar
                             </Button>
                           ))}
-                        {podeEscrever && parcela.status === "VENCIDO" && (
+                        {podeEscrever && parcela.status === "VENCIDO" && !parcela.temBaixaPendente && (
                           <Button
                             type="button"
                             variant="outline"
@@ -312,7 +312,7 @@ export function TituloTable({
                             Renegociar
                           </Button>
                         )}
-                        {podeEscrever && !STATUS_TERMINAIS.includes(parcela.status) && (
+                        {podeEscrever && !STATUS_TERMINAIS.includes(parcela.status) && !parcela.temBaixaPendente && (
                           <form action={cancelarParcelaAction}>
                             <input type="hidden" name="parcelaId" value={parcela.id} />
                             <input type="hidden" name="tipo" value={tipo} />

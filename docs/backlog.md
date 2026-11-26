@@ -470,6 +470,12 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 
 ### 59. Cancelar ou renegociar parcela com baixa pendente
 
+- **Status:** feito na branch `fix/parcela-com-baixa-pendente` (2026-11-26, spec
+  e plano `2026-11-26-parcela-com-baixa-pendente*`): cancelar e renegociar
+  recusam parcela com baixa pendente (e somem da tela); renegociar só parcela
+  em aberto; aprovar baixa de parcela cancelada/renegociada é recusado, com
+  aviso em Aprovações.
+
 - **Problema:** cancelar a parcela e renegociar não olham as baixas pendentes
   dela.
 - **Onde:** `cancelarParcela` em `src/server/services/titulo.ts`;
@@ -489,6 +495,9 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   mudar o que o usuário vê.
 
 ### 60. Repasse de cartão trava parcelas sem ordem
+
+- **Status:** feito na branch `fix/parcela-com-baixa-pendente` (2026-11-26):
+  `ORDER BY id` no `FOR UPDATE`.
 
 - **Problema:** `confirmarRepasses` (`src/server/services/repasseCartao.ts`,
   ~linha 111) faz `SELECT id FROM parcelas WHERE id IN (...) FOR UPDATE` sem
