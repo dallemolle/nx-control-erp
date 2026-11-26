@@ -137,8 +137,9 @@ export const ROTEIROS: readonly Roteiro[] = [
           "dias de diferença, que ainda não foram conciliados. No exemplo, o saque de R$ 2.000,00 é a " +
           "transferência para o caixa.",
         dica:
-          "Se só existe lançamento com valor diferente, a caixa não aparece e a linha mostra um aviso com o " +
-          "lançamento encontrado. Se ele foi digitado errado, corrija o valor na Tesouraria e volte para " +
+          "Se só existe lançamento com valor diferente, a caixa não aparece; quando ele tem data até 3 dias da " +
+          "linha, a linha mostra um aviso com o lançamento encontrado. Se ele foi digitado errado, corrija o " +
+          "valor na Tesouraria (lançamento de baixa: estorne a baixa e registre de novo) e volte para " +
           "confirmar; se a diferença é real (uma tarifa, juros), use Conciliar em grupo com “Lançar a diferença”.",
         preenche: { "l4.selecionar": CANDIDATO_SAQUE },
       },

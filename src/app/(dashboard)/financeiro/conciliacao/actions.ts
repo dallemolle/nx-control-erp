@@ -97,6 +97,8 @@ export async function buscarCandidatosAction(linhaExtratoId: string) {
     conciliado: c.conciliado,
     valorIgual: c.valorIgual,
     diasDeDiferenca: c.diasDeDiferenca,
+    dentroDaTolerancia: c.dentroDaTolerancia,
+    origem: c.origem,
   }));
 }
 

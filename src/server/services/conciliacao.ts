@@ -180,7 +180,7 @@ async function buscarCandidatosLancamento(contaBancariaId: string, tipo: TipoLan
 
 class ItemJaConciliadoError extends Error {
   constructor() {
-    super("Algum item foi conciliado por outra pessoa; recarregue a tela");
+    super("Algum item foi conciliado, alterado ou excluído por outra pessoa; recarregue a tela");
   }
 }
 
@@ -364,11 +364,15 @@ export async function buscarCandidatosDaLinha(sessao: SessaoAtiva, linhaExtratoI
   }
   const candidatos = await buscarCandidatosLancamento(linha.contaBancariaId, linha.tipo, linha.data);
   // O Confirmar (1:1) só aceita valor igual; os outros servem para o aviso da tela.
-  return candidatos.map((c) => ({
-    ...c,
-    valorIgual: c.valor.equals(linha.valor),
-    diasDeDiferenca: diasEntre(c.data, linha.data),
-  }));
+  return candidatos.map((c) => {
+    const diasDeDiferenca = diasEntre(c.data, linha.data);
+    return {
+      ...c,
+      valorIgual: c.valor.equals(linha.valor),
+      diasDeDiferenca,
+      dentroDaTolerancia: diasDeDiferenca <= JANELA_TOLERANCIA_DIAS,
+    };
+  });
 }
 
 export async function confirmarConciliacaoManual(
@@ -400,10 +404,15 @@ export async function confirmarConciliacaoManual(
     throw new Error(`O lançamento é ${sentido(lancamento.tipo)} e a linha do extrato é ${sentido(linha.tipo)}.`);
   }
   if (!lancamento.valor.equals(linha.valor)) {
+    const caminho =
+      lancamento.origem === "BAIXA"
+        ? "Se a baixa foi registrada com o valor errado, estorne a baixa em Contas a pagar ou a receber e " +
+          "registre de novo; se a diferença é real, use Conciliar em grupo com “Lançar a diferença”."
+        : "Se foi digitado errado, corrija na Tesouraria; " +
+          "se a diferença é real, use Conciliar em grupo com “Lançar a diferença”.";
     throw new Error(
       `O lançamento tem valor diferente da linha (${formatarMoeda(lancamento.valor)} no lançamento, ` +
-        `${formatarMoeda(linha.valor)} no extrato). Se foi digitado errado, corrija na Tesouraria; ` +
-        "se a diferença é real, use Conciliar em grupo com “Lançar a diferença”.",
+        `${formatarMoeda(linha.valor)} no extrato). ${caminho}`,
     );
   }
 

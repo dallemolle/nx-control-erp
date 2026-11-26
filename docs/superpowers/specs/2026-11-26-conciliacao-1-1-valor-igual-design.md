@@ -90,8 +90,11 @@ aviso de Duplicado. Cada candidato ganha o campo `valorIgual: boolean`
 (`candidato.valor.equals(linha.valor)`), calculado no serviço, que já tem a
 linha em mãos. O serviço também devolve `diasDeDiferenca` (dias entre a data do
 candidato e a da linha, comparando só o dia), usado para o aviso mostrar o
-candidato de data mais próxima. `buscarCandidatosAction`
-(`src/app/(dashboard)/financeiro/conciliacao/actions.ts`) repassa o campo para a
+candidato de data mais próxima. Também devolve `dentroDaTolerancia`
+(`diasDeDiferenca <= JANELA_TOLERANCIA_DIAS`, 3 dias, o mesmo critério da
+Divergência de valor), porque a tela é client e não importa o serviço.
+`buscarCandidatosAction` (`src/app/(dashboard)/financeiro/conciliacao/actions.ts`)
+repassa `valorIgual`, `diasDeDiferenca`, `dentroDaTolerancia` e `origem` para a
 tela.
 
 ## Tela da Conciliação (`linha-extrato-actions.tsx`)
@@ -102,7 +105,15 @@ tela.
   "Há lançamento com valor diferente: <descrição> — <valor> em <data>. Se foi
   digitado errado, corrija na Tesouraria; se a diferença é real (tarifa,
   juros), use Conciliar em grupo com “Lançar a diferença”." Com mais de um,
-  mostra o de data mais próxima da linha e "e mais N".
+  mostra o de data mais próxima da linha e "e mais N". O aviso só considera
+  candidatos de valor diferente com data até 3 dias da linha
+  (`dentroDaTolerancia`, o mesmo critério da Divergência de valor); um
+  lançamento distante, sem relação com a linha, não gera aviso. Para
+  lançamento de baixa (`origem === "BAIXA"`, que a Tesouraria não deixa editar)
+  a frase muda: "Se a baixa foi registrada com o valor errado, estorne a baixa
+  em Contas a pagar ou a receber; se a diferença é real (tarifa, juros), use
+  Conciliar em grupo com “Lançar a diferença”." A mensagem de erro do serviço
+  segue a mesma regra.
 - "Conciliar em grupo" e "Criar lançamento" continuam como estão.
 
 ## Ajuda (`src/ajuda/conciliacao/`)

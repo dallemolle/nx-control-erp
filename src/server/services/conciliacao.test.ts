@@ -1175,6 +1175,26 @@ describe("soma conferida dentro da transação", () => {
     expect((await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } })).grupoConciliacaoId).toBeNull();
   });
 
+  test("1:1 com valor diferente em lançamento de baixa manda estornar a baixa", async () => {
+    const { linhas: [linha] } = await importar([{ fitid: "VAL-2", data: "20261007", valor: "-990.00", nome: "BOLETO" }]);
+    const lanc = await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: new Date("2026-10-07T00:00:00Z"),
+        tipo: "SAIDA",
+        valor: 1000,
+        descricao: "Baixa de boleto",
+        origem: "BAIXA",
+        usuarioId: fixture.usuarioId,
+      },
+    });
+    await expect(confirmarConciliacaoManual(fixture.sessao, linha.id, lanc.id)).rejects.toThrow(
+      /tem valor diferente da linha .* estorne a baixa em Contas a pagar ou a receber/,
+    );
+    expect((await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linha.id } })).grupoConciliacaoId).toBeNull();
+  });
+
   test("1:1 com sentido diferente é recusado", async () => {
     const { linhas: [linha] } = await importar([{ fitid: "SEN-1", data: "20261008", valor: "-200.00", nome: "PIX" }]);
     const lanc = await lancamento(200, "ENTRADA", "Recebimento", "2026-10-08");
@@ -1194,9 +1214,11 @@ describe("soma conferida dentro da transação", () => {
     const { linhas: [linha] } = await importar([{ fitid: "CAN-1", data: "20261012", valor: "-500.00", nome: "BOLETO" }]);
     const igual = await lancamento(500, "SAIDA", "Boleto certo", "2026-10-14");
     const diferente = await lancamento(550, "SAIDA", "Boleto errado", "2026-10-12");
+    const longe = await lancamento(520, "SAIDA", "Boleto distante", "2026-10-22");
     const candidatos = await buscarCandidatosDaLinha(fixture.sessao, linha.id);
     const porId = new Map(candidatos.map((c) => [c.id, c]));
-    expect(porId.get(igual.id)).toMatchObject({ valorIgual: true, diasDeDiferenca: 2 });
-    expect(porId.get(diferente.id)).toMatchObject({ valorIgual: false, diasDeDiferenca: 0 });
+    expect(porId.get(igual.id)).toMatchObject({ valorIgual: true, diasDeDiferenca: 2, dentroDaTolerancia: true });
+    expect(porId.get(diferente.id)).toMatchObject({ valorIgual: false, diasDeDiferenca: 0, dentroDaTolerancia: true });
+    expect(porId.get(longe.id)).toMatchObject({ valorIgual: false, diasDeDiferenca: 10, dentroDaTolerancia: false });
   });
 });
