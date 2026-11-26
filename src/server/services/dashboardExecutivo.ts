@@ -3,7 +3,13 @@ import { SELECT_VALORES_BAIXA, valoresDaBaixa } from "@/server/services/parcela"
 import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { StatusParcela } from "@prisma/client";
-import { buscarSaldoEmCaixaAteDasFiliais, fimDoDiaUTC } from "./fluxoDeCaixa";
+import {
+  buscarAguardandoConciliacaoDasFiliais,
+  buscarSaldoEmCaixaAteDasFiliais,
+  fimDoDiaUTC,
+  saldoComAguardando,
+  type AguardandoConciliacao,
+} from "./fluxoDeCaixa";
 import { saldoRemanescenteParcela } from "./fluxoDeCaixaProjetado";
 import { buscarPendenciasFiscaisDaFilial, percentualGerencial } from "./relatorioFiscalGerencial";
 import { idsDasFiliaisAtivas } from "./filiaisConsolidadas";
@@ -11,6 +17,7 @@ import { hojeDeCalendario } from "@/lib/producao/periodo";
 
 export type IndicadoresExecutivos = {
   caixaDisponivel: number;
+  aguardandoConciliacao: number;
   contasAPagarEmAberto: number;
   contasAReceberEmAberto: number;
   inadimplencia: number;
@@ -76,10 +83,15 @@ export type ParcelaParaIndicadores = { tipo: "PAGAR" | "RECEBER"; dataVencimento
  * Os cards do dashboard a partir do caixa, das parcelas em aberto e do movimento conciliado do mês. `hoje` é a data
  * de calendário (meia-noite UTC). Inadimplência = a receber com vencimento antes de hoje, pela data (o `status`
  * gravado só é recalculado quando alguém abre a lista de títulos, e a parcela vencida paga em parte também conta).
+ *
+ * Caixa disponível é o saldo contábil (conciliado + o que aguarda conciliação), como na Tesouraria. O saldo projetado
+ * em 30 dias é a mesma conta do Fluxo de caixa projetado: caixa disponível + atrasados (a receber − a pagar) + o que
+ * vence nos próximos 30 dias (a receber − a pagar).
  */
 export function calcularIndicadoresExecutivos(dados: {
   hoje: Date;
-  caixaDisponivel: number;
+  caixaConciliado: number;
+  aguardandoConciliacao: AguardandoConciliacao;
   parcelas: readonly ParcelaParaIndicadores[];
   entradasMes: number;
   saidasMes: number;
@@ -91,6 +103,7 @@ export function calcularIndicadoresExecutivos(dados: {
   let contasAPagarEmAberto = 0;
   let contasAReceberEmAberto = 0;
   let inadimplencia = 0;
+  let aPagarVencido = 0;
   let obrigacoes7Dias = 0;
   let obrigacoes30Dias = 0;
   let recebimentosEsperados30Dias = 0;
@@ -103,6 +116,7 @@ export function calcularIndicadoresExecutivos(dados: {
 
     if (tipo === "PAGAR") {
       contasAPagarEmAberto += saldo;
+      if (vencida) aPagarVencido += saldo;
       if (dentroDe7Dias) obrigacoes7Dias += saldo;
       if (dentroDe30Dias) obrigacoes30Dias += saldo;
     } else {
@@ -112,8 +126,10 @@ export function calcularIndicadoresExecutivos(dados: {
     }
   }
 
+  const caixaDisponivel = saldoComAguardando(dados.caixaConciliado, dados.aguardandoConciliacao);
   return {
-    caixaDisponivel: dados.caixaDisponivel,
+    caixaDisponivel,
+    aguardandoConciliacao: dados.aguardandoConciliacao.entradas - dados.aguardandoConciliacao.saidas,
     contasAPagarEmAberto,
     contasAReceberEmAberto,
     inadimplencia,
@@ -121,7 +137,8 @@ export function calcularIndicadoresExecutivos(dados: {
     obrigacoes7Dias,
     obrigacoes30Dias,
     recebimentosEsperados30Dias,
-    saldoProjetado30Dias: dados.caixaDisponivel + recebimentosEsperados30Dias - obrigacoes30Dias,
+    saldoProjetado30Dias:
+      caixaDisponivel + inadimplencia - aPagarVencido + recebimentosEsperados30Dias - obrigacoes30Dias,
   };
 }
 
@@ -149,15 +166,17 @@ export async function buscarIndicadoresExecutivos(sessao: SessaoAtiva): Promise<
   const filialIds = await idsDasFiliaisAtivas(sessao.empresaId);
   const { hoje, fimDeHoje, inicioMesAtual } = diaDeHoje();
 
-  const [caixaDisponivel, parcelasEmAberto, somasMes] = await Promise.all([
+  const [caixaConciliado, aguardandoConciliacao, parcelasEmAberto, somasMes] = await Promise.all([
     buscarSaldoEmCaixaAteDasFiliais(filialIds, fimDeHoje),
+    buscarAguardandoConciliacaoDasFiliais(filialIds),
     buscarParcelasEmAbertoDasFiliais(filialIds),
     somasConciliadasNoPeriodo(filialIds, inicioMesAtual, fimDeHoje),
   ]);
 
   return calcularIndicadoresExecutivos({
     hoje,
-    caixaDisponivel,
+    caixaConciliado,
+    aguardandoConciliacao,
     parcelas: paraIndicadores(parcelasEmAberto),
     entradasMes: totalDoTipo(somasMes, "ENTRADA"),
     saidasMes: totalDoTipo(somasMes, "SAIDA"),

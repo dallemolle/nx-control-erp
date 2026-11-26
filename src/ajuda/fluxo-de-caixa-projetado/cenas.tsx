@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alvo, BotaoSimulado, SelectSimulado } from "@/components/ajuda/campos-simulados";
 import type { PropsCena } from "@/ajuda/tipos";
-import { ANO_CIVIL, FUTURA, MOVEL, MOVEL_FISCAL, SALDO_DE_HOJE, type Linha } from "./exemplo";
+import { AGUARDANDO, ANO_CIVIL, FUTURA, MOVEL, MOVEL_FISCAL, SALDO_CONCILIADO, type Linha } from "./exemplo";
 
 // Espelho de src/app/(dashboard)/financeiro/fluxo-de-caixa-projetado/*. Mudou um rótulo lá? Ajuste aqui também.
 
@@ -40,8 +40,8 @@ export function CenaPainel({ valores }: PropsCena) {
   const futura = valores["painel.proximo"] === "clicado";
   const filtro = valores["painel.classificacao"];
   const rotuloSaldo = filtro ? "Acumulado" : "Saldo";
-  const base = filtro ? MOVEL_FISCAL : modo === "Ano civil" ? ANO_CIVIL : futura ? FUTURA : MOVEL;
-  const linhas = encadear(base, filtro ? 0 : SALDO_DE_HOJE, !filtro);
+  const visao = modo === "Ano civil" ? ANO_CIVIL : futura ? FUTURA : MOVEL;
+  const linhas = filtro ? encadear(MOVEL_FISCAL, 0, false) : encadear([AGUARDANDO, ...visao], SALDO_CONCILIADO, true);
   const primeiroNegativo = linhas.findIndex((l) => l.alerta);
 
   return (
@@ -49,10 +49,12 @@ export function CenaPainel({ valores }: PropsCena) {
       <div>
         <p className="text-lg font-semibold">Fluxo de caixa projetado</p>
         <p className="text-sm text-muted-foreground">
-          Projeção calculada a partir do saldo em caixa conciliado de hoje e dos títulos a pagar/receber em aberto.
-          Parcelas em aberto vencidas antes do período (ou antes de hoje, num período futuro) entram na linha
-          &quot;Em atraso&quot;; num período futuro, o que vence de hoje até o início dele entra na linha &quot;A
-          vencer até&quot;. O saldo dos meses parte da última dessas linhas. Não considera contratos recorrentes,
+          Projeção calculada a partir do saldo em caixa conciliado de hoje e dos títulos a pagar/receber em aberto. A
+          linha &quot;Aguardando conciliação&quot; soma o que já foi lançado (baixas aprovadas, lançamentos manuais,
+          transferências) e o extrato ainda não confirmou, e termina no saldo contábil da Tesouraria. Parcelas em
+          aberto vencidas antes do período (ou antes de hoje, num período futuro) entram na linha &quot;Em
+          atraso&quot;; num período futuro, o que vence de hoje até o início dele entra na linha &quot;A vencer
+          até&quot;. O saldo dos meses parte da última dessas linhas. Não considera contratos recorrentes,
           financiamentos nem orçamento (ainda não existem no sistema).
         </p>
       </div>
@@ -102,7 +104,14 @@ export function CenaPainel({ valores }: PropsCena) {
           <TableBody>
             {linhas.map((l, indice) => {
               const rotulo = <span className={l.tipo ? "text-muted-foreground" : undefined}>{l.rotulo}</span>;
-              const alvoLinha = l.tipo === "atraso" ? "linha.atraso" : l.tipo === "aVencer" ? "linha.aVencer" : null;
+              const alvoLinha =
+                l.tipo === "aguardando"
+                  ? "linha.aguardando"
+                  : l.tipo === "atraso"
+                    ? "linha.atraso"
+                    : l.tipo === "aVencer"
+                      ? "linha.aVencer"
+                      : null;
               const alvoNegativo = indice === primeiroNegativo;
               const saldoFinal = (
                 <div className="flex items-center gap-2">

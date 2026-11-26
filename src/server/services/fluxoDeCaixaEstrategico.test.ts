@@ -274,4 +274,27 @@ describe("buscarAnoBaseConsolidado / listarProjecaoEstrategica com classificaç�
     const { projecoes } = await listarProjecaoEstrategica(fixture.sessao, { classificacao: "GERENCIAL" });
     expect(projecoes.BASE.map((ano) => ano.saldoCaixa)).toEqual([200, 400, 600, 800, 1000]);
   });
+
+  test("o saldo de partida soma o que aguarda conciliação; o ano-base continua só conciliado", async () => {
+    await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: new Date(),
+        tipo: "SAIDA",
+        valor: 200,
+        descricao: "FG5 não conciliado",
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+        conciliado: false,
+        classificacaoFiscal: "GERENCIAL",
+      },
+    });
+    expect(await buscarAnoBaseConsolidado(fixture.empresaId)).toEqual({
+      receitaBase: 1350,
+      custoBase: 100,
+      saldoCaixaBase: 1050,
+    });
+    expect((await buscarAnoBaseConsolidado(fixture.empresaId, { classificacao: "GERENCIAL" })).saldoCaixaBase).toBe(0);
+  });
 });

@@ -13,7 +13,7 @@ export type Premissas = {
   taxaJurosAnual: number;
 };
 
-/** Ano-base: realizado conciliado dos últimos 12 meses e saldo em caixa de hoje. */
+/** Ano-base: realizado conciliado dos últimos 12 meses; saldo em caixa de hoje (conciliado + aguardando conciliação, o mesmo de onde parte o Fluxo de caixa projetado). */
 export const ANO_BASE = { receita: 220_000, custo: 205_000, saldoCaixa: 47_850 } as const;
 
 export const PREMISSAS: Readonly<Record<Cenario, Premissas>> = {

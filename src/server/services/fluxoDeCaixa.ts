@@ -133,6 +133,35 @@ export async function buscarSaldoEmCaixaAteDasFiliais(filialIds: string[], data:
   return saldoInicialTotal + entradas - saidas;
 }
 
+/** Entradas e saídas lançadas que o extrato ainda não confirmou (`conciliado: false`). */
+export type AguardandoConciliacao = { entradas: number; saidas: number };
+
+/**
+ * O que foi lançado e ainda aguarda conciliação, nas contas ativas das filiais. Sem corte de data, como o saldo
+ * contábil da Tesouraria: saldo conciliado + isto = saldo contábil. Usado pelas projeções (o realizado continua só
+ * com conciliados).
+ */
+export async function buscarAguardandoConciliacaoDasFiliais(filialIds: string[]): Promise<AguardandoConciliacao> {
+  const somas = await prisma.lancamentoBancario.groupBy({
+    by: ["tipo"],
+    where: { filialId: { in: filialIds }, conciliado: false, contaBancaria: { ativo: true } },
+    _sum: { valor: true },
+  });
+  return {
+    entradas: Number(somas.find((s) => s.tipo === "ENTRADA")?._sum.valor ?? 0),
+    saidas: Number(somas.find((s) => s.tipo === "SAIDA")?._sum.valor ?? 0),
+  };
+}
+
+export async function buscarAguardandoConciliacao(filialId: string): Promise<AguardandoConciliacao> {
+  return buscarAguardandoConciliacaoDasFiliais([filialId]);
+}
+
+/** Saldo contábil: o conciliado mais o que aguarda conciliação. */
+export function saldoComAguardando(saldoConciliado: number, aguardando: AguardandoConciliacao): number {
+  return saldoConciliado + aguardando.entradas - aguardando.saidas;
+}
+
 /**
  * Com `opcoes.classificacao`, só o movimento daquela classificação entra e o
  * saldo inicial é 0: o saldo bancário é único e não se divide entre fiscal e

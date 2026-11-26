@@ -2,10 +2,12 @@ import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { prisma } from "@/server/db/client";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
 import {
+  buscarAguardandoConciliacaoDasFiliais,
   buscarSaldoEmCaixaAte,
   calcularJanela,
   calcularPeriodosFluxoDeCaixa,
   listarFluxoDeCaixaRealizado,
+  saldoComAguardando,
   type LancamentoParaFluxo,
 } from "./fluxoDeCaixa";
 
@@ -200,5 +202,64 @@ describe("buscarSaldoEmCaixaAte / listarFluxoDeCaixaRealizado", () => {
     const periodos = await listarFluxoDeCaixaRealizado(fixture.sessao, "MES", new Date("2026-09-01T00:00:00Z"));
     const totalEntradasComContaInativa = periodos.reduce((soma, p) => soma + p.entradas, 0);
     expect(totalEntradasComContaInativa).toBeLessThan(777777);
+  });
+});
+
+describe("saldoComAguardando", () => {
+  test("soma as entradas e tira as saídas aguardando do saldo conciliado", () => {
+    expect(saldoComAguardando(1000, { entradas: 300, saidas: 1012 })).toBe(288);
+  });
+});
+
+describe("buscarAguardandoConciliacaoDasFiliais (integração)", () => {
+  let fixture: FixtureFinanceiro;
+  let contaInativaId: string;
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("FCA", "TESOURARIA");
+    const contaInativa = await prisma.contaBancaria.create({
+      data: {
+        filialId: fixture.filialId,
+        bancoId: fixture.bancoId,
+        agencia: "0001",
+        conta: "FCA-inativa",
+        saldoInicial: 0,
+        ativo: false,
+      },
+    });
+    contaInativaId = contaInativa.id;
+    const base = {
+      filialId: fixture.filialId,
+      origem: "MANUAL" as const,
+      usuarioId: fixture.usuarioId,
+    };
+    await prisma.lancamentoBancario.createMany({
+      data: [
+        { ...base, contaBancariaId: fixture.contaBancariaId, data: new Date("2026-09-10T00:00:00Z"), tipo: "ENTRADA", valor: 300, descricao: "Não conciliada", conciliado: false },
+        { ...base, contaBancariaId: fixture.contaBancariaId, data: new Date("2099-01-10T00:00:00Z"), tipo: "SAIDA", valor: 120, descricao: "Não conciliada com data futura: entra (sem corte de data)", conciliado: false },
+        { ...base, contaBancariaId: fixture.contaBancariaId, data: new Date("2026-09-11T00:00:00Z"), tipo: "ENTRADA", valor: 999, descricao: "Conciliada: não entra", conciliado: true },
+        { ...base, contaBancariaId: contaInativaId, data: new Date("2026-09-12T00:00:00Z"), tipo: "SAIDA", valor: 5000, descricao: "Conta inativa: não entra", conciliado: false },
+      ],
+    });
+  });
+
+  afterAll(async () => {
+    await prisma.lancamentoBancario.deleteMany({ where: { filialId: fixture.filialId } });
+    await prisma.contaBancaria.delete({ where: { id: contaInativaId } });
+    await limparFixtureFinanceiro(fixture);
+    await prisma.$disconnect();
+  });
+
+  test("soma só os não conciliados de contas ativas, sem corte de data, separando entradas e saídas", async () => {
+    expect(await buscarAguardandoConciliacaoDasFiliais([fixture.filialId])).toEqual({ entradas: 300, saidas: 120 });
+  });
+
+  test("filial sem nada aguardando devolve zeros", async () => {
+    const outra = await criarFixtureFinanceiro("FCA2", "TESOURARIA");
+    try {
+      expect(await buscarAguardandoConciliacaoDasFiliais([outra.filialId])).toEqual({ entradas: 0, saidas: 0 });
+    } finally {
+      await limparFixtureFinanceiro(outra);
+    }
   });
 });

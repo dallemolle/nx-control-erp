@@ -11,6 +11,7 @@ export const ALVOS = {
     "col.saldoInicial",
     "col.entradas",
     "col.saldoFinal",
+    "linha.aguardando",
     "linha.atraso",
     "linha.aVencer",
     "linha.negativo",

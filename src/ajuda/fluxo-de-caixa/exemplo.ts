@@ -12,7 +12,7 @@ const MESES = [
 ];
 
 const ENTRADAS = [18_000, 12_500, 9_800, 22_400, 31_000, 27_300, 15_200, 11_900, 14_600, 26_800, 19_400, 0];
-const SAIDAS = [21_300, 14_200, 16_900, 18_700, 19_500, 22_100, 17_800, 13_400, 15_200, 20_300, 21_650, 0];
+const SAIDAS = [21_300, 14_200, 16_900, 18_700, 19_500, 22_100, 17_800, 13_400, 15_200, 20_300, 20_638, 0];
 
 export const POR_MES: readonly Movimento[] = MESES.map((mes, i) => ({
   periodo: `${mes} de 2026`,
@@ -37,7 +37,7 @@ export const POR_SEMANA: readonly Movimento[] = [
   { periodo: "Semana de 26/10/2026 a 01/11/2026", entradas: 4_100, saidas: 3_250 },
   { periodo: "Semana de 02/11/2026 a 08/11/2026", entradas: 9_300, saidas: 10_100 },
   { periodo: "Semana de 09/11/2026 a 15/11/2026", entradas: 3_900, saidas: 4_800 },
-  { periodo: "Semana de 16/11/2026 a 22/11/2026", entradas: 6_200, saidas: 6_750 },
+  { periodo: "Semana de 16/11/2026 a 22/11/2026", entradas: 6_200, saidas: 5_738 },
   { periodo: "Semana de 23/11/2026 a 29/11/2026", entradas: 0, saidas: 0 },
   { periodo: "Semana de 30/11/2026 a 06/12/2026", entradas: 0, saidas: 0 },
 ];

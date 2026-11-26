@@ -410,6 +410,12 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 
 ### 13. Baixa aprovada e não conciliada some da projeção
 
+- **Status:** feito na branch `fix/projecao-aguardando-conciliacao` (2026-11-25, spec
+  e plano `2026-11-25-projecao-aguardando-conciliacao*`): linha "Aguardando
+  conciliação" no projetado (saldo conciliado → saldo contábil); Caixa
+  disponível do dashboard é o contábil; saldo projetado em 30 dias igual à
+  tela (com atrasados); estratégico parte do contábil.
+
 - **Problema:** a projeção parte do saldo em caixa **conciliado**
   (`buscarSaldoEmCaixaAte`, que só soma lançamentos com `conciliado: true`),
   mas cada parcela entra pelo que falta pagar depois das baixas **aprovadas**
@@ -492,6 +498,28 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   travam uma a outra (deadlock) e o Postgres aborta uma delas com erro.
 - **Impacto:** erro intermitente; nenhum dado errado.
 - **Caminhos:** `ORDER BY id` no SELECT.
+
+### 61. Lançamento com data futura em conta Caixa fica fora da projeção
+
+- **Problema:** o saldo conciliado é cortado em "agora" (`data <= agora`), mas
+  o "aguardando conciliação" não tem corte de data. Numa transferência
+  Caixa → banco com data futura, o lado do Caixa nasce conciliado (fica fora do
+  saldo conciliado até a data chegar) e o lado do banco nasce não conciliado
+  (entra no aguardando): a projeção fica otimista no valor da transferência até
+  a data. Antes desta correção os dois lados ficavam de fora (neutro). Além
+  disso, lançamento manual com data futura em conta Caixa fica fora de toda
+  projeção.
+- **Onde:** `buscarSaldoEmCaixaAteDasFiliais` e
+  `buscarAguardandoConciliacaoDasFiliais` em
+  `src/server/services/fluxoDeCaixa.ts`; `criarTransferencia`/lançamento manual
+  em `src/server/services/lancamentoBancario.ts`.
+- **Exemplo:** transferência de R$ 2.000,00 do Caixa para o banco com data de
+  10/12, lançada em 25/11: até 10/12 a projeção mostra R$ 2.000,00 a mais.
+- **Impacto:** dado errado temporário; raro (data futura só com aviso).
+- **Caminhos:** nas projeções, usar o saldo contábil sem corte de data em
+  nenhum dos lados (saldo inicial + todos os lançamentos das contas ativas,
+  como `calcularSaldoContabil` da Tesouraria); ou cortar os dois lados em hoje.
+- **Cuidados:** o Fluxo de caixa realizado continua com o corte.
 
 ## Controladoria — lacunas achadas ao escrever a ajuda contextual
 

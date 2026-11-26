@@ -60,7 +60,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "BASE.linha.saldo",
         instrucao: "Saldo de caixa: onde o dinheiro chega",
         explicacao:
-          "Parte do saldo em caixa de hoje e soma a geração líquida de cada ano (receita − custo − CAPEX + dívida " +
+          "Parte do saldo em caixa de hoje (o conciliado mais o que foi lançado e aguarda conciliação, o mesmo " +
+          "saldo contábil da Tesouraria) e soma a geração líquida de cada ano (receita − custo − CAPEX + dívida " +
           "nova − juros). Fica vermelho quando é negativo.",
       },
       {
