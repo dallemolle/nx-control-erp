@@ -33,7 +33,8 @@ describe("roteiros de Tesouraria", () => {
     const antes = renderToStaticMarkup(createElement(cenas.painel, { valores: {} }));
     expect(antes).toContain("Nenhum saldo bancário informado ainda.");
     const depois = renderToStaticMarkup(createElement(cenas.painel, { valores: { "painel.cardBanco": "informado" } }));
-    expect(depois).toContain("Diferença: R$ 45,90");
+    expect(depois).toContain("Saldo contábil em 20/11/2026: R$ 48.250,00");
+    expect(depois).toContain("Diferença em 20/11/2026: R$ 45,90");
   });
 
   test("o filtro Fiscal esconde transferências e lançamentos gerenciais", () => {

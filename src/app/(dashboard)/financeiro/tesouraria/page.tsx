@@ -113,8 +113,11 @@ export default async function TesourariaPage({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {resumoContas.map(({ conta, saldoContabil, ultimoSaldoInformado }) => {
-          const diferenca = ultimoSaldoInformado ? saldoContabil - Number(ultimoSaldoInformado.saldo) : null;
+        {resumoContas.map(({ conta, saldoContabil, ultimoSaldoInformado, saldoContabilNaData }) => {
+          const diferenca =
+            ultimoSaldoInformado && saldoContabilNaData !== null
+              ? saldoContabilNaData - Number(ultimoSaldoInformado.saldo)
+              : null;
           return (
             <Card key={conta.id}>
               <CardHeader>
@@ -132,8 +135,13 @@ export default async function TesourariaPage({
                       Saldo bancário informado: {formatarMoeda(ultimoSaldoInformado.saldo)} em{" "}
                       {formatarData(ultimoSaldoInformado.data)}
                     </p>
+                    <p className="text-muted-foreground">
+                      Saldo contábil em {formatarData(ultimoSaldoInformado.data)}:{" "}
+                      {saldoContabilNaData === null ? "—" : formatarMoeda(saldoContabilNaData)}
+                    </p>
                     <p className={diferenca !== 0 ? "text-destructive" : "text-muted-foreground"}>
-                      Diferença: {diferenca === null ? "—" : formatarMoeda(diferenca)}
+                      Diferença em {formatarData(ultimoSaldoInformado.data)}:{" "}
+                      {diferenca === null ? "—" : formatarMoeda(diferenca)}
                     </p>
                   </>
                 ) : (

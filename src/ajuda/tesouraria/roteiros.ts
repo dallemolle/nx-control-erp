@@ -195,8 +195,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Veja o quadro de cada conta",
         explicacao:
           "Saldo contábil é o saldo inicial da conta mais todos os lançamentos dela no sistema, de qualquer data, " +
-          "conciliados ou não. Quando alguém informou o saldo do banco, o quadro mostra também esse saldo e a " +
-          "diferença entre os dois.",
+          "conciliados ou não. Quando alguém informou o saldo do banco, o quadro mostra também esse saldo, o " +
+          "saldo contábil na mesma data (só os lançamentos até aquele dia) e a diferença entre os dois.",
       },
       {
         cena: "painel",
@@ -216,12 +216,11 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "saldo.data",
         instrucao: "Informe a data e o saldo do extrato",
         explicacao:
-          `O saldo final do dia no extrato: ${SALDO.informadoBanco} em ${SALDO.dataInformadoBanco}. Use o dia ` +
-          "mais recente, com tudo até ele já lançado.",
+          `O saldo final do dia no extrato: ${SALDO.informadoBanco} em ${SALDO.dataInformadoBanco}. Pode ser ` +
+          "qualquer dia do extrato: a diferença considera só os lançamentos até a data informada.",
         dica:
-          "A diferença compara o saldo informado com o saldo contábil de hoje, que inclui lançamentos de qualquer " +
-          "data. Se existir lançamento com data depois do dia informado, ele também entra na conta e a diferença " +
-          "não fecha, mesmo com tudo certo.",
+          "Lançamentos com data depois do dia informado não entram na diferença. Por isso, lance antes tudo o " +
+          "que já aconteceu até esse dia; o que vier depois aparece só no saldo contábil do alto do quadro.",
         preenche: { "saldo.data": SALDO.dataInformadoBanco, "saldo.valor": SALDO.informadoBanco },
       },
       {
@@ -235,7 +234,7 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "painel.diferencaBanco",
         instrucao: "Leia a diferença",
         explicacao:
-          `Diferença é o saldo contábil menos o saldo informado: ${SALDO.contabilBanco} − ` +
+          `Diferença é o saldo contábil na data menos o saldo informado: ${SALDO.contabilBancoNaData} − ` +
           `${SALDO.informadoBancoFormatado} = ${SALDO.diferencaBanco}. Em vermelho, quando não é zero. Positiva: ` +
           "o sistema tem mais dinheiro que o banco, falta lançar alguma saída. Negativa: falta lançar alguma " +
           "entrada.",

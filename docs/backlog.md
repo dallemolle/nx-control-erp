@@ -259,26 +259,6 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 - **Ao corrigir:** dica do passo "Clique em Rejeitar" no `rejeitar-baixa`
   (`src/ajuda/aprovacoes/roteiros.ts`): manda avisar a pessoa por fora.
 
-### 7. Diferença da Tesouraria compara datas diferentes
-
-- **Problema:** o quadro da conta
-  (`src/app/(dashboard)/financeiro/tesouraria/page.tsx`) subtrai o último saldo
-  informado (de uma data) do saldo contábil com lançamentos de todas as datas
-  (`calcularSaldoContabil` em `lancamentoBancario.ts`).
-- **Exemplo:** informa o saldo do extrato de 31/10 = R$ 50.000,00 e tudo bate.
-  Em 05/11 entra uma baixa de R$ 1.000,00: o quadro passa a mostrar diferença
-  de R$ 1.000,00 em vermelho, sem nada errado.
-- **Impacto:** dado enganoso; a pessoa procura erro que não existe ou se
-  acostuma a ignorar o vermelho.
-- **Caminhos:** calcular o saldo contábil até a data do saldo informado;
-  mostrar as duas datas no quadro.
-- **Cuidados:** saldo contábil inclui lançamentos não conciliados (é o
-  esperado aqui, mas explicar); várias contas com datas diferentes.
-- **Ao corrigir:** `src/ajuda/tesouraria/roteiros.ts`, roteiro
-  `conferir-saldo`: explicação e dica do passo "Informe a data e o saldo do
-  extrato" (manda usar o dia mais recente) e o passo "Veja o quadro de cada
-  conta".
-
 ### 9. Reconciliar pendentes ignora Sugestão, Divergência e Duplicado
 
 - **Problema:** `reconciliarPendentes` (`src/server/services/conciliacao.ts`)

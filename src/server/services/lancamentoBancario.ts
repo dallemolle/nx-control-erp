@@ -116,12 +116,21 @@ export async function listarLancamentosPaginado(
   return montarPagina(linhas, paginacao.limite);
 }
 
-export async function calcularSaldoContabil(contaBancariaId: string): Promise<number> {
+/** Dia seguinte (UTC) ao dia de calendário de `data`: limite exclusivo para "até o fim do dia". */
+function inicioDoDiaSeguinte(data: Date): Date {
+  return new Date(Date.UTC(data.getUTCFullYear(), data.getUTCMonth(), data.getUTCDate() + 1));
+}
+
+/**
+ * Saldo inicial mais os lançamentos da conta, conciliados ou não. Com `ate`, só os lançamentos até o fim desse dia
+ * (para comparar com o saldo do extrato daquele dia); sem `ate`, todos, de qualquer data.
+ */
+export async function calcularSaldoContabil(contaBancariaId: string, ate?: Date): Promise<number> {
   const conta = await prisma.contaBancaria.findUniqueOrThrow({ where: { id: contaBancariaId } });
 
   const somas = await prisma.lancamentoBancario.groupBy({
     by: ["tipo"],
-    where: { contaBancariaId },
+    where: { contaBancariaId, ...(ate ? { data: { lt: inicioDoDiaSeguinte(ate) } } : {}) },
     _sum: { valor: true },
   });
 
@@ -134,7 +143,7 @@ export async function calcularSaldoContabil(contaBancariaId: string): Promise<nu
 export async function buscarUltimoSaldoInformado(contaBancariaId: string) {
   return prisma.saldoBancarioInformado.findFirst({
     where: { contaBancariaId },
-    orderBy: { data: "desc" },
+    orderBy: [{ data: "desc" }, { criadoEm: "desc" }],
   });
 }
 
@@ -146,11 +155,18 @@ export async function listarResumoContas(filialId: string) {
   });
 
   return Promise.all(
-    contas.map(async (conta) => ({
-      conta,
-      saldoContabil: await calcularSaldoContabil(conta.id),
-      ultimoSaldoInformado: await buscarUltimoSaldoInformado(conta.id),
-    })),
+    contas.map(async (conta) => {
+      const ultimoSaldoInformado = await buscarUltimoSaldoInformado(conta.id);
+      return {
+        conta,
+        saldoContabil: await calcularSaldoContabil(conta.id),
+        ultimoSaldoInformado,
+        /** Saldo contábil até a data do último saldo informado: é com ele que a diferença compara. */
+        saldoContabilNaData: ultimoSaldoInformado
+          ? await calcularSaldoContabil(conta.id, ultimoSaldoInformado.data)
+          : null,
+      };
+    }),
   );
 }
 
