@@ -39,7 +39,7 @@ describe("roteiros de Tesouraria", () => {
 
   test("o filtro Fiscal esconde transferências e lançamentos gerenciais", () => {
     const html = renderToStaticMarkup(createElement(cenas.painel, { valores: { "painel.classificacao": "Fiscal" } }));
-    expect(html).toContain("Baixa aprovada — parcela nº 1");
+    expect(html).toContain("NF-e 1234 · Agro Insumos Ltda · parcela 2/3");
     expect(html).not.toContain("Diárias da colheita");
     expect(html).not.toContain("Saque para o caixa");
   });
