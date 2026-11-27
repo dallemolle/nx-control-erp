@@ -39,7 +39,7 @@ import {
   situacaoParaDesfazer,
 } from "./ordemProducao";
 import { cancelarPedido, criarPedido, lotesParaVenda } from "./pedidoVenda";
-import { criarAjuste } from "./ajusteEstoque";
+import { criarAjuste, estornarAjuste } from "./ajusteEstoque";
 import { liberarLoteVencido, listarLotes, transferirLote } from "./estoque";
 import { pedidoVendaSchema } from "@/lib/schemas/pedidoVenda";
 import { ajusteSchema } from "@/lib/schemas/ajusteEstoque";
@@ -524,6 +524,30 @@ describe("ordem de produção", () => {
       await expect(reabrirOP(adm(), op.id, "Corrigir")).rejects.toThrow(mensagem);
       await expect(cancelarOP(adm(), op.id, "Corrigir")).rejects.toThrow(mensagem);
       expect(await situacaoParaDesfazer({ id: op.id, status: "ENCERRADA" })).toEqual({ pode: false, motivo: mensagem });
+    });
+
+    test("ajuste estornado na polpa não impede reabrir; ajuste ativo impede", async () => {
+      const { op, grosso } = await opCompleta();
+      await encerrarOP(adm(), op.id, { confirmarVerificar: false });
+      const novoAjuste = () =>
+        criarAjuste(
+          adm(),
+          ajusteSchema.parse({
+            loteId: grosso.loteId,
+            data: "2026-11-14",
+            sentido: "SAIDA",
+            quantidadeKg: "1",
+            motivo: "AVARIA",
+          }),
+        );
+
+      const errado = await novoAjuste();
+      expect((await situacaoParaDesfazer({ id: op.id, status: "ENCERRADA" })).pode).toBe(false);
+      await estornarAjuste(adm(), errado.id, "Lote errado");
+      expect(await situacaoParaDesfazer({ id: op.id, status: "ENCERRADA" })).toEqual({ pode: true });
+
+      await novoAjuste();
+      expect((await situacaoParaDesfazer({ id: op.id, status: "ENCERRADA" })).pode).toBe(false);
     });
 
     test("cancelar OP aberta estorna tudo", async () => {

@@ -9,7 +9,7 @@ import {
   type CatalogoDeTeste,
   type FixtureProducao,
 } from "./producaoTestFixtures";
-import { criarAjuste, listarAjustes } from "./ajusteEstoque";
+import { criarAjuste, estornarAjuste, listarAjustes } from "./ajusteEstoque";
 
 describe("ajuste de estoque", () => {
   let fx: FixtureProducao;
@@ -111,5 +111,65 @@ describe("ajuste de estoque", () => {
     expect(
       await listarAjustes(fx.filialAId, { inicio: new Date("2026-12-01"), fim: new Date("2026-12-31") }),
     ).toEqual([]);
+  });
+
+  describe("estornar ajuste", () => {
+    const loteDe = (kg: number) =>
+      criarLoteDeTeste(fx, { produtoId: cat.produtoFrutoId, localId: cat.localRecepcaoId, kg });
+    const saldo = async (loteId: string) =>
+      Number((await prisma.lote.findUniqueOrThrow({ where: { id: loteId } })).saldoKg);
+
+    test("estorno de saída devolve o saldo, com movimento contrário na data do ajuste e auditoria", async () => {
+      const lote = await loteDe(10);
+      const criado = await criarAjuste(fx.sessao("PRODUCAO"), ajuste(lote.id));
+      await estornarAjuste(fx.sessao("PRODUCAO"), criado.id, "Lote errado");
+
+      expect(await saldo(lote.id)).toBe(10);
+      const estornado = await prisma.ajusteEstoque.findUniqueOrThrow({ where: { id: criado.id } });
+      expect(estornado).toMatchObject({ motivoEstorno: "Lote errado", estornadoPorId: fx.usuarioId });
+      expect(estornado.estornadoEm).toBeInstanceOf(Date);
+      const movimento = await prisma.movimentoEstoque.findUniqueOrThrow({ where: { ajusteEstornadoId: criado.id } });
+      expect(movimento).toMatchObject({ tipo: "ESTORNO_AJUSTE", loteId: lote.id, data: criado.data });
+      expect(Number(movimento.quantidadeKg)).toBe(3);
+      expect(await prisma.auditLog.count({ where: { entidadeId: criado.id, acao: "ESTORNAR" } })).toBe(1);
+    });
+
+    test("recusa estornar duas vezes, sem motivo, sem permissão ou de outra filial", async () => {
+      const lote = await loteDe(10);
+      const criado = await criarAjuste(fx.sessao("PRODUCAO"), ajuste(lote.id));
+      await expect(estornarAjuste(fx.sessao("PRODUCAO"), criado.id, " ")).rejects.toThrow("Informe o motivo");
+      await expect(estornarAjuste(fx.sessao("VENDAS"), criado.id, "Erro")).rejects.toThrow(PermissionError);
+      await expect(estornarAjuste(fx.sessao("PRODUCAO", { filial: "B" }), criado.id, "Erro")).rejects.toThrow(
+        "Ajuste não encontrado",
+      );
+      await estornarAjuste(fx.sessao("PRODUCAO"), criado.id, "Erro");
+      await expect(estornarAjuste(fx.sessao("PRODUCAO"), criado.id, "Erro")).rejects.toThrow("já foi estornado");
+      expect(await saldo(lote.id)).toBe(10);
+    });
+
+    test("estorno de entrada não deixa o lote negativo", async () => {
+      const lote = await loteDe(0);
+      const entrada = await criarAjuste(
+        fx.sessao("PRODUCAO"),
+        ajuste(lote.id, { sentido: "ENTRADA", quantidadeKg: "5", motivo: "INVENTARIO" }),
+      );
+      await criarAjuste(fx.sessao("PRODUCAO"), ajuste(lote.id, { quantidadeKg: "4" }));
+      await expect(estornarAjuste(fx.sessao("PRODUCAO"), entrada.id, "Contagem errada")).rejects.toThrow(
+        /tem 1 kg/,
+      );
+      expect(await saldo(lote.id)).toBe(1);
+      expect((await prisma.ajusteEstoque.findUniqueOrThrow({ where: { id: entrada.id } })).estornadoEm).toBeNull();
+    });
+
+    test("listarAjustes traz quem estornou e o motivo", async () => {
+      const lote = await loteDe(10);
+      const criado = await criarAjuste(fx.sessao("PRODUCAO"), ajuste(lote.id, { data: "2026-11-15" }));
+      await estornarAjuste(fx.sessao("PRODUCAO"), criado.id, "Lote errado");
+      const [listado] = await listarAjustes(fx.filialAId, {
+        inicio: new Date("2026-11-15"),
+        fim: new Date("2026-11-15"),
+      });
+      expect(listado).toMatchObject({ motivoEstorno: "Lote errado", estornadoPor: { nome: expect.any(String) } });
+    });
   });
 });

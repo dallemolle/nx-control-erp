@@ -16,6 +16,13 @@ const COLUNAS: ColunaExport<AjusteListado>[] = [
   { rotulo: "Motivo", valor: (a) => ROTULOS_MOTIVO_AJUSTE[a.motivo] },
   { rotulo: "Observação", valor: (a) => a.observacao ?? "" },
   { rotulo: "Usuário", valor: (a) => a.usuario.nome },
+  {
+    rotulo: "Estorno",
+    valor: (a) =>
+      a.estornadoEm
+        ? `Estornado em ${formatarData(a.estornadoEm)} por ${a.estornadoPor?.nome ?? "—"}: ${a.motivoEstorno}`
+        : "",
+  },
 ];
 
 export async function GET(request: Request) {

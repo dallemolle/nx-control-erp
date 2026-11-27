@@ -49,6 +49,16 @@ describe("roteiros dos Ajustes de estoque", () => {
     expect(lista[1]).toMatchObject({ lote: AMOSTRA.lote, kg: -AMOSTRA.kg });
   });
 
+  test("amostra estornada: linha marcada, sem o botão Estornar dela", () => {
+    const [amostra] = ajustesDaCena({ "lista.amostra": "estornado" });
+    expect(amostra).toMatchObject({ lote: AMOSTRA.lote, estorno: expect.stringContaining("lote errado") });
+    const lancada = renderToStaticMarkup(createElement(cenas.lista, { valores: { "lista.amostra": "lancado" } }));
+    const estornada = renderToStaticMarkup(createElement(cenas.lista, { valores: { "lista.amostra": "estornado" } }));
+    expect(lancada).toContain('data-alvo="lista.estornar"');
+    expect(estornada).toContain("Estornado");
+    expect(estornada).not.toContain('data-alvo="lista.estornar"');
+  });
+
   test.each(roteiros.map((r) => [r.id, r] as const))("%s tem conteúdo completo", (_id, roteiro) => {
     expect(roteiro.passos.length).toBeGreaterThan(0);
     expect(roteiro.quandoUsar.trim()).not.toBe("");

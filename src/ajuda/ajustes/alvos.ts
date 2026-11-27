@@ -8,7 +8,9 @@ export const ALVOS = {
     "lista.tabela",
     "lista.amostra",
     "lista.sobra",
+    "lista.estornar",
   ],
+  estornar: ["estornar.aviso", "estornar.motivo", "estornar.confirmar"],
   novo: [
     "novo.sentido",
     "novo.lote",

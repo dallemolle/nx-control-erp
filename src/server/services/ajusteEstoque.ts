@@ -65,6 +65,72 @@ export async function criarAjuste(sessao: SessaoAtiva, dados: AjusteFormValues) 
   });
 }
 
+/**
+ * Estorna um ajuste errado: movimento contrário (ESTORNO_AJUSTE) com a data do ajuste,
+ * então o par se anula em qualquer dia, e o ajuste fica marcado (sai dos totais). Estornar
+ * uma entrada não pode deixar o lote negativo.
+ */
+export async function estornarAjuste(sessao: SessaoAtiva, ajusteId: string, motivo: string): Promise<void> {
+  requirePermission(sessao.perfil, "estoque:ajustar");
+  requireAlteracaoFilial(sessao.podeAlterarFilial);
+  const motivoLimpo = motivo.trim();
+  if (motivoLimpo.length < 3) throw new Error("Informe o motivo do estorno");
+
+  await prisma.$transaction(async (tx) => {
+    // Trava o ajuste: dois estornos ao mesmo tempo ficam em fila e o segundo o vê estornado.
+    await tx.$queryRaw`SELECT id FROM ajustes_estoque WHERE id = ${ajusteId} FOR UPDATE`;
+    const ajuste = await tx.ajusteEstoque.findFirst({
+      where: { id: ajusteId, filialId: sessao.filialId },
+      include: { lote: { select: { codigo: true, saldoKg: true } } },
+    });
+    if (!ajuste) throw new Error("Ajuste não encontrado");
+    if (ajuste.estornadoEm) throw new Error("Este ajuste já foi estornado");
+
+    const quantidadeKg = -Number(ajuste.quantidadeKg);
+    const saldo = Number(ajuste.lote.saldoKg);
+    if (quantidadeKg < 0 && saldo + quantidadeKg < -0.0005) {
+      throw new Error(
+        `O lote ${ajuste.lote.codigo} tem ${saldo.toLocaleString("pt-BR")} kg; estornar esta entrada tiraria ` +
+          `${(-quantidadeKg).toLocaleString("pt-BR")} kg`,
+      );
+    }
+    // Se outra saída entrou depois da leitura, o UPDATE condicional recusa (saldo insuficiente).
+    await registrarMovimento(tx, {
+      filialId: sessao.filialId,
+      loteId: ajuste.loteId,
+      data: ajuste.data,
+      tipo: "ESTORNO_AJUSTE",
+      quantidadeKg,
+      usuarioId: sessao.usuarioId,
+      ajusteEstornadoId: ajuste.id,
+    });
+    const estornadoEm = new Date();
+    await tx.ajusteEstoque.update({
+      where: { id: ajuste.id },
+      data: { estornadoEm, estornadoPorId: sessao.usuarioId, motivoEstorno: motivoLimpo },
+    });
+
+    await registrarAuditoria(
+      {
+        empresaId: sessao.empresaId,
+        filialId: sessao.filialId,
+        usuarioId: sessao.usuarioId,
+        entidade: "AjusteEstoque",
+        entidadeId: ajuste.id,
+        acao: "ESTORNAR",
+        anterior: { estornado: false },
+        novo: {
+          estornado: true,
+          lote: ajuste.lote.codigo,
+          quantidadeKg: Number(ajuste.quantidadeKg),
+          motivo: motivoLimpo,
+        },
+      },
+      tx,
+    );
+  });
+}
+
 export type FiltroAjustes = { inicio: Date; fim: Date; motivo?: MotivoAjusteEstoque };
 
 export async function listarAjustes(filialId: string, filtros: FiltroAjustes) {
@@ -77,6 +143,7 @@ export async function listarAjustes(filialId: string, filtros: FiltroAjustes) {
     include: {
       lote: { select: { codigo: true, produto: { select: { descricao: true } } } },
       usuario: { select: { nome: true } },
+      estornadoPor: { select: { nome: true } },
     },
     orderBy: [{ data: "desc" }, { criadoEm: "desc" }],
   });

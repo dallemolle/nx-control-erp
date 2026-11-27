@@ -32,6 +32,7 @@ import {
   recepcaoExcluida,
   registrarMovimento,
   SELECT_SITUACAO_LOTE,
+  SEM_AJUSTE_ESTORNADO,
 } from "./estoque";
 
 const TENTATIVAS_NUMERACAO = 3;
@@ -535,7 +536,7 @@ export type SituacaoDesfazer = { pode: true } | { pode: false; motivo: string };
 
 /**
  * Reabrir e cancelar só enquanto nenhum lote de polpa da OP teve venda, ajuste ou
- * transferência (mesmo desfeitos depois).
+ * transferência (mesmo desfeitos depois), salvo ajuste estornado: o par não conta.
  */
 export async function situacaoParaDesfazer(
   op: { id: string; status: StatusOrdemProducao },
@@ -546,6 +547,7 @@ export async function situacaoParaDesfazer(
     where: {
       lote: { producaoOP: { is: { ordemProducaoId: op.id } } },
       tipo: { notIn: ["PRODUCAO_OP", "ESTORNO_PRODUCAO_OP"] },
+      ...SEM_AJUSTE_ESTORNADO,
     },
     select: { lote: { select: { codigo: true } } },
   });

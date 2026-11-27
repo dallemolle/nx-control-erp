@@ -311,7 +311,12 @@ export async function rastrearLote(
       : Promise.resolve([] as OpCarregada[]),
     prisma.movimentoEstoque.findMany({
       where: { loteId: { in: idsDaFamilia } },
-      select: { tipo: true, quantidadeKg: true, ajuste: { select: { motivo: true } } },
+      select: {
+        tipo: true,
+        quantidadeKg: true,
+        ajuste: { select: { motivo: true } },
+        ajusteEstornado: { select: { motivo: true } },
+      },
     }),
   ]);
 
@@ -456,7 +461,11 @@ export async function rastrearLote(
     frutosConsumidos,
     opsQueConsumiram,
     destino: destinoDoLote(
-      movimentos.map((m) => ({ tipo: m.tipo, quantidadeKg: Number(m.quantidadeKg), motivo: m.ajuste?.motivo ?? null })),
+      movimentos.map((m) => ({
+        tipo: m.tipo,
+        quantidadeKg: Number(m.quantidadeKg),
+        motivo: (m.ajuste ?? m.ajusteEstornado)?.motivo ?? null,
+      })),
       saldoDaFamilia,
     ),
     clientes,

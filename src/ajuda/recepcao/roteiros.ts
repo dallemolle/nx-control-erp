@@ -291,7 +291,7 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Quando o “Excluir” fica desabilitado",
         explicacao:
           "Quando o lote já teve movimento (processamento, venda, ajuste ou transferência de parte dele) ou a conta " +
-          "a pagar já tem pagamento registrado. Mudar o lote inteiro de local não conta. Pare o mouse sobre o botão para ver o motivo. No exemplo, o lote FA-261118-01 já " +
+          "a pagar já tem pagamento registrado. Mudar o lote inteiro de local e ajuste estornado não contam. Pare o mouse sobre o botão para ver o motivo. No exemplo, o lote FA-261118-01 já " +
           "foi para o processamento.",
         dica:
           "Nesses casos, o erro se corrige no que veio depois: um ajuste de estoque para o peso, ou o título em " +
