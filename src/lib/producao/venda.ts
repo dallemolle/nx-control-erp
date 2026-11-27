@@ -80,6 +80,21 @@ export function loteVencidoNaData(validade: Date, data: Date): boolean {
   return validade.getTime() < data.getTime();
 }
 
+export type VencimentoNaVenda = "NO_PRAZO" | "LIBERADO" | "VENCIDO";
+
+/**
+ * Situação do lote na data do pedido, com datas `AAAA-MM-DD` (formulário): vencido e
+ * liberado pelo gestor até essa data (último dia inclusive, D-35) pode sair; vencido sem
+ * liberação, não.
+ */
+export function vencimentoNaVenda(
+  lote: { validade: string; liberadoAte: string | null },
+  data: string,
+): VencimentoNaVenda {
+  if (lote.validade >= data) return "NO_PRAZO";
+  return lote.liberadoAte && data <= lote.liberadoAte ? "LIBERADO" : "VENCIDO";
+}
+
 /** Limite de parcelas da venda a prazo: só protege contra erro de digitação. */
 export const MAX_PARCELAS_VENDA = 60;
 

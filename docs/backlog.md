@@ -448,29 +448,6 @@ Numeração continua a do Financeiro e da Controladoria. Itens 22 a 25 feitos em
 
 Numeração continua a da Produção.
 
-### 26. Lista de lotes do pedido não diz qual vencido está liberado
-
-- **Problema:** no Novo pedido, todo lote com validade anterior à data do
-  pedido aparece com "· VENCIDO", liberado pelo gestor ou não. Só depois de
-  escolher o lote o formulário diz "Liberado até ..." ou "Lote vencido: peça a
-  liberação ao gestor".
-- **Exemplo:** em 21/11 a lista mostra FC-261117-01 e AMR-261118-01, os dois
-  "VENCIDO". O FC foi liberado até 21/11 e pode sair; o AMR não. A vendedora
-  precisa escolher cada um para descobrir.
-- **Onde:** rótulo do lote em `vendas/pedidos/novo/pedido-form.tsx` (o
-  `liberadoAte` já chega em `opcoes.lotes`).
-- **Impacto:** tentativa e erro no balcão; e lote liberado (que o gestor quer
-  escoar primeiro) parece proibido e fica para trás.
-- **Caminhos:** mostrar "· VENCIDO · liberado até dd/mm" quando a liberação
-  cobre a data do pedido; ou separar os vencidos não liberados no fim da lista
-  (ou escondê-los).
-- **Cuidados:** a liberação vale pela data do pedido, que pode ser mudada
-  depois de escolher o lote (o rótulo tem de acompanhar a data).
-- **Ao corrigir:** passos "Lote vencido não sai" e "A não ser que o gestor
-  tenha liberado" do roteiro `lancar-a-vista` em
-  `src/ajuda/pedidos/roteiros.ts` e a cena `CenaLotes` em
-  `src/ajuda/pedidos/cenas.tsx`.
-
 ### 27. Entrega marcada como entregue não pode ser corrigida
 
 - **Problema:** depois de "Entregue", o botão some e o "Editar" só muda data

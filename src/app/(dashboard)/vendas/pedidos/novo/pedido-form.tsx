@@ -27,6 +27,7 @@ import {
   gerarParcelasPorPrazos,
   interpretarPrazos,
   validarParcelasVenda,
+  vencimentoNaVenda,
 } from "@/lib/producao/venda";
 import { paraKg } from "@/lib/producao/unidade";
 import { paraDataIso } from "@/lib/producao/periodo";
@@ -72,6 +73,17 @@ const dataDeCalendario = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
 const ESTADO_INICIAL: FormState = {};
 const KG = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 3 });
 const PERCENTUAL = new Intl.NumberFormat("pt-BR", { style: "percent", maximumFractionDigits: 1 });
+
+/** Final do rótulo do lote na lista: acompanha a data do pedido (a liberação vale por ela). */
+function rotuloDoVencimento(lote: { validade: string; liberadoAte: string | null }, data: string): string {
+  const situacao = vencimentoNaVenda(lote, data);
+  if (situacao === "NO_PRAZO") return "";
+  if (situacao === "LIBERADO") return ` · VENCIDO · liberado até ${formatarData(lote.liberadoAte!)}`;
+  // Liberação que não cobre a data do pedido: diz até quando valia, para a pessoa entender.
+  return lote.liberadoAte
+    ? ` · VENCIDO · liberado só até ${formatarData(lote.liberadoAte)}`
+    : " · VENCIDO · sem liberação";
+}
 
 function numero(valor: string): number {
   return valor.trim() === "" ? NaN : Number(valor);
@@ -161,9 +173,9 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
       lote && Number.isFinite(quantidadeKg) && Number.isFinite(precoKg)
         ? calcularItem({ quantidadeKg, precoKg, custoKg: lote.custoKg })
         : null;
-    const vencido = lote ? lote.validade < data : false;
-    // D-35: a liberação feita no lote cobre a data do pedido (último dia inclusive)?
-    const liberadoAte = vencido && lote?.liberadoAte && data <= lote.liberadoAte ? lote.liberadoAte : null;
+    const situacao = lote ? vencimentoNaVenda(lote, data) : "NO_PRAZO";
+    const vencido = situacao !== "NO_PRAZO";
+    const liberadoAte = situacao === "LIBERADO" ? lote!.liberadoAte : null;
     return { item, lote, quantidadeKg, precoKg, calculo, vencido, liberadoAte };
   });
   const completas = linhas.filter((l) => l.calculo && l.lote);
@@ -474,7 +486,7 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
                         <SelectItem key={l.id} value={l.id}>
                           {l.codigo} · {l.produto.descricao} · {KG.format(l.saldoKg)} kg · vence{" "}
                           {formatarData(l.validade)}
-                          {l.validade < data ? " · VENCIDO" : ""}
+                          {rotuloDoVencimento(l, data)}
                         </SelectItem>
                       ))}
                   </SelectContent>
