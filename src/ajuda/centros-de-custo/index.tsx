@@ -238,16 +238,17 @@ export const ajudaCentrosDeCusto: DefinicaoAjuda = {
           alvo: "lista.viveiro",
           instrucao: "Confira o status",
           explicacao:
-            "Inativo. O centro some da Tesouraria. No Fluxo por dimensão, continua aparecendo enquanto tiver valores no " +
-            "período: o histórico não se perde.",
-          dica: "Hoje o Contas a pagar e o Contas a receber ainda oferecem o centro inativo: escolha outro.",
+            "Inativo. O centro some dos títulos e lançamentos novos (Contas a pagar, Contas a receber, Tesouraria e " +
+            "Conciliação). No Fluxo por dimensão, continua aparecendo enquanto tiver valores no período: o histórico " +
+            "não se perde.",
+          dica: "Ao editar um título ou lançamento antigo, o centro aparece como “(inativo)” e pode ficar.",
           preenche: { "lista.viveiro": "Inativo" },
         },
         {
           cena: "lista",
           alvo: "lista.inativar",
           instrucao: "Precisa dele de novo? Clique em “Reativar”",
-          explicacao: "O centro volta para a Tesouraria.",
+          explicacao: "O centro volta para os títulos e a Tesouraria.",
         },
       ],
       eDepois: { texto: "Para mudar nome, código ou pai, use o “Editar” da linha: o formulário é o mesmo." },

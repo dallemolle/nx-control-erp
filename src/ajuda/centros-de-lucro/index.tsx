@@ -139,8 +139,8 @@ export const ajudaCentrosDeLucro: DefinicaoAjuda = {
           alvo: "lista.loja",
           instrucao: "Confira na lista",
           explicacao:
-            "Para tirar um centro de uso, clique em “Inativar”: ele some da Tesouraria, e o histórico continua no Fluxo " +
-            "por dimensão. Hoje os títulos ainda oferecem o centro inativo.",
+            "Para tirar um centro de uso, clique em “Inativar”: ele some dos títulos e lançamentos novos, e o " +
+            "histórico continua no Fluxo por dimensão. Nos antigos, aparece como “(inativo)” e pode ficar.",
           preenche: { "lista.loja": "sim" },
         },
       ],

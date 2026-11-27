@@ -68,11 +68,11 @@ type TituloLinha = {
 
 export type OpcoesTitulo = {
   contrapartes: { id: string; nome: string; classificacaoFiscalPadrao?: ClassificacaoFiscal | null; ativo?: boolean }[];
-  categorias: { id: string; nome: string }[];
-  centrosCusto: { id: string; nome: string }[];
-  centrosLucro: { id: string; nome: string }[];
-  safras: { id: string; nome: string }[];
-  projetos: { id: string; nome: string }[];
+  categorias: { id: string; nome: string; ativo?: boolean }[];
+  centrosCusto: { id: string; nome: string; ativo?: boolean }[];
+  centrosLucro: { id: string; nome: string; ativo?: boolean }[];
+  safras: { id: string; nome: string; ativo?: boolean }[];
+  projetos: { id: string; nome: string; ativo?: boolean }[];
   contasBancarias: { id: string; nome: string; ativo?: boolean }[];
 };
 

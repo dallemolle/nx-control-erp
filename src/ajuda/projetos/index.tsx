@@ -163,8 +163,8 @@ export const ajudaProjetos: DefinicaoAjuda = {
             "O PRJ-02 já aparece para escolher nos títulos, na Tesouraria e na Conciliação. Quando a obra terminar, " +
             "use o “Editar” da linha para mudar o status para Encerrado.",
           dica:
-            "Inativar tira o projeto da Tesouraria e da Conciliação (no Fluxo por dimensão, continua aparecendo " +
-            "enquanto tiver valores no período), mas hoje o Contas a pagar e o Contas a receber ainda o oferecem.",
+            "Inativar tira o projeto dos títulos e lançamentos novos (no Fluxo por dimensão, continua aparecendo " +
+            "enquanto tiver valores no período). Nos antigos, ele aparece como “(inativo)” e pode ficar.",
           preenche: { "lista.camara": "sim" },
         },
       ],

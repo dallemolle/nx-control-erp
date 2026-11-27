@@ -235,10 +235,12 @@ export const ajudaCategorias: DefinicaoAjuda = {
           alvo: "lista.bensUsados",
           instrucao: "Confira o status",
           explicacao:
-            "Inativo. A categoria some do Orçamento e não pode mais ser a categoria da taxa de uma operadora. O título " +
-            "do trator continua com ela, e os relatórios também.",
+            "Inativo. A categoria some do Orçamento, dos títulos e lançamentos novos (Contas a pagar, Contas a " +
+            "receber, Tesouraria e Conciliação) e não pode mais ser a categoria da taxa de uma operadora. O título do " +
+            "trator continua com ela, e os relatórios também.",
           dica:
-            "Hoje o Contas a pagar, o Contas a receber e a Tesouraria ainda oferecem a categoria inativa: escolha outra.",
+            "Ao editar o título antigo, a categoria aparece como “(inativa)” e pode ficar. Se ela for a categoria da " +
+            "Configuração de produção, a recepção e o pedido de venda passam a ser recusados até você trocar lá.",
           preenche: { "lista.bensUsados": "Inativo" },
         },
         {

@@ -123,7 +123,7 @@ export default async function ConciliacaoPage({
                       : null
                   }
                   podeEscrever={podeEscrever}
-                  categorias={categorias}
+                  categorias={categorias.filter((c) => c.ativo)}
                   centrosCusto={centrosCusto.filter((c) => c.ativo)}
                   centrosLucro={centrosLucro.filter((c) => c.ativo)}
                   safras={safras.filter((s) => s.ativo)}

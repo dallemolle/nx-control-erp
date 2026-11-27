@@ -482,32 +482,6 @@ Numeração continua a de Vendas.
   Histórico. O item 20 (status de safra e projeto como código), o mesmo
   problema em outra tela, também foi feito.
 
-### 35. Categoria, centros, safra e projeto inativos continuam nos títulos (e a categoria, na Tesouraria)
-
-- **Problema:** inativar uma categoria tira ela do Orçamento e da operadora
-  de cartão; inativar um centro de custo ou de lucro, uma safra ou um projeto
-  tira ele da Tesouraria e da Conciliação (a safra sai também da Recepção).
-  Mas o Contas a pagar e o Contas a receber continuam oferecendo todos, e a
-  Tesouraria continua oferecendo a categoria inativa (ela filtra só centros,
-  safras e projetos).
-- **Exemplo:** "Venda de bens usados" foi inativada depois da venda do
-  trator, mas continua na escolha de categoria do título novo e do
-  lançamento da Tesouraria.
-- **Onde:** `contas-a-pagar/page.tsx`, `contas-a-receber/page.tsx` e
-  `tesouraria/page.tsx` (listas sem filtro de `ativo`) e
-  `validarReferenciasDoTitulo` em `src/server/services/titulo.ts`.
-- **Impacto:** o inativar não faz o que promete; lançamentos novos em
-  categorias e centros que deviam ter saído de uso.
-- **Caminhos:** a mesma correção dos itens 28 (cliente e fornecedor) e 31
-  (conta bancária): oferecer só os ativos no título e no lançamento novos,
-  manter o já escolhido na edição, e recusar inativo no serviço. Vale fazer
-  os três itens juntos.
-- **Ao corrigir:** dicas dos passos "Confira o status" dos roteiros
-  `inativar-categoria`, `inativar-centro-custo` e do último passo de
-  `cadastrar-centro-lucro` (`src/ajuda/categorias`, `centros-de-custo`,
-  `centros-de-lucro`); dica do último passo de `encerrar-safra` e de
-  `cadastrar-projeto` (`src/ajuda/safras`, `projetos`).
-
 ### 36. O "pai" das categorias e dos centros de custo não é usado
 
 - **Problema:** categorias e centros de custo têm um campo "pai" (e a tela
@@ -717,7 +691,12 @@ Mesma numeração das seções acima.
   sem conferir `ativo`).
 - **Impacto:** o inativar não faz o que promete, e a tela de configuração
   fica travada sem explicar por quê.
-- **Caminhos:** junto com os itens 31 e 35: na configuração, mostrar a
+- **Desde o item 35 (2026-11-27):** o título recusa categoria inativa, então
+  a recepção e o pedido de venda com a categoria da configuração inativada
+  passam a ser recusados ("Categoria financeira inativa: escolha outra ou
+  reative o cadastro") em vez de lançar nela. Falta a tela de configuração
+  mostrar isso.
+- **Caminhos:** na configuração, mostrar a
   escolhida mesmo inativa, marcada "(inativa)", e avisar no topo; ao
   inativar uma categoria ou conta em uso na configuração, avisar ou
   recusar.

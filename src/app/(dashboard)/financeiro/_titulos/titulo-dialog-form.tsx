@@ -19,7 +19,16 @@ import { criarTituloAction, atualizarTituloAction, type FormState } from "./acti
 import { SecaoDocumentoFiscal, type DocumentoFiscalEditavel } from "./secao-documento-fiscal";
 import { useAcaoDoDialogo } from "../../_shared/use-acao-do-dialogo";
 
-type Opcao = { id: string; nome: string };
+type Opcao = { id: string; nome: string; ativo?: boolean };
+
+/** Inativo não entra em título novo; na edição, o já escolhido continua na lista, marcado. */
+function opcoesEmUso(opcoes: Opcao[], atual: string | null | undefined) {
+  return opcoes.filter((opcao) => opcao.ativo !== false || opcao.id === atual);
+}
+
+function nomeDaOpcao(opcao: Opcao, inativo: "inativo" | "inativa") {
+  return opcao.ativo === false ? `${opcao.nome} (${inativo})` : opcao.nome;
+}
 
 /** Fornecedor/cliente com a classificação padrão que pré-preenche títulos novos. */
 type OpcaoContraparte = Opcao & { classificacaoFiscalPadrao?: ClassificacaoFiscal | null; ativo?: boolean };
@@ -172,9 +181,9 @@ export function TituloDialogForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {categorias.map((opcao) => (
+                {opcoesEmUso(categorias, titulo?.categoriaFinanceiraId).map((opcao) => (
                   <SelectItem key={opcao.id} value={opcao.id}>
-                    {opcao.nome}
+                    {nomeDaOpcao(opcao, "inativa")}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -188,15 +197,23 @@ export function TituloDialogForm({
                 label: "Centro de custo",
                 opcoes: centrosCusto,
                 atual: titulo?.centroCustoId,
+                inativo: "inativo" as const,
               },
               {
                 nome: "centroLucroId",
                 label: "Centro de lucro",
                 opcoes: centrosLucro,
                 atual: titulo?.centroLucroId,
+                inativo: "inativo" as const,
               },
-              { nome: "safraId", label: "Safra", opcoes: safras, atual: titulo?.safraId },
-              { nome: "projetoId", label: "Projeto", opcoes: projetos, atual: titulo?.projetoId },
+              { nome: "safraId", label: "Safra", opcoes: safras, atual: titulo?.safraId, inativo: "inativa" as const },
+              {
+                nome: "projetoId",
+                label: "Projeto",
+                opcoes: projetos,
+                atual: titulo?.projetoId,
+                inativo: "inativo" as const,
+              },
             ].map((campo) => (
               <div key={campo.nome} className="space-y-2">
                 <Label htmlFor={campo.nome}>{campo.label}</Label>
@@ -206,9 +223,9 @@ export function TituloDialogForm({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value={SEM_VALOR}>Nenhum</SelectItem>
-                    {campo.opcoes.map((opcao) => (
+                    {opcoesEmUso(campo.opcoes, campo.atual).map((opcao) => (
                       <SelectItem key={opcao.id} value={opcao.id}>
-                        {opcao.nome}
+                        {nomeDaOpcao(opcao, campo.inativo)}
                       </SelectItem>
                     ))}
                   </SelectContent>
