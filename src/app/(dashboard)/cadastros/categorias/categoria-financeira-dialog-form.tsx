@@ -53,7 +53,7 @@ export function CategoriaFinanceiraDialogForm({
         <DialogHeader>
           <DialogTitle>{categoria ? "Editar categoria financeira" : "Nova categoria financeira"}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           {categoria ? <input type="hidden" name="id" value={categoria.id} /> : null}
           <div className="space-y-2">
             <Label htmlFor="nome">Nome</Label>

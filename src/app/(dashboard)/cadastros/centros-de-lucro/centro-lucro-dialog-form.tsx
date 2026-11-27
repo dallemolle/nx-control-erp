@@ -36,7 +36,7 @@ export function CentroLucroDialogForm({ centro }: { centro?: CentroLucro }) {
         <DialogHeader>
           <DialogTitle>{centro ? "Editar centro de lucro" : "Novo centro de lucro"}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           {centro ? <input type="hidden" name="id" value={centro.id} /> : null}
           <div className="space-y-2">
             <Label htmlFor="nome">Nome</Label>

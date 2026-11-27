@@ -2,7 +2,7 @@
 
 // Espelhado na ajuda (src/ajuda/orcamento/cenas.tsx): mudou campo, botão ou mensagem? Ajuste a ajuda junto.
 
-import { useActionState } from "react";
+import { useFormularioDaAcao } from "@/components/use-formulario-da-acao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { recuoDoNivel } from "@/lib/recuoDoNivel";
@@ -44,10 +44,10 @@ export function LinhaOrcamentoForm({
   valoresPorMes: number[]; // índice 0 = mês 1 (janeiro) .. índice 11 = mês 12
   somenteLeitura: boolean;
 }) {
-  const [state, formAction, pendente] = useActionState(salvarLinhaOrcamentoAction, ESTADO_INICIAL);
+  const [state, formAction, pendente] = useFormularioDaAcao(salvarLinhaOrcamentoAction, ESTADO_INICIAL);
 
   return (
-    <form action={formAction} className="flex items-center gap-2 border-b py-2">
+    <form onSubmit={formAction} className="flex items-center gap-2 border-b py-2">
       <input type="hidden" name="categoriaFinanceiraId" value={categoriaFinanceiraId} />
       <input type="hidden" name="ano" value={ano} />
       <span

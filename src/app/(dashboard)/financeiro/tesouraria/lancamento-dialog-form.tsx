@@ -61,7 +61,7 @@ export function LancamentoDialogForm({
             Ligado ao extrato: para mudar conta, tipo, data ou valor, desconcilie na Conciliação.
           </p>
         ) : null}
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           {editando ? <input type="hidden" name="id" value={lancamento.id} /> : null}
           {lancamento && travado ? <input type="hidden" name="contaBancariaId" value={lancamento.contaBancariaId} /> : null}
           {lancamento && travado ? <input type="hidden" name="tipo" value={lancamento.tipoLancamento} /> : null}

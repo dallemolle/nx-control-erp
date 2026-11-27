@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import { useRef } from "react";
+import { useFormularioDaAcao } from "@/components/use-formulario-da-acao";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PERFIS, ROTULOS_PERFIL } from "@/lib/schemas/usuario";
 import type { Perfil } from "@prisma/client";
@@ -10,10 +11,10 @@ const ESTADO_INICIAL: FormState = {};
 
 export function PerfilForm({ usuarioId, perfil }: { usuarioId: string; perfil: Perfil }) {
   const formRef = useRef<HTMLFormElement>(null);
-  const [state, formAction] = useActionState(atualizarPerfilAction, ESTADO_INICIAL);
+  const [state, formAction] = useFormularioDaAcao(atualizarPerfilAction, ESTADO_INICIAL);
 
   return (
-    <form ref={formRef} action={formAction} className="flex flex-col gap-1">
+    <form ref={formRef} onSubmit={formAction} className="flex flex-col gap-1">
       <input type="hidden" name="usuarioId" value={usuarioId} />
       <Select
         name="perfil"

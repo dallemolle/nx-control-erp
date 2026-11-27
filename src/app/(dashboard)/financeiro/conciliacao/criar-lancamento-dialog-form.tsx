@@ -36,7 +36,7 @@ export function CriarLancamentoDialogForm({
         <DialogHeader>
           <DialogTitle>Criar lançamento a partir desta linha</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           <input type="hidden" name="linhaExtratoId" value={linhaExtratoId} />
           <CamposLancamentoAvulso
             sufixoId={linhaExtratoId}

@@ -661,29 +661,6 @@ Numeração continua a das seções anteriores.
 
 ## Interface — formulários
 
-### 65. Erro do servidor apaga o que foi digitado no diálogo
-
-- **Problema:** os diálogos com formulário (`useActionState` e campos não
-  controlados, com `defaultValue`) voltam aos valores iniciais depois de
-  cada envio, inclusive quando o servidor devolve erro. A mensagem aparece,
-  mas os campos que a pessoa mudou se perdem.
-- **Exemplo:** no "Editar" de uma entrega entregue, a Rita troca "Recebido
-  por" de Rui para Lúcia e a data para 19/11, antes da data do pedido. O erro
-  "A entrega não pode ser antes da data do pedido" aparece, e o campo volta a
-  "Rui"; ela corrige a data, salva, e o nome errado fica gravado sem ela
-  perceber. (Visto ao fazer o item 27, em 2026-11-27.)
-- **Onde:** é o reset automático de formulário do React 19 depois de uma
-  action; vale para quase todos os diálogos (`use-acao-do-dialogo.ts` e os
-  que usam `useActionState` direto).
-- **Impacto:** retrabalho e dado errado gravado quando a pessoa não confere
-  tudo de novo depois do erro.
-- **Caminhos:** a action devolver os valores enviados no estado de erro e o
-  formulário usar esses valores como `defaultValue` (com `key` para
-  remontar); ou chamar o envio por `onSubmit` com `preventDefault` e
-  `startTransition`, que não dispara o reset.
-- **Cuidados:** muitos formulários; fazer pelo hook comum e migrar aos
-  poucos; selects da Base UI também têm valor inicial.
-
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 
 - **Ajuda com simulação nas demais telas do Financeiro.** Feito (2026-11-20):

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useFormularioDaAcao } from "@/components/use-formulario-da-acao";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,9 +48,9 @@ export function EntregaAcoes({
 }
 
 function MarcarEmRota({ pedidoId }: { pedidoId: string }) {
-  const [state, formAction, pendente] = useActionState(atualizarEntregaAction, ESTADO_INICIAL);
+  const [state, formAction, pendente] = useFormularioDaAcao(atualizarEntregaAction, ESTADO_INICIAL);
   return (
-    <form action={formAction} className="flex items-center gap-2">
+    <form onSubmit={formAction} className="flex items-center gap-2">
       <input type="hidden" name="pedidoId" value={pedidoId} />
       <input type="hidden" name="status" value="EM_ROTA" />
       <Button type="submit" variant="outline" size="sm" disabled={pendente}>
@@ -71,7 +71,7 @@ function MarcarEntregue({ entrega, hoje }: { entrega: EntregaParaAcoes; hoje: st
         <DialogHeader>
           <DialogTitle>Entrega do pedido {entrega.numero}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           <input type="hidden" name="pedidoId" value={entrega.pedidoId} />
           <input type="hidden" name="status" value="ENTREGUE" />
           <div className="space-y-2">
@@ -102,7 +102,7 @@ function DesfazerEntrega({ entrega }: { entrega: EntregaParaAcoes }) {
         <DialogHeader>
           <DialogTitle>Desfazer a entrega do pedido {entrega.numero}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           <input type="hidden" name="pedidoId" value={entrega.pedidoId} />
           <input type="hidden" name="status" value="EM_ROTA" />
           <p className="text-sm text-muted-foreground">
@@ -131,7 +131,7 @@ function EditarEntrega({ entrega }: { entrega: EntregaParaAcoes }) {
         <DialogHeader>
           <DialogTitle>Entrega do pedido {entrega.numero}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           <input type="hidden" name="pedidoId" value={entrega.pedidoId} />
           {entrega.status === "ENTREGUE" ? (
             <div className="grid gap-4 sm:grid-cols-2">

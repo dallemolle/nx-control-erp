@@ -31,7 +31,7 @@ export function EncerrarOP({ opId, numero, aVerificar }: { opId: string; numero:
         <DialogHeader>
           <DialogTitle>Encerrar {numero}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           <input type="hidden" name="opId" value={opId} />
           {naoSalvo ? (
             <p role="status" className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
@@ -93,7 +93,7 @@ export function DesfazerOP({
             {tipo === "reabrir" ? "Reabrir" : "Cancelar"} {numero}
           </DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           <input type="hidden" name="opId" value={opId} />
           <p className="text-sm text-muted-foreground">
             {tipo === "reabrir"
@@ -141,7 +141,7 @@ export function EditarCabecalhoOP({
         <DialogHeader>
           <DialogTitle>Editar OP</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           <input type="hidden" name="opId" value={op.id} />
           {temLinhas ? (
             <>

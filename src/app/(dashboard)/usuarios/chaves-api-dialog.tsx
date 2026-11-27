@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useFormularioDaAcao } from "@/components/use-formulario-da-acao";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,7 +45,7 @@ export function ChavesApiDialog({ usuarioId }: { usuarioId: string }) {
   // aqui, e limpamos explicitamente ao fechar o diálogo — reabrir nunca reexibe
   // uma chave antiga.
   const [chaveRecemGerada, setChaveRecemGerada] = useState<string | null>(null);
-  const [state, formAction, pendente] = useActionState(async (anterior: GerarChaveState, dados: FormData) => {
+  const [state, formAction, pendente] = useFormularioDaAcao(async (anterior: GerarChaveState, dados: FormData) => {
     const resultado = await gerarChaveAction(anterior, dados);
     if (resultado.chaveCompleta) setChaveRecemGerada(resultado.chaveCompleta);
     if (resultado.sucesso) await recarregar();
@@ -109,7 +110,7 @@ export function ChavesApiDialog({ usuarioId }: { usuarioId: string }) {
             )}
           </div>
 
-          <form action={formAction} className="flex items-end gap-2 border-t pt-4">
+          <form onSubmit={formAction} className="flex items-end gap-2 border-t pt-4">
             <input type="hidden" name="usuarioId" value={usuarioId} />
             <div className="flex-1 space-y-2">
               <Label htmlFor="nome">Nova chave</Label>

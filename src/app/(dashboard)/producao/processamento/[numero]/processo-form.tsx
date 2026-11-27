@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useFormularioDaAcao } from "@/components/use-formulario-da-acao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,7 +72,7 @@ export function ProcessoForm({
   const naoSalvo = salvo !== null && atual !== null && atual !== salvo;
   const { setNaoSalvo } = useProcessoNaoSalvo();
 
-  const [state, formAction, pendente] = useActionState(async (anterior: FormState, dados: FormData) => {
+  const [state, formAction, pendente] = useFormularioDaAcao(async (anterior: FormState, dados: FormData) => {
     const resultado = await atualizarProcessoOPAction(anterior, dados);
     if (resultado.sucesso) setSalvo(camposDoProcesso(dados));
     return resultado;
@@ -95,7 +96,7 @@ export function ProcessoForm({
   return (
     <form
       ref={formRef}
-      action={formAction}
+      onSubmit={formAction}
       onInput={(evento) => setAtual(camposDoProcesso(new FormData(evento.currentTarget)))}
       className="space-y-4"
     >

@@ -39,7 +39,7 @@ export function ProjetoDialogForm({ projeto }: { projeto?: Projeto }) {
         <DialogHeader>
           <DialogTitle>{projeto ? "Editar projeto" : "Novo projeto"}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           {projeto ? <input type="hidden" name="id" value={projeto.id} /> : null}
           <div className="space-y-2">
             <Label htmlFor="nome">Nome</Label>

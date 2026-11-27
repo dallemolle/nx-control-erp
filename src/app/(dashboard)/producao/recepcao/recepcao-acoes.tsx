@@ -64,7 +64,7 @@ function EditarRecepcao({
         <DialogHeader>
           <DialogTitle>Editar recepção {recepcao.codigoLote}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           <input type="hidden" name="id" value={recepcao.id} />
           <p className="text-sm text-muted-foreground">
             Peso, preço, produto e origem não mudam aqui. Para corrigi-los, exclua a recepção e lance de novo.
@@ -127,7 +127,7 @@ function ExcluirRecepcao({ recepcao, situacao }: { recepcao: Props["recepcao"]; 
         <DialogHeader>
           <DialogTitle>Excluir recepção {recepcao.codigoLote}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           <input type="hidden" name="id" value={recepcao.id} />
           <p className="text-sm text-muted-foreground">
             O lote fica zerado (o número não é reaproveitado) e a conta a pagar, se houver, é cancelada.

@@ -50,7 +50,7 @@ export function ProdutoDialogForm({ produto, frutas }: { produto?: Produto; frut
         <DialogHeader>
           <DialogTitle>{produto ? "Editar produto" : "Novo produto"}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           {produto ? <input type="hidden" name="id" value={produto.id} /> : null}
           <div className="grid gap-4 sm:grid-cols-[8rem_1fr]">
             <div className="space-y-2">

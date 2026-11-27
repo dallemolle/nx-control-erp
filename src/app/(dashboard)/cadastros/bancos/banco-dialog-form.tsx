@@ -36,7 +36,7 @@ export function BancoDialogForm({ banco }: { banco?: Banco }) {
         <DialogHeader>
           <DialogTitle>{banco ? "Editar banco" : "Novo banco"}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           {banco ? <input type="hidden" name="id" value={banco.id} /> : null}
           <div className="space-y-2">
             <Label htmlFor="codigo">Código</Label>

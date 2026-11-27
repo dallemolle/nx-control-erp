@@ -46,7 +46,7 @@ export function ContaBancariaDialogForm({ conta, bancos }: { conta?: ContaBancar
         <DialogHeader>
           <DialogTitle>{conta ? "Editar conta bancária" : "Nova conta bancária"}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           {conta ? <input type="hidden" name="id" value={conta.id} /> : null}
           <div className="space-y-2">
             <Label htmlFor="tipo">Tipo</Label>

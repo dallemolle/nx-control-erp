@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useFormularioDaAcao } from "@/components/use-formulario-da-acao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +24,7 @@ const KG = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 0, maximumFra
  */
 function useAcaoQueLimpa(action: (anterior: FormState, dados: FormData) => Promise<FormState>) {
   const [chave, setChave] = useState(0);
-  const [state, formAction, pendente] = useActionState<FormState, FormData>(async (anterior, dados) => {
+  const [state, formAction, pendente] = useFormularioDaAcao<FormState>(async (anterior, dados) => {
     const resultado = await action(anterior, dados);
     if (resultado.sucesso) setChave((c) => c + 1);
     return resultado;
@@ -64,7 +65,7 @@ export type LoteConsumoOpcao = {
 export function FormConsumo({ opId, lotes }: { opId: string; lotes: LoteConsumoOpcao[] }) {
   const { chave, state, formAction, pendente } = useAcaoQueLimpa(adicionarConsumoAction);
   return (
-    <form action={formAction} className="rounded-lg border p-3">
+    <form onSubmit={formAction} className="rounded-lg border p-3">
       <input type="hidden" name="opId" value={opId} />
       <CamposConsumo key={chave} lotes={lotes} />
       <Rodape state={state} pendente={pendente} rotulo="Lançar consumo" />
@@ -138,7 +139,7 @@ export function FormProducao({
 }) {
   const { chave, state, formAction, pendente } = useAcaoQueLimpa(adicionarProducaoAction);
   return (
-    <form action={formAction} className="rounded-lg border p-3">
+    <form onSubmit={formAction} className="rounded-lg border p-3">
       <input type="hidden" name="opId" value={opId} />
       <CamposProducao key={chave} produtos={produtos} locais={locais} />
       <Rodape state={state} pendente={pendente} rotulo="Lançar polpa" />
@@ -212,7 +213,7 @@ export function FormInsumo({
 }) {
   const { chave, state, formAction, pendente } = useAcaoQueLimpa(adicionarInsumoAction);
   return (
-    <form action={formAction} className="rounded-lg border p-3">
+    <form onSubmit={formAction} className="rounded-lg border p-3">
       <input type="hidden" name="opId" value={opId} />
       <CamposInsumo key={chave} insumos={insumos} />
       <Rodape state={state} pendente={pendente} rotulo="Lançar insumo" />
@@ -264,12 +265,12 @@ export function RemoverLinha({
   linhaId: string;
   descricao: string;
 }) {
-  const [state, formAction, pendente] = useActionState(removerLinhaAction, ESTADO_INICIAL);
+  const [state, formAction, pendente] = useFormularioDaAcao(removerLinhaAction, ESTADO_INICIAL);
   return (
     <form
-      action={formAction}
       onSubmit={(e) => {
-        if (!window.confirm(`Remover ${descricao}?`)) e.preventDefault();
+        if (window.confirm(`Remover ${descricao}?`)) formAction(e);
+        else e.preventDefault();
       }}
       className="flex items-center justify-end gap-2"
     >

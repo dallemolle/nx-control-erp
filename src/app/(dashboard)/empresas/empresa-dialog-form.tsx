@@ -40,7 +40,7 @@ export function EmpresaDialogForm({ empresa }: { empresa?: Empresa }) {
         <DialogHeader>
           <DialogTitle>{empresa ? "Editar empresa" : "Nova empresa"}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           {empresa ? <input type="hidden" name="id" value={empresa.id} /> : null}
           <div className="space-y-2">
             <Label htmlFor="razaoSocial">Razão social</Label>

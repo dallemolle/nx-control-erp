@@ -44,7 +44,7 @@ export function SafraDialogForm({ safra }: { safra?: Safra }) {
         <DialogHeader>
           <DialogTitle>{safra ? "Editar safra" : "Nova safra"}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           {safra ? <input type="hidden" name="id" value={safra.id} /> : null}
           <div className="space-y-2">
             <Label htmlFor="nome">Nome</Label>

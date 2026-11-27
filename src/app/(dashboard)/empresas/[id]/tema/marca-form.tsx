@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useFormularioDaAcao } from "@/components/use-formulario-da-acao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,9 +58,9 @@ export function MarcaForm({
   logoEscuroUrl: string | null;
   faviconUrl: string | null;
 }) {
-  const [estado, acao, pendente] = useActionState<FormState, FormData>(atualizarMarcaAction, {});
+  const [estado, acao, pendente] = useFormularioDaAcao<FormState>(atualizarMarcaAction, {});
   return (
-    <form action={acao} className="space-y-4">
+    <form onSubmit={acao} className="space-y-4">
       <input type="hidden" name="empresaId" value={empresaId} />
       <div className="grid gap-4 md:grid-cols-3">
         <CampoImagem

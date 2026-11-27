@@ -1,7 +1,8 @@
 "use client";
 // Espelhado na ajuda (src/ajuda/_titulos/cenas.tsx): mudou rótulo, campo ou botão? Ajuste a ajuda junto.
 
-import { useActionState, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useFormularioDaAcao } from "@/components/use-formulario-da-acao";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +32,7 @@ export function BaixaDialog({
   onOpenChange: (aberto: boolean) => void;
 }) {
   const action = registrarBaixaAction.bind(null, tipo, parcela?.id ?? "");
-  const [state, formAction, pendente] = useActionState(action, ESTADO_INICIAL);
+  const [state, formAction, pendente] = useFormularioDaAcao(action, ESTADO_INICIAL);
   const [campos, setCampos] = useState(CAMPOS_INICIAIS);
   const [parcelaDosCampos, setParcelaDosCampos] = useState(parcela?.id);
   if (parcelaDosCampos !== parcela?.id) {
@@ -55,7 +56,7 @@ export function BaixaDialog({
         <DialogHeader>
           <DialogTitle>Registrar baixa</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           {parcela ? (
             <p className="text-sm">
               <span className="text-muted-foreground">{tipo === "PAGAR" ? "Pagar a" : "Receber de"}:</span>{" "}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useFormularioDaAcao } from "@/components/use-formulario-da-acao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,10 +9,10 @@ import { entrar, type LoginState } from "./actions";
 const ESTADO_INICIAL: LoginState = {};
 
 export function LoginForm() {
-  const [state, formAction, pendente] = useActionState(entrar, ESTADO_INICIAL);
+  const [state, formAction, pendente] = useFormularioDaAcao(entrar, ESTADO_INICIAL);
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={formAction} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <Input id="email" name="email" type="email" required autoComplete="email" />
