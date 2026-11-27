@@ -154,6 +154,9 @@ export async function registrarBaixa(sessao: SessaoAtiva, parcelaId: string, dad
   if (!contaBancaria) {
     throw new Error("Conta bancária não pertence à filial ativa");
   }
+  if (!contaBancaria.ativo) {
+    throw new Error("Conta bancária inativa: escolha uma conta ativa (ou reative esta no cadastro)");
+  }
 
   return prisma.$transaction(async (tx) => {
     // Trava a parcela: duas baixas ao mesmo tempo ficam em fila e a segunda vê a primeira.

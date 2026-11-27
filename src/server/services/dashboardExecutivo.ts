@@ -56,7 +56,6 @@ function somasConciliadasNoPeriodo(filialIds: string[], inicio: Date, fim: Date)
       filialId: { in: filialIds },
       conciliado: true,
       data: { gte: inicio, lte: fim },
-      contaBancaria: { ativo: true },
     },
     _sum: { valor: true },
   });
@@ -325,7 +324,6 @@ export async function buscarResumoFiscalGerencial(sessao: SessaoAtiva): Promise<
         conciliado: true,
         classificacaoFiscal: { not: null },
         data: { gte: inicioMesAtual, lte: fimDeHoje },
-        contaBancaria: { ativo: true },
       },
       _sum: { valor: true },
     }),

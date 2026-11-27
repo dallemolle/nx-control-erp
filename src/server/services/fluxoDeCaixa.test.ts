@@ -196,7 +196,7 @@ describe("buscarSaldoEmCaixaAte / listarFluxoDeCaixaRealizado", () => {
     expect(ultimoPeriodo.saldoFinal).toBeCloseTo(saldoDireto, 2);
   });
 
-  test("lançamentos de uma conta bancária inativa não entram no saldo", async () => {
+  test("lançamentos de uma conta bancária inativa continuam no saldo e no realizado (o passado não muda)", async () => {
     const bancoOutraConta = await prisma.banco.create({ data: { codigo: `FCXI${Date.now()}`, nome: "Banco Inativo Teste" } });
     const contaInativa = await prisma.contaBancaria.create({
       data: {
@@ -216,7 +216,7 @@ describe("buscarSaldoEmCaixaAte / listarFluxoDeCaixaRealizado", () => {
         data: new Date("2026-09-12T00:00:00Z"),
         tipo: "ENTRADA",
         valor: 777777,
-        descricao: "Lançamento em conta inativa — não deve contar",
+        descricao: "Lançamento em conta inativa — continua contando",
         origem: "MANUAL",
         usuarioId: fixture.usuarioId,
         conciliado: true,
@@ -224,11 +224,11 @@ describe("buscarSaldoEmCaixaAte / listarFluxoDeCaixaRealizado", () => {
     });
 
     const saldo = await buscarSaldoEmCaixaAte(fixture.filialId, new Date("2026-09-15T00:00:00Z"));
-    expect(saldo).toBeLessThan(777777);
+    expect(saldo).toBeGreaterThanOrEqual(777777);
 
     const periodos = await listarFluxoDeCaixaRealizado(fixture.sessao, "MES", new Date("2026-09-01T00:00:00Z"));
     const totalEntradasComContaInativa = periodos.reduce((soma, p) => soma + p.entradas, 0);
-    expect(totalEntradasComContaInativa).toBeLessThan(777777);
+    expect(totalEntradasComContaInativa).toBeGreaterThanOrEqual(777777);
   });
 
   test("transferências saem de Entradas e Saídas; a perna solta aparece na coluna Transferências", async () => {
@@ -287,7 +287,7 @@ describe("buscarAguardandoConciliacaoDasFiliais (integração)", () => {
         { ...base, contaBancariaId: fixture.contaBancariaId, data: new Date("2026-09-10T00:00:00Z"), tipo: "ENTRADA", valor: 300, descricao: "Não conciliada", conciliado: false },
         { ...base, contaBancariaId: fixture.contaBancariaId, data: new Date("2099-01-10T00:00:00Z"), tipo: "SAIDA", valor: 120, descricao: "Não conciliada com data futura: entra (sem corte de data)", conciliado: false },
         { ...base, contaBancariaId: fixture.contaBancariaId, data: new Date("2026-09-11T00:00:00Z"), tipo: "ENTRADA", valor: 999, descricao: "Conciliada: não entra", conciliado: true },
-        { ...base, contaBancariaId: contaInativaId, data: new Date("2026-09-12T00:00:00Z"), tipo: "SAIDA", valor: 5000, descricao: "Conta inativa: não entra", conciliado: false },
+        { ...base, contaBancariaId: contaInativaId, data: new Date("2026-09-12T00:00:00Z"), tipo: "SAIDA", valor: 5000, descricao: "Conta inativa: entra também", conciliado: false },
       ],
     });
   });
@@ -299,8 +299,8 @@ describe("buscarAguardandoConciliacaoDasFiliais (integração)", () => {
     await prisma.$disconnect();
   });
 
-  test("soma só os não conciliados de contas ativas, sem corte de data, separando entradas e saídas", async () => {
-    expect(await buscarAguardandoConciliacaoDasFiliais([fixture.filialId])).toEqual({ entradas: 300, saidas: 120 });
+  test("soma só os não conciliados (contas inativas inclusive), sem corte de data, separando entradas e saídas", async () => {
+    expect(await buscarAguardandoConciliacaoDasFiliais([fixture.filialId])).toEqual({ entradas: 300, saidas: 5120 });
   });
 
   test("filial sem nada aguardando devolve zeros", async () => {

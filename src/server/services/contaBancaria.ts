@@ -8,6 +8,8 @@ import {
   type ContaBancariaFormValues,
 } from "@/lib/schemas/contaBancaria";
 import { obterBancoCaixa } from "./banco";
+import { calcularSaldoContabil } from "./lancamentoBancario";
+import { formatarMoeda } from "@/lib/formatacao";
 
 /**
  * Conta Caixa (dinheiro em espécie) sempre usa o banco CX e a agência "-";
@@ -101,6 +103,16 @@ export async function definirAtivoContaBancaria(sessao: SessaoAtiva, id: string,
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   await prisma.contaBancaria.findUniqueOrThrow({ where: { id, filialId: sessao.filialId } });
+  // Conta inativa não pode guardar dinheiro: senão o saldo dela fica fora das telas que só oferecem as ativas.
+  if (!ativo) {
+    const saldo = await calcularSaldoContabil(id);
+    if (Math.abs(saldo) >= 0.005) {
+      throw new Error(
+        `A conta tem saldo contábil de ${formatarMoeda(saldo)}: zere o saldo (por transferência, por exemplo) ` +
+          "antes de inativar",
+      );
+    }
+  }
   const conta = await prisma.contaBancaria.update({ where: { id }, data: { ativo } });
 
   await registrarAuditoria({

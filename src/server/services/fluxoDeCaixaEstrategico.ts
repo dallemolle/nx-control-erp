@@ -136,7 +136,6 @@ export async function buscarAnoBaseConsolidado(
         conciliado: true,
         ...SEM_TRANSFERENCIA,
         data: { gte: inicioJanela, lte: hoje },
-        contaBancaria: { ativo: true },
         ...whereLancamentoPorClassificacao(opcoes.classificacao),
       },
       select: {

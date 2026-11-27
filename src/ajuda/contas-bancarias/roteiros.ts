@@ -209,11 +209,11 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "lista.santander",
         instrucao: "Confira o status",
         explicacao:
-          "Inativo. A conta sai da Tesouraria e do Fluxo de caixa, com o saldo inicial e os lançamentos dela. Nada é " +
-          "apagado: reativada, ela volta com tudo.",
+          "Inativo. A conta sai da Tesouraria e das escolhas de conta no título novo e na baixa. O Fluxo de caixa e os " +
+          "relatórios continuam contando o que passou por ela, então os meses passados não mudam. Nada é apagado.",
         dica:
-          "Zere a conta antes de inativar: o Fluxo de caixa deixa de contar a conta também nos meses passados. E hoje o " +
-          "Contas a pagar e o Contas a receber ainda oferecem a conta inativa; não lance nela.",
+          "Só dá para inativar conta com saldo contábil zero: se ainda houver dinheiro, transfira para outra conta na " +
+          "Tesouraria antes. A tela avisa o saldo.",
         preenche: { "lista.santander": "Inativo" },
       },
       {

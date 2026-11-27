@@ -460,32 +460,6 @@ Numeração continua a de Vendas.
   editar, aparece "Já existe um fornecedor com este CPF/CNPJ" (teste em
   `src/server/services/fornecedor.test.ts`). Item mantido só como histórico.
 
-### 31. Conta bancária inativa: some do Fluxo (até no passado) e continua nos títulos
-
-- **Problema:** inativar uma conta tira o saldo inicial e todos os
-  lançamentos dela da Tesouraria e do Fluxo de caixa, também nos meses
-  passados, sem aviso e mesmo com saldo diferente de zero. E o Contas a
-  pagar e o Contas a receber continuam oferecendo a conta inativa (conta
-  prevista e baixa): o que for lançado nela fica fora da Tesouraria e do
-  Fluxo.
-- **Exemplo:** a conta do Santander começou 2026 com R$ 1.500 e foi zerada
-  por transferência em outubro. Inativada, o Fluxo de caixa de janeiro a
-  setembro perde R$ 1.500. Se uma baixa cair nela por engano, o dinheiro
-  "some".
-- **Onde:** `buscarSaldoEmCaixaAteDasFiliais` em
-  `src/server/services/fluxoDeCaixa.ts` e `listarResumoContas` em
-  `lancamentoBancario.ts` (filtram `ativo`); `contas-a-pagar/page.tsx` e
-  `contas-a-receber/page.tsx` (usam `listarContasBancarias` sem filtro);
-  `definirAtivoContaBancaria` em `contaBancaria.ts` (não confere saldo).
-- **Impacto:** o Fluxo de caixa de meses fechados muda depois do fato; e
-  dinheiro lançado em conta inativa não aparece em nenhum saldo.
-- **Caminhos:** recusar inativar conta com saldo contábil diferente de zero
-  (ou pedir confirmação mostrando o saldo); no Fluxo, contar a conta inativa
-  até a data em que foi inativada; oferecer só contas ativas no título novo
-  e na baixa, e recusar no serviço.
-- **Ao corrigir:** dica do passo "Confira o status" do roteiro
-  `corrigir-inativar` em `src/ajuda/contas-bancarias/roteiros.ts`.
-
 ### 32. Saldo inicial das contas bancárias aparecia sem formato
 
 - **Feito (2026-11-21), na mesma branch da ajuda de Contas bancárias:** a
@@ -874,6 +848,20 @@ Numeração continua a das seções anteriores.
   `startTransition`, que não dispara o reset.
 - **Cuidados:** muitos formulários; fazer pelo hook comum e migrar aos
   poucos; selects da Base UI também têm valor inicial.
+
+### 66. Recusa do Inativar em empresa, filial e usuário cai na página de erro
+
+- **Problema:** o Inativar de Empresas, Filiais e Usuários é um formulário
+  simples cuja action lança a exceção do serviço ("Troque de empresa antes
+  de inativar esta", "Troque de filial antes de inativar esta", "Você não
+  pode desativar seu próprio acesso"). Não há `error.tsx`: em produção a
+  pessoa vê a página de erro genérica do Next, sem a mensagem.
+- **Onde:** `alternarAtivoEmpresaAction`, `alternarAtivoFilialAction` e
+  `alternarAtivoUsuarioAction` e os `<form>` das páginas.
+- **Caminho:** usar `BotaoAlternarAtivo`
+  (`src/app/(dashboard)/_shared/botao-alternar-ativo.tsx`, criado no item 31
+  para Contas bancárias): a action devolve `{ erro }` e o botão mostra a
+  mensagem ao lado. Visto em 2026-11-27.
 
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 

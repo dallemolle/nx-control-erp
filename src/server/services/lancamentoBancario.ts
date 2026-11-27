@@ -187,19 +187,25 @@ export async function buscarUltimoSaldoInformado(contaBancariaId: string) {
   });
 }
 
+/**
+ * Contas ativas e, para o total bater com o Fluxo de caixa (que conta todas), as inativas que ainda têm saldo
+ * (inativadas antes de a regra exigir saldo zero).
+ */
 export async function listarResumoContas(filialId: string) {
   const contas = await prisma.contaBancaria.findMany({
-    where: { filialId, ativo: true },
+    where: { filialId },
     include: { banco: true },
     orderBy: { criadoEm: "asc" },
   });
 
-  return Promise.all(
+  const resumos = await Promise.all(
     contas.map(async (conta) => {
+      const saldoContabil = await calcularSaldoContabil(conta.id);
+      if (!conta.ativo && Math.abs(saldoContabil) < 0.005) return null;
       const ultimoSaldoInformado = await buscarUltimoSaldoInformado(conta.id);
       return {
         conta,
-        saldoContabil: await calcularSaldoContabil(conta.id),
+        saldoContabil,
         ultimoSaldoInformado,
         /** Saldo contábil até a data do último saldo informado: é com ele que a diferença compara. */
         saldoContabilNaData: ultimoSaldoInformado
@@ -208,6 +214,7 @@ export async function listarResumoContas(filialId: string) {
       };
     }),
   );
+  return resumos.filter((resumo) => resumo !== null);
 }
 
 export async function criarLancamentoManual(sessao: SessaoAtiva, dados: LancamentoManualFormValues) {
