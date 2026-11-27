@@ -157,7 +157,8 @@ describe("filtro de classificação nos relatórios", () => {
 
     expect(semOpcoes.find((linha) => linha.categoriaFinanceiraId === fixture.categoriaFinanceiraId && linha.mes === mes)).toEqual(todos);
     expect(todos.realizado).toBe(fiscal.realizado + gerencial.realizado + 70);
-    expect(gerencial.realizado).toBe(250);
+    // Categoria de despesa: saídas − entradas (item 15 do backlog). Gerencial: 50 − 200.
+    expect(gerencial.realizado).toBe(-150);
     expect(fiscal.orcado).toBe(todos.orcado);
   });
 
