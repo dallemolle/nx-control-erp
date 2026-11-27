@@ -1,6 +1,6 @@
 # Hierarquia de categorias e centros de custo nos relatórios
 
-Data: 2026-11-27 · Status: aprovada
+Data: 2026-11-27 · Status: implementada (2026-11-27)
 
 Item 36 do [backlog](../../backlog.md), seção "Cadastros — lacunas achadas ao
 escrever a ajuda contextual" ("O 'pai' das categorias e dos centros de custo
