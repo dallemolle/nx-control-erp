@@ -238,16 +238,19 @@ type LinhaParaReconciliar = {
   tipo: TipoLancamento;
   data: Date;
   valor: Prisma.Decimal;
+  status: StatusLinhaExtrato;
 };
 
 /**
  * Corpo compartilhado por `conciliarAutomaticamente` (rodada única, na
  * importação) e `reconciliarPendentes` (botão "tentar de novo" — cobre
- * linhas que ficaram NAO_CONCILIADO porque o lançamento correspondente
- * só foi criado depois, ou porque `desconciliar` resetou o status).
+ * linhas que ficaram pendentes porque o lançamento correspondente só foi
+ * criado ou corrigido depois, ou porque `desconciliar` resetou o status).
+ * O status de uma linha solta é só um rótulo recalculado aqui; só é gravado quando muda.
  */
 async function processarLinhasPendentes(sessao: SessaoAtiva, linhas: LinhaParaReconciliar[]) {
   let conciliadasAutomaticamente = 0;
+  let reclassificadas = 0;
 
   for (const linha of linhas) {
     const candidatos = await buscarCandidatosLancamento(linha.contaBancariaId, linha.tipo, linha.data);
@@ -283,16 +286,21 @@ async function processarLinhasPendentes(sessao: SessaoAtiva, linhas: LinhaParaRe
         entidade: "Conciliacao",
         entidadeId: linha.id,
         acao: "CONCILIAR_AUTOMATICO",
-        anterior: { status: "NAO_CONCILIADO" },
+        anterior: { status: linha.status },
         novo: { status: "CONCILIADO", lancamentoBancarioId: lancamentoId, grupoConciliacaoId },
       });
       conciliadasAutomaticamente += 1;
-    } else {
-      await prisma.linhaExtrato.update({ where: { id: linha.id }, data: { status: resultado.status } });
+    } else if (resultado.status !== linha.status) {
+      // Só se continuar solta: se outra pessoa conciliou a linha no meio da rodada, não sobrescreve o CONCILIADO.
+      const atualizada = await prisma.linhaExtrato.updateMany({
+        where: { id: linha.id, grupoConciliacaoId: null },
+        data: { status: resultado.status },
+      });
+      reclassificadas += atualizada.count;
     }
   }
 
-  return { totalProcessadas: linhas.length, conciliadasAutomaticamente };
+  return { totalProcessadas: linhas.length, conciliadasAutomaticamente, reclassificadas };
 }
 
 export async function conciliarAutomaticamente(sessao: SessaoAtiva, extratoImportadoId: string) {
@@ -314,10 +322,12 @@ export async function conciliarAutomaticamente(sessao: SessaoAtiva, extratoImpor
 }
 
 /**
- * Reprocessa todas as linhas NAO_CONCILIADO da filial ativa, independente
- * de qual extrato as trouxe — cobre o caso de uma linha ter ficado presa
- * porque o lançamento correspondente só foi criado depois da importação,
- * ou porque `desconciliar` resetou o status e perdeu a sugestão anterior.
+ * Reprocessa todas as linhas ainda não conciliadas da filial ativa (Não
+ * conciliado, Sugestão, Divergência e Duplicado), independente de qual
+ * extrato as trouxe — cobre o caso de uma linha ter ficado presa porque o
+ * lançamento correspondente só foi criado ou corrigido depois da importação,
+ * ou de o rótulo ter ficado velho (o candidato foi excluído). Esses status
+ * não guardam escolha da pessoa: são recalculados com a mesma regra da importação.
  * Acionado pelo botão "Reconciliar pendentes" na tela.
  */
 export async function reconciliarPendentes(sessao: SessaoAtiva) {
@@ -325,7 +335,11 @@ export async function reconciliarPendentes(sessao: SessaoAtiva) {
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   const linhas = await prisma.linhaExtrato.findMany({
-    where: { status: "NAO_CONCILIADO", contaBancaria: { filialId: sessao.filialId } },
+    where: {
+      status: { not: "CONCILIADO" },
+      grupoConciliacaoId: null,
+      contaBancaria: { filialId: sessao.filialId },
+    },
   });
 
   return processarLinhasPendentes(sessao, linhas);
