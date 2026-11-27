@@ -1,10 +1,10 @@
 "use client";
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alvo, BotaoSimulado, SelectSimulado } from "@/components/ajuda/campos-simulados";
 import type { PropsCena } from "@/ajuda/tipos";
 import { formatarMoeda } from "@/lib/formatacao";
-import { linhasDoExemplo, saldoDaLinha } from "./exemplo";
+import { linhasDoExemplo, resultadoDoMes, totalDoFluxo } from "./exemplo";
 
 // Espelho de src/app/(dashboard)/controladoria/fluxo-por-dimensao/*. Mudou um rótulo ou coluna lá? Ajuste aqui também.
 
@@ -23,6 +23,7 @@ export function CenaPainel({ valores }: PropsCena) {
   const dimensao = valores["painel.dimensao"] || "Centro de custo";
   const filtro = valores["painel.classificacao"];
   const linhas = linhasDoExemplo(dimensao, filtro);
+  const total = totalDoFluxo(linhas);
 
   return (
     <div className="space-y-8">
@@ -55,6 +56,14 @@ export function CenaPainel({ valores }: PropsCena) {
         </Alvo>
       </div>
 
+      {filtro ? (
+        <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground" role="note">
+          Visão filtrada: mostra apenas o movimento classificado como{" "}
+          <span className="font-medium text-foreground">{filtro}</span>. O que tem a outra classificação fica de
+          fora, então o total não bate com o Fluxo de caixa na visão &quot;Todos&quot;.
+        </p>
+      ) : null}
+
       <Alvo nome="painel.tabela">
         <Table>
           <TableHeader>
@@ -69,13 +78,13 @@ export function CenaPainel({ valores }: PropsCena) {
               </TableHead>
               <TableHead>Saídas projetadas</TableHead>
               <TableHead>
-                <CabecalhoComAlvo alvo="cab.saldo">Saldo</CabecalhoComAlvo>
+                <CabecalhoComAlvo alvo="cab.saldo">Resultado do mês</CabecalhoComAlvo>
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {linhas.map((linha) => {
-              const saldo = saldoDaLinha(linha);
+              const saldo = resultadoDoMes(linha);
               return (
                 <TableRow key={linha.chave}>
                   <TableCell className="font-medium">
@@ -98,6 +107,18 @@ export function CenaPainel({ valores }: PropsCena) {
               );
             })}
           </TableBody>
+          <TableFooter>
+            <TableRow className="font-semibold">
+              <TableCell>Total</TableCell>
+              <TableCell>{formatarMoeda(total.entradasRealizadas)}</TableCell>
+              <TableCell>{formatarMoeda(total.saidasRealizadas)}</TableCell>
+              <TableCell>{formatarMoeda(total.entradasProjetadas)}</TableCell>
+              <TableCell>{formatarMoeda(total.saidasProjetadas)}</TableCell>
+              <TableCell className={total.resultado < 0 ? "text-destructive" : undefined}>
+                {formatarMoeda(total.resultado)}
+              </TableCell>
+            </TableRow>
+          </TableFooter>
         </Table>
       </Alvo>
     </div>

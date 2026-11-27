@@ -50,7 +50,7 @@ export const ROTEIROS: readonly Roteiro[] = [
       {
         cena: "painel",
         alvo: "cab.saldo",
-        instrucao: "Saldo: o resultado do mês naquela linha",
+        instrucao: "Resultado do mês naquela linha",
         explicacao:
           "É entradas menos saídas, somando o realizado e o projetado do mês. Não é o saldo do banco: é quanto " +
           "aquela parte do negócio deixou (ou vai deixar) de dinheiro no mês. Fica vermelho quando é negativo.",
@@ -61,13 +61,13 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Leia a linha da Lavoura",
         explicacao:
           "R$ 1.100,00 já pagos (R$ 800,00 do adubo e R$ 300,00 da mão de obra) e R$ 1.000,00 da parcela do " +
-          "adubo que vence no mês: saldo de −R$ 2.100,00.",
+          "adubo que vence no mês: resultado de −R$ 2.100,00.",
       },
     ],
     eDepois: {
       texto:
-        "A tela não tem linha de total. Para conferir com o Fluxo de caixa do mês, some as linhas, inclusive a " +
-        "“Não classificado”.",
+        "A linha Total, no fim da tabela, soma todas as linhas, inclusive a “Não classificado”: no exemplo, " +
+        "R$ 24.774,10 de resultado no mês. É o número para conferir com o Fluxo de caixa do mês.",
       proximoRoteiro: "nao-classificado",
     },
   }),
@@ -106,7 +106,7 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Veja a safra 2025/26",
         explicacao:
           "O adubo e as vendas foram marcados com a safra 2025/26: R$ 27.500,00 de entradas contra R$ 1.800,00 " +
-          "de saídas, saldo de R$ 25.700,00. A mão de obra foi para a 2026/27.",
+          "de saídas, resultado de R$ 25.700,00. A mão de obra foi para a 2026/27.",
         dica:
           "Cada dimensão é independente: o mesmo pagamento aparece na Lavoura (centro de custo) e na 2025/26 " +
           "(safra). Não some as visões entre si.",
@@ -139,8 +139,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Veja o que mudou",
         explicacao:
           "Na visão Fiscal do exemplo, a Lavoura perde os R$ 300,00 do recibo da mão de obra (gerencial), e o " +
-          "“Não classificado” perde a parte gerencial das vendas. Diferente das telas de fluxo de caixa do " +
-          "Financeiro, aqui não aparece aviso de visão filtrada: confira o filtro antes de tirar conclusões.",
+          "“Não classificado” perde a parte gerencial das vendas. O aviso acima da tabela lembra que a visão está " +
+          "filtrada: o Total passa a ser só do movimento fiscal e não bate com o Fluxo de caixa em “Todos”.",
       },
       {
         cena: "painel",

@@ -1,5 +1,7 @@
 // Espelhado na ajuda (src/ajuda/fluxo-por-dimensao/cenas.tsx): mudou rótulo, coluna ou texto? Ajuste a ajuda junto.
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { resultadoDoMes, totalDoFluxo } from "@/lib/fluxoPorDimensao";
+import { AvisoVisaoFiltrada } from "../../financeiro/_fluxo-de-caixa/aviso-visao-filtrada";
 import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission } from "@/server/auth/permissions";
@@ -53,6 +55,7 @@ export default async function FluxoPorDimensaoPage({
   );
 
   const linhas = await listarFluxoDeCaixaPorDimensao(sessao, dimensao, ano, mes, { classificacao });
+  const total = totalDoFluxo(linhas);
 
   return (
     <div className="space-y-8">
@@ -79,6 +82,16 @@ export default async function FluxoPorDimensaoPage({
         />
       </div>
 
+      <AvisoVisaoFiltrada
+        classificacao={classificacao}
+        detalhe={
+          <>
+            . O que tem a outra classificação fica de fora, então o total não bate com o Fluxo de caixa na visão
+            &quot;Todos&quot;.
+          </>
+        }
+      />
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -87,13 +100,12 @@ export default async function FluxoPorDimensaoPage({
             <TableHead>Saídas realizadas</TableHead>
             <TableHead>Entradas projetadas</TableHead>
             <TableHead>Saídas projetadas</TableHead>
-            <TableHead>Saldo</TableHead>
+            <TableHead>Resultado do mês</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {linhas.map((linha) => {
-            const saldo =
-              linha.entradasRealizadas + linha.entradasProjetadas - (linha.saidasRealizadas + linha.saidasProjetadas);
+            const resultado = resultadoDoMes(linha);
             return (
               <TableRow key={linha.dimensaoId ?? "nao-classificado"}>
                 <TableCell className="font-medium">{linha.dimensaoNome}</TableCell>
@@ -101,13 +113,25 @@ export default async function FluxoPorDimensaoPage({
                 <TableCell>{formatarMoeda(linha.saidasRealizadas)}</TableCell>
                 <TableCell>{formatarMoeda(linha.entradasProjetadas)}</TableCell>
                 <TableCell>{formatarMoeda(linha.saidasProjetadas)}</TableCell>
-                <TableCell className={saldo < 0 ? "font-medium text-destructive" : undefined}>
-                  {formatarMoeda(saldo)}
+                <TableCell className={resultado < 0 ? "font-medium text-destructive" : undefined}>
+                  {formatarMoeda(resultado)}
                 </TableCell>
               </TableRow>
             );
           })}
         </TableBody>
+        <TableFooter>
+          <TableRow className="font-semibold">
+            <TableCell>Total</TableCell>
+            <TableCell>{formatarMoeda(total.entradasRealizadas)}</TableCell>
+            <TableCell>{formatarMoeda(total.saidasRealizadas)}</TableCell>
+            <TableCell>{formatarMoeda(total.entradasProjetadas)}</TableCell>
+            <TableCell>{formatarMoeda(total.saidasProjetadas)}</TableCell>
+            <TableCell className={total.resultado < 0 ? "text-destructive" : undefined}>
+              {formatarMoeda(total.resultado)}
+            </TableCell>
+          </TableRow>
+        </TableFooter>
       </Table>
     </div>
   );
