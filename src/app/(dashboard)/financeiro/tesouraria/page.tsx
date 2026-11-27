@@ -11,6 +11,7 @@ import { listarCentrosCusto } from "@/server/services/centroCusto";
 import { listarCentrosLucro } from "@/server/services/centroLucro";
 import { listarSafras } from "@/server/services/safra";
 import { listarProjetos } from "@/server/services/projeto";
+import { encerradosPorUltimo } from "@/lib/encerradosPorUltimo";
 import { LancamentoDialogForm } from "./lancamento-dialog-form";
 import { TransferenciaDialogForm } from "./transferencia-dialog-form";
 import { SaldoBancarioDialogForm } from "./saldo-bancario-dialog-form";
@@ -52,8 +53,8 @@ export default async function TesourariaPage({
     listarCategoriasFinanceiras(sessao.filialId),
     listarCentrosCusto(sessao.filialId),
     listarCentrosLucro(sessao.filialId),
-    listarSafras(sessao.filialId),
-    listarProjetos(sessao.filialId),
+    listarSafras(sessao.filialId).then((lista) => encerradosPorUltimo(lista, "encerrada")),
+    listarProjetos(sessao.filialId).then((lista) => encerradosPorUltimo(lista, "encerrado")),
   ]);
   const { lancamentos, outrosLados, pagina, totalPaginas } = paginaDaLista;
 

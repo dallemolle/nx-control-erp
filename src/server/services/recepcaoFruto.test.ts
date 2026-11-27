@@ -186,6 +186,33 @@ describe("recepção de fruto", () => {
     }
   });
 
+  test("safra encerrada ou inativa é recusada; em andamento passa", async () => {
+    const safra = (nome: string, status: "ENCERRADO" | "EM_ANDAMENTO", ativo = true) =>
+      prisma.safra.create({
+        data: {
+          filialId: fx.filialAId,
+          nome,
+          status,
+          ativo,
+          dataInicio: new Date("2025-08-01"),
+          dataFim: new Date("2026-07-31"),
+        },
+      });
+    const encerrada = await safra("2024/25", "ENCERRADO");
+    const inativa = await safra("2023/24", "EM_ANDAMENTO", false);
+    const aberta = await safra("2025/26", "EM_ANDAMENTO");
+
+    await expect(criarRecepcao(fx.sessao("PRODUCAO"), propria({ safraId: encerrada.id }))).rejects.toThrow(
+      "Safra encerrada: escolha outra ou mude o status da safra",
+    );
+    await expect(criarRecepcao(fx.sessao("PRODUCAO"), propria({ safraId: inativa.id }))).rejects.toThrow(
+      "Safra inativa: escolha outra ou reative o cadastro",
+    );
+    await expect(criarRecepcao(fx.sessao("PRODUCAO"), propria({ safraId: aberta.id }))).resolves.toMatchObject({
+      loteId: expect.any(String),
+    });
+  });
+
   test("descarte igual ao bruto é recusado e nada é gravado", async () => {
     const antes = await contar();
     await expect(criarRecepcao(fx.sessao("PRODUCAO"), propria({ pesoBruto: "10", descarte: "10" }))).rejects.toThrow(

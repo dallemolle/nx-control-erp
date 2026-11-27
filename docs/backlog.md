@@ -489,29 +489,6 @@ Numeração continua a de Vendas.
   com este código" (teste em
   `src/server/services/duplicidadeCadastros.test.ts`). Histórico.
 
-### 38. Safra e projeto Encerrados não bloqueiam nada, e a safra pode repetir o nome
-
-- **Problema:** o status (Planejado, Em andamento, Encerrado) só é exibido:
-  uma safra ou projeto Encerrado continua aceitando títulos, lançamentos e,
-  no caso da safra, recepções. E a safra não tem nome único na filial: dá
-  para cadastrar duas "2025/26", que aparecem iguais em todas as listas.
-- **Exemplo:** a 2024/25 está Encerrada, mas uma recepção de hoje pode ser
-  marcada nela por engano; duas "2026/27" cadastradas por duas pessoas
-  dividem os valores sem ninguém perceber.
-- **Onde:** `safraSchema`/`projetoSchema` e os serviços de título,
-  lançamento e recepção (nenhum lê `status`); `model Safra` em
-  `prisma/schema.prisma` (sem `@@unique([filialId, nome])`, o projeto tem
-  por código).
-- **Impacto:** o status não protege o fechamento da safra; nome repetido
-  embaralha a Comparação entre safras e o Fluxo por dimensão.
-- **Caminhos:** decidir se Encerrado deve bloquear lançamentos novos (ou só
-  avisar, já que uma venda pode chegar depois da colheita); criar o índice
-  único de nome da safra por filial (migração, conferindo duplicadas
-  existentes) e usar `comMensagemDeDuplicidade`.
-- **Ao corrigir:** passo "Informe o nome" de `cadastrar-safra`, passo
-  "Confira o status" de `encerrar-safra` e passo "Escolha o status" de
-  `cadastrar-projeto` (`src/ajuda/safras`, `projetos`).
-
 ## Administração — lacunas achadas ao escrever a ajuda contextual
 
 Mesma numeração das seções acima.

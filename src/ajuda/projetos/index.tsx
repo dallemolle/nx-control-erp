@@ -145,8 +145,8 @@ export const ajudaProjetos: DefinicaoAjuda = {
           alvo: "form.status",
           instrucao: "Escolha o status",
           explicacao:
-            "Planejado, Em andamento ou Encerrado: só informa a fase. Um projeto Encerrado continua aceitando títulos " +
-            "e lançamentos.",
+            "Planejado, Em andamento ou Encerrado. Um projeto Encerrado continua aceitando títulos e lançamentos (uma " +
+            "nota pode chegar depois), mas nas listas deles aparece no fim, com “(encerrado)”.",
           preenche: { "form.status": CAMARA.status },
         },
         {

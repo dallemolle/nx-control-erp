@@ -11,6 +11,7 @@ import { listarCentrosCusto } from "@/server/services/centroCusto";
 import { listarCentrosLucro } from "@/server/services/centroLucro";
 import { listarSafras } from "@/server/services/safra";
 import { listarProjetos } from "@/server/services/projeto";
+import { encerradosPorUltimo } from "@/lib/encerradosPorUltimo";
 import { STATUS_LINHA_EXTRATO } from "@/lib/schemas/enums";
 import type { StatusLinhaExtrato } from "@prisma/client";
 import { STATUS_LABEL } from "./status-label";
@@ -47,8 +48,8 @@ export default async function ConciliacaoPage({
     listarCategoriasFinanceiras(sessao.filialId),
     listarCentrosCusto(sessao.filialId),
     listarCentrosLucro(sessao.filialId),
-    listarSafras(sessao.filialId),
-    listarProjetos(sessao.filialId),
+    listarSafras(sessao.filialId).then((lista) => encerradosPorUltimo(lista, "encerrada")),
+    listarProjetos(sessao.filialId).then((lista) => encerradosPorUltimo(lista, "encerrado")),
   ]);
 
   // Conta Caixa (dinheiro em espécie) não tem extrato para importar.

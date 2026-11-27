@@ -186,7 +186,12 @@ async function carregarOpcoes(empresaId: string, filialId: string): Promise<Opco
       select: { id: true, nome: true, tipo: true },
       orderBy: { nome: "asc" },
     }),
-    prisma.safra.findMany({ where: { filialId, ativo: true }, select: { id: true, nome: true }, orderBy: { nome: "asc" } }),
+    // Safra encerrada não recebe fruto (o serviço recusa).
+    prisma.safra.findMany({
+      where: { filialId, ativo: true, status: { not: "ENCERRADO" } },
+      select: { id: true, nome: true },
+      orderBy: { nome: "asc" },
+    }),
     obterConfiguracaoProducao(filialId),
   ]);
   return {

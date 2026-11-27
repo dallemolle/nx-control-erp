@@ -164,7 +164,7 @@ export const ajudaSafras: DefinicaoAjuda = {
           alvo: "form.nome",
           instrucao: "Informe o nome",
           explicacao: "Como aparece no título, na Recepção e nos relatórios. A lista vem em ordem de nome.",
-          dica: "O nome pode repetir: confira a lista antes, para não ter duas 2026/27.",
+          dica: "O nome não pode repetir na filial: aparece “Já existe uma safra com este nome nesta filial”.",
           preenche: { "form.nome": NOVA.nome },
         },
         {
@@ -253,8 +253,8 @@ export const ajudaSafras: DefinicaoAjuda = {
           alvo: "lista.status-atual",
           instrucao: "Confira o status",
           explicacao:
-            "Encerrado só informa a fase: a safra continua aparecendo em todos os lugares e ainda aceita títulos e " +
-            "lançamentos, por exemplo uma venda que chega depois.",
+            "Encerrada, a safra sai da lista da Recepção: fruto novo não entra mais nela. Títulos e lançamentos ainda " +
+            "aceitam, por exemplo uma venda que chega depois; nas listas deles ela aparece no fim, com “(encerrada)”.",
           preenche: { "lista.status-atual": "ENCERRADO" },
         },
         {
