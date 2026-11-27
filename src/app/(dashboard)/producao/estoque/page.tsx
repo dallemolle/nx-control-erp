@@ -52,8 +52,9 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
       select: { id: true, nome: true },
       orderBy: { nome: "asc" },
     }),
-    resumoPorStatus(sessao.filialId, filtroResumo, referencia),
+    resumoPorStatus(sessao.filialId, filtroResumo, referencia, { saldoNaData: true }),
   ]);
+  const ehHoje = paraDataIso(referencia) === paraDataIso(hojeDeCalendario());
 
   const valoresFiltro = {
     produto: sp.produto ?? "",
@@ -79,6 +80,23 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
           Saldo por lote, em ordem de validade (o que vence primeiro sai primeiro).
         </p>
       </div>
+
+      {ehHoje ? null : (
+        <p role="status" className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
+          Estoque em {formatarData(referencia)}: saldos somando as movimentações até esse dia. Custo e local são os de
+          hoje; transferir e liberar usam o saldo de hoje.{" "}
+          <Link
+            href={`/producao/estoque?${new URLSearchParams({
+              ...Object.fromEntries(new URLSearchParams(query)),
+              referencia: paraDataIso(hojeDeCalendario()),
+              ...(visao === "resumo" ? { visao } : {}),
+            })}`}
+            className="underline underline-offset-4"
+          >
+            Voltar para hoje
+          </Link>
+        </p>
+      )}
 
       <ResumoStatusEstoque
         resumo={resumo}
@@ -114,7 +132,11 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
           permissoes={permissoesLote}
         />
       ) : (
-        <VisaoResumo filialId={sessao.filialId} queryExport={`referencia=${paraDataIso(referencia)}&visao=resumo`} />
+        <VisaoResumo
+          filialId={sessao.filialId}
+          referencia={referencia}
+          queryExport={`referencia=${paraDataIso(referencia)}&visao=resumo`}
+        />
       )}
     </div>
   );
@@ -142,13 +164,14 @@ async function VisaoLotes({
   const { podeTransferir, podeLiberar, podeEditarProduto } = permissoes;
   // Liberação usa o dia de hoje, não a data de referência da consulta (D-35).
   const hoje = hojeDeCalendario();
-  const lotes = await listarLotes(filialId, filtros, referencia);
+  const lotes = await listarLotes(filialId, filtros, referencia, { saldoNaData: true });
+  // Ações agem sobre o lote de agora: usam o saldo de hoje, não o da data de referência.
   const linhas = lotes.map((lote) => ({
     lote,
     liberado: liberacaoCobre(lote.liberadoAte, hoje),
-    liberavel: podeLiberar && Number(lote.saldoKg) > 0 && !lote.bloqueio && loteVencidoNaData(lote.validade, hoje),
+    liberavel: podeLiberar && lote.saldoAtualKg > 0 && !lote.bloqueio && loteVencidoNaData(lote.validade, hoje),
   }));
-  const totalKg = lotes.reduce((soma, l) => soma + Math.max(0, Number(l.saldoKg)), 0);
+  const totalKg = lotes.reduce((soma, l) => soma + Math.max(0, l.saldoKg), 0);
   const totalValor = lotes.reduce((soma, l) => soma + l.valor, 0);
 
   return (
@@ -236,7 +259,7 @@ async function VisaoLotes({
                     </p>
                   ) : null}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">{KG.format(Number(lote.saldoKg))}</TableCell>
+                <TableCell className="text-right tabular-nums">{KG.format(lote.saldoKg)}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatarMoeda(lote.custoKg)}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatarMoeda(lote.valor)}</TableCell>
                 <TableCell>
@@ -251,9 +274,9 @@ async function VisaoLotes({
                         Etiqueta
                       </Button>
                     )}
-                    {podeTransferir && Number(lote.saldoKg) > 0 ? (
+                    {podeTransferir && lote.saldoAtualKg > 0 ? (
                       <TransferirLoteDialog
-                        lote={{ id: lote.id, codigo: lote.codigo, localId: lote.localId, saldoKg: Number(lote.saldoKg) }}
+                        lote={{ id: lote.id, codigo: lote.codigo, localId: lote.localId, saldoKg: lote.saldoAtualKg }}
                         locais={locais}
                       />
                     ) : null}
@@ -289,8 +312,16 @@ async function VisaoLotes({
   );
 }
 
-async function VisaoResumo({ filialId, queryExport }: { filialId: string; queryExport: string }) {
-  const { linhas, locais } = await resumoProdutoLocal(filialId);
+async function VisaoResumo({
+  filialId,
+  referencia,
+  queryExport,
+}: {
+  filialId: string;
+  referencia: Date;
+  queryExport: string;
+}) {
+  const { linhas, locais } = await resumoProdutoLocal(filialId, referencia);
   return (
     <div className="space-y-6">
       <ExportarLinks baseHref="/producao/estoque/export" queryString={queryExport} />

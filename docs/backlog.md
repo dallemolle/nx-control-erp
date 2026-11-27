@@ -444,30 +444,6 @@ continua, para cada item ter um número único). Prioridade a definir.
 
 Numeração continua a do Financeiro e da Controladoria.
 
-### 24. Estoque: data de referência não mostra o estoque de outro dia
-
-- **Problema:** a "Data de referência" do Estoque muda só a conta dos dias e
-  do status (OK, Vencendo, Vencido). O saldo é sempre o atual. O manual dizia
-  que ela mostrava "como estava (ou estará) o estoque em outro dia" (texto
-  corrigido em 2026-11-20).
-- **Exemplo:** um lote de 300 kg vendido inteiro ontem; com a data de
-  referência de anteontem, ele não aparece (está zerado), e os cartões não
-  contam esses 300 kg.
-- **Onde:** `src/server/services/estoque.ts` (`listarLotes` e
-  `resumoPorStatus` leem `saldoKg` do lote); `producao/estoque/page.tsx`.
-- **Impacto:** quem precisa do estoque de fim de mês (inventário,
-  contabilidade) não tem como tirar depois do dia; e quem confia no rótulo
-  pode tomar a foto atual por histórica.
-- **Caminhos:** calcular o saldo na data somando os movimentos até ela (a
-  tabela de movimentos já existe), com valor a custo na data; ou renomear o
-  campo para "Calcular vencimento em" e criar uma posição de estoque por data
-  no Relatório mensal.
-- **Cuidados:** lotes filhos de transferência, estornos e OPs reabertas
-  (custo do lote muda); desempenho com muitos movimentos.
-- **Ao corrigir:** dica do passo "Mude a data de referência" do roteiro
-  `filtrar-referencia` em `src/ajuda/estoque/roteiros.ts` (o Passo a passo,
-  que também citava o campo, foi aposentado em 2026-11-21).
-
 ### 25. Ajuste de estoque errado não tem estorno
 
 - **Problema:** ajuste lançado não pode ser editado nem excluído. Para
