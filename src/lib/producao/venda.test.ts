@@ -8,6 +8,7 @@ import {
   gerarParcelasPorPrazos,
   interpretarPrazos,
   loteVencidoNaData,
+  vencimentoNaVenda,
   rotuloSituacaoPagamento,
   situacaoPagamento,
   validarParcelasVenda,
@@ -203,5 +204,22 @@ describe("validarParcelasVenda", () => {
     expect(validarParcelasVenda(d("2026-11-10"), 100, [p("2026-12-10", 50), p("2027-01-10", 49.99)])).toBe(
       `A soma das parcelas (${formatarMoeda(99.99)}) difere do total do pedido (${formatarMoeda(100)})`,
     );
+  });
+});
+
+describe("vencimentoNaVenda", () => {
+  const lote = (validade: string, liberadoAte: string | null = null) => ({ validade, liberadoAte });
+
+  test("no prazo até o dia da validade", () => {
+    expect(vencimentoNaVenda(lote("2026-11-21"), "2026-11-21")).toBe("NO_PRAZO");
+  });
+
+  test("vencido sem liberação, ou com liberação que não cobre a data", () => {
+    expect(vencimentoNaVenda(lote("2026-11-18"), "2026-11-21")).toBe("VENCIDO");
+    expect(vencimentoNaVenda(lote("2026-11-18", "2026-11-20"), "2026-11-21")).toBe("VENCIDO");
+  });
+
+  test("liberado quando a liberação cobre a data do pedido (último dia inclusive)", () => {
+    expect(vencimentoNaVenda(lote("2026-11-17", "2026-11-21"), "2026-11-21")).toBe("LIBERADO");
   });
 });

@@ -104,16 +104,17 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "lotes.vencido",
         instrucao: "Lote vencido não sai",
         explicacao:
-          "Um lote com validade anterior à data do pedido aparece com “VENCIDO”. Se for escolhido, o pedido avisa " +
-          "“Lote vencido: peça a liberação ao gestor na tela de Estoque” e não salva.",
+          "Um lote com validade anterior à data do pedido aparece com “VENCIDO · sem liberação”. Se for escolhido, o " +
+          "pedido avisa “Lote vencido: peça a liberação ao gestor na tela de Estoque” e não salva.",
       },
       {
         cena: "lotes",
         alvo: "lotes.liberado",
         instrucao: "A não ser que o gestor tenha liberado",
         explicacao:
-          "O FC-261117-01 também venceu, mas o gestor o liberou até 21/11 na tela de Estoque. Nesse dia ele sai: o " +
-          "pedido mostra “Liberado até 21/11/2026” e grava o motivo da liberação no item.",
+          "O FC-261117-01 também venceu, mas o gestor o liberou até 21/11 na tela de Estoque: a lista já mostra " +
+          "“VENCIDO · liberado até 21/11/2026”, e ele sai. A liberação vale pela data do pedido: mudando a data, o " +
+          "rótulo acompanha. O pedido grava o motivo da liberação no item.",
       },
       {
         cena: "novo",

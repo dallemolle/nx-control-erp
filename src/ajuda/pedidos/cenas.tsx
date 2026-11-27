@@ -56,8 +56,12 @@ export const paraTexto = (data: Date) => data.toISOString().slice(0, 10).split("
 const numero = (texto: string | undefined) =>
   texto === undefined || texto.trim() === "" ? NaN : Number(texto.replace(",", "."));
 
+// No exemplo a liberação sempre cobre a data do pedido (21/11), como em pedido-form.tsx (`rotuloDoVencimento`).
+const vencimento = (l: LoteParaVenda) =>
+  !l.vencido ? "" : l.liberadoAte ? ` · VENCIDO · liberado até ${l.liberadoAte}` : " · VENCIDO · sem liberação";
+
 export const rotuloLote = (l: LoteParaVenda) =>
-  `${l.codigo} · ${l.produto} · ${KG.format(l.saldoKg)} kg · vence ${l.validade}${l.vencido ? " · VENCIDO" : ""}`;
+  `${l.codigo} · ${l.produto} · ${KG.format(l.saldoKg)} kg · vence ${l.validade}${vencimento(l)}`;
 
 const loteDoCodigo = (codigo: string | undefined) => LOTES.find((l) => l.codigo === codigo);
 
