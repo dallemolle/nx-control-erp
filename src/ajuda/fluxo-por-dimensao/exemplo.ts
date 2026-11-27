@@ -15,10 +15,8 @@ export type LinhaExemplo = {
   saidasProjetadas: number;
 };
 
-/** O mesmo cálculo da coluna Saldo da tela (page.tsx e exportação). */
-export function saldoDaLinha(l: LinhaExemplo): number {
-  return l.entradasRealizadas + l.entradasProjetadas - (l.saidasRealizadas + l.saidasProjetadas);
-}
+/** A coluna "Resultado do mês" da tela: a mesma função da página e da exportação. */
+export { resultadoDoMes, totalDoFluxo } from "@/lib/fluxoPorDimensao";
 
 const linha = (
   chave: string,
