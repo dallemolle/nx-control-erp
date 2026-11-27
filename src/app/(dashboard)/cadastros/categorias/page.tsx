@@ -45,7 +45,14 @@ export default async function CategoriasFinanceirasPage() {
         <TableBody>
           {categorias.map((categoria) => (
             <TableRow key={categoria.id}>
-              <TableCell className="font-medium">{categoria.nome}</TableCell>
+              <TableCell className="font-medium">
+                {categoria.nome}
+                {categoria.naoOperacional && (
+                  <Badge variant="outline" className="ml-2">
+                    Não operacional
+                  </Badge>
+                )}
+              </TableCell>
               <TableCell>
                 <Badge variant={categoria.tipo === "RECEITA" ? "default" : "secondary"}>
                   {ROTULOS_TIPO_CATEGORIA_FINANCEIRA[categoria.tipo]}

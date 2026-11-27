@@ -1,4 +1,5 @@
 import { formatarMoeda } from "@/lib/formatacao";
+import { totalAbatido, type ValoresDaBaixa } from "./valorAbatido";
 import { hojeDeCalendario } from "@/lib/producao/periodo";
 
 /** Mais que isto, em dias, entre a data da baixa e o dia do registro vira aviso (provável erro de digitação). */
@@ -7,6 +8,7 @@ export const DIAS_LIMITE_DATA_ANTIGA = 30;
 const UM_DIA_MS = 24 * 60 * 60 * 1000;
 
 export type TipoAvisoBaixa =
+  | "PARCELA_FECHADA"
   | "DATA_FUTURA"
   | "DATA_ANTIGA"
   | "PARCELA_PAGA"
@@ -29,22 +31,30 @@ export type DadosAvisoBaixa = {
   valorDesconto: number;
   /** `valorAtualizado` da parcela. */
   valorParcela: number;
-  /** Soma do valor pago das baixas aprovadas da parcela. */
+  /** Soma do valor abatido (pago − juros − multa + desconto) das baixas aprovadas da parcela. */
   totalAprovado: number;
   /** Outras baixas pendentes na mesma parcela, sem contar esta. */
   outrasPendentes: number;
   /** Hoje como data de calendário (`hojeDeCalendario()`). */
   hoje: Date;
+  /** Status gravado da parcela. Cancelada ou renegociada: a aprovação é recusada e o aviso manda rejeitar. */
+  statusParcela?: string;
 };
 
 const centavos = (valor: number) => Math.round(valor * 100);
 
 /**
- * O que merece atenção de quem aprova a baixa. Só informa: a aprovação não é bloqueada.
- * Ordem: data, valor, outra baixa pendente.
+ * O que merece atenção de quem aprova a baixa.
+ * Ordem: parcela fechada, data, valor, outra baixa pendente. Só informa, exceto parcela fechada: essa a aprovação recusa.
  */
 export function avisosDaBaixa(dados: DadosAvisoBaixa): AvisoBaixa[] {
   const avisos: AvisoBaixa[] = [];
+
+  const fechada =
+    dados.statusParcela === "CANCELADO" ? "cancelada" : dados.statusParcela === "RENEGOCIADO" ? "renegociada" : null;
+  if (fechada) {
+    avisos.push({ tipo: "PARCELA_FECHADA", texto: `Parcela ${fechada}: rejeite esta baixa` });
+  }
 
   // A API aceita data com hora: vale o dia de calendário UTC.
   const d = dados.data;
@@ -61,7 +71,9 @@ export function avisosDaBaixa(dados: DadosAvisoBaixa): AvisoBaixa[] {
   const saldo = centavos(dados.valorParcela) - centavos(dados.totalAprovado);
   const esperado = saldo + centavos(dados.valorJuros) + centavos(dados.valorMulta) - centavos(dados.valorDesconto);
   const pago = centavos(dados.valorPago);
-  if (saldo <= 0) {
+  if (fechada) {
+    // Avisos de valor não fazem sentido: a baixa deve ser rejeitada.
+  } else if (saldo <= 0) {
     avisos.push({ tipo: "PARCELA_PAGA", texto: "A parcela já está paga" });
   } else if (pago < esperado) {
     const sentido = dados.tipoTitulo === "PAGAR" ? "Pagamento" : "Recebimento";
@@ -79,11 +91,11 @@ export function avisosDaBaixa(dados: DadosAvisoBaixa): AvisoBaixa[] {
 /** A partir de todas as baixas da parcela: soma das aprovadas e quantas outras esperam aprovação. */
 export function resumirBaixasDaParcela(
   baixaId: string,
-  baixas: readonly { id: string; valorPago: number; statusAprovacao: string }[],
+  baixas: readonly (ValoresDaBaixa & { id: string; statusAprovacao: string })[],
 ): { totalAprovado: number; outrasPendentes: number } {
   const aprovadas = baixas.filter((b) => b.statusAprovacao === "APROVADO");
   return {
-    totalAprovado: aprovadas.reduce((soma, b) => soma + centavos(b.valorPago), 0) / 100,
+    totalAprovado: totalAbatido(aprovadas),
     outrasPendentes: baixas.filter((b) => b.statusAprovacao === "PENDENTE" && b.id !== baixaId).length,
   };
 }

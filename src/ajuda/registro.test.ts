@@ -13,14 +13,14 @@ describe("registro da ajuda", () => {
     expect(temAjuda("contas-a-pagar")).toBe(true);
     expect(tituloDaAjuda("contas-a-pagar")).toBe("Contas a pagar");
     const definicao = await carregarAjuda("contas-a-pagar");
-    expect(definicao.roteiros.length).toBe(6);
+    expect(definicao.roteiros.length).toBe(8);
   });
 
   test("contas a receber tem ajuda e carrega a definição", async () => {
     expect(tituloDaAjuda("contas-a-receber")).toBe("Contas a receber");
     const definicao = await carregarAjuda("contas-a-receber");
     expect(definicao.tituloTela).toBe("Contas a receber");
-    expect(definicao.roteiros.length).toBe(6);
+    expect(definicao.roteiros.length).toBe(8);
   });
 
   test("aprovações pendentes tem ajuda", async () => {
@@ -35,7 +35,7 @@ describe("registro da ajuda", () => {
 
   test("tesouraria tem ajuda", async () => {
     expect(tituloDaAjuda("tesouraria")).toBe("Tesouraria");
-    expect((await carregarAjuda("tesouraria")).roteiros.length).toBe(4);
+    expect((await carregarAjuda("tesouraria")).roteiros.length).toBe(5);
   });
 
   test("conciliação tem ajuda", async () => {

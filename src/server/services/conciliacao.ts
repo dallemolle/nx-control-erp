@@ -35,6 +35,12 @@ function dentroDaJanela(dataCandidato: Date, dataLinha: Date, dias: number): boo
   return Math.abs(dataCandidato.getTime() - dataLinha.getTime()) <= dias * UM_DIA_MS;
 }
 
+/** Dias entre duas datas, comparando só o dia (UTC): a linha do OFX vem com hora, o lançamento não. */
+function diasEntre(a: Date, b: Date): number {
+  const dia = (d: Date) => Date.parse(d.toISOString().slice(0, 10));
+  return Math.round(Math.abs(dia(a) - dia(b)) / UM_DIA_MS);
+}
+
 function janelaDeBusca(data: Date): { gte: Date; lte: Date } {
   return {
     gte: new Date(data.getTime() - JANELA_BUSCA_DIAS * UM_DIA_MS),
@@ -174,7 +180,14 @@ async function buscarCandidatosLancamento(contaBancariaId: string, tipo: TipoLan
 
 class ItemJaConciliadoError extends Error {
   constructor() {
-    super("Algum item foi conciliado por outra pessoa; recarregue a tela");
+    super("Algum item foi conciliado, alterado ou excluído por outra pessoa; recarregue a tela");
+  }
+}
+
+/** A soma relida dentro da transação não fecha: algum lançamento foi editado no meio do caminho. */
+class SomaDoGrupoMudouError extends Error {
+  constructor() {
+    super("Algum lançamento mudou enquanto você conciliava. Confira os valores e tente de novo.");
   }
 }
 
@@ -182,7 +195,7 @@ class ItemJaConciliadoError extends Error {
  * Único ponto que grava vínculo de conciliação. Cria o grupo e prende linhas e
  * lançamentos a ele só se ainda estiverem soltos (`grupoConciliacaoId: null`);
  * se outra transação chegou antes, a contagem não bate e tudo é desfeito.
- * Quem chama já conferiu filial, conta e soma.
+ * Quem chama já conferiu filial e conta; a soma é conferida aqui, com o que está gravado.
  */
 async function vincularEmGrupo(
   tx: Prisma.TransactionClient,
@@ -207,6 +220,15 @@ async function vincularEmGrupo(
   if (linhas.count !== dados.linhaIds.length || lancamentos.count !== dados.lancamentoIds.length) {
     throw new ItemJaConciliadoError();
   }
+  // Lançamentos podem ser editados na Tesouraria. Com linhas e lançamentos já presos (e travados) pelo vínculo,
+  // confere de novo a soma com o que está gravado; se algo mudou desde a leitura, o erro desfaz tudo.
+  const linhasAtuais = await tx.linhaExtrato.findMany({ where: { id: { in: dados.linhaIds } } });
+  const lancamentosAtuais = await tx.lancamentoBancario.findMany({ where: { id: { in: dados.lancamentoIds } } });
+  const diferenca = diferencaDoGrupo(
+    linhasAtuais.map((l) => ({ valor: Number(l.valor), tipo: l.tipo })),
+    lancamentosAtuais.map((l) => ({ valor: Number(l.valor), tipo: l.tipo })),
+  );
+  if (diferenca !== 0) throw new SomaDoGrupoMudouError();
   return grupo.id;
 }
 
@@ -216,16 +238,19 @@ type LinhaParaReconciliar = {
   tipo: TipoLancamento;
   data: Date;
   valor: Prisma.Decimal;
+  status: StatusLinhaExtrato;
 };
 
 /**
  * Corpo compartilhado por `conciliarAutomaticamente` (rodada única, na
  * importação) e `reconciliarPendentes` (botão "tentar de novo" — cobre
- * linhas que ficaram NAO_CONCILIADO porque o lançamento correspondente
- * só foi criado depois, ou porque `desconciliar` resetou o status).
+ * linhas que ficaram pendentes porque o lançamento correspondente só foi
+ * criado ou corrigido depois, ou porque `desconciliar` resetou o status).
+ * O status de uma linha solta é só um rótulo recalculado aqui; só é gravado quando muda.
  */
 async function processarLinhasPendentes(sessao: SessaoAtiva, linhas: LinhaParaReconciliar[]) {
   let conciliadasAutomaticamente = 0;
+  let reclassificadas = 0;
 
   for (const linha of linhas) {
     const candidatos = await buscarCandidatosLancamento(linha.contaBancariaId, linha.tipo, linha.data);
@@ -249,8 +274,8 @@ async function processarLinhasPendentes(sessao: SessaoAtiva, linhas: LinhaParaRe
           }),
         );
       } catch (erro) {
-        // Outra pessoa conciliou a linha ou o lançamento no meio da rodada: segue para a próxima.
-        if (erro instanceof ItemJaConciliadoError) continue;
+        // Outra pessoa conciliou a linha ou o lançamento, ou editou o lançamento, no meio da rodada: segue.
+        if (erro instanceof ItemJaConciliadoError || erro instanceof SomaDoGrupoMudouError) continue;
         throw erro;
       }
 
@@ -261,16 +286,21 @@ async function processarLinhasPendentes(sessao: SessaoAtiva, linhas: LinhaParaRe
         entidade: "Conciliacao",
         entidadeId: linha.id,
         acao: "CONCILIAR_AUTOMATICO",
-        anterior: { status: "NAO_CONCILIADO" },
+        anterior: { status: linha.status },
         novo: { status: "CONCILIADO", lancamentoBancarioId: lancamentoId, grupoConciliacaoId },
       });
       conciliadasAutomaticamente += 1;
-    } else {
-      await prisma.linhaExtrato.update({ where: { id: linha.id }, data: { status: resultado.status } });
+    } else if (resultado.status !== linha.status) {
+      // Só se continuar solta: se outra pessoa conciliou a linha no meio da rodada, não sobrescreve o CONCILIADO.
+      const atualizada = await prisma.linhaExtrato.updateMany({
+        where: { id: linha.id, grupoConciliacaoId: null },
+        data: { status: resultado.status },
+      });
+      reclassificadas += atualizada.count;
     }
   }
 
-  return { totalProcessadas: linhas.length, conciliadasAutomaticamente };
+  return { totalProcessadas: linhas.length, conciliadasAutomaticamente, reclassificadas };
 }
 
 export async function conciliarAutomaticamente(sessao: SessaoAtiva, extratoImportadoId: string) {
@@ -292,10 +322,12 @@ export async function conciliarAutomaticamente(sessao: SessaoAtiva, extratoImpor
 }
 
 /**
- * Reprocessa todas as linhas NAO_CONCILIADO da filial ativa, independente
- * de qual extrato as trouxe — cobre o caso de uma linha ter ficado presa
- * porque o lançamento correspondente só foi criado depois da importação,
- * ou porque `desconciliar` resetou o status e perdeu a sugestão anterior.
+ * Reprocessa todas as linhas ainda não conciliadas da filial ativa (Não
+ * conciliado, Sugestão, Divergência e Duplicado), independente de qual
+ * extrato as trouxe — cobre o caso de uma linha ter ficado presa porque o
+ * lançamento correspondente só foi criado ou corrigido depois da importação,
+ * ou de o rótulo ter ficado velho (o candidato foi excluído). Esses status
+ * não guardam escolha da pessoa: são recalculados com a mesma regra da importação.
  * Acionado pelo botão "Reconciliar pendentes" na tela.
  */
 export async function reconciliarPendentes(sessao: SessaoAtiva) {
@@ -303,7 +335,11 @@ export async function reconciliarPendentes(sessao: SessaoAtiva) {
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   const linhas = await prisma.linhaExtrato.findMany({
-    where: { status: "NAO_CONCILIADO", contaBancaria: { filialId: sessao.filialId } },
+    where: {
+      status: { not: "CONCILIADO" },
+      grupoConciliacaoId: null,
+      contaBancaria: { filialId: sessao.filialId },
+    },
   });
 
   return processarLinhasPendentes(sessao, linhas);
@@ -340,7 +376,17 @@ export async function buscarCandidatosDaLinha(sessao: SessaoAtiva, linhaExtratoI
   if (!linha) {
     throw new Error("Linha de extrato não pertence à filial ativa");
   }
-  return buscarCandidatosLancamento(linha.contaBancariaId, linha.tipo, linha.data);
+  const candidatos = await buscarCandidatosLancamento(linha.contaBancariaId, linha.tipo, linha.data);
+  // O Confirmar (1:1) só aceita valor igual; os outros servem para o aviso da tela.
+  return candidatos.map((c) => {
+    const diasDeDiferenca = diasEntre(c.data, linha.data);
+    return {
+      ...c,
+      valorIgual: c.valor.equals(linha.valor),
+      diasDeDiferenca,
+      dentroDaTolerancia: diasDeDiferenca <= JANELA_TOLERANCIA_DIAS,
+    };
+  });
 }
 
 export async function confirmarConciliacaoManual(
@@ -366,6 +412,22 @@ export async function confirmarConciliacaoManual(
   });
   if (!lancamento) {
     throw new Error("Lançamento não encontrado, de outra conta bancária, ou já conciliado");
+  }
+  const sentido = (tipo: TipoLancamento) => (tipo === "ENTRADA" ? "uma entrada" : "uma saída");
+  if (lancamento.tipo !== linha.tipo) {
+    throw new Error(`O lançamento é ${sentido(lancamento.tipo)} e a linha do extrato é ${sentido(linha.tipo)}.`);
+  }
+  if (!lancamento.valor.equals(linha.valor)) {
+    const caminho =
+      lancamento.origem === "BAIXA"
+        ? "Se a baixa foi registrada com o valor errado, estorne a baixa em Contas a pagar ou a receber e " +
+          "registre de novo; se a diferença é real, use Conciliar em grupo com “Lançar a diferença”."
+        : "Se foi digitado errado, corrija na Tesouraria; " +
+          "se a diferença é real, use Conciliar em grupo com “Lançar a diferença”.";
+    throw new Error(
+      `O lançamento tem valor diferente da linha (${formatarMoeda(lancamento.valor)} no lançamento, ` +
+        `${formatarMoeda(linha.valor)} no extrato). ${caminho}`,
+    );
   }
 
   const grupoConciliacaoId = await prisma.$transaction((tx) =>

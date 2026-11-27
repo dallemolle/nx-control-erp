@@ -6,6 +6,9 @@ import { TituloTable, type OpcoesTitulo } from "./titulo-table";
 import { BaixaDialog } from "./baixa-dialog";
 import { RenegociarDialog } from "./renegociar-dialog";
 import { ImportarCsvDialog } from "./importar-csv-dialog";
+import { EstornarDialog } from "./estornar-dialog";
+import { DispensarDialog } from "./dispensar-dialog";
+import type { BaixaDaParcela } from "./titulos-para-cliente";
 
 export function ContasClientePanel({
   tipo,
@@ -13,6 +16,7 @@ export function ContasClientePanel({
   opcoes,
   podeEscrever,
   podeBaixar,
+  podeAprovar,
   filtroAtivo,
 }: {
   tipo: TipoTitulo;
@@ -21,10 +25,13 @@ export function ContasClientePanel({
   opcoes: OpcoesTitulo;
   podeEscrever: boolean;
   podeBaixar: boolean;
+  podeAprovar: boolean;
   filtroAtivo: boolean;
 }) {
-  const [parcelaBaixaId, setParcelaBaixaId] = useState<string | null>(null);
+  const [parcelaBaixa, setParcelaBaixa] = useState<{ id: string; saldoEmAberto: number } | null>(null);
   const [parcelaRenegociacaoId, setParcelaRenegociacaoId] = useState<string | null>(null);
+  const [baixaEstorno, setBaixaEstorno] = useState<BaixaDaParcela | null>(null);
+  const [baixaDispensa, setBaixaDispensa] = useState<BaixaDaParcela | null>(null);
 
   return (
     <div className="space-y-4">
@@ -39,22 +46,35 @@ export function ContasClientePanel({
         opcoes={opcoes}
         podeEscrever={podeEscrever}
         podeBaixar={podeBaixar}
+        podeAprovar={podeAprovar}
         filtroAtivo={filtroAtivo}
-        onAbrirBaixa={setParcelaBaixaId}
+        onAbrirBaixa={setParcelaBaixa}
         onAbrirRenegociacao={setParcelaRenegociacaoId}
+        onAbrirEstorno={setBaixaEstorno}
+        onAbrirDispensa={setBaixaDispensa}
       />
       <BaixaDialog
         tipo={tipo}
-        parcelaId={parcelaBaixaId}
+        parcela={parcelaBaixa}
         contasBancarias={opcoes.contasBancarias}
-        aberto={parcelaBaixaId !== null}
-        onOpenChange={(aberto) => !aberto && setParcelaBaixaId(null)}
+        aberto={parcelaBaixa !== null}
+        onOpenChange={(aberto) => !aberto && setParcelaBaixa(null)}
       />
       <RenegociarDialog
         tipo={tipo}
         parcelaId={parcelaRenegociacaoId}
         aberto={parcelaRenegociacaoId !== null}
         onOpenChange={(aberto) => !aberto && setParcelaRenegociacaoId(null)}
+      />
+      <EstornarDialog
+        tipo={tipo}
+        baixa={baixaEstorno}
+        onOpenChange={(aberto) => !aberto && setBaixaEstorno(null)}
+      />
+      <DispensarDialog
+        tipo={tipo}
+        baixa={baixaDispensa}
+        onOpenChange={(aberto) => !aberto && setBaixaDispensa(null)}
       />
     </div>
   );

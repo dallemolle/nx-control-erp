@@ -38,10 +38,11 @@ implementado e mesclado em `staging`. Tela em `/financeiro/conciliacao`.
   conciliado, com um seletor dos lançamentos candidatos.
 - Linha sem lançamento correspondente pode virar um `LancamentoBancario`
   novo direto da tela (fecha o ciclo sem sair pra Tesouraria).
-- Botão "Reconciliar pendentes" reprocessa toda linha `NAO_CONCILIADO` da
-  filial ativa — cobre o caso de o lançamento correspondente só ter sido
-  criado depois da importação, ou de uma desconciliação ter resetado o
-  status.
+- Botão "Reconciliar pendentes" reprocessa toda linha ainda não conciliada
+  da filial ativa (`NAO_CONCILIADO`, `SUGESTAO`, `DIVERGENCIA_*`, `DUPLICADO`;
+  desde 2026-11-27) — cobre o caso de o lançamento correspondente só ter sido
+  criado ou corrigido depois da importação, ou de uma desconciliação ter
+  resetado o status.
 - Filtro por status na listagem.
 - Conciliação 1:1 no automático; em grupo (N:1, 1:N, N:M) na conciliação
   manual, com soma exata e lançamento opcional da diferença — ver

@@ -1,14 +1,16 @@
 import { prisma } from "@/server/db/client";
 import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permissions";
 import { registrarAuditoria, type ClientePrisma } from "@/server/audit/registrar";
-import { recalcularEPersistirStatusParcela, calcularStatusParcela } from "@/server/services/parcela";
+import { recalcularEPersistirStatusParcela, calcularStatusParcela, valoresDaBaixa } from "@/server/services/parcela";
 import { SEM_VALOR } from "@/lib/schemas/enums";
+import { parcelaTemRejeicaoEmAberto } from "@/lib/financeiro/rejeicaoEmAberto";
 import {
   ErroClassificacaoFiscal,
   garantirComprovanteValido,
   resolverClassificacao,
 } from "@/server/services/classificacaoFiscal";
 import type { SessaoAtiva } from "@/server/auth/sessao";
+import { garantirSemBaixaPendente } from "./baixa";
 import {
   argumentosDeCursor,
   CursorInvalidoError,
@@ -30,6 +32,8 @@ export type FiltroTitulos = {
   vencimentoDe?: Date;
   vencimentoAte?: Date;
   classificacao?: ClassificacaoFiscal;
+  /** Só títulos com alguma parcela com baixa rejeitada em aberto (aviso de Contas a pagar/receber). */
+  rejeitadas?: true;
 };
 
 export function parcelaBateFiltroDeParcela(
@@ -211,6 +215,29 @@ const INCLUDE_LISTAGEM_TITULOS = {
   parcelas: { include: { baixas: true }, orderBy: { numero: "asc" } },
 } satisfies Prisma.TituloInclude;
 
+/** Só a tela: a API devolve `INCLUDE_LISTAGEM_TITULOS` cru, então estas relações não podem vazar para lá. */
+const INCLUDE_TELA_TITULOS = {
+  ...INCLUDE_LISTAGEM_TITULOS,
+  parcelas: {
+    include: {
+      // A tela lista as baixas na parcela (todas, inclusive rejeitadas) com conta, pessoas e se dá para estornar.
+      baixas: {
+        include: {
+          contaBancaria: { include: { banco: true } },
+          usuario: { select: { nome: true } },
+          avaliadoPor: { select: { nome: true } },
+          estornadoPor: { select: { nome: true } },
+          dispensadaPor: { select: { nome: true } },
+          lancamentos: { select: { grupoConciliacaoId: true } },
+          repasseRecebimento: { select: { id: true } },
+          repasseTaxa: { select: { id: true } },
+        },
+      },
+    },
+    orderBy: { numero: "asc" },
+  },
+} satisfies Prisma.TituloInclude;
+
 /** `id` desempata títulos criados no mesmo instante — sem ele a paginação repete ou pula itens. */
 const ORDEM_LISTAGEM_TITULOS = [
   { criadoEm: "desc" },
@@ -253,7 +280,7 @@ async function sincronizarStatusDasParcelas(titulos: TituloListado[]): Promise<v
         },
         parcela.baixas
           .filter((baixa) => baixa.statusAprovacao === "APROVADO")
-          .map((baixa) => ({ valorPago: Number(baixa.valorPago) })),
+          .map(valoresDaBaixa),
         hoje,
       );
 
@@ -267,23 +294,36 @@ async function sincronizarStatusDasParcelas(titulos: TituloListado[]): Promise<v
   }
 
   for (const [status, ids] of idsPorStatus) {
-    await prisma.parcela.updateMany({ where: { id: { in: ids } }, data: { status } });
+    // Nunca sobrescreve estado terminal: a lista leu o status antes, e um cancelamento ou renegociação pode ter
+    // sido gravado no meio (sem esta condição, a lista "descancelaria" a parcela).
+    await prisma.parcela.updateMany({
+      where: { id: { in: ids }, status: { notIn: ["CANCELADO", "RENEGOCIADO"] } },
+      data: { status },
+    });
   }
 }
 
 export async function listarTitulos(filialId: string, tipo: TipoTitulo, filtros: FiltroTitulos = {}) {
   const titulos = await prisma.titulo.findMany({
     where: whereListagemTitulos(filialId, tipo, filtros),
-    include: INCLUDE_LISTAGEM_TITULOS,
+    include: INCLUDE_TELA_TITULOS,
     orderBy: ORDEM_LISTAGEM_TITULOS,
   });
   await sincronizarStatusDasParcelas(titulos);
 
   const temFiltroDeParcela =
-    filtros.status !== undefined || filtros.vencimentoDe !== undefined || filtros.vencimentoAte !== undefined;
+    filtros.status !== undefined ||
+    filtros.vencimentoDe !== undefined ||
+    filtros.vencimentoAte !== undefined ||
+    filtros.rejeitadas !== undefined;
   if (!temFiltroDeParcela) return titulos;
 
-  return titulos.filter((titulo) => titulo.parcelas.some((parcela) => parcelaBateFiltroDeParcela(parcela, filtros)));
+  return titulos.filter((titulo) =>
+    titulo.parcelas.some(
+      (parcela) =>
+        parcelaBateFiltroDeParcela(parcela, filtros) && (!filtros.rejeitadas || parcelaTemRejeicaoEmAberto(parcela)),
+    ),
+  );
 }
 
 /** Versão da API: uma página por vez, ordenada por criação (mais novo primeiro). */
@@ -506,28 +546,36 @@ export async function cancelarParcela(sessao: SessaoAtiva, parcelaId: string) {
   requirePermission(sessao.perfil, "titulo:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
-  const anterior = await prisma.parcela.findFirstOrThrow({
-    where: { id: parcelaId, titulo: { filialId: sessao.filialId } },
+  await prisma.parcela.findFirstOrThrow({ where: { id: parcelaId, titulo: { filialId: sessao.filialId } } });
+
+  return prisma.$transaction(async (tx) => {
+    // Trava a parcela: um registro de baixa ao mesmo tempo fica em fila e um vê o outro.
+    await tx.$queryRaw`SELECT id FROM parcelas WHERE id = ${parcelaId} FOR UPDATE`;
+    const anterior = await tx.parcela.findUniqueOrThrow({ where: { id: parcelaId } });
+
+    // CANCELADO e RENEGOCIADO são estados terminais: sobrescrever um RENEGOCIADO
+    // apagaria o sentido da cadeia de renegociação (`parcelaOrigemId`).
+    if (anterior.status === "CANCELADO" || anterior.status === "RENEGOCIADO") {
+      throw new Error("Não é possível cancelar uma parcela já renegociada ou cancelada");
+    }
+    await garantirSemBaixaPendente(tx, parcelaId, "cancelar a parcela");
+
+    const parcela = await tx.parcela.update({ where: { id: parcelaId }, data: { status: "CANCELADO" } });
+
+    await registrarAuditoria(
+      {
+        empresaId: sessao.empresaId,
+        filialId: sessao.filialId,
+        usuarioId: sessao.usuarioId,
+        entidade: "Parcela",
+        entidadeId: parcelaId,
+        acao: "CANCELAR",
+        anterior: { status: anterior.status },
+        novo: { status: "CANCELADO" },
+      },
+      tx,
+    );
+
+    return parcela;
   });
-
-  // CANCELADO e RENEGOCIADO são estados terminais: sobrescrever um RENEGOCIADO
-  // apagaria o sentido da cadeia de renegociação (`parcelaOrigemId`).
-  if (anterior.status === "CANCELADO" || anterior.status === "RENEGOCIADO") {
-    throw new Error("Não é possível cancelar uma parcela já renegociada ou cancelada");
-  }
-
-  const parcela = await prisma.parcela.update({ where: { id: parcelaId }, data: { status: "CANCELADO" } });
-
-  await registrarAuditoria({
-    empresaId: sessao.empresaId,
-    filialId: sessao.filialId,
-    usuarioId: sessao.usuarioId,
-    entidade: "Parcela",
-    entidadeId: parcelaId,
-    acao: "CANCELAR",
-    anterior: { status: anterior.status },
-    novo: { status: "CANCELADO" },
-  });
-
-  return parcela;
 }

@@ -107,8 +107,9 @@ export async function confirmarRepasses(sessao: SessaoAtiva, parcelaIds: string[
   if (data.getTime() > hojeDeCalendario().getTime()) throw new Error("A data do recebimento não pode ser futura");
 
   await prisma.$transaction(async (tx) => {
-    // Trava as parcelas: duas confirmações simultâneas não baixam o mesmo repasse duas vezes.
-    await tx.$queryRaw`SELECT id FROM parcelas WHERE id IN (${Prisma.join(ids)}) FOR UPDATE`;
+    // Trava as parcelas sempre na mesma ordem: duas confirmações com parcelas em comum ficam em fila em vez de
+    // travar uma à outra (deadlock), e a segunda não baixa o mesmo repasse duas vezes.
+    await tx.$queryRaw`SELECT id FROM parcelas WHERE id IN (${Prisma.join(ids)}) ORDER BY id FOR UPDATE`;
     const parcelas = await tx.parcela.findMany({
       where: { id: { in: ids }, titulo: { filialId: sessao.filialId } },
       include: {

@@ -3,6 +3,8 @@ import { prisma } from "@/server/db/client";
 import { PermissionError } from "@/server/auth/permissions";
 import { criarFixtureFinanceiro, limparFixtureFinanceiro, type FixtureFinanceiro } from "./financeiroTestFixtures";
 import { criarTitulo } from "./titulo";
+import { registrarBaixa, aprovarBaixa } from "./baixa";
+import { hojeDeCalendario } from "@/lib/producao/periodo";
 import {
   buscarIndicadoresExecutivos,
   buscarGraficosExecutivos,
@@ -28,7 +30,8 @@ describe("calcularIndicadoresExecutivos e calcularAging", () => {
   test("inadimplência é a receber vencida pela data, também a paga em parte; vencendo hoje não conta", () => {
     const indicadores = calcularIndicadoresExecutivos({
       hoje,
-      caixaDisponivel: 1000,
+      caixaConciliado: 1000,
+      aguardandoConciliacao: { entradas: 0, saidas: 0 },
       entradasMes: 500,
       saidasMes: 200,
       parcelas: [
@@ -43,6 +46,7 @@ describe("calcularIndicadoresExecutivos e calcularAging", () => {
     });
     expect(indicadores).toEqual({
       caixaDisponivel: 1000,
+      aguardandoConciliacao: 0,
       contasAPagarEmAberto: 1199,
       contasAReceberEmAberto: 530,
       inadimplencia: 450,
@@ -50,8 +54,31 @@ describe("calcularIndicadoresExecutivos e calcularAging", () => {
       obrigacoes7Dias: 100,
       obrigacoes30Dias: 200,
       recebimentosEsperados30Dias: 80,
-      saldoProjetado30Dias: 880,
+      // 1000 + 450 a receber vencido − 0 a pagar vencido + 80 − 200
+      saldoProjetado30Dias: 1330,
     });
+  });
+
+  test("caixa disponível é o contábil; saldo projetado soma atrasados e o que aguarda conciliação, como o projetado", () => {
+    const indicadores = calcularIndicadoresExecutivos({
+      hoje,
+      caixaConciliado: 10000,
+      aguardandoConciliacao: { entradas: 200, saidas: 1012 },
+      entradasMes: 0,
+      saidasMes: 0,
+      parcelas: [
+        { tipo: "PAGAR", dataVencimento: dia("2026-11-10"), saldo: 600 }, // a pagar vencido
+        { tipo: "RECEBER", dataVencimento: dia("2026-11-01"), saldo: 450 }, // a receber vencido
+        { tipo: "RECEBER", dataVencimento: dia("2026-12-01"), saldo: 300 },
+        { tipo: "PAGAR", dataVencimento: dia("2026-12-01"), saldo: 100 },
+      ],
+    });
+    expect(indicadores.caixaDisponivel).toBe(9188);
+    expect(indicadores.aguardandoConciliacao).toBe(-812);
+    expect(indicadores.obrigacoes30Dias).toBe(100);
+    expect(indicadores.recebimentosEsperados30Dias).toBe(300);
+    // 9188 + 450 − 600 + 300 − 100
+    expect(indicadores.saldoProjetado30Dias).toBe(9238);
   });
 
   test("aging conta só as vencidas, por dias de atraso", () => {
@@ -85,7 +112,8 @@ describe("buscarIndicadoresExecutivos (integração)", () => {
   beforeAll(async () => {
     fixture = await criarFixtureFinanceiro("DASH", "GESTOR");
     sessaoGestor = fixture.sessao;
-    hoje = new Date();
+    // O mesmo "hoje" do código (dia de Brasília). Com `new Date()`, das 21h à meia-noite os testes caíam no dia seguinte.
+    hoje = hojeDeCalendario();
     em3Dias = new Date(hoje.getTime() + 3 * 24 * 60 * 60 * 1000);
     em15Dias = new Date(hoje.getTime() + 15 * 24 * 60 * 60 * 1000);
     em45Dias = new Date(hoje.getTime() + 45 * 24 * 60 * 60 * 1000);
@@ -107,7 +135,7 @@ describe("buscarIndicadoresExecutivos (integração)", () => {
     await expect(buscarIndicadoresExecutivos(sessaoFinanceiro)).rejects.toThrow(PermissionError);
   });
 
-  test("caixaDisponivel soma o saldo conciliado de todas as filiais da empresa", async () => {
+  test("caixaDisponivel soma o saldo de todas as filiais da empresa", async () => {
     await prisma.lancamentoBancario.create({
       data: {
         filialId: fixture.filialId,
@@ -146,6 +174,28 @@ describe("buscarIndicadoresExecutivos (integração)", () => {
     const indicadores = await buscarIndicadoresExecutivos(sessaoGestor);
     // 1000 (filial 1) + (500 saldoInicial - 200 saída) (filial 2) = 1300
     expect(indicadores.caixaDisponivel).toBe(1300);
+  });
+
+  test("transferência não entra na geração de caixa do mês", async () => {
+    const antes = await buscarIndicadoresExecutivos(sessaoGestor);
+    for (const [tipo, valor] of [["SAIDA", 5000], ["ENTRADA", 3000]] as const) {
+      await prisma.lancamentoBancario.create({
+        data: {
+          filialId: fixture.filialId,
+          contaBancariaId: fixture.contaBancariaId,
+          data: hoje,
+          tipo,
+          valor,
+          descricao: "Perna de transferência",
+          origem: "TRANSFERENCIA",
+          usuarioId: fixture.usuarioId,
+          conciliado: true,
+        },
+      });
+    }
+    const depois = await buscarIndicadoresExecutivos(sessaoGestor);
+    expect(depois.geracaoDeCaixaMesAtual).toBeCloseTo(antes.geracaoDeCaixaMesAtual, 2);
+    expect(depois.caixaDisponivel - antes.caixaDisponivel).toBeCloseTo(-2000, 2);
   });
 
   test("contasAPagarEmAberto, obrigacoes7Dias e obrigacoes30Dias separam por janela de vencimento", async () => {
@@ -201,7 +251,6 @@ describe("buscarIndicadoresExecutivos (integração)", () => {
   });
 
   test("obrigações vencendo hoje entram na janela de 7 e 30 dias, mesmo em qualquer horário do dia", async () => {
-    const hojeMeiaNoite = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()));
     await criarTitulo(fixture.sessaoAdmin, "PAGAR", {
       contraparteId: fixture.fornecedorId,
       documento: `DASH-HOJE-${Date.now()}`,
@@ -214,7 +263,7 @@ describe("buscarIndicadoresExecutivos (integração)", () => {
       projetoId: "",
       contaBancariaId: fixture.contaBancariaId,
       formaPagamento: "",
-      parcelas: [{ numero: 1, dataVencimento: hojeMeiaNoite, valorOriginal: 150 }],
+      parcelas: [{ numero: 1, dataVencimento: hoje, valorOriginal: 150 }],
     });
 
     const indicadores = await buscarIndicadoresExecutivos(sessaoGestor);
@@ -300,12 +349,87 @@ describe("buscarIndicadoresExecutivos (integração)", () => {
     expect(indicadores.geracaoDeCaixaMesAtual).toBeGreaterThanOrEqual(600);
   });
 
-  test("saldoProjetado30Dias é caixaDisponivel + recebimentosEsperados30Dias - obrigacoes30Dias", async () => {
-    const indicadores = await buscarIndicadoresExecutivos(sessaoGestor);
-    expect(indicadores.saldoProjetado30Dias).toBeCloseTo(
-      indicadores.caixaDisponivel + indicadores.recebimentosEsperados30Dias - indicadores.obrigacoes30Dias,
-      6,
-    );
+  test("lançamento não conciliado entra no caixa disponível, no aguardando e no saldo projetado", async () => {
+    const antes = await buscarIndicadoresExecutivos(sessaoGestor);
+    await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: hoje,
+        tipo: "SAIDA",
+        valor: 1012,
+        descricao: "Baixa aprovada, ainda não conciliada",
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+        conciliado: false,
+      },
+    });
+    const depois = await buscarIndicadoresExecutivos(sessaoGestor);
+    expect(depois.caixaDisponivel - antes.caixaDisponivel).toBeCloseTo(-1012, 2);
+    expect(depois.aguardandoConciliacao - antes.aguardandoConciliacao).toBeCloseTo(-1012, 2);
+    expect(depois.saldoProjetado30Dias - antes.saldoProjetado30Dias).toBeCloseTo(-1012, 2);
+    expect(depois.geracaoDeCaixaMesAtual).toBeCloseTo(antes.geracaoDeCaixaMesAtual, 2);
+  });
+
+  test("data futura: transferência do Caixa não muda o caixa disponível e lançamento no Caixa entra", async () => {
+    const futura = new Date(hoje.getTime() + 15 * 24 * 60 * 60 * 1000);
+    const lancamento = (tipo: "ENTRADA" | "SAIDA", valor: number, conciliado: boolean, descricao: string) =>
+      prisma.lancamentoBancario.create({
+        data: {
+          filialId: fixture.filialId,
+          contaBancariaId: fixture.contaBancariaId,
+          data: futura,
+          tipo,
+          valor,
+          descricao,
+          origem: "MANUAL",
+          usuarioId: fixture.usuarioId,
+          conciliado,
+        },
+      });
+    const antes = await buscarIndicadoresExecutivos(sessaoGestor);
+    await lancamento("SAIDA", 2000, true, "Transferência futura — lado do Caixa");
+    await lancamento("ENTRADA", 2000, false, "Transferência futura — lado do banco");
+    const comTransferencia = await buscarIndicadoresExecutivos(sessaoGestor);
+    expect(comTransferencia.caixaDisponivel).toBeCloseTo(antes.caixaDisponivel, 2);
+    expect(comTransferencia.saldoProjetado30Dias).toBeCloseTo(antes.saldoProjetado30Dias, 2);
+
+    await lancamento("SAIDA", 300, true, "Despesa futura no Caixa");
+    const comDespesa = await buscarIndicadoresExecutivos(sessaoGestor);
+    expect(comDespesa.caixaDisponivel - antes.caixaDisponivel).toBeCloseTo(-300, 2);
+  });
+
+  test("baixa aprovada e não conciliada: sai das obrigações, entra no aguardando e o saldo projetado não muda", async () => {
+    const titulo = await criarTitulo(fixture.sessaoAdmin, "PAGAR", {
+      contraparteId: fixture.fornecedorId,
+      documento: `DASH-PAG-ADUBO-${Date.now()}`,
+      dataEmissao: new Date(),
+      dataCompetencia: new Date(),
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+      centroCustoId: "",
+      centroLucroId: "",
+      safraId: "",
+      projetoId: "",
+      contaBancariaId: fixture.contaBancariaId,
+      formaPagamento: "",
+      parcelas: [{ numero: 1, dataVencimento: em15Dias, valorOriginal: 1012 }],
+    });
+    const antes = await buscarIndicadoresExecutivos(sessaoGestor);
+    const baixa = await registrarBaixa(fixture.sessaoAdmin, titulo.parcelas[0].id, {
+      data: new Date(),
+      valorPago: 1012,
+      valorJuros: 0,
+      valorMulta: 0,
+      valorDesconto: 0,
+      contaBancariaId: fixture.contaBancariaId,
+    });
+    await aprovarBaixa(fixture.sessaoAdmin, baixa.id);
+    const depois = await buscarIndicadoresExecutivos(sessaoGestor);
+
+    expect(depois.saldoProjetado30Dias).toBeCloseTo(antes.saldoProjetado30Dias, 2);
+    expect(depois.caixaDisponivel - antes.caixaDisponivel).toBeCloseTo(-1012, 2);
+    expect(depois.aguardandoConciliacao - antes.aguardandoConciliacao).toBeCloseTo(-1012, 2);
+    expect(depois.obrigacoes30Dias - antes.obrigacoes30Dias).toBeCloseTo(-1012, 2);
   });
 
   test("escopo de empresa — indicadores de outra empresa não vazam", async () => {
@@ -342,7 +466,7 @@ describe("buscarGraficosExecutivos (integração)", () => {
   beforeAll(async () => {
     fixture = await criarFixtureFinanceiro("DASHG", "GESTOR");
     sessaoGestor = fixture.sessao;
-    hoje = new Date();
+    hoje = hojeDeCalendario();
   });
 
   afterAll(async () => {
@@ -380,6 +504,31 @@ describe("buscarGraficosExecutivos (integração)", () => {
     const graficos = await buscarGraficosExecutivos(sessaoGestor);
     const pontoDoMesAtual = graficos.entradasSaidas[graficos.entradasSaidas.length - 1];
     expect(pontoDoMesAtual.entradas).toBeGreaterThanOrEqual(700);
+  });
+
+  test("transferência fica fora das barras e dentro do saldo", async () => {
+    const antes = await buscarGraficosExecutivos(sessaoGestor);
+    for (const [tipo, valor] of [["SAIDA", 5000], ["ENTRADA", 3000]] as const) {
+      await prisma.lancamentoBancario.create({
+        data: {
+          filialId: fixture.filialId,
+          contaBancariaId: fixture.contaBancariaId,
+          data: hoje,
+          tipo,
+          valor,
+          descricao: "Perna de transferência (gráfico)",
+          origem: "TRANSFERENCIA",
+          usuarioId: fixture.usuarioId,
+          conciliado: true,
+        },
+      });
+    }
+    const depois = await buscarGraficosExecutivos(sessaoGestor);
+    const barraAntes = antes.entradasSaidas.at(-1)!;
+    const barraDepois = depois.entradasSaidas.at(-1)!;
+    expect(barraDepois.entradas).toBeCloseTo(barraAntes.entradas, 2);
+    expect(barraDepois.saidas).toBeCloseTo(barraAntes.saidas, 2);
+    expect(depois.evolucaoSaldo.at(-1)!.saldo - antes.evolucaoSaldo.at(-1)!.saldo).toBeCloseTo(-2000, 2);
   });
 
   test("aging classifica parcela vencida na faixa certa de dias de atraso", async () => {
@@ -430,7 +579,6 @@ describe("buscarGraficosExecutivos (integração)", () => {
     const graficosAntes = await buscarGraficosExecutivos(sessaoGestor);
     const totalAgingAntes = graficosAntes.aging.reduce((soma, p) => soma + p.contasAPagar, 0);
 
-    const hojeMeiaNoite = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()));
     await criarTitulo(fixture.sessaoAdmin, "PAGAR", {
       contraparteId: fixture.fornecedorId,
       documento: `DASHG-AGING-HOJE-${Date.now()}`,
@@ -443,7 +591,7 @@ describe("buscarGraficosExecutivos (integração)", () => {
       projetoId: "",
       contaBancariaId: fixture.contaBancariaId,
       formaPagamento: "",
-      parcelas: [{ numero: 1, dataVencimento: hojeMeiaNoite, valorOriginal: 275 }],
+      parcelas: [{ numero: 1, dataVencimento: hoje, valorOriginal: 275 }],
     });
 
     // Comparação por delta (em vez de um limiar absoluto) porque testes
@@ -461,9 +609,9 @@ describe("evolucaoSaldo e entradasSaidas — valores por mês com várias filiai
   let outraFilialId: string;
   let outraContaId: string;
 
-  /** Dia 15 do mês `mesesAtras` meses antes do atual, ao meio-dia UTC. */
+  /** Dia 15 do mês `mesesAtras` meses antes do atual (mês de Brasília), ao meio-dia UTC. */
   function noMes(mesesAtras: number): Date {
-    const hoje = new Date();
+    const hoje = hojeDeCalendario();
     return new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() - mesesAtras, 15, 12));
   }
 
@@ -488,7 +636,9 @@ describe("evolucaoSaldo e entradasSaidas — valores por mês com várias filiai
     await lancar(outraFilialId, outraContaId, noMes(3), "ENTRADA", 200);
     await lancar(fixture.filialId, fixture.contaBancariaId, noMes(1), "SAIDA", 50);
     await lancar(fixture.filialId, fixture.contaBancariaId, noMes(1), "SAIDA", 999, false); // não conciliado: fora
-    await lancar(fixture.filialId, fixture.contaBancariaId, new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)), "ENTRADA", 100);
+    const hoje = hojeDeCalendario();
+    const primeiroDoMes = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), 1));
+    await lancar(fixture.filialId, fixture.contaBancariaId, primeiroDoMes, "ENTRADA", 100);
   });
 
   afterAll(async () => {

@@ -7,11 +7,14 @@ export const CAIXA = "Caixa · Fazenda";
 
 export const SALDO = {
   contabilBanco: "R$ 48.250,00",
+  /** Nenhum lançamento do banco depois de 20/11: o saldo contábil na data é igual ao total. */
+  contabilBancoNaData: "R$ 48.250,00",
   informadoBanco: "48204,10",
   informadoBancoFormatado: "R$ 48.204,10",
   dataInformadoBanco: "20/11/2026",
   diferencaBanco: "R$ 45,90",
   contabilCaixa: "R$ 1.350,00",
+  contabilCaixaNaData: "R$ 1.350,00",
   informadoCaixa: "R$ 1.350,00",
   dataInformadoCaixa: "18/11/2026",
 } as const;
@@ -40,7 +43,7 @@ export const LANCAMENTOS = [
     origem: "Baixa",
     classificacao: "Fiscal",
     comprovante: "1234",
-    descricao: "Baixa aprovada — parcela nº 1",
+    descricao: "NF-e 1234 · Agro Insumos Ltda · parcela 2/3",
   },
   {
     data: "18/11/2026",
@@ -48,6 +51,8 @@ export const LANCAMENTOS = [
     tipo: "Saída",
     valor: "R$ 2.000,00",
     origem: "Transferência",
+    conciliado: true,
+    acoes: true,
     descricao: SAQUE.descricao,
   },
   {
@@ -56,6 +61,7 @@ export const LANCAMENTOS = [
     tipo: "Entrada",
     valor: "R$ 2.000,00",
     origem: "Transferência",
+    acoes: true,
     descricao: SAQUE.descricao,
   },
   {
@@ -65,6 +71,15 @@ export const LANCAMENTOS = [
     valor: "R$ 650,00",
     origem: "Manual",
     classificacao: "Gerencial",
+    acoes: true,
     descricao: "Diárias da colheita",
   },
 ] as const;
+
+/** Lançamento corrigido no roteiro "Corrigir ou excluir um lançamento". */
+export const DIARIAS = {
+  descricao: "Diárias da colheita",
+  valorErrado: "650,00",
+  valorCerto: "560,00",
+  motivo: "Lançado em duplicidade",
+} as const;

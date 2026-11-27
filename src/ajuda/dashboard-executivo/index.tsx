@@ -15,7 +15,8 @@ import { percentualComVirgula, ROTULOS_FAIXA_AGING } from "@/app/(dashboard)/das
  * Exemplo: em 22/11/2026, você (Administrador) abre o dashboard da Empresa Demonstração, que soma a Matriz e a Filial
  * Igarapé-Miri. As parcelas em aberto são as das outras ajudas (o açaí do José da Silva, a última parcela do adubo e
  * do trator, a Sorveteria Polar, o Mercadinho São João) mais algumas contas do mês. Fictício e fixo. Os cards e o
- * aging são escritos à mão; o teste confere com `calcularIndicadoresExecutivos` e `calcularAging`.
+ * aging são escritos à mão; o teste confere com `calcularIndicadoresExecutivos` e `calcularAging`. A parcela 2 do adubo
+ * (R$ 1.012,00) foi paga e aprovada em 19/11 e ainda aguarda conciliação.
  */
 export const HOJE = "22/11/2026";
 export const HOJE_ISO = "2026-11-22";
@@ -40,7 +41,11 @@ export const PARCELAS: readonly ParcelaExemplo[] = [
   { descricao: "Lanchonete Tucumã, venda de agosto", tipo: "RECEBER", vencimento: "2026-08-05", saldo: 280 },
 ];
 
-export const CAIXA_DISPONIVEL = 52300;
+/** Saldo conciliado das contas em 22/11 (o fim da evolução do saldo). */
+export const CAIXA_CONCILIADO = 52300;
+
+/** A parcela 2 do adubo, paga e aprovada em 19/11, que o extrato ainda não confirmou. */
+export const AGUARDANDO_CONCILIACAO = { entradas: 0, saidas: 1012 } as const;
 
 /** Lançamentos conciliados, por mês (de junho a novembro), sem transferências entre contas. */
 export const MESES = [
@@ -56,7 +61,8 @@ export const MESES = [
 export const SALDO_ANTES_DE_JUNHO = 25950;
 
 export const INDICADORES = {
-  caixaDisponivel: 52300,
+  caixaDisponivel: 51288,
+  aguardandoConciliacao: -1012,
   contasAPagarEmAberto: 9210,
   contasAReceberEmAberto: 16430,
   inadimplencia: 730,
@@ -64,7 +70,7 @@ export const INDICADORES = {
   obrigacoes7Dias: 3360,
   obrigacoes30Dias: 6210,
   recebimentosEsperados30Dias: 15700,
-  saldoProjetado30Dias: 61790,
+  saldoProjetado30Dias: 60908, // 51.288 + 730 − 600 + 15.700 − 6.210
 } as const;
 
 /** Novembro: as entradas do mês divididas entre fiscal e gerencial (somam as entradas de novembro). */
@@ -104,8 +110,13 @@ export const ALVOS = {
 
 type AlvoPainel = (typeof ALVOS.painel)[number];
 
-const CARDS: readonly { alvo: AlvoPainel; label: string; valor: number }[] = [
-  { alvo: "card.caixa", label: "Caixa disponível", valor: INDICADORES.caixaDisponivel },
+const CARDS: readonly { alvo: AlvoPainel; label: string; valor: number; nota?: string }[] = [
+  {
+    alvo: "card.caixa",
+    label: "Caixa disponível",
+    valor: INDICADORES.caixaDisponivel,
+    nota: `${formatarMoeda(INDICADORES.aguardandoConciliacao)} aguardando conciliação`,
+  },
   { alvo: "card.pagar", label: "Contas a pagar em aberto", valor: INDICADORES.contasAPagarEmAberto },
   { alvo: "card.receber", label: "Contas a receber em aberto", valor: INDICADORES.contasAReceberEmAberto },
   { alvo: "card.inadimplencia", label: "Inadimplência", valor: INDICADORES.inadimplencia },
@@ -113,7 +124,12 @@ const CARDS: readonly { alvo: AlvoPainel; label: string; valor: number }[] = [
   { alvo: "card.obrig7", label: "Obrigações (7 dias)", valor: INDICADORES.obrigacoes7Dias },
   { alvo: "card.obrig30", label: "Obrigações (30 dias)", valor: INDICADORES.obrigacoes30Dias },
   { alvo: "card.receb30", label: "Recebimentos esperados (30 dias)", valor: INDICADORES.recebimentosEsperados30Dias },
-  { alvo: "card.projetado", label: "Saldo projetado (30 dias)", valor: INDICADORES.saldoProjetado30Dias },
+  {
+    alvo: "card.projetado",
+    label: "Saldo projetado (30 dias)",
+    valor: INDICADORES.saldoProjetado30Dias,
+    nota: "Inclui atrasados e o que aguarda conciliação",
+  },
 ];
 
 export const PERCENTUAL_GERENCIAL =
@@ -196,6 +212,7 @@ function CenaPainel() {
         {CARDS.map((card) => (
           <CardValor key={card.alvo} alvo={card.alvo} label={card.label}>
             <p className="text-2xl font-semibold">{formatarMoeda(card.valor)}</p>
+            {card.nota && <p className="mt-1 text-xs text-muted-foreground">{card.nota}</p>}
           </CardValor>
         ))}
       </div>
@@ -333,9 +350,10 @@ export const ajudaDashboardExecutivo: DefinicaoAjuda = {
           alvo: "card.caixa",
           instrucao: "Caixa disponível",
           explicacao:
-            `Saldo de todas as contas das filiais ativas em ${HOJE}: saldo inicial mais os lançamentos ` +
-            "conciliados. Lançamento ainda não conciliado (inclusive baixa aprovada) não entra.",
-          dica: "Concilie em dia: sem isso, o caixa daqui fica diferente do saldo da Tesouraria.",
+            `Saldo de todas as contas das filiais ativas em ${HOJE}, o mesmo saldo contábil da Tesouraria: o que o ` +
+            `extrato já confirmou (${moeda(CAIXA_CONCILIADO)}) mais o que foi lançado e ainda aguarda conciliação. No ` +
+            `exemplo, a parcela 2 do adubo, paga e aprovada em 19/11: ${moeda(INDICADORES.caixaDisponivel)}.`,
+          dica: "A linha embaixo do valor mostra quanto ainda aguarda conciliação (entradas menos saídas). Ela some quando não há nada aguardando.",
         },
         {
           cena: "painel",
@@ -361,7 +379,7 @@ export const ajudaDashboardExecutivo: DefinicaoAjuda = {
           instrucao: "Geração de caixa do mês",
           explicacao:
             "Entradas menos saídas conciliadas desde o dia 1º. Em novembro: R$ 18.400,00 − R$ 11.250,00 = " +
-            `${moeda(INDICADORES.geracaoDeCaixaMesAtual)}.`,
+            `${moeda(INDICADORES.geracaoDeCaixaMesAtual)}. Transferências entre contas não entram.`,
         },
         {
           cena: "painel",
@@ -385,12 +403,13 @@ export const ajudaDashboardExecutivo: DefinicaoAjuda = {
           alvo: "card.projetado",
           instrucao: "Saldo projetado em 30 dias",
           explicacao:
-            `Caixa + recebimentos esperados − obrigações de 30 dias: ${moeda(INDICADORES.caixaDisponivel)} + ` +
-            `${moeda(INDICADORES.recebimentosEsperados30Dias)} − ${moeda(INDICADORES.obrigacoes30Dias)} = ` +
-            `${moeda(INDICADORES.saldoProjetado30Dias)}.`,
+            "A mesma conta do Fluxo de caixa projetado: caixa disponível + atrasados (a receber − a pagar) + " +
+            `recebimentos esperados − obrigações de 30 dias: ${moeda(INDICADORES.caixaDisponivel)} + ` +
+            `${moeda(INDICADORES.inadimplencia)} − R$ 600,00 + ${moeda(INDICADORES.recebimentosEsperados30Dias)} − ` +
+            `${moeda(INDICADORES.obrigacoes30Dias)} = ${moeda(INDICADORES.saldoProjetado30Dias)}.`,
           dica:
-            "É uma conta rápida: deixa de fora o que está atrasado e o que já foi pago mas não conciliado. Para a " +
-            "projeção completa, use o Fluxo de caixa projetado.",
+            "Os atrasados entram porque esse dinheiro ainda vai entrar ou sair. Para ver mês a mês, use o Fluxo de " +
+            "caixa projetado.",
         },
         {
           cena: "painel",
@@ -468,8 +487,8 @@ export const ajudaDashboardExecutivo: DefinicaoAjuda = {
             "Uma dupla de barras por mês, dos últimos 6, com o mês atual no fim. Só lançamentos conciliados. Passe o " +
             "mouse numa barra para ver o valor.",
           dica:
-            "Transferência entre contas da empresa aparece como entrada e como saída e infla as duas barras (o " +
-            "saldo não muda).",
+            "Transferências entre contas da empresa não entram nas barras: só movem saldo, e a Evolução do saldo " +
+            "continua com elas.",
         },
         {
           cena: "painel",
@@ -477,7 +496,8 @@ export const ajudaDashboardExecutivo: DefinicaoAjuda = {
           instrucao: "Evolução do saldo",
           explicacao:
             "O saldo conciliado de todas as contas no fim de cada mês. O mês atual vai até o último dia: sem " +
-            `lançamento com data futura, é o próprio Caixa disponível (${moeda(INDICADORES.caixaDisponivel)}).`,
+            `lançamento com data futura, é o caixa conciliado (${moeda(CAIXA_CONCILIADO)}). O Caixa disponível ` +
+            "soma a isso o que aguarda conciliação.",
         },
         {
           cena: "painel",

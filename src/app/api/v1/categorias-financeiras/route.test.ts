@@ -35,6 +35,8 @@ describe("GET /api/v1/categorias-financeiras", () => {
     expect(resposta.status).toBe(200);
     const corpo = await resposta.json();
     expect(corpo.some((c: { id: string }) => c.id === fixture.categoriaFinanceiraId)).toBe(true);
+    const categoria = corpo.find((c: { id: string }) => c.id === fixture.categoriaFinanceiraId);
+    expect(categoria?.naoOperacional).toBe(false);
   });
 
   test("sem chave -> 401", async () => {

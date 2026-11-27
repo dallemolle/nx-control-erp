@@ -5,13 +5,14 @@ import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeExecutar } from "@/server/auth/permissions";
 import { listarProjecaoEstrategica, TIPOS_CENARIO } from "@/server/services/fluxoDeCaixaEstrategico";
 import { PremissasForm } from "./premissas-form";
+import { AvisoForaDaBase } from "./aviso-fora-da-base";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
 import { AvisoVisaoFiltrada } from "../_fluxo-de-caixa/aviso-visao-filtrada";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 import { formatarMoeda } from "@/lib/formatacao";
 import { filiaisDesativadasComPendencia } from "@/server/services/filiaisConsolidadas";
-import { AvisoFiliaisDesativadas } from "../../_shared/aviso-filiais-desativadas";
+import { AvisoFiliaisDesativadas } from "../../_shared/aviso-filiais-desativadas";
 import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 
 const LABEL_CENARIO: Record<(typeof TIPOS_CENARIO)[number], string> = {
@@ -33,7 +34,7 @@ export default async function FluxoDeCaixaEstrategicoPage({
     Array.isArray(params.classificacao) ? params.classificacao[0] : params.classificacao,
   );
 
-  const [{ cenarios, projecoes }, desativadas] = await Promise.all([
+  const [{ cenarios, projecoes, foraDaBase }, desativadas] = await Promise.all([
     listarProjecaoEstrategica(sessao, { classificacao }),
     filiaisDesativadasComPendencia(sessao.empresaId),
   ]);
@@ -49,10 +50,12 @@ export default async function FluxoDeCaixaEstrategicoPage({
         </div>
         <p className="text-sm text-muted-foreground">
           Projeção de 5 anos por cenário, consolidando as filiais ativas
-          da empresa a partir do fluxo de caixa realizado dos últimos 12
-          meses. Não considera prazo de recebimento/pagamento, capital
-          de giro nem amortização de dívida (juros incidem sobre o saldo
-          devedor acumulado, que nunca é amortizado).
+          da empresa a partir da receita e do custo conciliados dos últimos
+          12 meses, por categoria (sem as categorias não operacionais:
+          empréstimos, aportes e amortização). Não considera prazo de
+          recebimento/pagamento, capital de giro nem amortização de dívida
+          (juros incidem sobre o saldo devedor acumulado, que nunca é
+          amortizado).
         </p>
       </div>
 
@@ -66,6 +69,7 @@ export default async function FluxoDeCaixaEstrategicoPage({
 
       <AvisoVisaoFiltrada classificacao={classificacao} />
       <AvisoFiliaisDesativadas filiais={desativadas} />
+      <AvisoForaDaBase foraDaBase={foraDaBase} />
 
       {TIPOS_CENARIO.map((tipo) => (
         <section key={tipo} className="space-y-4 rounded-lg border p-4">
@@ -122,9 +126,9 @@ export default async function FluxoDeCaixaEstrategicoPage({
                 ))}
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">Margem líquida</TableCell>
+                <TableCell className="font-medium">Margem operacional</TableCell>
                 {projecoes[tipo].map((ano) => (
-                  <TableCell key={ano.ano}>{(ano.margemLiquida * 100).toFixed(1)}%</TableCell>
+                  <TableCell key={ano.ano}>{(ano.margemOperacional * 100).toFixed(1)}%</TableCell>
                 ))}
               </TableRow>
             </TableBody>

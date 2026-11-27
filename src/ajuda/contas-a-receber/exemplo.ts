@@ -26,6 +26,22 @@ export const EXEMPLO = {
     { vencimento: "25/11/2026", valor: "7500,00" },
     { vencimento: "25/12/2026", valor: "7500,00" },
   ],
+  baixa: {
+    data: "15/10/2026",
+    conta: "Sicredi - Ag 0101/CC 98765-4",
+    valorFormatado: "R$ 15.060,00",
+    ajuste: "+ juros R$ 60,00",
+    registradaPor: "Maria",
+    registradaEm: "15/10/2026 10:20",
+    aprovadaPor: "João",
+    estornadaPor: "João",
+    estornadaEm: "16/10/2026 09:40",
+    motivoEstorno: "Conta errada: o PIX entrou no Banco do Brasil",
+    rejeitadaPor: "João",
+    rejeitadaEm: "15/10/2026 16:05",
+    motivoRejeicao: "PIX não entrou no extrato do Sicredi",
+    motivoDispensa: "Cliente não pagou: o PIX foi agendado e cancelado",
+  },
   outrosTitulos: [
     {
       documento: "PV-12",

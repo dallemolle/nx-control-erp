@@ -1,4 +1,5 @@
 import { prisma } from "@/server/db/client";
+import { valoresDaBaixa } from "@/server/services/parcela";
 import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permissions";
 import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
@@ -210,7 +211,7 @@ export async function buscarProjetadoPorCategoria(
   for (const parcela of parcelas) {
     const saldo = saldoRemanescenteParcela(
       Number(parcela.valorAtualizado),
-      parcela.baixas.map((baixa) => ({ valorPago: Number(baixa.valorPago) })),
+      parcela.baixas.map(valoresDaBaixa),
     );
     const categoriaId = parcela.titulo.categoriaFinanceiraId;
     totais.set(categoriaId, (totais.get(categoriaId) ?? 0) + saldo);

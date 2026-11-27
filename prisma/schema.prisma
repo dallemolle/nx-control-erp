@@ -188,6 +188,8 @@ model Usuario {
   auditLogs                 AuditLog[]
   baixasRegistradas         Baixa[]                  @relation("BaixaRegistradaPor")
   baixasAvaliadas           Baixa[]                  @relation("BaixaAvaliadaPor")
+  baixasEstornadas          Baixa[]                  @relation("BaixaEstornadaPor")
+  baixasRejeicaoDispensada  Baixa[]                  @relation("BaixaRejeicaoDispensadaPor")
   anexos                    Anexo[]
   lancamentosBancarios      LancamentoBancario[]
   saldosBancariosInformados SaldoBancarioInformado[]
@@ -368,12 +370,13 @@ model CategoriaFinanceira {
   nome         String
   tipo         TipoCategoriaFinanceira
   parentId     String?
+  naoOperacional Boolean                @default(false)
   ativo        Boolean                 @default(true)
   criadoEm     DateTime                @default(now())
   atualizadoEm DateTime                @updatedAt
 
   filial                   Filial                 @relation(fields: [filialId], references: [id], onDelete: Cascade)
-  parent                   CategoriaFinanceira?   @relation("CategoriaFinanceiraHierarquia", fields: [parentId], references: [id])
+  parent                   CategoriaFinanceira?  @relation("CategoriaFinanceiraHierarquia", fields: [parentId], references: [id])
   filhos                   CategoriaFinanceira[]  @relation("CategoriaFinanceiraHierarquia")
   titulos                  Titulo[]
   lancamentosBancarios     LancamentoBancario[]
@@ -580,6 +583,7 @@ enum StatusAprovacaoBaixa {
   PENDENTE
   APROVADO
   REJEITADO
+  ESTORNADO
 }
 
 model Titulo {
@@ -672,12 +676,20 @@ model Baixa {
   avaliadoPorId   String?
   avaliadoEm      DateTime?
   motivoRejeicao  String?
+  estornadoPorId  String?
+  estornadoEm     DateTime?
+  motivoEstorno   String?
+  dispensadaPorId String?
+  dispensadaEm    DateTime?
+  motivoDispensa  String?
   criadoEm        DateTime             @default(now())
 
   parcela       Parcela              @relation(fields: [parcelaId], references: [id], onDelete: Cascade)
   contaBancaria ContaBancaria        @relation(fields: [contaBancariaId], references: [id])
   usuario       Usuario              @relation("BaixaRegistradaPor", fields: [usuarioId], references: [id])
   avaliadoPor   Usuario?             @relation("BaixaAvaliadaPor", fields: [avaliadoPorId], references: [id])
+  estornadoPor  Usuario?             @relation("BaixaEstornadaPor", fields: [estornadoPorId], references: [id])
+  dispensadaPor Usuario?             @relation("BaixaRejeicaoDispensadaPor", fields: [dispensadaPorId], references: [id])
   lancamentos        LancamentoBancario[]
   pedidoVenda        PedidoVenda?
   repasseRecebimento RepasseCartaoConfirmado? @relation("RepasseRecebimento")

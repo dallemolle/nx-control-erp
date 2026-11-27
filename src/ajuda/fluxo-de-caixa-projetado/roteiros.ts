@@ -27,10 +27,21 @@ export const ROTEIROS: readonly Roteiro[] = [
       {
         cena: "painel",
         alvo: "col.saldoInicial",
-        instrucao: "O ponto de partida é o saldo de hoje",
+        instrucao: "O ponto de partida é o saldo conciliado",
         explicacao:
-          "O saldo inicial da primeira linha é o saldo em caixa de hoje, somando todas as contas ativas da filial, " +
-          "só com lançamentos conciliados (o mesmo do Fluxo de caixa).",
+          "O saldo inicial da primeira linha é o saldo em caixa que o extrato já confirmou, somando todas as " +
+          "contas ativas da filial. A conta Caixa não tem extrato: nela entra tudo o que foi lançado, também com " +
+          "data futura.",
+      },
+      {
+        cena: "painel",
+        alvo: "linha.aguardando",
+        instrucao: "Aguardando conciliação: o que já foi lançado e o extrato ainda não confirmou",
+        explicacao:
+          "Baixas aprovadas, lançamentos manuais e transferências que ainda não foram conciliados. No exemplo, a " +
+          "parcela 2 do adubo, R$ 1.012,00, paga e aprovada em 19/11. O saldo final desta linha é o saldo " +
+          "contábil da Tesouraria (R$ 47.850,00), e é dele que as outras linhas partem.",
+        dica: "Conciliar não muda a projeção: o valor só sai desta linha e entra no saldo conciliado.",
       },
       {
         cena: "painel",
@@ -50,9 +61,8 @@ export const ROTEIROS: readonly Roteiro[] = [
           "parcela paga pela metade entra com a outra metade). Contam também as vendas a prazo, os repasses de " +
           "cartão e as taxas da operadora, que viram títulos sozinhos.",
         dica:
-          "Uma baixa só sai da projeção depois de aprovada. E um pagamento aprovado que ainda não foi conciliado " +
-          "já saiu da projeção, mas ainda não saiu do saldo de partida: concilie em dia para a projeção não " +
-          "ficar otimista.",
+          "Uma baixa só sai da projeção depois de aprovada. A partir daí, o pagamento aparece na linha Aguardando " +
+          "conciliação até o extrato confirmar.",
       },
       {
         cena: "painel",

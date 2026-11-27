@@ -28,7 +28,7 @@ import {
 } from "./pedidoVenda";
 import { cancelarRecepcao, criarRecepcao } from "./recepcaoFruto";
 import { liberarLoteVencido, registrarMovimento, revogarLiberacaoLote } from "./estoque";
-import { registrarBaixa, rejeitarBaixa } from "./baixa";
+import { estornarBaixa, registrarBaixa, rejeitarBaixa } from "./baixa";
 
 const d = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
 
@@ -138,6 +138,27 @@ describe("pedido de venda", () => {
     expect(gravado.condicaoPagamento).toBeNull();
     const lancamento = await prisma.lancamentoBancario.findFirstOrThrow({ where: { baixaId: gravado.baixaAutomaticaId! } });
     expect(lancamento).toMatchObject({ conciliado: false, contaBancariaId: cad.contaCorrenteId });
+  });
+
+  test("venda à vista: estornar a baixa reabre a parcela e o pedido ainda pode ser cancelado", async () => {
+    const lote = await novoLote();
+    const r = await criarPedido(
+      fx.sessao("VENDAS"),
+      pedido([{ loteId: lote.id, quantidadeKg: 10, precoKg: 5 }], { formaPagamento: "PIX" }),
+    );
+    const gravado = await prisma.pedidoVenda.findUniqueOrThrow({ where: { id: r.pedidoId } });
+    // A baixa automática é registrada por quem vendeu, o mesmo usuário da fixture: desliga a segregação.
+    await prisma.empresa.update({ where: { id: fx.empresaId }, data: { exigirAprovacaoPorOutro: false } });
+    try {
+      await estornarBaixa(fx.sessao("TESOURARIA"), gravado.baixaAutomaticaId!, "conta errada");
+    } finally {
+      await prisma.empresa.update({ where: { id: fx.empresaId }, data: { exigirAprovacaoPorOutro: true } });
+    }
+    expect(await prisma.lancamentoBancario.count({ where: { baixaId: gravado.baixaAutomaticaId! } })).toBe(0);
+    expect((await tituloDo(r.pedidoId)).parcelas[0].status).not.toBe("PAGO");
+
+    await cancelarPedido(fx.sessao("FINANCEIRO"), r.pedidoId, "Cliente desistiu");
+    expect((await prisma.pedidoVenda.findUniqueOrThrow({ where: { id: r.pedidoId } })).status).toBe("CANCELADO");
   });
 
   describe("parcelas a prazo", () => {
@@ -604,6 +625,41 @@ describe("pedido de venda", () => {
       );
       expect(await saldo(lote.id)).toBe(90);
       expect((await pedidoGravado(r.pedidoId)).status).toBe("CONFIRMADO");
+    });
+
+    test("concorrência: cancelar e registrar baixa ao mesmo tempo não deixa baixa em parcela cancelada", async () => {
+      for (let i = 0; i < 5; i++) {
+        const lote = await novoLote();
+        const r = await criarPedido(fx.sessao("VENDAS"), pedido(umItem(lote.id)));
+        const [cancelamento, baixa] = await Promise.allSettled([
+          cancelarPedido(fx.sessao("FINANCEIRO"), r.pedidoId, "Cliente desistiu"),
+          baixaManual(r.tituloId),
+        ]);
+        // Só um dos dois passa: quem chega primeiro trava as parcelas e o outro vê o resultado.
+        expect([cancelamento.status, baixa.status].sort()).toEqual(["fulfilled", "rejected"]);
+        const parcela = (await tituloDo(r.pedidoId)).parcelas[0];
+        const ativas = await prisma.baixa.count({
+          where: { parcelaId: parcela.id, statusAprovacao: { in: ["PENDENTE", "APROVADO"] } },
+        });
+        if (cancelamento.status === "fulfilled") {
+          expect(parcela.status).toBe("CANCELADO");
+          expect(ativas).toBe(0);
+        } else {
+          expect(String(cancelamento.reason)).toContain("O financeiro registrou um recebimento neste pedido");
+          expect(ativas).toBe(1);
+        }
+      }
+    });
+
+    test("concorrência: dois cancelamentos ao mesmo tempo devolvem o estoque uma vez só", async () => {
+      const lote = await novoLote();
+      const r = await criarPedido(fx.sessao("VENDAS"), pedido(umItem(lote.id)));
+      const resultados = await Promise.allSettled([
+        cancelarPedido(fx.sessao("FINANCEIRO"), r.pedidoId, "Cliente desistiu"),
+        cancelarPedido(fx.sessao("FINANCEIRO"), r.pedidoId, "Cliente desistiu"),
+      ]);
+      expect(resultados.map((x) => x.status).sort()).toEqual(["fulfilled", "rejected"]);
+      expect(await saldo(lote.id)).toBe(100);
     });
 
     test("baixa manual rejeitada não impede", async () => {

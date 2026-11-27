@@ -1,8 +1,17 @@
 import { prisma } from "@/server/db/client";
+import { SELECT_VALORES_BAIXA, valoresDaBaixa } from "@/server/services/parcela";
 import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { StatusParcela } from "@prisma/client";
-import { buscarSaldoEmCaixaAteDasFiliais, fimDoDiaUTC } from "./fluxoDeCaixa";
+import {
+  buscarAguardandoConciliacaoDasFiliais,
+  buscarSaldoConciliadoDasFiliais,
+  buscarSaldoEmCaixaAteDasFiliais,
+  ehTransferencia,
+  fimDoDiaUTC,
+  saldoComAguardando,
+  type AguardandoConciliacao,
+} from "./fluxoDeCaixa";
 import { saldoRemanescenteParcela } from "./fluxoDeCaixaProjetado";
 import { buscarPendenciasFiscaisDaFilial, percentualGerencial } from "./relatorioFiscalGerencial";
 import { idsDasFiliaisAtivas } from "./filiaisConsolidadas";
@@ -10,6 +19,7 @@ import { hojeDeCalendario } from "@/lib/producao/periodo";
 
 export type IndicadoresExecutivos = {
   caixaDisponivel: number;
+  aguardandoConciliacao: number;
   contasAPagarEmAberto: number;
   contasAReceberEmAberto: number;
   inadimplencia: number;
@@ -34,14 +44,14 @@ function buscarParcelasEmAbertoDasFiliais(filialIds: string[], venceAntesDe?: Da
       valorAtualizado: true,
       dataVencimento: true,
       titulo: { select: { tipo: true } },
-      baixas: { where: { statusAprovacao: "APROVADO" }, select: { valorPago: true } },
+      baixas: { where: { statusAprovacao: "APROVADO" }, select: SELECT_VALORES_BAIXA },
     },
   });
 }
 
 function somasConciliadasNoPeriodo(filialIds: string[], inicio: Date, fim: Date) {
   return prisma.lancamentoBancario.groupBy({
-    by: ["tipo"],
+    by: ["tipo", "origem"],
     where: {
       filialId: { in: filialIds },
       conciliado: true,
@@ -52,8 +62,16 @@ function somasConciliadasNoPeriodo(filialIds: string[], inicio: Date, fim: Date)
   });
 }
 
-function totalDoTipo(somas: { tipo: string; _sum: { valor: unknown } }[], tipo: "ENTRADA" | "SAIDA"): number {
-  return Number(somas.find((s) => s.tipo === tipo)?._sum.valor ?? 0);
+/** Entradas e saídas sem transferências entre contas; o líquido das transferências à parte (só move saldo). */
+function totaisDoPeriodo(somas: { tipo: string; origem: string; _sum: { valor: unknown } }[]) {
+  const somar = (filtro: (s: { tipo: string; origem: string }) => boolean) =>
+    somas.filter(filtro).reduce((total, s) => total + Number(s._sum.valor ?? 0), 0);
+  const transferencia = (s: { origem: string }) => ehTransferencia(s.origem);
+  return {
+    entradas: somar((s) => s.tipo === "ENTRADA" && !transferencia(s)),
+    saidas: somar((s) => s.tipo === "SAIDA" && !transferencia(s)),
+    transferencias: somar((s) => s.tipo === "ENTRADA" && transferencia(s)) - somar((s) => s.tipo === "SAIDA" && transferencia(s)),
+  };
 }
 
 /**
@@ -72,13 +90,18 @@ export function diaDeHoje(agora: Date = new Date()) {
 export type ParcelaParaIndicadores = { tipo: "PAGAR" | "RECEBER"; dataVencimento: Date; saldo: number };
 
 /**
- * Os cards do dashboard a partir do caixa, das parcelas em aberto e do movimento conciliado do mês. `hoje` é a data
+ * Os cards do dashboard a partir do caixa, das parcelas em aberto e do movimento conciliado do mês (sem transferências entre contas). `hoje` é a data
  * de calendário (meia-noite UTC). Inadimplência = a receber com vencimento antes de hoje, pela data (o `status`
  * gravado só é recalculado quando alguém abre a lista de títulos, e a parcela vencida paga em parte também conta).
+ *
+ * Caixa disponível é o saldo contábil (conciliado + o que aguarda conciliação), como na Tesouraria. O saldo projetado
+ * em 30 dias é a mesma conta do Fluxo de caixa projetado: caixa disponível + atrasados (a receber − a pagar) + o que
+ * vence nos próximos 30 dias (a receber − a pagar).
  */
 export function calcularIndicadoresExecutivos(dados: {
   hoje: Date;
-  caixaDisponivel: number;
+  caixaConciliado: number;
+  aguardandoConciliacao: AguardandoConciliacao;
   parcelas: readonly ParcelaParaIndicadores[];
   entradasMes: number;
   saidasMes: number;
@@ -90,6 +113,7 @@ export function calcularIndicadoresExecutivos(dados: {
   let contasAPagarEmAberto = 0;
   let contasAReceberEmAberto = 0;
   let inadimplencia = 0;
+  let aPagarVencido = 0;
   let obrigacoes7Dias = 0;
   let obrigacoes30Dias = 0;
   let recebimentosEsperados30Dias = 0;
@@ -102,6 +126,7 @@ export function calcularIndicadoresExecutivos(dados: {
 
     if (tipo === "PAGAR") {
       contasAPagarEmAberto += saldo;
+      if (vencida) aPagarVencido += saldo;
       if (dentroDe7Dias) obrigacoes7Dias += saldo;
       if (dentroDe30Dias) obrigacoes30Dias += saldo;
     } else {
@@ -111,8 +136,10 @@ export function calcularIndicadoresExecutivos(dados: {
     }
   }
 
+  const caixaDisponivel = saldoComAguardando(dados.caixaConciliado, dados.aguardandoConciliacao);
   return {
-    caixaDisponivel: dados.caixaDisponivel,
+    caixaDisponivel,
+    aguardandoConciliacao: dados.aguardandoConciliacao.entradas - dados.aguardandoConciliacao.saidas,
     contasAPagarEmAberto,
     contasAReceberEmAberto,
     inadimplencia,
@@ -120,7 +147,8 @@ export function calcularIndicadoresExecutivos(dados: {
     obrigacoes7Dias,
     obrigacoes30Dias,
     recebimentosEsperados30Dias,
-    saldoProjetado30Dias: dados.caixaDisponivel + recebimentosEsperados30Dias - obrigacoes30Dias,
+    saldoProjetado30Dias:
+      caixaDisponivel + inadimplencia - aPagarVencido + recebimentosEsperados30Dias - obrigacoes30Dias,
   };
 }
 
@@ -132,7 +160,7 @@ function paraIndicadores(
     dataVencimento: parcela.dataVencimento,
     saldo: saldoRemanescenteParcela(
       Number(parcela.valorAtualizado),
-      parcela.baixas.map((baixa) => ({ valorPago: Number(baixa.valorPago) })),
+      parcela.baixas.map(valoresDaBaixa),
     ),
   }));
 }
@@ -148,18 +176,21 @@ export async function buscarIndicadoresExecutivos(sessao: SessaoAtiva): Promise<
   const filialIds = await idsDasFiliaisAtivas(sessao.empresaId);
   const { hoje, fimDeHoje, inicioMesAtual } = diaDeHoje();
 
-  const [caixaDisponivel, parcelasEmAberto, somasMes] = await Promise.all([
-    buscarSaldoEmCaixaAteDasFiliais(filialIds, fimDeHoje),
+  const [caixaConciliado, aguardandoConciliacao, parcelasEmAberto, somasMes] = await Promise.all([
+    buscarSaldoConciliadoDasFiliais(filialIds),
+    buscarAguardandoConciliacaoDasFiliais(filialIds),
     buscarParcelasEmAbertoDasFiliais(filialIds),
     somasConciliadasNoPeriodo(filialIds, inicioMesAtual, fimDeHoje),
   ]);
 
+  const { entradas, saidas } = totaisDoPeriodo(somasMes);
   return calcularIndicadoresExecutivos({
     hoje,
-    caixaDisponivel,
+    caixaConciliado,
+    aguardandoConciliacao,
     parcelas: paraIndicadores(parcelasEmAberto),
-    entradasMes: totalDoTipo(somasMes, "ENTRADA"),
-    saidasMes: totalDoTipo(somasMes, "SAIDA"),
+    entradasMes: entradas,
+    saidasMes: saidas,
   });
 }
 
@@ -229,7 +260,8 @@ async function buscarAgingConsolidado(filialIds: string[], hoje: Date): Promise<
 /**
  * Últimos 6 meses (o atual incluído, por último no array), consolidado por
  * empresa. O saldo de fim de mês é encadeado: um único saldo histórico até
- * antes do 1º mês, somado mês a mês ao movimento líquido. É exato porque os
+ * antes do 1º mês, somado mês a mês ao movimento líquido (as barras de entradas e saídas não trazem transferências
+ * entre contas, mas o saldo conta com elas). É exato porque os
  * meses são contíguos (fim de um mês + 1ms = início do seguinte, data
  * TIMESTAMP(3)) e usam o mesmo filtro de `buscarSaldoEmCaixaAteDasFiliais`.
  */
@@ -256,9 +288,8 @@ export async function buscarGraficosExecutivos(sessao: SessaoAtiva): Promise<Gra
   const evolucaoSaldo: PontoEvolucaoSaldo[] = [];
   let saldo = saldoAntesDaJanela;
   meses.forEach(({ mes }, indice) => {
-    const entradas = totalDoTipo(somasPorMes[indice], "ENTRADA");
-    const saidas = totalDoTipo(somasPorMes[indice], "SAIDA");
-    saldo += entradas - saidas;
+    const { entradas, saidas, transferencias } = totaisDoPeriodo(somasPorMes[indice]);
+    saldo += entradas - saidas + transferencias;
     entradasSaidas.push({ mes, entradas, saidas });
     evolucaoSaldo.push({ mes, saldo });
   });

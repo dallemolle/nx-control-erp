@@ -27,8 +27,15 @@ export default async function DashboardExecutivoPage() {
     filiaisDesativadasComPendencia(sessao.empresaId),
   ]);
 
-  const cards = [
-    { label: "Caixa disponível", valor: indicadores.caixaDisponivel },
+  const cards: { label: string; valor: number; nota?: string }[] = [
+    {
+      label: "Caixa disponível",
+      valor: indicadores.caixaDisponivel,
+      nota:
+        Math.abs(indicadores.aguardandoConciliacao) >= 0.005
+          ? `${formatarMoeda(indicadores.aguardandoConciliacao)} aguardando conciliação`
+          : undefined,
+    },
     { label: "Contas a pagar em aberto", valor: indicadores.contasAPagarEmAberto },
     { label: "Contas a receber em aberto", valor: indicadores.contasAReceberEmAberto },
     { label: "Inadimplência", valor: indicadores.inadimplencia },
@@ -36,7 +43,11 @@ export default async function DashboardExecutivoPage() {
     { label: "Obrigações (7 dias)", valor: indicadores.obrigacoes7Dias },
     { label: "Obrigações (30 dias)", valor: indicadores.obrigacoes30Dias },
     { label: "Recebimentos esperados (30 dias)", valor: indicadores.recebimentosEsperados30Dias },
-    { label: "Saldo projetado (30 dias)", valor: indicadores.saldoProjetado30Dias },
+    {
+      label: "Saldo projetado (30 dias)",
+      valor: indicadores.saldoProjetado30Dias,
+      nota: "Inclui atrasados e o que aguarda conciliação",
+    },
   ];
 
   return (
@@ -61,6 +72,7 @@ export default async function DashboardExecutivoPage() {
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-semibold">{formatarMoeda(card.valor)}</p>
+              {card.nota && <p className="mt-1 text-xs text-muted-foreground">{card.nota}</p>}
             </CardContent>
           </Card>
         ))}

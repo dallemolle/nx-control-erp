@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -93,8 +94,91 @@ function Detalhe({ rotulo, valor }: { rotulo: string; valor: string }) {
   );
 }
 
+/**
+ * A baixa da parcela 1: pendente (roteiro de pagamento), aprovada (com Estornar), já estornada, rejeitada em
+ * aberto (com Dispensar) ou rejeitada e dispensada.
+ */
+function BaixaDoExemplo({ estado, exemplo }: { estado: string; exemplo: ExemploTitulos }) {
+  const { baixa } = exemplo;
+  const estornada = estado === "estornada";
+  const pendente = estado === "pendente";
+  if (estado === "rejeitada" || estado === "dispensada") {
+    return (
+      <div className="space-y-1 text-sm">
+        <div className="text-xs font-medium text-muted-foreground">Baixas</div>
+        {estado === "dispensada" ? (
+          <Alvo nome="lista.p1.baixa" className="p-1 text-xs text-muted-foreground">
+            {`Baixa de ${baixa.data} · ${baixa.valorFormatado} · rejeitada por ${baixa.rejeitadaPor}: ` +
+              `${baixa.motivoRejeicao} · dispensada por ${baixa.registradaPor}: ${baixa.motivoDispensa}`}
+          </Alvo>
+        ) : (
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <Alvo nome="lista.p1.baixa" className="p-1">
+              <p>
+                {`Baixa de ${baixa.data} · ${exemplo.conta} · `}
+                <span className="font-medium">{baixa.valorFormatado}</span>
+                {` (${baixa.ajuste})`}
+                <Badge variant="destructive" className="ml-2">
+                  Rejeitada
+                </Badge>
+              </p>
+              <p className="text-xs text-muted-foreground">{`registrada por ${baixa.registradaPor}`}</p>
+              <p className="text-xs">
+                {`rejeitada por ${baixa.rejeitadaPor} em ${baixa.rejeitadaEm}: ${baixa.motivoRejeicao}`}
+              </p>
+            </Alvo>
+            <BotaoSimulado alvo="lista.p1.dispensar" variant="outline" size="sm">
+              Dispensar
+            </BotaoSimulado>
+          </div>
+        )}
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-1 text-sm">
+      <div className="text-xs font-medium text-muted-foreground">Baixas</div>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <Alvo nome="lista.p1.baixa" className={estornada ? "p-1 text-muted-foreground" : "p-1"}>
+          <p>
+            {`Baixa de ${baixa.data} · ${pendente ? exemplo.conta : baixa.conta} · `}
+            <span className={estornada ? "line-through" : "font-medium"}>{baixa.valorFormatado}</span>
+            {` (${baixa.ajuste})`}
+            {estornada && (
+              <Badge variant="secondary" className="ml-2">
+                Estornada
+              </Badge>
+            )}
+            {pendente && (
+              <Badge variant="outline" className="ml-2">
+                Aguardando aprovação
+              </Badge>
+            )}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {pendente
+              ? `registrada por ${baixa.registradaPor} em ${baixa.registradaEm}`
+              : `registrada por ${baixa.registradaPor} · aprovada por ${baixa.aprovadaPor}`}
+          </p>
+          {estornada && (
+            <p className="text-xs">{`estornada por ${baixa.estornadaPor} em ${baixa.estornadaEm}: ${baixa.motivoEstorno}`}</p>
+          )}
+        </Alvo>
+        {!estornada && !pendente && (
+          <BotaoSimulado alvo="lista.p1.estornar" variant="outline" size="sm">
+            Estornar
+          </BotaoSimulado>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function LinhasDoExemplo({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exemplo">) {
   const expandido = valores["lista.linhaExemplo"] === "expandida";
+  // "pendente" (roteiro de pagamento), "aprovada" (parcela 1 paga), "estornada" (volta ao status do exemplo),
+  // "rejeitada" (aviso no topo e Dispensar) ou "dispensada" (linha apagada, sem aviso).
+  const estadoBaixa = valores["lista.p1.baixa"];
   return (
     <>
       <TableRow className={expandido ? "bg-muted/50" : undefined}>
@@ -138,40 +222,62 @@ function LinhasDoExemplo({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exe
           </TableRow>
           {exemplo.parcelas.map((parcela) => {
             const p = `lista.p${parcela.numero}`;
+            const paga = parcela.numero === 1 && estadoBaixa === "aprovada";
+            const pendente = parcela.numero === 1 && estadoBaixa === "pendente";
+            const status = paga ? "PAGO" : parcela.status;
             return (
-              <TableRow key={parcela.numero} className="bg-muted/30">
-                <TableCell colSpan={3} className="pl-8">
-                  Parcela {parcela.numero} — venc. {parcela.vencimento} — valor {parcela.valorFormatado}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={VARIANTE_STATUS[parcela.status] ?? "secondary"}>{parcela.status}</Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap items-center justify-end gap-2">
-                    <div className="flex items-center gap-1">
-                      <CampoSimulado
-                        alvo={`${p}.vencimento`}
-                        valor={valores[`${p}.vencimento`] ?? parcela.vencimento}
-                        className="w-32"
-                      />
-                      <BotaoSimulado alvo={`${p}.alterar`} variant="outline" size="sm">
-                        Alterar vencimento
-                      </BotaoSimulado>
-                    </div>
-                    <BotaoSimulado alvo={`${p}.baixar`} size="sm">
-                      Baixar
-                    </BotaoSimulado>
-                    {parcela.status === "VENCIDO" && (
-                      <BotaoSimulado alvo={`${p}.renegociar`} variant="outline" size="sm">
-                        Renegociar
-                      </BotaoSimulado>
+              <Fragment key={parcela.numero}>
+                <TableRow className="bg-muted/30">
+                  <TableCell colSpan={3} className="pl-8">
+                    Parcela {parcela.numero} — venc. {parcela.vencimento} — valor {parcela.valorFormatado}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={VARIANTE_STATUS[status] ?? "secondary"}>{status}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    {!paga && (
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <div className="flex items-center gap-1">
+                          <CampoSimulado
+                            alvo={`${p}.vencimento`}
+                            valor={valores[`${p}.vencimento`] ?? parcela.vencimento}
+                            className="w-32"
+                          />
+                          <BotaoSimulado alvo={`${p}.alterar`} variant="outline" size="sm">
+                            Alterar vencimento
+                          </BotaoSimulado>
+                        </div>
+                        {pendente ? (
+                          <Alvo nome={`${p}.aguardando`} className="p-1 text-xs text-muted-foreground">
+                            Baixa aguardando aprovação
+                          </Alvo>
+                        ) : (
+                          <BotaoSimulado alvo={`${p}.baixar`} size="sm">
+                            Baixar
+                          </BotaoSimulado>
+                        )}
+                        {parcela.status === "VENCIDO" && !pendente && (
+                          <BotaoSimulado alvo={`${p}.renegociar`} variant="outline" size="sm">
+                            Renegociar
+                          </BotaoSimulado>
+                        )}
+                        {!pendente && (
+                          <BotaoSimulado alvo={`${p}.cancelar`} variant="outline" size="sm">
+                            Cancelar
+                          </BotaoSimulado>
+                        )}
+                      </div>
                     )}
-                    <BotaoSimulado alvo={`${p}.cancelar`} variant="outline" size="sm">
-                      Cancelar
-                    </BotaoSimulado>
-                  </div>
-                </TableCell>
-              </TableRow>
+                  </TableCell>
+                </TableRow>
+                {parcela.numero === 1 && estadoBaixa && (
+                  <TableRow className="bg-muted/30">
+                    <TableCell colSpan={5} className="pl-12">
+                      <BaixaDoExemplo estado={estadoBaixa} exemplo={exemplo} />
+                    </TableCell>
+                  </TableRow>
+                )}
+              </Fragment>
             );
           })}
           <TableRow className="bg-muted/30">
@@ -190,7 +296,8 @@ function LinhasDoExemplo({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exe
 
 function CenaLista({ tipo, valores, exemplo }: PropsCena & ComExemplo) {
   const semExemplo = valores["lista.tabela"] === "sem-exemplo";
-  const filtrado = Boolean(valores["lista.filtro.fornecedor"]);
+  const filtroRejeitadas = Boolean(valores["lista.filtro.rejeitadas"]);
+  const filtrado = Boolean(valores["lista.filtro.fornecedor"]) || filtroRejeitadas;
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -208,6 +315,21 @@ function CenaLista({ tipo, valores, exemplo }: PropsCena & ComExemplo) {
         </div>
       </div>
       <BarraDeFiltros tipo={tipo} valores={valores} />
+      {valores["lista.p1.baixa"] === "rejeitada" && (
+        <Alvo
+          nome="lista.avisoRejeitadas"
+          className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm"
+        >
+          <span className="font-medium">1 baixa rejeitada aguardando novo registro.</span> Confira o motivo na
+          parcela e lance de novo, ou dispense se não houver o que relançar.
+          {!filtroRejeitadas && (
+            <>
+              {" "}
+              <span className="font-medium text-primary">Ver</span>
+            </>
+          )}
+        </Alvo>
+      )}
       <div className="space-y-4">
         <div className="flex justify-end">
           <BotaoSimulado alvo="lista.importar" variant="outline">
@@ -386,6 +508,11 @@ function CenaBaixa({ valores }: PropsCena) {
         <CampoSimulado alvo="baixa.multa" rotulo="Multa" valor={valores["baixa.multa"] ?? "0"} />
         <CampoSimulado alvo="baixa.desconto" rotulo="Desconto" valor={valores["baixa.desconto"] ?? "0"} />
       </div>
+      {valores["baixa.previa"] ? (
+        <Alvo nome="baixa.previa">
+          <p className="text-sm text-muted-foreground">{valores["baixa.previa"]}</p>
+        </Alvo>
+      ) : null}
       <SelectSimulado alvo="baixa.conta" rotulo="Conta bancária" valor={valores["baixa.conta"]} />
       <BotaoSimulado alvo="baixa.registrar" largo>
         Registrar baixa (fica pendente de aprovação)
@@ -421,6 +548,65 @@ function CenaRenegociar({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exem
   );
 }
 
+function CenaEstornar({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exemplo">) {
+  const { baixa } = exemplo;
+  return (
+    <JanelaSimulada titulo="Estornar baixa">
+      <Alvo nome="estorno.resumo" className="space-y-2 p-1">
+        <p>{`Baixa de ${baixa.data} · ${baixa.conta} · ${baixa.valorFormatado}`}</p>
+        <p className="text-muted-foreground">
+          {`O lançamento sai da conta ${baixa.conta} e a parcela volta a ficar em aberto. ` +
+            "A baixa continua no histórico como estornada."}
+        </p>
+      </Alvo>
+      <CampoSimulado
+        alvo="estorno.motivo"
+        rotulo="Motivo"
+        valor={valores["estorno.motivo"]}
+        placeholder="Ex.: lançada na conta errada"
+      />
+      <div className="flex gap-2">
+        <BotaoSimulado variant="outline" largo>
+          Cancelar
+        </BotaoSimulado>
+        <BotaoSimulado alvo="estorno.confirmar" variant="destructive" largo>
+          Estornar baixa
+        </BotaoSimulado>
+      </div>
+    </JanelaSimulada>
+  );
+}
+
+function CenaDispensar({ valores, exemplo }: PropsCena & Pick<ComExemplo, "exemplo">) {
+  const { baixa } = exemplo;
+  return (
+    <JanelaSimulada titulo="Dispensar rejeição">
+      <Alvo nome="dispensa.resumo" className="space-y-2 p-1">
+        <p>{`Baixa de ${baixa.data} · ${exemplo.conta} · ${baixa.valorFormatado}`}</p>
+        <p className="text-muted-foreground">{`Rejeitada por ${baixa.rejeitadaPor}: ${baixa.motivoRejeicao}`}</p>
+        <p className="text-muted-foreground">
+          O aviso de baixa rejeitada some e a parcela continua como está. Se o pagamento aconteceu, registre a baixa de
+          novo em vez de dispensar.
+        </p>
+      </Alvo>
+      <CampoSimulado
+        alvo="dispensa.motivo"
+        rotulo="Por que não vai lançar de novo?"
+        valor={valores["dispensa.motivo"]}
+        placeholder="Ex.: o pagamento não aconteceu"
+      />
+      <div className="flex gap-2">
+        <BotaoSimulado variant="outline" largo>
+          Cancelar
+        </BotaoSimulado>
+        <BotaoSimulado alvo="dispensa.confirmar" largo>
+          Dispensar
+        </BotaoSimulado>
+      </div>
+    </JanelaSimulada>
+  );
+}
+
 /** As cenas de uma tela de títulos (pagar ou receber), preenchidas com o exemplo dela. */
 export function criarCenas(tipo: TipoTela, exemplo: ExemploTitulos) {
   return {
@@ -433,6 +619,12 @@ export function criarCenas(tipo: TipoTela, exemplo: ExemploTitulos) {
     baixa: CenaBaixa,
     renegociar: function Renegociar(props: PropsCena) {
       return <CenaRenegociar {...props} exemplo={exemplo} />;
+    },
+    estornar: function Estornar(props: PropsCena) {
+      return <CenaEstornar {...props} exemplo={exemplo} />;
+    },
+    dispensar: function Dispensar(props: PropsCena) {
+      return <CenaDispensar {...props} exemplo={exemplo} />;
     },
   };
 }

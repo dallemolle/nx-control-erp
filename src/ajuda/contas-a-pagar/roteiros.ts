@@ -7,6 +7,10 @@ const roteiro = construtorDeRoteiros<typeof ALVOS>();
 const QUEM_LANCA = "Quem pode: perfis Administrador e Financeiro, com permissão de alteração na filial.";
 const QUEM_BAIXA = "Quem pode: perfis Administrador, Financeiro e Tesouraria, com permissão de alteração na filial.";
 
+const QUEM_ESTORNA =
+  "Quem pode: perfis Administrador e Tesouraria, com permissão de alteração na filial. Se a empresa exige " +
+  "aprovação por outra pessoa (o padrão), quem registrou a baixa não pode estorná-la.";
+
 const ABRIR_TITULO = {
   cena: "lista",
   alvo: "lista.linhaExemplo",
@@ -242,9 +246,9 @@ export const ROTEIROS: readonly Roteiro[] = [
           "É o total que saiu da conta, igual ao comprovante: valor da parcela + juros + multa. A " +
           "parcela foi paga 5 dias atrasada, com R$ 12,00 de juros: 1.000,00 + 12,00 = 1012,00.",
         dica:
-          "Pagou menos que o valor da parcela, ou teve desconto? Hoje o sistema compara só o valor pago com o " +
-          "valor da parcela: a parcela fica como PARCIALMENTE_PAGO e a diferença continua em aberto. Se foi " +
-          "desconto, combine com o responsável pelo financeiro como registrar antes de lançar a baixa.",
+          "Teve desconto? Informe no Valor pago o que de fato saiu da conta e o desconto no campo Desconto: " +
+          "parcela de R$ 1.000,00 paga com R$ 50,00 de desconto fica Valor pago 950,00 e Desconto 50,00. O " +
+          "sistema soma o desconto e a parcela fica paga.",
         preenche: { "baixa.valorPago": "1012,00" },
       },
       {
@@ -252,9 +256,14 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "baixa.juros",
         instrucao: "Informe juros, multa e desconto, se houver",
         explicacao:
-          "Esses campos só detalham de onde veio a diferença no valor pago. No exemplo, R$ 12,00 vão em Juros. " +
-          "Multa e Desconto ficam em 0 quando não existem.",
-        preenche: { "baixa.juros": "12,00" },
+          "O sistema usa esses campos para saber quanto da parcela foi quitado: valor pago, menos juros e " +
+          "multa, mais o desconto. No exemplo, R$ 12,00 vão em Juros e a baixa quita os R$ 1.000,00 da " +
+          "parcela. Multa e Desconto ficam em 0 quando não existem. Abaixo dos campos aparece quanto a baixa " +
+          "abate e quanto fica em aberto.",
+        preenche: {
+          "baixa.juros": "12,00",
+          "baixa.previa": "Abate R$ 1.000,00 da parcela · fica R$ 0,00 em aberto",
+        },
       },
       {
         cena: "baixa",
@@ -272,13 +281,176 @@ export const ROTEIROS: readonly Roteiro[] = [
           "O próprio botão avisa: a baixa fica pendente de aprovação. Por enquanto a parcela ainda não aparece " +
           "como paga.",
       },
+      {
+        cena: "lista",
+        alvo: "lista.p1.aguardando",
+        instrucao: "Veja a parcela aguardando aprovação",
+        explicacao:
+          "A janela fecha e a baixa aparece embaixo da parcela com o selo “Aguardando aprovação”. No lugar do " +
+          "botão Baixar fica “Baixa aguardando aprovação”: a parcela não aceita outra baixa até esta ser aprovada " +
+          "ou rejeitada. Assim o mesmo pagamento não é lançado duas vezes.",
+        dica: "Pagou em partes? Registre a segunda parte depois que a primeira for aprovada.",
+        preenche: { "lista.p1.baixa": "pendente" },
+      },
     ],
     eDepois: {
       texto:
         "A baixa vai para Financeiro → Aprovações pendentes. Quem tem permissão de aprovar confere e clica em " +
         "Aprovar. Se a empresa exige aprovação por outra pessoa (o padrão), quem registrou a baixa não pode " +
         "aprová-la. Depois de aprovada, o sistema lança a saída na conta escolhida e a parcela fica PAGO. Se for " +
-        "rejeitada, a parcela continua em aberto e nenhum lançamento é feito.",
+        "rejeitada, a parcela continua em aberto, nenhum lançamento é feito e a rejeição aparece embaixo da parcela, " +
+        "com o motivo, e no aviso do alto da tela." +
+        " Baixa aprovada com erro (conta, valor ou data) é estornada na própria parcela.",
+      proximoRoteiro: "estornar-baixa",
+    },
+  }),
+
+  roteiro({
+    id: "estornar-baixa",
+    titulo: "Estornar uma baixa aprovada",
+    quandoUsar:
+      "Quando uma baixa já aprovada está errada: foi lançada na conta errada, com o valor ou a data errados, ou o " +
+      "pagamento nem aconteceu. O estorno tira o lançamento da conta e devolve a parcela para em aberto; a baixa " +
+      "fica no histórico como estornada.",
+    quemPode: QUEM_ESTORNA,
+    passos: [
+      { ...ABRIR_TITULO, preenche: { "lista.linhaExemplo": "expandida", "lista.p1.baixa": "aprovada" } },
+      {
+        cena: "lista",
+        alvo: "lista.p1.baixa",
+        instrucao: "Confira a baixa que vai estornar",
+        explicacao:
+          "Embaixo da parcela aparecem as baixas aprovadas, com data, conta, valor e quem registrou e aprovou. No " +
+          `exemplo, a parcela 1 foi paga em ${EXEMPLO.baixa.data}, mas a baixa foi lançada em ` +
+          `${EXEMPLO.baixa.conta}, e o dinheiro saiu de ${EXEMPLO.conta}.`,
+      },
+      {
+        cena: "lista",
+        alvo: "lista.p1.estornar",
+        instrucao: "Clique em “Estornar”",
+        explicacao: "O botão só aparece para quem pode estornar e só em baixa aprovada.",
+        dica:
+          "No lugar do botão aparece “Conciliada: desconcilie antes de estornar” quando o lançamento já foi " +
+          "conciliado com o extrato: desfaça a conciliação na tela Conciliação e volte aqui. Em título de venda " +
+          "na maquininha aparece “Repasse de cartão: desfaça em Repasses de cartão”.",
+      },
+      {
+        cena: "estornar",
+        alvo: "estorno.resumo",
+        instrucao: "Confira o resumo",
+        explicacao:
+          "A janela repete a data, a conta e o valor da baixa e avisa o que vai acontecer: o lançamento sai da " +
+          "conta e a parcela volta a ficar em aberto.",
+      },
+      {
+        cena: "estornar",
+        alvo: "estorno.motivo",
+        instrucao: "Informe o motivo",
+        explicacao:
+          "O motivo é obrigatório e fica registrado na baixa e na Auditoria. Diga o que estava errado, para quem " +
+          "ler depois entender.",
+        preenche: { "estorno.motivo": EXEMPLO.baixa.motivoEstorno },
+      },
+      {
+        cena: "estornar",
+        alvo: "estorno.confirmar",
+        instrucao: "Clique em “Estornar baixa”",
+        explicacao:
+          "Se a empresa exige aprovação por outra pessoa (o padrão) e foi você quem registrou a baixa, o sistema " +
+          "recusa: peça a outra pessoa da Tesouraria ou ao Administrador.",
+      },
+      {
+        cena: "lista",
+        alvo: "lista.p1.baixa",
+        instrucao: "Veja a baixa estornada",
+        explicacao:
+          "A baixa continua embaixo da parcela, apagada, com quem estornou, quando e o motivo. A parcela 1 voltou " +
+          "a VENCIDO, com o botão Baixar.",
+        preenche: { "lista.p1.baixa": "estornada" },
+      },
+    ],
+    eDepois: {
+      texto:
+        "O lançamento saiu da conta (confira na Tesouraria) e a parcela voltou a ficar em aberto. Agora registre a " +
+        "baixa de novo, com a conta, o valor e a data certos: ela passa outra vez pela aprovação.",
+      proximoRoteiro: "tratar-rejeitada",
+    },
+  }),
+
+  roteiro({
+    id: "tratar-rejeitada",
+    titulo: "Quando uma baixa é rejeitada",
+    quandoUsar:
+      "Quando aparece no alto da tela o aviso de baixa rejeitada: quem aprova recusou uma baixa e escreveu o " +
+      "motivo. É preciso lançar de novo do jeito certo ou, se o pagamento não aconteceu, dispensar o aviso.",
+    quemPode: QUEM_BAIXA,
+    passos: [
+      {
+        cena: "lista",
+        alvo: "lista.avisoRejeitadas",
+        instrucao: "Clique em “Ver” no aviso",
+        explicacao:
+          "O aviso conta as baixas rejeitadas da filial que ninguém lançou de novo nem dispensou, de todas as " +
+          "pessoas. O Ver deixa na lista só os títulos com rejeição; Limpar filtros mostra todos de novo.",
+        preenche: { "lista.p1.baixa": "rejeitada" },
+      },
+      {
+        ...ABRIR_TITULO,
+        // O filtro do "Ver" continua aplicado nos passos seguintes (valoresAte acumula).
+        preenche: {
+          "lista.linhaExemplo": "expandida",
+          "lista.p1.baixa": "rejeitada",
+          "lista.filtro.rejeitadas": "1",
+        },
+      },
+      {
+        cena: "lista",
+        alvo: "lista.p1.baixa",
+        instrucao: "Leia o motivo da rejeição",
+        explicacao:
+          "A baixa rejeitada aparece embaixo da parcela com o selo “Rejeitada”, quem rejeitou, quando e o motivo. " +
+          `No exemplo: “${EXEMPLO.baixa.motivoRejeicao}”.`,
+        dica:
+          "O pagamento aconteceu e só o registro estava errado? Clique em Baixar na parcela e lance de novo com o " +
+          "valor, a data e a conta certos. A rejeição sai do aviso assim que a baixa nova é registrada.",
+      },
+      {
+        cena: "lista",
+        alvo: "lista.p1.dispensar",
+        instrucao: "Se não há o que relançar, clique em “Dispensar”",
+        explicacao:
+          "Use quando a rejeição está certa e nada deve ser registrado: o pagamento não aconteceu, ou foi lançado " +
+          "em outra parcela.",
+      },
+      {
+        cena: "dispensar",
+        alvo: "dispensa.motivo",
+        instrucao: "Diga por que não vai lançar de novo",
+        explicacao: "O motivo é obrigatório, com pelo menos 3 letras, e fica na baixa e na Auditoria.",
+        preenche: { "dispensa.motivo": EXEMPLO.baixa.motivoDispensa },
+      },
+      {
+        cena: "dispensar",
+        alvo: "dispensa.confirmar",
+        instrucao: "Clique em “Dispensar”",
+        explicacao: "A parcela não muda: continua em aberto, com o botão Baixar.",
+      },
+      {
+        cena: "lista",
+        alvo: "lista.p1.baixa",
+        instrucao: "Veja a rejeição dispensada",
+        explicacao:
+          "A baixa rejeitada continua embaixo da parcela, apagada e numa linha só, com quem dispensou e o motivo. " +
+          "O aviso do alto da tela some. Com o filtro de rejeitadas ligado, a lista fica vazia e aparece " +
+          "“Nenhuma baixa rejeitada aguardando novo registro.”: clique em “Mostrar todos os títulos” para ver o " +
+          "título de novo.",
+        preenche: { "lista.linhaExemplo": "expandida", "lista.p1.baixa": "dispensada", "lista.filtro.rejeitadas": "" },
+      },
+    ],
+    eDepois: {
+      texto:
+        "Rejeições resolvidas (lançadas de novo, dispensadas, ou de parcela paga, cancelada ou renegociada) ficam só " +
+        "no histórico da parcela, numa linha apagada, e não contam no aviso.",
       proximoRoteiro: "mudar-vencimento",
     },
   }),
@@ -319,7 +491,7 @@ export const ROTEIROS: readonly Roteiro[] = [
     titulo: "Renegociar uma parcela vencida",
     quandoUsar:
       "Quando uma parcela venceu e foi combinado pagar de outro jeito: em mais vezes, com outro valor ou em outras " +
-      "datas. O botão Renegociar só aparece em parcela vencida.",
+      "datas. O botão Renegociar só aparece em parcela vencida e sem baixa aguardando aprovação.",
     quemPode: QUEM_LANCA,
     passos: [
       ABRIR_TITULO,
@@ -385,7 +557,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Clique em “Cancelar” na parcela",
         explicacao: "Atenção: o sistema não pergunta se você tem certeza. O clique já cancela a parcela.",
         dica:
-          "Mudou só a data? Não cancele: use Alterar vencimento. Combinou pagar de outro jeito? Use Renegociar.",
+          "Mudou só a data? Não cancele: use Alterar vencimento. Combinou pagar de outro jeito? Use Renegociar." +
+          " Com baixa aguardando aprovação, Cancelar não aparece: peça para aprovarem ou rejeitarem a baixa antes.",
       },
     ],
     eDepois: {

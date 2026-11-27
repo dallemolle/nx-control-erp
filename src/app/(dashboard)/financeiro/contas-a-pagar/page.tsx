@@ -1,5 +1,5 @@
 import { requireSessaoAtiva } from "@/server/auth/sessao";
-import { requirePermission, podeEscreverTitulo, podeBaixarTitulo } from "@/server/auth/permissions";
+import { requirePermission, podeEscreverTitulo, podeBaixarTitulo, podeAprovarBaixa } from "@/server/auth/permissions";
 import { listarTitulos } from "@/server/services/titulo";
 import { listarFornecedores } from "@/server/services/fornecedor";
 import { listarCategoriasFinanceiras } from "@/server/services/categoriaFinanceira";
@@ -16,6 +16,8 @@ import { ExportarLinks } from "../../_shared/exportar-links";
 import { titulosParaCliente } from "../_titulos/titulos-para-cliente";
 import { nomeDaContaBancaria } from "@/lib/contaBancaria";
 import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
+import { contarRejeicoesEmAberto } from "@/server/services/baixa";
+import { AvisoRejeitadas } from "../_titulos/aviso-rejeitadas";
 
 function paramCru(valor: string | string[] | undefined): string | undefined {
   return Array.isArray(valor) ? valor[0] : valor;
@@ -31,6 +33,7 @@ type SearchParams = {
   status?: string | string[];
   vencimentoDe?: string | string[];
   vencimentoAte?: string | string[];
+  rejeitadas?: string | string[];
 };
 
 export default async function ContasAPagarPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
@@ -38,23 +41,34 @@ export default async function ContasAPagarPage({ searchParams }: { searchParams:
   requirePermission(sessao.perfil, "titulo:ler");
   const podeEscrever = podeEscreverTitulo(sessao.perfil, sessao.podeAlterarFilial);
   const podeBaixar = podeBaixarTitulo(sessao.perfil, sessao.podeAlterarFilial);
+  const podeAprovar = podeAprovarBaixa(sessao.perfil, sessao.podeAlterarFilial);
 
   const sp = await searchParams;
   const get = (campo: string) => paramCru((sp as Record<string, string | string[] | undefined>)[campo]);
   const filtros = filtroTitulosDaUrl(get);
   const queryString = queryStringDosFiltros(get);
 
-  const [titulos, fornecedores, categorias, centrosCusto, centrosLucro, safras, projetos, contasBancarias] =
-    await Promise.all([
-      listarTitulos(sessao.filialId, "PAGAR", filtros),
-      listarFornecedores(sessao.empresaId),
-      listarCategoriasFinanceiras(sessao.filialId),
-      listarCentrosCusto(sessao.filialId),
-      listarCentrosLucro(sessao.filialId),
-      listarSafras(sessao.filialId),
-      listarProjetos(sessao.filialId),
-      listarContasBancarias(sessao.filialId),
-    ]);
+  const [
+    titulos,
+    fornecedores,
+    categorias,
+    centrosCusto,
+    centrosLucro,
+    safras,
+    projetos,
+    contasBancarias,
+    rejeicoesEmAberto,
+  ] = await Promise.all([
+    listarTitulos(sessao.filialId, "PAGAR", filtros),
+    listarFornecedores(sessao.empresaId),
+    listarCategoriasFinanceiras(sessao.filialId),
+    listarCentrosCusto(sessao.filialId),
+    listarCentrosLucro(sessao.filialId),
+    listarSafras(sessao.filialId),
+    listarProjetos(sessao.filialId),
+    listarContasBancarias(sessao.filialId),
+    contarRejeicoesEmAberto(sessao.filialId, "PAGAR"),
+  ]);
 
   const opcoes = {
     contrapartes: fornecedores,
@@ -106,12 +120,19 @@ export default async function ContasAPagarPage({ searchParams }: { searchParams:
           projetos: opcoes.projetos,
         }}
       />
+      <AvisoRejeitadas
+        quantidade={rejeicoesEmAberto}
+        href="/financeiro/contas-a-pagar?rejeitadas=1"
+        filtroAtivo={filtros.rejeitadas === true}
+        hrefSemFiltro="/financeiro/contas-a-pagar"
+      />
       <ContasClientePanel
         tipo="PAGAR"
         titulos={titulosParaCliente(titulos)}
         opcoes={opcoes}
         podeEscrever={podeEscrever}
         podeBaixar={podeBaixar}
+        podeAprovar={podeAprovar}
         filtroAtivo={algumFiltroAtivo(filtros)}
       />
     </div>

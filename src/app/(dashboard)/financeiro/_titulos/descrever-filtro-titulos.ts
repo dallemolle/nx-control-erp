@@ -23,6 +23,7 @@ export function descreverFiltroTitulos(filtros: FiltroTitulos): (string | null)[
     filtros.vencimentoDe ? `Vencimento de: ${formatarData(filtros.vencimentoDe)}` : null,
     filtros.vencimentoAte ? `Vencimento até: ${formatarData(filtros.vencimentoAte)}` : null,
     filtroDeClassificacao(filtros.classificacao),
+    filtros.rejeitadas ? "Com baixa rejeitada aguardando novo registro" : null,
     porCadastro.length > 0 ? `Filtrado por ${porCadastro.join(", ")}` : null,
   ];
 }

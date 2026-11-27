@@ -54,8 +54,8 @@ export const ROTEIROS: readonly Roteiro[] = [
           "Valor pago é o total que saiu ou entrou na conta, já com juros e multa. Embaixo vêm o valor da parcela e " +
           "os ajustes: no exemplo, parcela de R$ 1.000,00 mais R$ 12,00 de juros dá R$ 1.012,00.",
         dica:
-          "Algo não bate com o comprovante? Rejeite com o motivo em vez de aprovar: depois de aprovada, a baixa não " +
-          "pode ser desfeita.",
+          "Algo não bate com o comprovante? Rejeite com o motivo em vez de aprovar. Uma baixa aprovada por engano " +
+          "pode ser estornada depois, na parcela em Contas a pagar ou a receber, enquanto não estiver conciliada.",
       },
       {
         cena: "lista",
@@ -77,7 +77,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         "A linha sai da lista. O sistema lança a saída (pagamento) ou a entrada (recebimento) na conta bancária " +
         "escolhida na baixa, com a data da baixa, e a parcela fica PAGO, ou PARCIALMENTE_PAGO se o valor foi menor " +
         "que o da parcela. Numa conta Caixa, o lançamento já entra conciliado. Numa conta de banco, ele espera o " +
-        "extrato na Conciliação. A aprovação não pode ser desfeita.",
+        "extrato na Conciliação. Aprovou por engano? A baixa pode ser estornada na parcela, em Contas a pagar ou a " +
+        "receber, enquanto o lançamento não estiver conciliado.",
       proximoRoteiro: "entender-avisos",
     },
   }),
@@ -87,7 +88,7 @@ export const ROTEIROS: readonly Roteiro[] = [
     titulo: "Quando a baixa tem um aviso",
     quandoUsar:
       "Quando aparece um triângulo amarelo com um aviso embaixo do título da baixa. O aviso aponta o que costuma " +
-      "ser erro de digitação ou baixa em dobro, mas não impede a aprovação: quem decide é você.",
+      "ser erro de digitação, no valor ou na data, e, com uma exceção, não impede a aprovação: quem decide é você.",
     quemPode: QUEM_APROVA,
     passos: [
       {
@@ -112,13 +113,15 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "lista.l2.avisos",
         instrucao: "Veja o aviso de valor",
         explicacao:
-          "O Recibo 88 já tinha sido pago e aprovado: não sobra nada a pagar, e esta baixa é repetida. Os outros " +
-          "avisos de valor comparam o valor pago com o que falta da parcela, mais juros e multa, menos o desconto: " +
-          "“Pagamento parcial: faltam R$ …” (ou Recebimento parcial) e “Acima do saldo em R$ …”.",
+          "O recibo do José da Silva é de R$ 1.200,00, e a Maria digitou R$ 12.000,00. O sistema compara o valor " +
+          "pago com o que falta da parcela, mais juros e multa, menos o desconto: “Acima do saldo em R$ …” quando " +
+          "passa, “Pagamento parcial: faltam R$ …” (ou Recebimento parcial) quando fica abaixo.",
         dica:
-          "Pagamento parcial pode estar certo, quando foi combinado pagar em partes. “Há outra baixa pendente nesta " +
-          "parcela” aparece quando a mesma parcela tem duas baixas esperando: confira se não é a mesma lançada duas " +
-          "vezes.",
+          "Pagamento parcial pode estar certo, quando foi combinado pagar em partes. “A parcela já está paga” e " +
+          "“Há outra baixa pendente nesta parcela” só aparecem em baixas registradas antes de o sistema impedir a " +
+          "segunda baixa na mesma parcela: confira se não é o mesmo pagamento lançado duas vezes. " +
+          "“Parcela cancelada: rejeite esta baixa” (ou renegociada) é o único aviso que impede a aprovação: a " +
+          "parcela foi fechada depois de a baixa ser registrada, então rejeite a baixa.",
       },
     ],
     eDepois: {
@@ -133,9 +136,8 @@ export const ROTEIROS: readonly Roteiro[] = [
     id: "rejeitar-baixa",
     titulo: "Rejeitar uma baixa",
     quandoUsar:
-      "Quando a baixa está errada: foi lançada em dobro, o valor não bate com o comprovante, foi na parcela " +
-      "errada ou o pagamento não aconteceu. A parcela continua com o botão Baixar enquanto a baixa espera " +
-      "aprovação, então baixa em dobro acontece.",
+      "Quando a baixa está errada: o valor ou a data não batem com o comprovante, foi na parcela errada ou o " +
+      "pagamento não aconteceu.",
     quemPode: QUEM_APROVA,
     passos: [
       {
@@ -144,8 +146,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Escreva o motivo na linha da baixa",
         explicacao:
           "O campo fica ao lado do botão Rejeitar, na mesma linha. O motivo é obrigatório, com pelo menos 3 " +
-          "letras. No exemplo, o Recibo 88 tem o aviso “A parcela já está paga”: ela foi paga e aprovada em 05/10, " +
-          "e a baixa nova é repetida.",
+          "letras. No exemplo, o Recibo 88 tem o aviso “Acima do saldo”: o recibo é de R$ 1.200,00 e a baixa foi " +
+          "lançada com R$ 12.000,00.",
         preenche: { "lista.l2.motivo": MOTIVO_REJEICAO },
       },
       {
@@ -154,15 +156,15 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Clique em Rejeitar",
         explicacao: "O clique já rejeita a baixa, sem pergunta de confirmação.",
         dica:
-          "Quem registrou não recebe aviso, e o motivo fica só na Auditoria, que o perfil Financeiro não vê. " +
-          "Avise a pessoa, para ela lançar de novo do jeito certo.",
+          "Quem registrou vê a rejeição embaixo da parcela, com o seu nome e o motivo, e o aviso “baixa rejeitada " +
+          "aguardando novo registro” no alto de Contas a pagar ou Contas a receber.",
       },
     ],
     eDepois: {
       texto:
-        "A linha sai da lista e nenhum lançamento é feito: a parcela continua como estava. Se a baixa precisava " +
-        "só de correção, quem registrou lança outra pelo botão Baixar da parcela, em Contas a pagar ou Contas a " +
-        "receber, e ela volta para esta lista.",
+        "A linha sai da lista e nenhum lançamento é feito: a parcela continua como estava e volta a aceitar baixa. " +
+        "Quem registrou lança outra pelo botão Baixar da parcela, e ela volta para esta lista; se o pagamento não " +
+        "aconteceu, dispensa o aviso na própria parcela.",
       proximoRoteiro: "aprovar-bloqueado",
     },
   }),

@@ -14,7 +14,7 @@ import {
 import { criarOperadoraDeTeste } from "./cartaoTestFixtures";
 import { cancelarPedido, criarPedido, situacaoParaCancelar } from "./pedidoVenda";
 import { confirmarRepasses, desfazerRepasse, listarRepasses } from "./repasseCartao";
-import { MSG_BAIXA_MAQUININHA, registrarBaixa } from "./baixa";
+import { estornarBaixa, MSG_BAIXA_MAQUININHA, MSG_ESTORNO_REPASSE, registrarBaixa } from "./baixa";
 import { conciliarEmGrupo } from "./conciliacao";
 
 const d = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
@@ -118,6 +118,19 @@ describe("repasses de cartão", () => {
     );
     await expect(registrarBaixa(fx.sessao("FINANCEIRO"), v.parcelasTaxa[1].id, baixa)).rejects.toThrow(
       MSG_BAIXA_MAQUININHA,
+    );
+  });
+
+  test("baixa de repasse não é estornada: o caminho é Desfazer repasse", async () => {
+    const v = await vendaParcelada();
+    await confirmarRepasses(fx.sessao("FINANCEIRO"), [v.parcelas[0].id], d("2026-11-11"));
+    const repasse = await prisma.repasseCartaoConfirmado.findUniqueOrThrow({ where: { parcelaId: v.parcelas[0].id } });
+
+    await expect(estornarBaixa(fx.sessao("TESOURARIA"), repasse.baixaRecebimentoId, "teste")).rejects.toThrow(
+      MSG_ESTORNO_REPASSE,
+    );
+    await expect(estornarBaixa(fx.sessao("TESOURARIA"), repasse.baixaTaxaId!, "teste")).rejects.toThrow(
+      MSG_ESTORNO_REPASSE,
     );
   });
 

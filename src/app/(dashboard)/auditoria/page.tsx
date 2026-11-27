@@ -12,7 +12,7 @@ import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { filtroAuditoriaDaUrl, paginaDaUrl, queryStringDoFiltroAuditoria } from "./filtro-auditoria-url";
 import { ExportarLinks } from "../_shared/exportar-links";
 import { BarraDeFiltrosAuditoria } from "./barra-de-filtros";
-import { Paginacao } from "./paginacao";
+import { Paginacao } from "@/components/paginacao";
 
 /** Instante, não data de calendário: fuso de Brasília explícito (o servidor roda em UTC), igual ao export. */
 function formatarData(data: Date) {

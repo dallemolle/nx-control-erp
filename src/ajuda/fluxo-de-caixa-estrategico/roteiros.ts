@@ -30,13 +30,26 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "BASE.linha.receita",
         instrucao: "Receita e Custo partem dos últimos 12 meses",
         explicacao:
-          "O ponto de partida (o ano-base) é o que entrou e o que saiu, conciliado, nos últimos 12 meses. O Ano 1 " +
-          "é o ano-base mais o crescimento, o Ano 2 é o Ano 1 mais o crescimento, e assim por diante. No exemplo, " +
-          "R$ 220.000,00 de receita com 5% a.a. viram R$ 231.000,00 no Ano 1.",
+          "O ponto de partida (o ano-base) é a receita e o custo conciliados nos últimos 12 meses, pela categoria de " +
+          "cada lançamento. O Ano 1 é o ano-base mais o crescimento, o Ano 2 é o Ano 1 mais o crescimento, e assim " +
+          "por diante. No exemplo, R$ 220.000,00 de receita com 5% a.a. viram R$ 231.000,00 no Ano 1.",
         dica:
-          "O ano-base soma todas as entradas e saídas conciliadas, inclusive transferências entre contas e " +
-          "empréstimos recebidos, que não são receita nem custo. Se a fazenda teve muito disso no último ano, a " +
-          "projeção fica distorcida.",
+          "Receita é o que entrou menos o que saiu nas categorias de receita; custo é o que saiu menos o que entrou " +
+          "nas de despesa. Uma devolução de adubo lançada como entrada em Insumos diminui o custo. Transferências " +
+          "entre contas ficam de fora.",
+      },
+      {
+        cena: "painel",
+        alvo: "painel.foraDaBase",
+        instrucao: "O que ficou fora do ano-base",
+        explicacao:
+          "Empréstimo recebido, aporte de sócio e amortização de dívida não são operação: lançados em categorias " +
+          "marcadas como “Não operacional” (Cadastros → Categorias financeiras), ficam fora da receita e do custo. " +
+          "Lançamento sem categoria também fica fora. O aviso mostra quanto foi, para você conferir.",
+        dica:
+          "A amortização da dívida antiga também sai do custo, e a projeção só conta a dívida nova das premissas. " +
+          "Se as categorias de empréstimo ainda não estiverem marcadas, elas entram como receita e custo: marque-as " +
+          "no cadastro.",
       },
       {
         cena: "painel",
@@ -60,16 +73,17 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "BASE.linha.saldo",
         instrucao: "Saldo de caixa: onde o dinheiro chega",
         explicacao:
-          "Parte do saldo em caixa de hoje e soma a geração líquida de cada ano (receita − custo − CAPEX + dívida " +
+          "Parte do saldo em caixa de hoje (o conciliado mais o que foi lançado e aguarda conciliação, o mesmo " +
+          "saldo contábil da Tesouraria) e soma a geração líquida de cada ano (receita − custo − CAPEX + dívida " +
           "nova − juros). Fica vermelho quando é negativo.",
       },
       {
         cena: "painel",
         alvo: "BASE.linha.margem",
-        instrucao: "Margem líquida: quanto sobra de cada real de receita",
+        instrucao: "Margem operacional: quanto a operação deixa de cada real de receita",
         explicacao:
-          "É (receita − custo) ÷ receita. Atenção: apesar do nome, ela não desconta CAPEX nem juros. É a margem da " +
-          "operação, antes de investimento e dívida.",
+          "É (receita − custo) ÷ receita: a margem da operação, antes de investimento e dívida. Ela não desconta " +
+          "CAPEX nem juros; para ver o efeito deles, olhe a geração líquida e o saldo de caixa.",
       },
     ],
     eDepois: {

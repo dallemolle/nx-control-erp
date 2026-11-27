@@ -18,6 +18,12 @@ describe("filtroTitulosDaUrl", () => {
     });
   });
 
+  test("rejeitadas=1 liga o filtro; outro valor é ignorado", () => {
+    expect(filtroTitulosDaUrl((c) => (c === "rejeitadas" ? "1" : undefined)).rejeitadas).toBe(true);
+    expect(filtroTitulosDaUrl((c) => (c === "rejeitadas" ? "sim" : undefined)).rejeitadas).toBeUndefined();
+    expect(queryStringDosFiltros((c) => (c === "rejeitadas" ? "1" : undefined))).toBe("rejeitadas=1");
+  });
+
   test("parseia valores válidos de cada dimensão", () => {
     const valores: Record<string, string> = {
       categoria: "cat-1",

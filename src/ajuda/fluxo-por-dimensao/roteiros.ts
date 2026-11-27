@@ -86,8 +86,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "“Não classificado”: o que não tem essa dimensão",
         explicacao:
           "Reúne tudo o que foi lançado sem a dimensão escolhida. No exemplo, as vendas de R$ 23.500,00 não " +
-          "têm centro de custo e caem aqui. O saque de R$ 2.000,00 do banco para o Caixa também: transferência " +
-          "não tem dimensão, e aparece duas vezes, como entrada e como saída.",
+          "têm centro de custo e caem aqui. O saque de R$ 2.000,00 do banco para o Caixa não entra em nenhuma " +
+          "linha: transferência entre contas só move saldo.",
         dica:
           "Para essa linha diminuir, preencha centro de custo, centro de lucro, safra ou projeto ao lançar " +
           "títulos (Contas a pagar e a receber) e lançamentos avulsos (Tesouraria e Conciliação). Os campos são " +
@@ -139,9 +139,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Veja o que mudou",
         explicacao:
           "Na visão Fiscal do exemplo, a Lavoura perde os R$ 300,00 do recibo da mão de obra (gerencial), e o " +
-          "“Não classificado” perde o saque, porque transferência entre contas não tem classificação, e a parte " +
-          "gerencial das vendas. Diferente das telas de fluxo de caixa do Financeiro, aqui não aparece aviso de " +
-          "visão filtrada: confira o filtro antes de tirar conclusões.",
+          "“Não classificado” perde a parte gerencial das vendas. Diferente das telas de fluxo de caixa do " +
+          "Financeiro, aqui não aparece aviso de visão filtrada: confira o filtro antes de tirar conclusões.",
       },
       {
         cena: "painel",

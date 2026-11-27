@@ -13,7 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SEM_VALOR } from "@/lib/schemas/enums";
-import { criarLancamentoManualAction, type FormState } from "./actions";
+import type { LancamentoEditavel } from "@/lib/lancamentoEditavel";
+import { criarLancamentoManualAction, editarLancamentoManualAction, type FormState } from "./actions";
 import { CamposClassificacaoLancamento } from "../../_shared/campos-classificacao-lancamento";
 import { useAcaoDoDialogo } from "../../_shared/use-acao-do-dialogo";
 
@@ -26,6 +27,7 @@ export function LancamentoDialogForm({
   centrosLucro,
   safras,
   projetos,
+  lancamento,
 }: {
   contasBancarias: { id: string; nome: string }[];
   categorias: { id: string; nome: string }[];
@@ -33,20 +35,45 @@ export function LancamentoDialogForm({
   centrosLucro: { id: string; nome: string }[];
   safras: { id: string; nome: string }[];
   projetos: { id: string; nome: string }[];
+  /** Presente na edição; ausente, o formulário cria um lançamento novo. */
+  lancamento?: LancamentoEditavel;
 }) {
-  const { aberto, setAberto, state, formAction, pendente } = useAcaoDoDialogo(criarLancamentoManualAction, ESTADO_INICIAL);
+  const editando = lancamento !== undefined;
+  const travado = lancamento?.ligadoAoExtrato ?? false;
+  const { aberto, setAberto, state, formAction, pendente } = useAcaoDoDialogo(
+    editando ? editarLancamentoManualAction : criarLancamentoManualAction,
+    ESTADO_INICIAL,
+  );
 
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>Novo lançamento</DialogTrigger>
+      {editando ? (
+        <DialogTrigger render={<Button variant="ghost" size="sm" />}>Editar</DialogTrigger>
+      ) : (
+        <DialogTrigger render={<Button variant="outline" size="sm" />}>Novo lançamento</DialogTrigger>
+      )}
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Novo lançamento</DialogTitle>
+          <DialogTitle>{editando ? "Editar lançamento" : "Novo lançamento"}</DialogTitle>
         </DialogHeader>
+        {travado ? (
+          <p className="text-sm text-muted-foreground">
+            Ligado ao extrato: para mudar conta, tipo, data ou valor, desconcilie na Conciliação.
+          </p>
+        ) : null}
         <form action={formAction} className="space-y-4">
+          {editando ? <input type="hidden" name="id" value={lancamento.id} /> : null}
+          {lancamento && travado ? <input type="hidden" name="contaBancariaId" value={lancamento.contaBancariaId} /> : null}
+          {lancamento && travado ? <input type="hidden" name="tipo" value={lancamento.tipoLancamento} /> : null}
+          {lancamento && travado ? <input type="hidden" name="valor" value={lancamento.valor} /> : null}
+          {lancamento && travado ? <input type="hidden" name="data" value={lancamento.data} /> : null}
           <div className="space-y-2">
             <Label htmlFor="contaBancariaId">Conta bancária</Label>
-            <Select name="contaBancariaId">
+            <Select
+              name={travado ? undefined : "contaBancariaId"}
+              defaultValue={lancamento?.contaBancariaId}
+              disabled={travado}
+            >
               <SelectTrigger id="contaBancariaId" className="w-full">
                 <SelectValue placeholder="Selecione a conta" />
               </SelectTrigger>
@@ -62,7 +89,11 @@ export function LancamentoDialogForm({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="tipo">Tipo</Label>
-              <Select name="tipo" defaultValue="ENTRADA">
+              <Select
+                name={travado ? undefined : "tipo"}
+                defaultValue={lancamento?.tipoLancamento ?? "ENTRADA"}
+                disabled={travado}
+              >
                 <SelectTrigger id="tipo" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -74,21 +105,47 @@ export function LancamentoDialogForm({
             </div>
             <div className="space-y-2">
               <Label htmlFor="valor">Valor</Label>
-              <Input id="valor" name="valor" type="number" step="0.01" required />
+              <Input
+                id="valor"
+                name={travado ? undefined : "valor"}
+                type="number"
+                step="0.01"
+                required
+                defaultValue={lancamento?.valor}
+                disabled={travado}
+              />
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="data">Data</Label>
-            <Input id="data" name="data" type="date" required />
+            <Input
+              id="data"
+              name={travado ? undefined : "data"}
+              type="date"
+              required
+              defaultValue={lancamento?.data}
+              disabled={travado}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="descricao">Descrição</Label>
-            <Input id="descricao" name="descricao" required />
+            <Input id="descricao" name="descricao" required defaultValue={lancamento?.descricao} />
           </div>
-          <CamposClassificacaoLancamento comNumero />
+          <CamposClassificacaoLancamento
+            comNumero
+            inicial={
+              lancamento
+                ? {
+                    classificacaoFiscal: lancamento.classificacaoFiscal,
+                    tipoComprovante: lancamento.tipoComprovante,
+                    numeroComprovante: lancamento.numeroComprovante,
+                  }
+                : undefined
+            }
+          />
           <div className="space-y-2">
             <Label htmlFor="categoriaFinanceiraId">Categoria financeira</Label>
-            <Select name="categoriaFinanceiraId" defaultValue={SEM_VALOR}>
+            <Select name="categoriaFinanceiraId" defaultValue={lancamento?.categoriaFinanceiraId ?? SEM_VALOR}>
               <SelectTrigger id="categoriaFinanceiraId" className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -104,7 +161,7 @@ export function LancamentoDialogForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="centroCustoId">Centro de custo</Label>
-            <Select name="centroCustoId" defaultValue={SEM_VALOR}>
+            <Select name="centroCustoId" defaultValue={lancamento?.centroCustoId ?? SEM_VALOR}>
               <SelectTrigger id="centroCustoId" className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -120,7 +177,7 @@ export function LancamentoDialogForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="centroLucroId">Centro de lucro</Label>
-            <Select name="centroLucroId" defaultValue={SEM_VALOR}>
+            <Select name="centroLucroId" defaultValue={lancamento?.centroLucroId ?? SEM_VALOR}>
               <SelectTrigger id="centroLucroId" className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -136,7 +193,7 @@ export function LancamentoDialogForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="safraId">Safra</Label>
-            <Select name="safraId" defaultValue={SEM_VALOR}>
+            <Select name="safraId" defaultValue={lancamento?.safraId ?? SEM_VALOR}>
               <SelectTrigger id="safraId" className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -152,7 +209,7 @@ export function LancamentoDialogForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="projetoId">Projeto</Label>
-            <Select name="projetoId" defaultValue={SEM_VALOR}>
+            <Select name="projetoId" defaultValue={lancamento?.projetoId ?? SEM_VALOR}>
               <SelectTrigger id="projetoId" className="w-full">
                 <SelectValue />
               </SelectTrigger>

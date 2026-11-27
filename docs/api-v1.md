@@ -59,6 +59,7 @@ http://localhost:3000/api/v1
 | Perfil sem permissão pra ação | 403 |
 | Recurso referenciado não existe (ex.: `parcelaId`) | 404 |
 | `Idempotency-Key` ainda em processamento (ver abaixo) | 409 |
+| Parcela que já tem baixa aguardando aprovação, ou que está paga, cancelada ou renegociada (`POST /baixas`) | 409 — não reenvie: espere a aprovação ou rejeição, ou confira a parcela |
 | Limite de requisições atingido (ver abaixo) | 429 |
 | Erro inesperado | 500 |
 
@@ -90,7 +91,7 @@ Idempotency-Key: 6f1c2e8a-3b4d-4c5e-9f00-1a2b3c4d5e6f
 |---|---|
 | Primeira vez | executa normalmente (`201`) |
 | Reenvio depois de sucesso | **não executa de novo**: devolve a mesma resposta (mesmo status e corpo) com o header `Idempotent-Replayed: true` |
-| Reenvio enquanto a original ainda está rodando | `409` — espere e reenvie |
+| Reenvio enquanto a original ainda está rodando | `409` (`erro` fala em chave em processamento) — espere e reenvie; não confunda com o `409` de baixa recusada, que não se resolve reenviando |
 | Mesma chave com outro corpo JSON | `422` — gere uma chave nova para uma operação diferente |
 | A original falhou (`4xx`/`5xx`) | a chave é liberada: corrija e reenvie com a mesma chave |
 
@@ -211,7 +212,11 @@ Permissão: `titulo:baixar`.
 ```
 - `parcelaId` é o **único** campo desta API que exige o ID interno — obtenha via `GET /titulos?tipo=...` (cada título em `itens` vem com `parcelas[].id`).
 - `valorJuros`/`valorMulta`/`valorDesconto`: opcionais, default `0`.
+- `valorPago` é o total que saiu ou entrou na conta, já com juros e multa e sem o desconto. A baixa aprovada quita da parcela `valorPago − valorJuros − valorMulta + valorDesconto`; o lançamento bancário fica com `valorPago`.
+- Se `valorJuros + valorMulta` for maior ou igual a `valorPago + valorDesconto`, responde `422` (`erro`: "Juros e multa não podem ser maiores que o valor pago mais o desconto"; `campos`: `["valorJuros"]`).
 - `parcelaId` inexistente → `404`.
+- Cada parcela aceita **uma** baixa aguardando aprovação por vez, e só recebe baixa enquanto está em aberto (não paga, cancelada nem renegociada). Se recusar, responde `409` com o motivo em `erro` — reenviar não adianta.
+- Baixa rejeitada: `GET /titulos` devolve cada baixa em `itens[].parcelas[].baixas[]` com `statusAprovacao` (`REJEITADO`), `motivoRejeicao` e `avaliadoEm` (quando foi rejeitada). Ela ainda pede ação enquanto `dispensadaEm` for nulo, nenhuma baixa da parcela tiver `criadoEm` posterior a `avaliadoEm` e a parcela não estiver paga, cancelada ou renegociada; nesse caso, registre a baixa de novo com os dados certos.
 
 ### `POST /extratos/importar` — importar extrato bancário (OFX)
 Permissão: `conciliacao:escrever`. **`multipart/form-data`**, não JSON.
@@ -243,6 +248,8 @@ Todas: permissão `cadastro:ler`, `GET`, sem corpo, devolvem um array `200`.
 Use essas rotas pra conferir o nome/código/CNPJ exato antes de montar o corpo de uma rota de escrita.
 
 `GET /fornecedores` e `GET /clientes` trazem também `classificacaoFiscalPadrao` (`FISCAL`, `GERENCIAL` ou `null`): é a classificação que um título novo daquele parceiro recebe quando o corpo não informa `classificacaoFiscal`.
+
+`GET /categorias-financeiras` traz também `naoOperacional` (`true` ou `false`): categorias de empréstimo, aporte e amortização marcadas assim ficam fora da receita e do custo do Fluxo de caixa estratégico.
 
 ---
 

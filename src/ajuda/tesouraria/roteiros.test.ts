@@ -7,20 +7,46 @@ import { ajudaTesouraria } from "./index";
 const { roteiros, cenas } = ajudaTesouraria;
 
 describe("roteiros de Tesouraria", () => {
-  test("são os 4 roteiros, com ids únicos", () => {
-    expect(roteiros.map((r) => r.id)).toEqual(["lancar-avulso", "transferir", "conferir-saldo", "ver-lancamentos"]);
+  test("são os 5 roteiros, com ids únicos", () => {
+    expect(roteiros.map((r) => r.id)).toEqual([
+      "lancar-avulso",
+      "transferir",
+      "conferir-saldo",
+      "ver-lancamentos",
+      "corrigir-lancamento",
+    ]);
+  });
+
+  test("a lista mostra o selo Conciliado e as ações só em Manual e Transferência", () => {
+    const html = renderToStaticMarkup(createElement(cenas.painel, { valores: {} }));
+    expect(html).toContain("Conciliado");
+    expect(html).toContain('data-alvo="painel.acoes"');
+    expect(html.match(/>Editar</g)?.length).toBe(3); // 2 lados do saque + diárias; a baixa fica sem
+  });
+
+  test("nenhum texto diz mais que o lançamento não pode ser corrigido", () => {
+    const textos = JSON.stringify(roteiros);
+    expect(textos).not.toMatch(/não pode ser editad|sentido contrário/);
   });
 
   test("a diferença só aparece depois de informar o saldo do banco", () => {
     const antes = renderToStaticMarkup(createElement(cenas.painel, { valores: {} }));
     expect(antes).toContain("Nenhum saldo bancário informado ainda.");
     const depois = renderToStaticMarkup(createElement(cenas.painel, { valores: { "painel.cardBanco": "informado" } }));
-    expect(depois).toContain("Diferença: R$ 45,90");
+    expect(depois).toContain("Saldo contábil em 20/11/2026: R$ 48.250,00");
+    expect(depois).toContain("Diferença em 20/11/2026: R$ 45,90");
+  });
+
+  test("a lista é explicada em páginas, e a exportação como a lista inteira", () => {
+    const passo = roteiros.flatMap((r) => r.passos).find((p) => p.instrucao === "Veja a lista de lançamentos");
+    expect(passo?.explicacao).toContain("páginas");
+    expect(passo?.explicacao).not.toMatch(/^Todos os lançamentos/);
+    expect(passo?.dica).toContain("lista inteira");
   });
 
   test("o filtro Fiscal esconde transferências e lançamentos gerenciais", () => {
     const html = renderToStaticMarkup(createElement(cenas.painel, { valores: { "painel.classificacao": "Fiscal" } }));
-    expect(html).toContain("Baixa aprovada — parcela nº 1");
+    expect(html).toContain("NF-e 1234 · Agro Insumos Ltda · parcela 2/3");
     expect(html).not.toContain("Diárias da colheita");
     expect(html).not.toContain("Saque para o caixa");
   });

@@ -27,7 +27,8 @@ describe("roteiros de Aprovações pendentes", () => {
 
   test("a réplica mostra os avisos da regra real: só o Recibo 88 e a Fatura 556 têm aviso", () => {
     const html = renderToStaticMarkup(createElement(cenas.lista, { valores: {} }));
-    expect(html.match(/A parcela já está paga/g)).toHaveLength(1);
+    expect(html.match(/Acima do saldo em R\$\s10\.800,00/g)).toHaveLength(1);
+    expect(html).not.toContain("A parcela já está paga");
     expect(html.match(/Data da baixa 273 dias antes do registro/g)).toHaveLength(1);
     expect(BAIXAS.map((b) => avisosDoExemplo(b).length)).toEqual([0, 1, 0, 1]);
   });

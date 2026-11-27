@@ -9,6 +9,7 @@ import { exigeAprovacaoPorOutro, listarBaixasPendentes } from "@/server/services
 import { aprovarBaixaAction } from "./actions";
 import { RejeitarBaixaForm } from "./rejeitar-baixa-form";
 import { AvisosDaBaixa, DetalheDoValor } from "./partes-da-linha";
+import { valoresDaBaixa } from "@/server/services/parcela";
 import { avisosDaBaixa, resumirBaixasDaParcela } from "@/lib/financeiro/avisosDaBaixa";
 import { nomeDaContaBancaria } from "@/lib/contaBancaria";
 import { formatarData, formatarDataHora, formatarMoeda } from "@/lib/formatacao";
@@ -67,12 +68,14 @@ export default async function AprovacoesPage() {
                 baixa.id,
                 baixa.parcela.baixas.map((b) => ({
                   id: b.id,
-                  valorPago: Number(b.valorPago),
                   statusAprovacao: b.statusAprovacao,
+                  ...valoresDaBaixa(b),
                 })),
               ),
               hoje,
+              statusParcela: baixa.parcela.status,
             });
+            const parcelaFechada = baixa.parcela.status === "CANCELADO" || baixa.parcela.status === "RENEGOCIADO";
             return (
               <TableRow key={baixa.id} className="align-top">
                 <TableCell>
@@ -119,7 +122,7 @@ export default async function AprovacoesPage() {
                   <div className="flex justify-end gap-2">
                     <form action={aprovarBaixaAction}>
                       <input type="hidden" name="baixaId" value={baixa.id} />
-                      <Button type="submit" size="sm" disabled={bloqueada}>
+                      <Button type="submit" size="sm" disabled={bloqueada || parcelaFechada}>
                         Aprovar
                       </Button>
                     </form>

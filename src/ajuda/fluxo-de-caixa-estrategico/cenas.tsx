@@ -3,7 +3,8 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alvo, BotaoSimulado, CampoSimulado, SelectSimulado } from "@/components/ajuda/campos-simulados";
 import type { PropsCena } from "@/ajuda/tipos";
-import { ANO_BASE, ANO_BASE_FISCAL, PREMISSAS, projetar, type AnoProjetado, type Cenario, type Premissas } from "./exemplo";
+import { textoForaDaBase } from "@/lib/financeiro/anoBaseEstrategico";
+import { ANO_BASE, ANO_BASE_FISCAL, FORA_DA_BASE, PREMISSAS, projetar, type AnoProjetado, type Cenario, type Premissas } from "./exemplo";
 
 // Espelho de src/app/(dashboard)/financeiro/fluxo-de-caixa-estrategico/*. Mudou um rótulo lá? Ajuste aqui também.
 
@@ -50,7 +51,7 @@ function Secao({ cenario, valores }: { cenario: Cenario; valores: PropsCena["val
       valor: (a) => moeda(a.saldoCaixa),
       vermelho: (a) => a.saldoCaixa < 0,
     },
-    { chave: "margem", rotulo: "Margem líquida", valor: (a) => `${(a.margemLiquida * 100).toFixed(1)}%` },
+    { chave: "margem", rotulo: "Margem operacional", valor: (a) => `${(a.margemOperacional * 100).toFixed(1)}%` },
   ];
   // Só estes têm alvo nos roteiros; os demais desenham sem destaque.
   const comAlvo = new Set(
@@ -127,9 +128,10 @@ export function CenaPainel({ valores }: PropsCena) {
       <div>
         <p className="text-lg font-semibold">Fluxo de caixa estratégico</p>
         <p className="text-sm text-muted-foreground">
-          Projeção de 5 anos por cenário, consolidando as filiais ativas da empresa a partir do fluxo de caixa
-          realizado dos últimos 12 meses. Não considera prazo de recebimento/pagamento, capital de giro nem
-          amortização de dívida (juros incidem sobre o saldo devedor acumulado, que nunca é amortizado).
+          Projeção de 5 anos por cenário, consolidando as filiais ativas da empresa a partir da receita e do custo
+          conciliados dos últimos 12 meses, por categoria (sem as categorias não operacionais: empréstimos, aportes e
+          amortização). Não considera prazo de recebimento/pagamento, capital de giro nem amortização de dívida
+          (juros incidem sobre o saldo devedor acumulado, que nunca é amortizado).
         </p>
       </div>
 
@@ -152,6 +154,12 @@ export function CenaPainel({ valores }: PropsCena) {
           </p>
         </Alvo>
       )}
+
+      <Alvo nome="painel.foraDaBase">
+        <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+          {textoForaDaBase(FORA_DA_BASE)} Para incluir os lançamentos sem categoria, classifique-os na Tesouraria.
+        </p>
+      </Alvo>
 
       {(["BASE", "OTIMISTA", "PESSIMISTA"] as const).map((cenario) => (
         <Secao key={cenario} cenario={cenario} valores={valores} />

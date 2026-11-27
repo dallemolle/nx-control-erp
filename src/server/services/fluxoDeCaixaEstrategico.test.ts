@@ -77,13 +77,13 @@ describe("calcularProjecaoEstrategica", () => {
     expect(resultado[2].jurosSobreDivida).toBeCloseTo(200, 6);
   });
 
-  test("margemLiquida é geracaoOperacional/receita, e não lança erro quando receita é 0", () => {
+  test("margemOperacional é geracaoOperacional/receita, e não lança erro quando receita é 0", () => {
     const resultado = calcularProjecaoEstrategica(premissasZeradas, 1000, 600, 0);
-    expect(resultado[0].margemLiquida).toBeCloseTo(0.4, 6);
+    expect(resultado[0].margemOperacional).toBeCloseTo(0.4, 6);
 
     const resultadoZerado = calcularProjecaoEstrategica(premissasZeradas, 0, 0, 0);
-    expect(resultadoZerado[0].margemLiquida).toBe(0);
-    expect(Number.isFinite(resultadoZerado[0].margemLiquida)).toBe(true);
+    expect(resultadoZerado[0].margemOperacional).toBe(0);
+    expect(Number.isFinite(resultadoZerado[0].margemOperacional)).toBe(true);
   });
 });
 
@@ -121,11 +121,19 @@ describe("garantirCenariosEstrategicos / listarCenariosEstrategicos / listarProj
       data: { filialId: filial2.id, bancoId: banco.id, agencia: "0001", conta: "fce2-1", saldoInicial: 0 },
     });
 
+    const receitaFilial1 = await prisma.categoriaFinanceira.create({
+      data: { filialId: fixture.filialId, nome: "Vendas FCE", tipo: "RECEITA" },
+    });
+    const receitaFilial2 = await prisma.categoriaFinanceira.create({
+      data: { filialId: filial2.id, nome: "Vendas FCE2", tipo: "RECEITA" },
+    });
+
     const hoje = new Date();
     await prisma.lancamentoBancario.create({
       data: {
         filialId: fixture.filialId,
         contaBancariaId: fixture.contaBancariaId,
+        categoriaFinanceiraId: receitaFilial1.id,
         data: hoje,
         tipo: "ENTRADA",
         valor: 1000,
@@ -139,6 +147,7 @@ describe("garantirCenariosEstrategicos / listarCenariosEstrategicos / listarProj
       data: {
         filialId: filial2.id,
         contaBancariaId: contaFilial2.id,
+        categoriaFinanceiraId: receitaFilial2.id,
         data: hoje,
         tipo: "ENTRADA",
         valor: 500,
@@ -153,6 +162,7 @@ describe("garantirCenariosEstrategicos / listarCenariosEstrategicos / listarProj
     expect(anoBase.receitaBase).toBeGreaterThanOrEqual(1500);
 
     await prisma.lancamentoBancario.deleteMany({ where: { filialId: filial2.id } });
+    await prisma.categoriaFinanceira.deleteMany({ where: { filialId: filial2.id } });
     await prisma.contaBancaria.deleteMany({ where: { filialId: filial2.id } });
     await prisma.banco.delete({ where: { id: banco.id } });
     await prisma.filial.delete({ where: { id: filial2.id } });
@@ -211,16 +221,25 @@ describe("garantirCenariosEstrategicos / listarCenariosEstrategicos / listarProj
 describe("buscarAnoBaseConsolidado / listarProjecaoEstrategica com classificação (FG5)", () => {
   let fixture: FixtureFinanceiro;
 
+  let receitaId: string;
+  let despesaId: string;
+  const SEM_FORA = {
+    naoOperacional: { entradas: 0, saidas: 0 },
+    semCategoria: { entradas: 0, saidas: 0 },
+  };
+
   async function lancar(
     tipo: "ENTRADA" | "SAIDA",
     valor: number,
     classificacaoFiscal: "FISCAL" | "GERENCIAL" | null,
     origem: "MANUAL" | "TRANSFERENCIA" = "MANUAL",
+    categoriaFinanceiraId: string | null = tipo === "ENTRADA" ? receitaId : despesaId,
   ) {
     await prisma.lancamentoBancario.create({
       data: {
         filialId: fixture.filialId,
         contaBancariaId: fixture.contaBancariaId,
+        categoriaFinanceiraId,
         data: new Date(),
         tipo,
         valor,
@@ -235,10 +254,20 @@ describe("buscarAnoBaseConsolidado / listarProjecaoEstrategica com classificaç�
 
   beforeAll(async () => {
     fixture = await criarFixtureFinanceiro("FCEG", "GESTOR");
+    receitaId = (
+      await prisma.categoriaFinanceira.create({
+        data: { filialId: fixture.filialId, nome: "Receita FG5", tipo: "RECEITA" },
+      })
+    ).id;
+    despesaId = (
+      await prisma.categoriaFinanceira.create({
+        data: { filialId: fixture.filialId, nome: "Despesa FG5", tipo: "DESPESA" },
+      })
+    ).id;
     await lancar("ENTRADA", 1000, "FISCAL");
     await lancar("ENTRADA", 300, "GERENCIAL");
     await lancar("SAIDA", 100, "GERENCIAL");
-    await lancar("ENTRADA", 50, null, "TRANSFERENCIA"); // sem classificação: só na visão "Todos"
+    await lancar("ENTRADA", 50, null, "TRANSFERENCIA", null); // sem classificação: só na visão "Todos"
   });
 
   afterAll(async () => {
@@ -248,11 +277,12 @@ describe("buscarAnoBaseConsolidado / listarProjecaoEstrategica com classificaç�
     await prisma.$disconnect();
   });
 
-  test("sem filtro: todo o movimento e o saldo bancário real", async () => {
+  test("sem filtro: movimento sem transferências e o saldo bancário real", async () => {
     expect(await buscarAnoBaseConsolidado(fixture.empresaId)).toEqual({
-      receitaBase: 1350,
+      receitaBase: 1300,
       custoBase: 100,
       saldoCaixaBase: 1250,
+      foraDaBase: SEM_FORA,
     });
   });
 
@@ -261,11 +291,13 @@ describe("buscarAnoBaseConsolidado / listarProjecaoEstrategica com classificaç�
       receitaBase: 1000,
       custoBase: 0,
       saldoCaixaBase: 0,
+      foraDaBase: SEM_FORA,
     });
     expect(await buscarAnoBaseConsolidado(fixture.empresaId, { classificacao: "GERENCIAL" })).toEqual({
       receitaBase: 300,
       custoBase: 100,
       saldoCaixaBase: 0,
+      foraDaBase: SEM_FORA,
     });
   });
 
@@ -273,5 +305,147 @@ describe("buscarAnoBaseConsolidado / listarProjecaoEstrategica com classificaç�
     // Premissas zeradas (cenários recém-criados): cada ano repete receita/custo do ano-base.
     const { projecoes } = await listarProjecaoEstrategica(fixture.sessao, { classificacao: "GERENCIAL" });
     expect(projecoes.BASE.map((ano) => ano.saldoCaixa)).toEqual([200, 400, 600, 800, 1000]);
+  });
+
+  test("o saldo de partida soma o que aguarda conciliação; o ano-base continua só conciliado", async () => {
+    await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        categoriaFinanceiraId: despesaId,
+        data: new Date(),
+        tipo: "SAIDA",
+        valor: 200,
+        descricao: "FG5 não conciliado",
+        origem: "MANUAL",
+        usuarioId: fixture.usuarioId,
+        conciliado: false,
+        classificacaoFiscal: "GERENCIAL",
+      },
+    });
+    expect(await buscarAnoBaseConsolidado(fixture.empresaId)).toEqual({
+      receitaBase: 1300,
+      custoBase: 100,
+      saldoCaixaBase: 1050,
+      foraDaBase: SEM_FORA,
+    });
+    expect((await buscarAnoBaseConsolidado(fixture.empresaId, { classificacao: "GERENCIAL" })).saldoCaixaBase).toBe(0);
+  });
+
+  test("data futura: transferência do Caixa não muda o saldo de partida e lançamento no Caixa entra", async () => {
+    const futura = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
+    const lancamento = (tipo: "ENTRADA" | "SAIDA", valor: number, conciliado: boolean, descricao: string) =>
+      prisma.lancamentoBancario.create({
+        data: {
+          filialId: fixture.filialId,
+          contaBancariaId: fixture.contaBancariaId,
+          categoriaFinanceiraId: despesaId,
+          data: futura,
+          tipo,
+          valor,
+          descricao,
+          origem: "MANUAL",
+          usuarioId: fixture.usuarioId,
+          conciliado,
+          classificacaoFiscal: "GERENCIAL",
+        },
+      });
+    const antes = await buscarAnoBaseConsolidado(fixture.empresaId);
+    await lancamento("SAIDA", 2000, true, "Transferência futura — lado do Caixa");
+    await lancamento("ENTRADA", 2000, false, "Transferência futura — lado do banco");
+    expect((await buscarAnoBaseConsolidado(fixture.empresaId)).saldoCaixaBase).toBeCloseTo(antes.saldoCaixaBase, 2);
+
+    await lancamento("SAIDA", 300, true, "Despesa futura no Caixa");
+    const depois = await buscarAnoBaseConsolidado(fixture.empresaId);
+    expect(depois.saldoCaixaBase - antes.saldoCaixaBase).toBeCloseTo(-300, 2);
+    // O ano-base (realizado) continua com o corte em hoje.
+    expect(depois.custoBase).toBe(antes.custoBase);
+  });
+
+  test("empréstimo e amortização em categoria não operacional ficam fora, e voltam à parte", async () => {
+    const emprestimo = await prisma.categoriaFinanceira.create({
+      data: { filialId: fixture.filialId, nome: "Empréstimos FG5", tipo: "RECEITA", naoOperacional: true },
+    });
+    const amortizacao = await prisma.categoriaFinanceira.create({
+      data: { filialId: fixture.filialId, nome: "Amortização FG5", tipo: "DESPESA", naoOperacional: true },
+    });
+    const antes = await buscarAnoBaseConsolidado(fixture.empresaId);
+    await lancar("ENTRADA", 100_000, "FISCAL", "MANUAL", emprestimo.id);
+    await lancar("SAIDA", 20_000, "FISCAL", "MANUAL", amortizacao.id);
+    const depois = await buscarAnoBaseConsolidado(fixture.empresaId);
+    expect(depois.receitaBase).toBe(antes.receitaBase);
+    expect(depois.custoBase).toBe(antes.custoBase);
+    expect(depois.foraDaBase.naoOperacional).toEqual({
+      entradas: antes.foraDaBase.naoOperacional.entradas + 100_000,
+      saidas: antes.foraDaBase.naoOperacional.saidas + 20_000,
+    });
+  });
+
+  test("devolução lançada como entrada numa categoria de despesa reduz o custo", async () => {
+    const antes = await buscarAnoBaseConsolidado(fixture.empresaId);
+    await lancar("ENTRADA", 200, "FISCAL", "MANUAL", despesaId);
+    const depois = await buscarAnoBaseConsolidado(fixture.empresaId);
+    expect(depois.custoBase).toBe(antes.custoBase - 200);
+    expect(depois.receitaBase).toBe(antes.receitaBase);
+  });
+
+  test("lançamento sem categoria fica fora e aparece em semCategoria", async () => {
+    const antes = await buscarAnoBaseConsolidado(fixture.empresaId);
+    await lancar("SAIDA", 50, "FISCAL", "MANUAL", null);
+    const depois = await buscarAnoBaseConsolidado(fixture.empresaId);
+    expect(depois.custoBase).toBe(antes.custoBase);
+    expect(depois.foraDaBase.semCategoria.saidas).toBe(antes.foraDaBase.semCategoria.saidas + 50);
+  });
+
+  test("lançamento de baixa sem categoria própria usa a categoria do título", async () => {
+    const titulo = await prisma.titulo.create({
+      data: {
+        filialId: fixture.filialId,
+        tipo: "RECEBER",
+        clienteId: fixture.clienteId,
+        categoriaFinanceiraId: receitaId,
+        documento: "FG5-BAIXA",
+        dataEmissao: new Date(),
+        dataCompetencia: new Date(),
+        parcelas: {
+          create: { numero: 1, dataVencimento: new Date(), valorOriginal: 400, valorAtualizado: 400, status: "PAGO" },
+        },
+      },
+      include: { parcelas: true },
+    });
+    const baixa = await prisma.baixa.create({
+      data: {
+        parcelaId: titulo.parcelas[0].id,
+        data: new Date(),
+        valorPago: 400,
+        contaBancariaId: fixture.contaBancariaId,
+        usuarioId: fixture.usuarioId,
+        statusAprovacao: "APROVADO",
+      },
+    });
+    const antes = await buscarAnoBaseConsolidado(fixture.empresaId);
+    await prisma.lancamentoBancario.create({
+      data: {
+        filialId: fixture.filialId,
+        contaBancariaId: fixture.contaBancariaId,
+        data: new Date(),
+        tipo: "ENTRADA",
+        valor: 400,
+        descricao: "Baixa FG5 sem categoria no lançamento",
+        origem: "BAIXA",
+        baixaId: baixa.id,
+        usuarioId: fixture.usuarioId,
+        conciliado: true,
+        classificacaoFiscal: "FISCAL",
+      },
+    });
+    const depois = await buscarAnoBaseConsolidado(fixture.empresaId);
+    expect(depois.receitaBase).toBe(antes.receitaBase + 400);
+    expect(depois.foraDaBase.semCategoria).toEqual(antes.foraDaBase.semCategoria);
+  });
+
+  test("listarProjecaoEstrategica devolve o que ficou fora do ano-base", async () => {
+    const { foraDaBase } = await listarProjecaoEstrategica(fixture.sessao);
+    expect(foraDaBase).toEqual((await buscarAnoBaseConsolidado(fixture.empresaId)).foraDaBase);
   });
 });

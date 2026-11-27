@@ -24,6 +24,7 @@ type CategoriaFinanceira = {
   nome: string;
   tipo: (typeof TIPO_CATEGORIA_FINANCEIRA)[number];
   parentId: string | null;
+  naoOperacional: boolean;
 };
 
 const ESTADO_INICIAL: FormState = {};
@@ -88,6 +89,21 @@ export function CategoriaFinanceiraDialogForm({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-1">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="naoOperacional"
+                defaultChecked={categoria?.naoOperacional ?? false}
+                className="size-4"
+              />
+              Não operacional
+            </label>
+            <p className="text-xs text-muted-foreground">
+              Empréstimos, aportes de sócio e amortização de dívida. Ficam fora da receita e do custo do Fluxo de caixa
+              estratégico.
+            </p>
           </div>
           {state.erro ? <p className="text-sm text-destructive">{state.erro}</p> : null}
           <Button type="submit" className="w-full" disabled={pendente}>

@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { prisma } from "@/server/db/client";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { FilialSomenteLeituraError } from "@/server/auth/permissions";
+import { categoriaFinanceiraSchema } from "@/lib/schemas/categoriaFinanceira";
 import { CicloHierarquiaError } from "@/server/services/hierarquia";
 import {
   atualizarCategoriaFinanceira,
@@ -155,5 +156,40 @@ describe("categoriaFinanceira (filial-scoped)", () => {
         parentId: filho.id,
       }),
     ).rejects.toThrow(CicloHierarquiaError);
+  });
+
+  test("grava naoOperacional ao criar e ao atualizar, e audita o campo", async () => {
+    const categoria = await criarCategoriaFinanceira(sessaoFilialA, {
+      nome: "Empréstimos recebidos",
+      tipo: "RECEITA",
+      naoOperacional: true,
+    });
+    expect(categoria.naoOperacional).toBe(true);
+
+    const atualizada = await atualizarCategoriaFinanceira(sessaoFilialA, categoria.id, {
+      nome: "Empréstimos recebidos",
+      tipo: "RECEITA",
+      naoOperacional: false,
+    });
+    expect(atualizada.naoOperacional).toBe(false);
+
+    const auditoria = await prisma.auditLog.findFirstOrThrow({
+      where: { entidade: "CategoriaFinanceira", entidadeId: categoria.id, acao: "ATUALIZAR" },
+    });
+    expect(auditoria.valorAnterior).toMatchObject({ naoOperacional: true });
+    expect(auditoria.valorNovo).toMatchObject({ naoOperacional: false });
+  });
+
+  test("sem naoOperacional, a categoria nasce operacional", async () => {
+    const categoria = await criarCategoriaFinanceira(sessaoFilialA, { nome: "Vendas", tipo: "RECEITA" });
+    expect(categoria.naoOperacional).toBe(false);
+  });
+});
+
+describe("categoriaFinanceiraSchema", () => {
+  test("a caixa marcada vira true e a ausente vira false", () => {
+    expect(categoriaFinanceiraSchema.parse({ nome: "Aporte", tipo: "RECEITA", naoOperacional: "on" }).naoOperacional)
+      .toBe(true);
+    expect(categoriaFinanceiraSchema.parse({ nome: "Vendas", tipo: "RECEITA" }).naoOperacional).toBe(false);
   });
 });

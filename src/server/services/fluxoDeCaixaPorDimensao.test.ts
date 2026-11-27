@@ -149,6 +149,28 @@ describe("fluxoDeCaixaPorDimensao", () => {
       expect(totais.get(null)?.entradas).toBe(90);
     });
 
+    test("transferência entre contas não entra em nenhuma dimensão, nem em Não classificado", async () => {
+      for (const [tipo, valor] of [["SAIDA", 5000], ["ENTRADA", 3000]] as const) {
+        await prisma.lancamentoBancario.create({
+          data: {
+            filialId: fixture.filialId,
+            contaBancariaId: fixture.contaBancariaId,
+            data: new Date("2029-02-10T00:00:00Z"),
+            tipo,
+            valor,
+            descricao: "Perna de transferência",
+            origem: "TRANSFERENCIA",
+            usuarioId: fixture.usuarioId,
+            conciliado: true,
+          },
+        });
+      }
+
+      const totais = await buscarRealizadoPorDimensao(fixture.filialId, "CENTRO_CUSTO", 2029, 2);
+      expect(totais.get(null)?.entradas ?? 0).toBe(0);
+      expect(totais.get(null)?.saidas ?? 0).toBe(0);
+    });
+
     test("escopo de filial — lançamento de outra filial não vaza", async () => {
       const outraFixture = await criarFixtureFinanceiro("FCD2", "FINANCEIRO");
       try {

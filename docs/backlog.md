@@ -95,6 +95,31 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   tal data" (ex.: para explicar um custo antigo sem abrir a auditoria),
   criar um histórico de preços por produto.
 
+## Banco de dados — consultas paralelas na transação
+
+### Include com várias relações dentro de `prisma.$transaction`
+
+- **Problema:** dentro de `prisma.$transaction(async (tx) => …)`, um `include`
+  (ou `select`) com mais de uma relação faz o Prisma consultar as relações em
+  paralelo (`Promise.all`) na única conexão da transação. O pg 8 avisa
+  (`DeprecationWarning: Calling client.query() when the client is already
+  executing a query is deprecated`) e o pg 9 vai recusar a chamada.
+- **Exemplo:** `tx.baixa.findFirstOrThrow({ include: { lancamentos, repasseRecebimento,
+  repasseTaxa } })` no estorno de baixa emitia o aviso; corrigido lendo em
+  sequência (`findFirstOrThrow`, `findMany`, `count`).
+- **Onde:** visto nos testes de recepção ("cancelar é recusado depois de o lote
+  ser consumido numa OP", código de Ordem de Produção). Depois da correção do
+  estorno, ainda emitem o aviso (rodando cada arquivo sozinho):
+  `src/server/services/recepcaoFruto.test.ts` e
+  `src/server/services/estoque.test.ts`. Na suíte toda saem 9 avisos (um por
+  processo de teste), sem dar para atribuir cada um a um arquivo.
+- **Impacto:** quebra quando o pg for atualizado para a versão 9.
+- **Caminhos:** em transações, ler em sequência ou uma relação por consulta.
+- **Cuidados:** manter a mesma ordem de checagens e as mesmas mensagens ao
+  trocar o `include` por leituras separadas; localizar com
+  `NODE_OPTIONS=--trace-deprecation` (a pilha aponta o adaptador, não o
+  arquivo, então rode os testes um arquivo por vez).
+
 ## Financeiro — lacunas achadas ao escrever a ajuda contextual
 
 Achadas entre 2026-11-19 e 2026-11-20, conferindo os roteiros da ajuda contra o
@@ -110,6 +135,10 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 
 ### 1. Desconto na baixa não abate o saldo da parcela
 
+- **Status:** feito na branch `fix/desconto-abate-parcela` (2026-11-25, spec
+  `2026-11-25-desconto-abate-parcela-design.md`): o saldo e o status usam
+  pago − juros − multa + desconto; baixa que não abate nada é recusada; o
+  diálogo mostra a prévia.
 - **Problema:** `calcularStatusParcela` (`src/server/services/parcela.ts`)
   compara só a soma de `valorPago` das baixas aprovadas com `valorAtualizado`.
   `valorDesconto`, `valorJuros` e `valorMulta` são só registro.
@@ -157,6 +186,13 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 
 ### 3. Baixa aprovada não pode ser desfeita (prioridade alta)
 
+- **Status:** feito na branch `feat/estorno-de-baixa` (2026-11-23, spec
+  `2026-11-23-estorno-de-baixa-design.md`): "Estornar" na lista de baixas da
+  parcela (Administrador e Tesouraria, com motivo e a mesma segregação da
+  aprovação); a baixa fica ESTORNADO, o lançamento é apagado e a parcela,
+  recalculada; lançamento conciliado e baixa de repasse bloqueiam; ajuda com o
+  roteiro novo `estornar-baixa`.
+
 - **Problema:** não existe estorno de baixa. `efetivarBaixa`
   (`src/server/services/baixa.ts`) aprova, recalcula a parcela e cria o
   `LancamentoBancario`; nada desfaz isso. O lançamento também não pode ser
@@ -181,6 +217,11 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 
 ### 4. Parcela com baixa pendente aceita outra baixa (prioridade alta)
 
+- **Status:** feito na branch `fix/baixa-pendente-unica` (2026-11-24, spec
+  `2026-11-24-baixa-pendente-unica-design.md`): uma baixa pendente por parcela
+  (trava com `FOR UPDATE`, API 409), baixa só em parcela em aberto; a parcela
+  mostra a pendente e "Baixa aguardando aprovação" no lugar do Baixar; ajuda de
+  Aprovações sem o exemplo de baixa em dobro.
 - **Problema:** o botão Baixar continua na parcela enquanto a baixa espera
   aprovação, e `registrarBaixa` (`src/server/services/baixa.ts`) não olha as
   baixas pendentes.
@@ -200,6 +241,12 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 
 ### 5. Rejeição não chega a quem registrou (prioridade alta)
 
+- **Status:** feito na branch `feat/rejeicao-visivel` (2026-11-25, spec
+  `2026-11-25-rejeicao-visivel-design.md`): a parcela mostra a baixa rejeitada com motivo, quem e quando; Contas a
+  pagar/receber tem o aviso "N baixas rejeitadas aguardando novo registro" com o filtro `rejeitadas=1`; a rejeição
+  sai do aviso ao relançar, ao fechar a parcela ou pelo Dispensar (com motivo e auditoria); ajuda com o roteiro
+  novo `tratar-rejeitada`.
+
 - **Problema:** `rejeitarBaixa` grava `motivoRejeicao`, mas ele só aparece na
   Auditoria, que o perfil Financeiro não acessa. A parcela não mostra que houve
   baixa rejeitada.
@@ -212,84 +259,13 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 - **Ao corrigir:** dica do passo "Clique em Rejeitar" no `rejeitar-baixa`
   (`src/ajuda/aprovacoes/roteiros.ts`): manda avisar a pessoa por fora.
 
-### 6. Lançamento manual e transferência não podem ser corrigidos
-
-- **Problema:** não há edição nem exclusão de `LancamentoBancario`
-  (`src/server/services/lancamentoBancario.ts`), seja manual (Tesouraria ou
-  Conciliação) ou transferência.
-- **Exemplo:** lançou a tarifa de R$ 45,90 como R$ 459,00. A saída fica errada
-  no saldo, no fluxo e no orçamento.
-- **Contorno atual:** a ajuda manda anular com um lançamento de mesmo valor no
-  sentido contrário e lançar o certo. Isso deixa dois registros falsos no fluxo
-  de caixa, na categoria e na conciliação (a anulação não tem linha no extrato).
-- **Impacto:** dado errado sem correção; mesma família do item 3.
-- **Caminhos:** excluir (enquanto não conciliado) e estornar (depois), com
-  motivo e auditoria; editar descrição, categoria e dimensões sempre (não mexem
-  no saldo); para transferência, os dois lados juntos (`transferenciaId`).
-- **Cuidados:** lançamento conciliado (grupo de conciliação); lançamento
-  criado pela "diferença" de um grupo; lançamentos de baixa (origem BAIXA) não
-  entram aqui, são o item 3.
-- **Ao corrigir:** `src/ajuda/tesouraria/roteiros.ts` (constante
-  `SEM_CORRECAO`, passo "Clique em Salvar" do `transferir`, "E depois?" do
-  `ver-lancamentos` com o contorno); `src/ajuda/conciliacao/roteiros.ts`
-  ("E depois?" do `criar-lancamento`); manual, seção 3.3.
-
-### 7. Diferença da Tesouraria compara datas diferentes
-
-- **Problema:** o quadro da conta
-  (`src/app/(dashboard)/financeiro/tesouraria/page.tsx`) subtrai o último saldo
-  informado (de uma data) do saldo contábil com lançamentos de todas as datas
-  (`calcularSaldoContabil` em `lancamentoBancario.ts`).
-- **Exemplo:** informa o saldo do extrato de 31/10 = R$ 50.000,00 e tudo bate.
-  Em 05/11 entra uma baixa de R$ 1.000,00: o quadro passa a mostrar diferença
-  de R$ 1.000,00 em vermelho, sem nada errado.
-- **Impacto:** dado enganoso; a pessoa procura erro que não existe ou se
-  acostuma a ignorar o vermelho.
-- **Caminhos:** calcular o saldo contábil até a data do saldo informado;
-  mostrar as duas datas no quadro.
-- **Cuidados:** saldo contábil inclui lançamentos não conciliados (é o
-  esperado aqui, mas explicar); várias contas com datas diferentes.
-- **Ao corrigir:** `src/ajuda/tesouraria/roteiros.ts`, roteiro
-  `conferir-saldo`: explicação e dica do passo "Informe a data e o saldo do
-  extrato" (manda usar o dia mais recente) e o passo "Veja o quadro de cada
-  conta".
-
-### 8. Confirmar 1:1 na Conciliação aceita valor diferente
-
-- **Problema:** `confirmarConciliacaoManual`
-  (`src/server/services/conciliacao.ts`) só confere a conta e se o lançamento
-  está livre: não compara valor nem sentido com a linha do extrato. A caixa de
-  candidatos (`buscarCandidatosLancamento`) traz lançamentos do mesmo sentido em
-  ±30 dias, de qualquer valor.
-- **Exemplo:** linha de R$ 990,00 conciliada com lançamento de R$ 1.000,00. O
-  realizado fica com R$ 1.000,00 e os R$ 10,00 somem.
-- **Impacto:** dado errado no fluxo realizado, escondido pela conciliação.
-  A conciliação em grupo já exige soma exata; o 1:1 é a porta aberta.
-- **Caminhos:** exigir valor e sentido iguais no 1:1 e, se diferente, mandar
-  para "Conciliar em grupo" com "Lançar a diferença"; ou filtrar os candidatos
-  por valor igual e deixar o resto para o grupo.
-- **Cuidados:** linhas em Divergência de valor hoje resolvidas pelo 1:1.
-- **Ao corrigir:** dica do passo "Escolha o lançamento na caixa da linha" em
-  `src/ajuda/conciliacao/roteiros.ts` (roteiro `confirmar-sugestao`) e o
-  "Quando usar" dele (cita Divergência de valor).
-
-### 9. Reconciliar pendentes ignora Sugestão, Divergência e Duplicado
-
-- **Problema:** `reconciliarPendentes` (`src/server/services/conciliacao.ts`)
-  só reprocessa linhas `NAO_CONCILIADO`.
-- **Exemplo:** linha importada como Divergência de valor porque o lançamento
-  certo ainda não existia. O lançamento é criado depois; a linha continua
-  Divergência e o automático nunca a concilia.
-- **Impacto:** status velho e trabalho manual que o sistema poderia fazer.
-- **Caminhos:** reprocessar todos os status não conciliados; ou reclassificar
-  sem conciliar quando houver mais de um candidato.
-- **Cuidados:** não desfazer escolhas que a pessoa já fez; desempenho com
-  muitas linhas.
-- **Ao corrigir:** dica do passo "Clique em Reconciliar pendentes" no
-  `desconciliar` (`src/ajuda/conciliacao/roteiros.ts`).
-
 ### 10. Transferências entre contas inflam entradas e saídas
 
+- **Status:** feito na branch `fix/transferencias-fora-das-somas` (2026-11-26,
+  spec e plano `2026-11-26-transferencias-fora-das-somas*`): transferências
+  fora de entradas e saídas no realizado (coluna Transferências), no
+  dashboard (gráfico e geração do mês), no ano-base do estratégico e no fluxo
+  por dimensão; saldos continuam com elas.
 - **Problema:** a transferência gera uma SAIDA e uma ENTRADA
   (`criarTransferencia`, origem TRANSFERENCIA). Na visão "Todos", as somas por
   tipo não tiram essas duas pernas: o dinheiro que só trocou de conta aparece
@@ -332,23 +308,6 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   (`src/ajuda/fluxo-por-dimensao/`), o passo "Não classificado" (o saque
   aparece como entrada e saída) e os números do exemplo (`exemplo.ts`).
 
-### 11. Lançamento de baixa não diz de qual título é
-
-- **Problema:** `efetivarBaixa` grava a descrição "Baixa aprovada — parcela nº
-  N", sem documento nem contraparte.
-- **Exemplo:** o depósito da operadora de cartão concilia com quatro
-  lançamentos "Baixa aprovada — parcela nº 1" (dois brutos e duas taxas, de
-  pedidos diferentes). Na Tesouraria, todas as baixas parecem iguais.
-- **Impacto:** conciliação em grupo e leitura da Tesouraria dependem só de
-  data e valor; risco de marcar o lançamento errado.
-- **Caminhos:** incluir documento e contraparte na descrição (ex.: "NF-e 1234
-  · Agro Insumos · parcela 1/3"); ou mostrar o título na lista a partir de
-  `baixaId`, sem mexer na descrição gravada.
-- **Cuidados:** lançamentos antigos (migrar descrição ou só mostrar o título).
-- **Ao corrigir:** dica do passo "Marque os lançamentos que formam o movimento"
-  no `conciliar-grupo` (`src/ajuda/conciliacao/roteiros.ts`) e a réplica
-  (`src/ajuda/conciliacao/exemplo.ts`, `LANCAMENTOS_DO_DEPOSITO`).
-
 ### 12. Manual: tabela de status da Conciliação incompleta
 
 - **Status:** descartado em 2026-11-21: o Passo a passo foi aposentado, e os
@@ -362,6 +321,12 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   (roteiro `entender-status`).
 
 ### 13. Baixa aprovada e não conciliada some da projeção
+
+- **Status:** feito na branch `fix/projecao-aguardando-conciliacao` (2026-11-25, spec
+  e plano `2026-11-25-projecao-aguardando-conciliacao*`): linha "Aguardando
+  conciliação" no projetado (saldo conciliado → saldo contábil); Caixa
+  disponível do dashboard é o contábil; saldo projetado em 30 dias igual à
+  tela (com atrasados); estratégico parte do contábil.
 
 - **Problema:** a projeção parte do saldo em caixa **conciliado**
   (`buscarSaldoEmCaixaAte`, que só soma lançamentos com `conciliado: true`),
@@ -393,27 +358,45 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   conciliar em dia) e o passo "O ponto de partida é o saldo de hoje"; manual,
   seção 3.6 e a seção do Dashboard executivo.
 
-### 14. "Margem líquida" do Fluxo estratégico é a margem operacional
+### 59. Cancelar ou renegociar parcela com baixa pendente
 
-- **Problema:** `calcularProjecaoEstrategica`
-  (`src/server/services/fluxoDeCaixaEstrategico.ts`) calcula
-  `margemLiquida = geracaoOperacional / receita`, ou seja (receita − custo) ÷
-  receita. A tela e a exportação mostram isso como "Margem líquida", mas a conta
-  não desconta CAPEX nem juros, que a própria tabela mostra logo acima.
-- **Exemplo:** no cenário Pessimista da ajuda, o Ano 3 tem geração líquida de
-  −R$ 54.190,91 e saldo negativo, mas a "margem líquida" mostra −36,9%, que é só
-  a operação; com CAPEX e juros seria bem pior. Num cenário com muita dívida, a
-  margem parece estável enquanto o caixa afunda.
-- **Impacto:** dado enganoso num indicador de decisão (o nome promete uma coisa
-  e a conta faz outra).
-- **Caminhos:** renomear para "Margem operacional" (tela, exportação, manual);
-  ou mudar a conta para geração líquida ÷ receita (mas a geração líquida inclui
-  dívida nova como entrada, o que também distorce); ou mostrar as duas.
-- **Cuidados:** a spec do fluxo estratégico (Fase 6) pode ter definido a
-  fórmula de propósito: conferir antes; a exportação usa o mesmo rótulo.
-- **Ao corrigir:** passo "Margem líquida" do roteiro `ler-projecao` em
-  `src/ajuda/fluxo-de-caixa-estrategico/roteiros.ts` (avisa que não desconta
-  CAPEX nem juros) e a réplica (`cenas.tsx`, rótulo da métrica); manual, seção 3.7.
+- **Status:** feito na branch `fix/parcela-com-baixa-pendente` (2026-11-26, spec
+  e plano `2026-11-26-parcela-com-baixa-pendente*`): cancelar e renegociar
+  recusam parcela com baixa pendente (e somem da tela); renegociar só parcela
+  em aberto; aprovar baixa de parcela cancelada/renegociada é recusado, com
+  aviso em Aprovações.
+
+- **Problema:** cancelar a parcela e renegociar não olham as baixas pendentes
+  dela.
+- **Onde:** `cancelarParcela` em `src/server/services/titulo.ts`;
+  `src/server/services/renegociacao.ts`; `aprovarBaixa`/`efetivarBaixa` em
+  `src/server/services/baixa.ts`.
+- **Exemplo:** a baixa da parcela 1 espera aprovação; alguém cancela a parcela.
+  Depois a Tesouraria aprova a baixa: sai o lançamento de uma parcela
+  cancelada.
+- **Impacto:** dado errado.
+- **Caminhos:** bloquear cancelar/renegociar enquanto houver pendente; ou
+  rejeitar a pendente junto, com motivo automático; ou recusar a aprovação de
+  baixa em parcela fechada.
+- **Cuidados:** cancelamento de pedido de venda também cancela parcelas.
+- **Ao corrigir:** roteiro `cancelar-parcela` em
+  `src/ajuda/contas-a-pagar/roteiros.ts` e
+  `src/ajuda/contas-a-receber/roteiros.ts`; roteiro `renegociar`, se a regra
+  mudar o que o usuário vê.
+
+### 60. Repasse de cartão trava parcelas sem ordem
+
+- **Status:** feito na branch `fix/parcela-com-baixa-pendente` (2026-11-26):
+  `ORDER BY id` no `FOR UPDATE`.
+
+- **Problema:** `confirmarRepasses` (`src/server/services/repasseCartao.ts`,
+  ~linha 111) faz `SELECT id FROM parcelas WHERE id IN (...) FOR UPDATE` sem
+  `ORDER BY id`.
+- **Onde:** `src/server/services/repasseCartao.ts`.
+- **Exemplo:** duas confirmações com parcelas em comum, em ordem diferente,
+  travam uma a outra (deadlock) e o Postgres aborta uma delas com erro.
+- **Impacto:** erro intermitente; nenhum dado errado.
+- **Caminhos:** `ORDER BY id` no SELECT.
 
 ## Controladoria — lacunas achadas ao escrever a ajuda contextual
 

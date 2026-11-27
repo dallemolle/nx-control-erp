@@ -13,6 +13,8 @@ import { pendenciasFiscaisDoTitulo, ROTULOS_PENDENCIA_FISCAL } from "@/lib/class
 import { BadgeClassificacao } from "../../_shared/badge-classificacao";
 import { alterarVencimentoParcelaAction, cancelarParcelaAction } from "./actions";
 import { AnexosPanel } from "./anexos-panel";
+import { BaixasDaParcela } from "./baixas-da-parcela";
+import type { BaixaDaParcela } from "./titulos-para-cliente";
 import { TituloDialogForm, paraInputDate, type TituloEditavel } from "./titulo-dialog-form";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
 import { nomeDaContaBancaria } from "@/lib/contaBancaria";
@@ -22,7 +24,10 @@ type ParcelaLinha = {
   numero: number;
   dataVencimento: Date;
   valorAtualizado: number;
+  saldoEmAberto: number;
   status: string;
+  baixas: BaixaDaParcela[];
+  temBaixaPendente: boolean;
 };
 
 type TituloLinha = {
@@ -108,18 +113,24 @@ export function TituloTable({
   opcoes,
   podeEscrever,
   podeBaixar,
+  podeAprovar,
   filtroAtivo,
   onAbrirBaixa,
   onAbrirRenegociacao,
+  onAbrirEstorno,
+  onAbrirDispensa,
 }: {
   tipo: TipoTitulo;
   titulos: TituloLinha[];
   opcoes: OpcoesTitulo;
   podeEscrever: boolean;
   podeBaixar: boolean;
+  podeAprovar: boolean;
   filtroAtivo: boolean;
-  onAbrirBaixa: (parcelaId: string) => void;
+  onAbrirBaixa: (parcela: { id: string; saldoEmAberto: number }) => void;
   onAbrirRenegociacao: (parcelaId: string) => void;
+  onAbrirEstorno: (baixa: BaixaDaParcela) => void;
+  onAbrirDispensa: (baixa: BaixaDaParcela) => void;
 }) {
   const [expandidoId, setExpandidoId] = useState<string | null>(null);
 
@@ -255,53 +266,77 @@ export function TituloTable({
               )}
               {expandidoId === titulo.id &&
                 titulo.parcelas.map((parcela) => (
-                  <TableRow key={parcela.id} className="bg-muted/30">
-                    <TableCell colSpan={3} className="pl-8">
-                      Parcela {parcela.numero} — venc. {formatarData(parcela.dataVencimento)} — valor{" "}
-                      {formatarMoeda(parcela.valorAtualizado)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={VARIANTE_STATUS[parcela.status] ?? "secondary"}>{parcela.status}</Badge>
-                    </TableCell>
-                    <TableCell className="flex flex-wrap items-center justify-end gap-2">
-                      {podeEscrever && !STATUS_TERMINAIS.includes(parcela.status) && (
-                        <form action={alterarVencimentoParcelaAction} className="flex items-center gap-1">
-                          <input type="hidden" name="parcelaId" value={parcela.id} />
-                          <input type="hidden" name="tipo" value={tipo} />
-                          <Input
-                            type="date"
-                            name="dataVencimento"
-                            aria-label={`Novo vencimento da parcela ${parcela.numero}`}
-                            defaultValue={paraInputDate(parcela.dataVencimento)}
-                            className="h-8 w-auto"
-                            required
+                  <Fragment key={parcela.id}>
+                    <TableRow className="bg-muted/30">
+                      <TableCell colSpan={3} className="pl-8">
+                        Parcela {parcela.numero} — venc. {formatarData(parcela.dataVencimento)} — valor{" "}
+                        {formatarMoeda(parcela.valorAtualizado)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={VARIANTE_STATUS[parcela.status] ?? "secondary"}>{parcela.status}</Badge>
+                      </TableCell>
+                      <TableCell className="flex flex-wrap items-center justify-end gap-2">
+                        {podeEscrever && !STATUS_TERMINAIS.includes(parcela.status) && (
+                          <form action={alterarVencimentoParcelaAction} className="flex items-center gap-1">
+                            <input type="hidden" name="parcelaId" value={parcela.id} />
+                            <input type="hidden" name="tipo" value={tipo} />
+                            <Input
+                              type="date"
+                              name="dataVencimento"
+                              aria-label={`Novo vencimento da parcela ${parcela.numero}`}
+                              defaultValue={paraInputDate(parcela.dataVencimento)}
+                              className="h-8 w-auto"
+                              required
+                            />
+                            <Button type="submit" variant="outline" size="sm">
+                              Alterar vencimento
+                            </Button>
+                          </form>
+                        )}
+                        {podeBaixar &&
+                          !STATUS_TERMINAIS.includes(parcela.status) &&
+                          (parcela.temBaixaPendente ? (
+                            <span className="text-xs text-muted-foreground">Baixa aguardando aprovação</span>
+                          ) : (
+                            <Button type="button" size="sm" onClick={() => onAbrirBaixa({ id: parcela.id, saldoEmAberto: parcela.saldoEmAberto })}>
+                              Baixar
+                            </Button>
+                          ))}
+                        {podeEscrever && parcela.status === "VENCIDO" && !parcela.temBaixaPendente && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onAbrirRenegociacao(parcela.id)}
+                          >
+                            Renegociar
+                          </Button>
+                        )}
+                        {podeEscrever && !STATUS_TERMINAIS.includes(parcela.status) && !parcela.temBaixaPendente && (
+                          <form action={cancelarParcelaAction}>
+                            <input type="hidden" name="parcelaId" value={parcela.id} />
+                            <input type="hidden" name="tipo" value={tipo} />
+                            <Button type="submit" variant="outline" size="sm">
+                              Cancelar
+                            </Button>
+                          </form>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                    {parcela.baixas.length > 0 && (
+                      <TableRow className="bg-muted/30">
+                        <TableCell colSpan={5} className="pl-12">
+                          <BaixasDaParcela
+                            baixas={parcela.baixas}
+                            podeEstornar={podeAprovar}
+                            onEstornar={onAbrirEstorno}
+                            podeDispensar={podeBaixar}
+                            onDispensar={onAbrirDispensa}
                           />
-                          <Button type="submit" variant="outline" size="sm">
-                            Alterar vencimento
-                          </Button>
-                        </form>
-                      )}
-                      {podeBaixar && !STATUS_TERMINAIS.includes(parcela.status) && (
-                        <Button type="button" size="sm" onClick={() => onAbrirBaixa(parcela.id)}>
-                          Baixar
-                        </Button>
-                      )}
-                      {podeEscrever && parcela.status === "VENCIDO" && (
-                        <Button type="button" variant="outline" size="sm" onClick={() => onAbrirRenegociacao(parcela.id)}>
-                          Renegociar
-                        </Button>
-                      )}
-                      {podeEscrever && !STATUS_TERMINAIS.includes(parcela.status) && (
-                        <form action={cancelarParcelaAction}>
-                          <input type="hidden" name="parcelaId" value={parcela.id} />
-                          <input type="hidden" name="tipo" value={tipo} />
-                          <Button type="submit" variant="outline" size="sm">
-                            Cancelar
-                          </Button>
-                        </form>
-                      )}
-                    </TableCell>
-                  </TableRow>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
                 ))}
               {expandidoId === titulo.id && (
                 <TableRow className="bg-muted/30">

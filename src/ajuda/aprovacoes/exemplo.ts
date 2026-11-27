@@ -42,7 +42,7 @@ export const BAIXAS: readonly BaixaDoExemplo[] = [
     registradoPor: "Maria Souza",
     criadoEm: new Date("2026-10-15T13:20:00.000Z"),
   },
-  // Baixa em dobro: a parcela já tinha sido paga e aprovada em 05/10.
+  // Valor digitado errado: o recibo é de R$ 1.200,00 e a Maria lançou R$ 12.000,00.
   {
     documento: "Recibo 88",
     contraparte: "José da Silva",
@@ -51,10 +51,10 @@ export const BAIXAS: readonly BaixaDoExemplo[] = [
     totalParcelas: 1,
     data: new Date("2026-10-15T00:00:00.000Z"),
     conta: CONTA_BB,
-    valorPago: 1200,
+    valorPago: 12000,
     ...SEM_AJUSTE,
     valorParcela: 1200,
-    totalAprovado: 1200,
+    totalAprovado: 0,
     outrasPendentes: 0,
     registradoPor: "Maria Souza",
     criadoEm: new Date("2026-10-15T17:05:00.000Z"),
@@ -100,4 +100,4 @@ export function avisosDoExemplo(baixa: BaixaDoExemplo) {
   return avisosDaBaixa({ ...baixa, hoje: HOJE });
 }
 
-export const MOTIVO_REJEICAO = "Em dobro: parcela já paga em 05/10";
+export const MOTIVO_REJEICAO = "Valor errado: o recibo é de R$ 1.200,00";

@@ -5,6 +5,7 @@ import { ApiAuthError, requireSessaoApi } from "./sessaoApi";
 import { comIdempotencia, ErroIdempotencia } from "./idempotencia";
 import { ErroLimiteRequisicoes } from "./limiteRequisicoes";
 import { ErroClassificacaoFiscal } from "@/server/services/classificacaoFiscal";
+import { BaixaParcelaFechadaError, BaixaPendenteError } from "@/server/services/baixa";
 import {
   CursorInvalidoError,
   LIMITE_MAXIMO_PAGINA,
@@ -70,6 +71,9 @@ export async function executarRotaApi(
     }
     if (erro instanceof PermissionError || erro instanceof FilialSomenteLeituraError) {
       return Response.json({ erro: erro.message }, { status: 403 });
+    }
+    if (erro instanceof BaixaPendenteError || erro instanceof BaixaParcelaFechadaError) {
+      return Response.json({ erro: erro.message }, { status: 409 });
     }
     if (erro instanceof ErroValidacaoApi || erro instanceof ErroClassificacaoFiscal) {
       return Response.json({ erro: erro.message, campos: erro.campos }, { status: 422 });

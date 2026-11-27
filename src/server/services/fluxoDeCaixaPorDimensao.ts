@@ -1,8 +1,10 @@
 import { prisma } from "@/server/db/client";
+import { valoresDaBaixa } from "@/server/services/parcela";
 import type { Prisma } from "@prisma/client";
 import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { saldoRemanescenteParcela } from "./fluxoDeCaixaProjetado";
+import { SEM_TRANSFERENCIA } from "./fluxoDeCaixa";
 import {
   whereLancamentoPorClassificacao,
   whereTituloPorClassificacao,
@@ -62,7 +64,14 @@ async function somarRealizadoPorDimensao(
   const lancamentos = await prisma.lancamentoBancario.findMany({
     where: {
       AND: [
-        { filialId, conciliado: true, contaBancaria: { ativo: true }, ...whereLancamentoPorClassificacao(classificacao) },
+        {
+          filialId,
+          conciliado: true,
+          // Transferência entre contas não é entrada nem saída de nenhuma dimensão: só move saldo.
+          ...SEM_TRANSFERENCIA,
+          contaBancaria: { ativo: true },
+          ...whereLancamentoPorClassificacao(classificacao),
+        },
         filtro,
       ],
     },
@@ -178,7 +187,7 @@ async function somarProjetadoPorDimensao(
   for (const parcela of parcelas) {
     const saldo = saldoRemanescenteParcela(
       Number(parcela.valorAtualizado),
-      parcela.baixas.map((baixa) => ({ valorPago: Number(baixa.valorPago) })),
+      parcela.baixas.map(valoresDaBaixa),
     );
     const dimensaoId = parcela.titulo[campo];
     somar(totais, dimensaoId, parcela.titulo.tipo === "RECEBER" ? "entradas" : "saidas", saldo);

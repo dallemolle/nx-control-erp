@@ -10,6 +10,7 @@ export const ALVOS = {
     "painel.tabela",
     "col.saldoInicial",
     "col.entradas",
+    "col.transferencias",
     "col.geracao",
     "col.saldoFinal",
   ],

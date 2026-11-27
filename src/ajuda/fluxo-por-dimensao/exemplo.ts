@@ -30,26 +30,33 @@ const linha = (
  * Valores ativos em ordem alfabética e, por último, "Não classificado", como a tela monta.
  * Lavoura: adubo (R$ 800,00 pagos + R$ 1.000,00 a pagar) e mão de obra (R$ 300,00).
  * Administração: tarifa (R$ 45,90) e energia (R$ 580,00 a pagar).
- * Não classificado: as vendas, sem centro de custo, e as duas pernas do saque de R$ 2.000,00.
+ * Não classificado: as vendas, sem centro de custo. O saque de R$ 2.000,00 não entra: transferência entre
+ * contas só move saldo.
  */
 export const POR_CENTRO_DE_CUSTO: readonly LinhaExemplo[] = [
   linha("administracao", "Administração", [0, 45.9, 0, 580]),
   linha("lavoura", "Lavoura", [0, 1100, 0, 1000]),
-  linha("nao-classificado", "Não classificado", [25500, 2000, 4000, 0]),
+  linha("nao-classificado", "Não classificado", [23500, 0, 4000, 0]),
 ];
 
-/** Visão Fiscal: saem o saque (transferência não tem classificação), o recibo gerencial e a venda gerencial. */
+/**
+ * Visão Fiscal: saem o recibo gerencial e a venda gerencial (o saque, transferência, não entra em nenhuma
+ * visão).
+ */
 export const POR_CENTRO_DE_CUSTO_FISCAL: readonly LinhaExemplo[] = [
   linha("administracao", "Administração", [0, 45.9, 0, 580]),
   linha("lavoura", "Lavoura", [0, 800, 0, 1000]),
   linha("nao-classificado", "Não classificado", [18000, 0, 4000, 0]),
 ];
 
-/** O mesmo dinheiro cortado por safra: o adubo e as vendas são da 2025/26; a mão de obra, da 2026/27. */
+/**
+ * O mesmo dinheiro cortado por safra (sem o saque, que é transferência): o adubo e as vendas são da 2025/26;
+ * a mão de obra, da 2026/27.
+ */
 export const POR_SAFRA: readonly LinhaExemplo[] = [
   linha("safra-2025", "2025/26", [23500, 800, 4000, 1000]),
   linha("safra-2026", "2026/27", [0, 300, 0, 0]),
-  linha("nao-classificado", "Não classificado", [2000, 2045.9, 0, 580]),
+  linha("nao-classificado", "Não classificado", [0, 45.9, 0, 580]),
 ];
 
 export function linhasDoExemplo(dimensao: string | undefined, filtro: string | undefined): readonly LinhaExemplo[] {

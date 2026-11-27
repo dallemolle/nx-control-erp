@@ -3,10 +3,16 @@
  * janela futura e ano civil) são o mesmo conjunto de parcelas cortado de jeitos diferentes, então os saldos
  * batem entre elas. Valores em reais inteiros; a cena encadeia os saldos.
  */
-export type Linha = { rotulo: string; entradas: number; saidas: number; tipo?: "atraso" | "aVencer" };
+export type Linha = { rotulo: string; entradas: number; saidas: number; tipo?: "aguardando" | "atraso" | "aVencer" };
 
-/** Saldo em caixa conciliado de hoje (o mesmo do fim de novembro no exemplo do Fluxo de caixa). */
-export const SALDO_DE_HOJE = 47_850;
+/** Saldo conciliado. */
+export const SALDO_CONCILIADO = 48_862;
+
+/** A parcela 2 do adubo, paga e aprovada em 19/11, que o extrato ainda não confirmou. */
+export const AGUARDANDO: Linha = { rotulo: "Aguardando conciliação", entradas: 0, saidas: 1_012, tipo: "aguardando" };
+
+/** Saldo de hoje, contábil: o conciliado mais o que aguarda conciliação. As visões partem daqui. */
+export const SALDO_DE_HOJE = SALDO_CONCILIADO + AGUARDANDO.entradas - AGUARDANDO.saidas; // 47.850
 
 const mes = (rotulo: string, entradas: number, saidas: number): Linha => ({ rotulo, entradas, saidas });
 

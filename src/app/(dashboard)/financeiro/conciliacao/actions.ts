@@ -70,11 +70,11 @@ export async function importarExtratoAction(
 }
 
 export async function reconciliarPendentesAction(): Promise<
-  FormState & { totalProcessadas?: number; conciliadasAutomaticamente?: number }
+  FormState & { totalProcessadas?: number; conciliadasAutomaticamente?: number; reclassificadas?: number }
 > {
   const sessao = await requireSessaoAtiva();
 
-  let resultado: { totalProcessadas: number; conciliadasAutomaticamente: number };
+  let resultado: { totalProcessadas: number; conciliadasAutomaticamente: number; reclassificadas: number };
   try {
     resultado = await conciliacaoService.reconciliarPendentes(sessao);
   } catch (erro) {
@@ -95,6 +95,10 @@ export async function buscarCandidatosAction(linhaExtratoId: string) {
     valor: formatarMoeda(c.valor),
     descricao: c.descricao,
     conciliado: c.conciliado,
+    valorIgual: c.valorIgual,
+    diasDeDiferenca: c.diasDeDiferenca,
+    dentroDaTolerancia: c.dentroDaTolerancia,
+    origem: c.origem,
   }));
 }
 
