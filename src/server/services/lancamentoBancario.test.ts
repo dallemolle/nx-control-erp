@@ -12,6 +12,7 @@ import {
   editarLancamentoManual,
   editarTransferencia,
   excluirLancamento,
+  listarResumoContas,
 } from "./lancamentoBancario";
 import { ErroClassificacaoFiscal } from "./classificacaoFiscal";
 
@@ -134,6 +135,65 @@ describe("lancamentoBancario", () => {
 
     const ultimo = await buscarUltimoSaldoInformado(fixtureTesouraria.contaBancariaId);
     expect(Number(ultimo?.saldo)).toBe(1200);
+  });
+
+  test("dois saldos informados no mesmo dia: vale o último digitado", async () => {
+    await informarSaldoBancario(fixtureTesouraria.sessao, {
+      contaBancariaId: contaDestinoId,
+      data: new Date("2026-07-10"),
+      saldo: 300,
+    });
+    await informarSaldoBancario(fixtureTesouraria.sessao, {
+      contaBancariaId: contaDestinoId,
+      data: new Date("2026-07-10"),
+      saldo: 350,
+    });
+
+    const ultimo = await buscarUltimoSaldoInformado(contaDestinoId);
+    expect(Number(ultimo?.saldo)).toBe(350);
+  });
+});
+
+describe("diferença da Tesouraria na data do saldo informado", () => {
+  let fixture: FixtureFinanceiro;
+  let contaId: string;
+
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("LBD", "TESOURARIA");
+    const conta = await prisma.contaBancaria.create({
+      data: { filialId: fixture.filialId, bancoId: fixture.bancoId, agencia: "0003", conta: "data-1", saldoInicial: 100 },
+    });
+    contaId = conta.id;
+    const lancar = (data: Date, tipo: "ENTRADA" | "SAIDA", valor: number) =>
+      criarLancamentoManual(fixture.sessao, {
+        contaBancariaId: contaId,
+        data,
+        tipo,
+        valor,
+        descricao: "Teste de data",
+        categoriaFinanceiraId: "__nenhum__",
+      });
+    await lancar(new Date("2026-10-20"), "ENTRADA", 500);
+    await lancar(new Date("2026-10-31T15:30:00Z"), "SAIDA", 50); // com hora: ainda é o dia 31
+    await lancar(new Date("2026-11-05"), "ENTRADA", 1000);
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fixture);
+  });
+
+  test("saldo contábil com corte soma só até o fim do dia informado", async () => {
+    expect(await calcularSaldoContabil(contaId, new Date("2026-10-31"))).toBe(550);
+    expect(await calcularSaldoContabil(contaId)).toBe(1550);
+  });
+
+  test("resumo da conta traz o saldo contábil na data do último saldo informado", async () => {
+    await informarSaldoBancario(fixture.sessao, { contaBancariaId: contaId, data: new Date("2026-10-31"), saldo: 550 });
+
+    const resumo = (await listarResumoContas(fixture.filialId)).find((r) => r.conta.id === contaId);
+    expect(resumo?.saldoContabil).toBe(1550);
+    expect(resumo?.saldoContabilNaData).toBe(550);
+    expect(resumo?.saldoContabilNaData).toBe(Number(resumo?.ultimoSaldoInformado?.saldo));
   });
 });
 
