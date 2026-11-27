@@ -9,6 +9,7 @@ import { podeEscreverCadastroProducao, podeExecutar, requirePermission } from "@
 import { liberacaoCobre, situacaoLiberacao } from "@/lib/producao/liberacaoVencido";
 import { loteVencidoNaData } from "@/lib/producao/venda";
 import { listarLotes, resumoPorStatus, resumoProdutoLocal } from "@/server/services/estoque";
+import { listarLocaisDoEstoque } from "@/server/services/localArmazenamento";
 import { ROTULOS_STATUS_LOTE, STATUS_LOTE } from "@/lib/producao/statusLote";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
 import { hojeDeCalendario, paraDataIso } from "@/lib/producao/periodo";
@@ -47,11 +48,7 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
       select: { id: true, codigo: true, descricao: true },
       orderBy: { codigo: "asc" },
     }),
-    prisma.localArmazenamento.findMany({
-      where: { filialId: sessao.filialId, ativo: true },
-      select: { id: true, nome: true },
-      orderBy: { nome: "asc" },
-    }),
+    listarLocaisDoEstoque(sessao.filialId),
     resumoPorStatus(sessao.filialId, filtroResumo, referencia, { saldoNaData: true }),
   ]);
   const ehHoje = paraDataIso(referencia) === paraDataIso(hojeDeCalendario());
@@ -158,10 +155,12 @@ async function VisaoLotes({
   valoresFiltro: Record<string, string>;
   query: string;
   produtos: { id: string; codigo: string; descricao: string }[];
-  locais: { id: string; nome: string }[];
+  locais: { id: string; nome: string; ativo: boolean }[];
   permissoes: { podeTransferir: boolean; podeLiberar: boolean; podeEditarProduto: boolean };
 }) {
   const { podeTransferir, podeLiberar, podeEditarProduto } = permissoes;
+  // O filtro mostra o inativo que ainda tem lote; transferir, só para os ativos.
+  const destinosDaTransferencia = locais.filter((l) => l.ativo);
   // Liberação usa o dia de hoje, não a data de referência da consulta (D-35).
   const hoje = hojeDeCalendario();
   const lotes = await listarLotes(filialId, filtros, referencia, { saldoNaData: true });
@@ -191,7 +190,7 @@ async function VisaoLotes({
             campo: "local",
             rotulo: "Local",
             rotuloTodos: "Todos",
-            opcoes: locais.map((l) => ({ valor: l.id, rotulo: l.nome })),
+            opcoes: locais.map((l) => ({ valor: l.id, rotulo: l.ativo ? l.nome : `${l.nome} (inativo)` })),
           },
           {
             tipo: "select",
@@ -277,7 +276,7 @@ async function VisaoLotes({
                     {podeTransferir && lote.saldoAtualKg > 0 ? (
                       <TransferirLoteDialog
                         lote={{ id: lote.id, codigo: lote.codigo, localId: lote.localId, saldoKg: lote.saldoAtualKg }}
-                        locais={locais}
+                        locais={destinosDaTransferencia}
                       />
                     ) : null}
                     {liberavel && liberado && lote.liberadoAte ? (
@@ -370,7 +369,7 @@ async function VisaoResumo({
             <TableBody>
               {locais.map((l) => (
                 <TableRow key={l.localId}>
-                  <TableCell>{l.nome}</TableCell>
+                  <TableCell>{l.ativo ? l.nome : `${l.nome} (inativo)`}</TableCell>
                   <TableCell className="text-right tabular-nums">{KG.format(l.saldoKg)}</TableCell>
                   <TableCell className="text-right tabular-nums">
                     {l.capacidadeKg === null ? "—" : KG.format(l.capacidadeKg)}

@@ -165,6 +165,27 @@ describe("recepção de fruto", () => {
     await expect(criarRecepcao(fx.sessao("PRODUCAO"), terceiro())).rejects.toThrow(MSG_SEM_CATEGORIA);
   });
 
+  test("categoria da configuração inativada: a recusa aponta para a configuração", async () => {
+    await prisma.configuracaoProducao.update({
+      where: { filialId: fx.filialAId },
+      data: { categoriaCompraFrutoId: cat.categoriaCompraId },
+    });
+    await prisma.categoriaFinanceira.update({ where: { id: cat.categoriaCompraId }, data: { ativo: false } });
+    try {
+      await expect(criarRecepcao(fx.sessao("PRODUCAO"), terceiro())).rejects.toThrow(
+        "A categoria de compra de fruto da Configuração de produção está inativa: escolha outra lá ou reative o " +
+          "cadastro",
+      );
+    } finally {
+      await prisma.categoriaFinanceira.update({ where: { id: cat.categoriaCompraId }, data: { ativo: true } });
+      // Volta ao estado do teste anterior (sem categoria).
+      await prisma.configuracaoProducao.update({
+        where: { filialId: fx.filialAId },
+        data: { categoriaCompraFrutoId: null },
+      });
+    }
+  });
+
   test("descarte igual ao bruto é recusado e nada é gravado", async () => {
     const antes = await contar();
     await expect(criarRecepcao(fx.sessao("PRODUCAO"), propria({ pesoBruto: "10", descarte: "10" }))).rejects.toThrow(

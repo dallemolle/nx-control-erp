@@ -46,7 +46,7 @@ const COLUNAS_PRODUTO_LOCAL: ColunaExport<ProdutoLocal["linhas"][number]>[] = [
   { rotulo: "Valor", valor: (l) => l.valor },
 ];
 const COLUNAS_OCUPACAO: ColunaExport<ProdutoLocal["locais"][number]>[] = [
-  { rotulo: "Local", valor: (l) => l.nome },
+  { rotulo: "Local", valor: (l) => (l.ativo ? l.nome : `${l.nome} (inativo)`) },
   { rotulo: "Saldo (kg)", valor: (l) => l.saldoKg },
   { rotulo: "Capacidade (kg)", valor: (l) => l.capacidadeKg ?? "" },
   { rotulo: "Ocupação (%)", tipo: "percentual", valor: (l) => (l.ocupacao === null ? "" : l.ocupacao * 100) },

@@ -512,27 +512,6 @@ Numeração continua a de Vendas.
   "Confira o status" de `encerrar-safra` e passo "Escolha o status" de
   `cadastrar-projeto` (`src/ajuda/safras`, `projetos`).
 
-### 39. Local com lotes pode ser inativado, e os lotes somem da ocupação
-
-- **Problema:** `definirAtivoLocalArmazenamento` não confere se há lotes com
-  saldo no local. Inativado, o local sai do quadro "Ocupação dos locais" e do
-  filtro de local do Estoque, mas os lotes continuam lá dentro.
-- **Exemplo:** a Câmara da loja é inativada com 200 kg do AMC-261120-01/1; o
-  quadro de ocupação deixa de mostrar esses 200 kg, e não dá mais para filtrar
-  o Estoque por esse local para achá-los.
-- **Onde:** `src/server/services/localArmazenamento.ts`
-  (`definirAtivoLocalArmazenamento`); `resumoProdutoLocal` em
-  `src/server/services/estoque.ts` e `producao/estoque/page.tsx` (só locais
-  ativos).
-- **Impacto:** estoque "escondido": o saldo total continua certo, mas a
-  visão por local fica incompleta e o lote é difícil de achar.
-- **Caminhos:** recusar a inativação enquanto houver lote com saldo no local
-  ("Transfira os lotes antes de inativar"); ou permitir e manter o local
-  inativo com saldo no quadro e no filtro, marcado como inativo.
-- **Ao corrigir:** dica do último passo de `cadastrar-local`
-  (`src/ajuda/locais-armazenamento/index.tsx`) e a frase do item 4 da seção
-  7.6 do manual.
-
 ## Administração — lacunas achadas ao escrever a ajuda contextual
 
 Mesma numeração das seções acima.
@@ -623,35 +602,6 @@ Mesma numeração das seções acima.
   depósito da operadora e nem mostra a escolha de conta no pedido.
 - **Correção:** rótulo "Conta de recebimento (Pix e transferência)" em
   `configuracao-producao/configuracao-form.tsx`.
-
-### 51. Categoria e conta inativadas continuam na Configuração de produção
-
-- **Problema:** a tela só lista categorias e contas ativas. Se a escolhida
-  for inativada depois, o campo mostra o código interno em vez do nome, não
-  há aviso, e a conta inativa faz o Salvar ser recusado ("Conta de
-  recebimento padrão inválida") mesmo quando só se mudou outro campo. A
-  categoria inativa continua sendo usada na conta a pagar da recepção e na
-  conta a receber do pedido.
-- **Exemplo:** "Insumos Agrícolas" é inativada; as compras do José da Silva
-  continuam caindo nela, e quem abre a configuração vê um código no lugar
-  do nome.
-- **Onde:** `configuracao-producao/page.tsx` (listas com `ativo: true`),
-  `salvarConfiguracaoProducao` em `configuracaoProducao.ts` (confere `ativo`
-  só nas contas), `recepcaoFruto.ts` e `pedidoVenda.ts` (usam a categoria
-  sem conferir `ativo`).
-- **Impacto:** o inativar não faz o que promete, e a tela de configuração
-  fica travada sem explicar por quê.
-- **Desde o item 35 (2026-11-27):** o título recusa categoria inativa, então
-  a recepção e o pedido de venda com a categoria da configuração inativada
-  passam a ser recusados ("Categoria financeira inativa: escolha outra ou
-  reative o cadastro") em vez de lançar nela. Falta a tela de configuração
-  mostrar isso.
-- **Caminhos:** na configuração, mostrar a
-  escolhida mesmo inativa, marcada "(inativa)", e avisar no topo; ao
-  inativar uma categoria ou conta em uso na configuração, avisar ou
-  recusar.
-- **Ao corrigir:** dica do passo "Confira a mensagem" do roteiro
-  `preparar-recepcao-vendas` (`src/ajuda/configuracao-producao/index.tsx`).
 
 ### 52. Mudar os limites da produção muda o passado
 

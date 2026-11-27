@@ -1,6 +1,5 @@
 import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeEscreverCadastroProducao } from "@/server/auth/permissions";
@@ -8,6 +7,7 @@ import { listarLocaisArmazenamento } from "@/server/services/localArmazenamento"
 import { ROTULOS_TIPO_LOCAL } from "@/lib/schemas/enums";
 import { LocalDialogForm } from "./local-dialog-form";
 import { alternarAtivoLocalAction } from "./actions";
+import { BotaoAlternarAtivo } from "../../_shared/botao-alternar-ativo";
 
 export default async function LocaisArmazenamentoPage() {
   const sessao = await requireSessaoAtiva();
@@ -66,13 +66,7 @@ export default async function LocaisArmazenamentoPage() {
                           capacidadeKg,
                         }}
                       />
-                      <form action={alternarAtivoLocalAction}>
-                        <input type="hidden" name="id" value={local.id} />
-                        <input type="hidden" name="ativo" value={(!local.ativo).toString()} />
-                        <Button type="submit" variant="outline" size="sm">
-                          {local.ativo ? "Inativar" : "Reativar"}
-                        </Button>
-                      </form>
+                      <BotaoAlternarAtivo id={local.id} ativo={local.ativo} action={alternarAtivoLocalAction} />
                     </>
                   )}
                 </TableCell>
