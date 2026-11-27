@@ -13,24 +13,31 @@ import {
 } from "./orcamento";
 
 describe("montarLinhaComparativo", () => {
-  test("variação absoluta é realizado menos orçado, positiva quando realizado excede", () => {
+  test("previsto é realizado + projetado, e a variação é previsto menos orçado", () => {
     const linha = montarLinhaComparativo("cat-1", "Aluguel", "DESPESA", 2026, 3, 1000, 1200, 0);
-    expect(linha.variacaoAbsolutaRealizado).toBe(200);
+    expect(linha.previsto).toBe(1200);
+    expect(linha.variacaoAbsoluta).toBe(200);
   });
 
-  test("variação absoluta é negativa quando realizado fica abaixo do orçado", () => {
+  test("variação absoluta é negativa quando o previsto fica abaixo do orçado", () => {
     const linha = montarLinhaComparativo("cat-1", "Aluguel", "DESPESA", 2026, 3, 1000, 700, 0);
-    expect(linha.variacaoAbsolutaRealizado).toBe(-300);
+    expect(linha.variacaoAbsoluta).toBe(-300);
   });
 
   test("variação percentual é null quando orçado é zero", () => {
     const linha = montarLinhaComparativo("cat-1", "Aluguel", "DESPESA", 2026, 3, 0, 500, 0);
-    expect(linha.variacaoPercentualRealizado).toBeNull();
+    expect(linha.variacaoPercentual).toBeNull();
   });
 
   test("variação percentual calculada corretamente quando orçado não é zero", () => {
     const linha = montarLinhaComparativo("cat-1", "Aluguel", "DESPESA", 2026, 3, 1000, 1200, 0);
-    expect(linha.variacaoPercentualRealizado).toBeCloseTo(0.2, 6);
+    expect(linha.variacaoPercentual).toBeCloseTo(0.2, 6);
+  });
+
+  test("o exemplo do backlog: número e selo dizem a mesma coisa (previsto passou do orçado)", () => {
+    const linha = montarLinhaComparativo("cat-1", "Insumos Agrícolas", "DESPESA", 2026, 11, 1500, 800, 1000);
+    expect(linha).toMatchObject({ previsto: 1800, variacaoAbsoluta: 300, alerta: true });
+    expect(linha.variacaoPercentual).toBeCloseTo(0.2, 6);
   });
 
   test("alerta true para DESPESA quando realizado + projetado excede o orçado", () => {

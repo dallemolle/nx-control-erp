@@ -19,10 +19,11 @@ const COLUNAS: ColunaExport<LinhaComparativoOrcamento>[] = [
   { rotulo: "Orçado", valor: (l) => l.orcado },
   { rotulo: "Realizado", valor: (l) => l.realizado },
   { rotulo: "Projetado", valor: (l) => l.projetado },
-  { rotulo: "Variação", valor: (l) => l.variacaoAbsolutaRealizado },
+  { rotulo: "Previsto", valor: (l) => l.previsto },
+  { rotulo: "Variação", valor: (l) => l.variacaoAbsoluta },
   {
     rotulo: "Variação %",
-    valor: (l) => (l.variacaoPercentualRealizado === null ? "" : l.variacaoPercentualRealizado * 100),
+    valor: (l) => (l.variacaoPercentual === null ? "" : l.variacaoPercentual * 100),
     tipo: "percentual",
   },
   { rotulo: "Estouro", valor: (l) => (l.alerta ? "Sim" : "Não") },

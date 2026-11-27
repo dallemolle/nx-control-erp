@@ -21,17 +21,22 @@ export type LinhaComparativoOrcamento = {
   orcado: number;
   realizado: number;
   projetado: number;
-  variacaoAbsolutaRealizado: number;
-  variacaoPercentualRealizado: number | null;
+  /** Realizado + projetado: como o mês vai fechar. */
+  previsto: number;
+  /** Previsto − orçado. */
+  variacaoAbsoluta: number;
+  variacaoPercentual: number | null;
   alerta: boolean;
 };
 
 /**
  * Monta uma linha do comparativo orçado x realizado x projetado — ver
- * "Comparativos" na spec. Variação percentual é null quando o orçado é
- * zero (divisão por zero não faz sentido de negócio). Alerta só existe
- * pra categorias DESPESA: ultrapassar o orçado de uma categoria RECEITA
- * é notícia boa, não estouro.
+ * "Comparativos" na spec. A variação é sobre o previsto (realizado +
+ * projetado), a mesma base do alerta de Estouro: o número e o selo não se
+ * contradizem (item 16 do backlog). Variação percentual é null quando o
+ * orçado é zero (divisão por zero não faz sentido de negócio). Alerta só
+ * existe pra categorias DESPESA: ultrapassar o orçado de uma categoria
+ * RECEITA é notícia boa, não estouro.
  */
 export function montarLinhaComparativo(
   categoriaFinanceiraId: string,
@@ -43,9 +48,10 @@ export function montarLinhaComparativo(
   realizado: number,
   projetado: number,
 ): LinhaComparativoOrcamento {
-  const variacaoAbsolutaRealizado = realizado - orcado;
-  const variacaoPercentualRealizado = orcado === 0 ? null : variacaoAbsolutaRealizado / orcado;
-  const alerta = tipoCategoria === "DESPESA" && realizado + projetado > orcado;
+  const previsto = (Math.round(realizado * 100) + Math.round(projetado * 100)) / 100;
+  const variacaoAbsoluta = (Math.round(previsto * 100) - Math.round(orcado * 100)) / 100;
+  const variacaoPercentual = orcado === 0 ? null : variacaoAbsoluta / orcado;
+  const alerta = tipoCategoria === "DESPESA" && variacaoAbsoluta > 0;
 
   return {
     categoriaFinanceiraId,
@@ -56,8 +62,9 @@ export function montarLinhaComparativo(
     orcado,
     realizado,
     projetado,
-    variacaoAbsolutaRealizado,
-    variacaoPercentualRealizado,
+    previsto,
+    variacaoAbsoluta,
+    variacaoPercentual,
     alerta,
   };
 }
