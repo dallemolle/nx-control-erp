@@ -228,6 +228,9 @@ const INCLUDE_LISTAGEM_TITULOS = {
 /** Só a tela: a API devolve `INCLUDE_LISTAGEM_TITULOS` cru, então estas relações não podem vazar para lá. */
 const INCLUDE_TELA_TITULOS = {
   ...INCLUDE_LISTAGEM_TITULOS,
+  // Banco do cadastro, para os dados bancários no detalhe do título e na baixa.
+  fornecedor: { include: { banco: { select: { codigo: true, nome: true } } } },
+  cliente: { include: { banco: { select: { codigo: true, nome: true } } } },
   parcelas: {
     include: {
       // A tela lista as baixas na parcela (todas, inclusive rejeitadas) com conta, pessoas e se dá para estornar.

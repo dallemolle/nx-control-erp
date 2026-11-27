@@ -452,25 +452,6 @@ Numeração continua a da Produção. Itens 26 e 27 feitos em 2026-11-27; nada p
 
 Numeração continua a de Vendas.
 
-### 29. Dados bancários do cliente e do fornecedor não aparecem em nenhuma tela
-
-- **Problema:** o cadastro guarda Pix (tipo e chave) ou depósito (banco,
-  agência, conta, tipo e titular), mas nenhuma outra tela mostra esses dados:
-  nem a lista do cadastro, nem o título, nem a baixa. Para ver, só abrindo o
-  "Editar" do cadastro.
-- **Exemplo:** para pagar o José da Silva, a tesouraria abre o título, não
-  acha a chave Pix e tem de ir a Cadastros → Fornecedores → Editar.
-- **Onde:** `meioPagamento`, `chavePix` e os demais só são lidos em
-  `cadastros/clientes/` e `cadastros/fornecedores/` (formulário e serviço).
-- **Impacto:** o dado existe mas não ajuda na hora de pagar; risco de pagar
-  na conta errada copiando de outro lugar.
-- **Caminhos:** mostrar os dados bancários do fornecedor no título a pagar e
-  na baixa (e os do cliente no título a receber, para devolução);
-  opcionalmente uma coluna na lista do cadastro.
-- **Ao corrigir:** passo "Dados bancários: opcionais" do roteiro
-  `cadastrar-cliente` e passo "A lista não muda" do `editar-cliente` em
-  `src/ajuda/clientes/roteiros.ts`.
-
 ### 30. CNPJ/CPF repetido no fornecedor mostrava o erro do banco
 
 - **Feito (2026-11-21), na mesma branch da ajuda de Fornecedores:** o

@@ -3,6 +3,7 @@ import type { ExemploTitulos } from "@/ajuda/_titulos/exemplo";
 /** A história usada em todos os roteiros de Contas a pagar. Dados fictícios e fixos. */
 export const EXEMPLO = {
   contraparte: "Agro Insumos Ltda",
+  dadosBancarios: "Pix (CPF/CNPJ): 12.345.678/0001-90",
   documento: "NF-e 1234",
   emissao: "10/09/2026",
   competencia: "10/09/2026",

@@ -12,6 +12,9 @@ import { previaDaBaixa } from "@/lib/financeiro/previaDaBaixa";
 import { registrarBaixaAction, type FormState } from "./actions";
 
 const ESTADO_INICIAL: FormState = {};
+
+/** Parcela aberta para baixa, com para quem se paga (ou de quem se recebe) e os dados bancários do cadastro. */
+export type ParcelaParaBaixa = { id: string; saldoEmAberto: number; contraparte: string; dadosBancarios: string | null };
 const CAMPOS_INICIAIS = { valorPago: "", valorJuros: "0", valorMulta: "0", valorDesconto: "0" };
 
 export function BaixaDialog({
@@ -22,7 +25,7 @@ export function BaixaDialog({
   onOpenChange,
 }: {
   tipo: TipoTitulo;
-  parcela: { id: string; saldoEmAberto: number } | null;
+  parcela: ParcelaParaBaixa | null;
   contasBancarias: { id: string; nome: string }[];
   aberto: boolean;
   onOpenChange: (aberto: boolean) => void;
@@ -53,6 +56,15 @@ export function BaixaDialog({
           <DialogTitle>Registrar baixa</DialogTitle>
         </DialogHeader>
         <form action={formAction} className="space-y-4">
+          {parcela ? (
+            <p className="text-sm">
+              <span className="text-muted-foreground">{tipo === "PAGAR" ? "Pagar a" : "Receber de"}:</span>{" "}
+              {parcela.contraparte}
+              <span className="block break-all text-muted-foreground">
+                {parcela.dadosBancarios ?? "Sem dados bancários no cadastro."}
+              </span>
+            </p>
+          ) : null}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="data">Data</Label>

@@ -100,8 +100,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "form.tipo",
         instrucao: "Dados bancários: opcionais",
         explicacao:
-          "Pix ou depósito, por exemplo para devolver um valor ao cliente. Ficam guardados no cadastro; nenhuma outra " +
-          "tela os mostra. No exemplo, fica Nenhum.",
+          "Pix ou depósito, por exemplo para devolver um valor ao cliente. Aparecem no detalhe das contas a receber " +
+          "dele e na tela de baixa. No exemplo, fica Nenhum.",
       },
       {
         cena: "novo",
@@ -235,7 +235,9 @@ export const ROTEIROS: readonly Roteiro[] = [
         cena: "lista",
         alvo: "lista.tabela",
         instrucao: "A lista não muda",
-        explicacao: "Os dados bancários não aparecem na lista. Para consultar, abra o “Editar” do cliente.",
+        explicacao:
+          "Os dados bancários não aparecem na lista do cadastro. Aparecem no detalhe das contas a receber do cliente " +
+          "(clique na linha do título) e na tela de baixa.",
       },
     ],
     eDepois: {

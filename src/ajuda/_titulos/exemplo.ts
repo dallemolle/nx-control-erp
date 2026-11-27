@@ -7,6 +7,8 @@ import type { StatusParcela } from "@prisma/client";
 export type ExemploTitulos = {
   /** Fornecedor ou cliente. */
   contraparte: string;
+  /** Pix ou depósito do cadastro, como a baixa mostra (`dadosBancariosDaContraparte`). */
+  dadosBancarios?: string;
   documento: string;
   emissao: string;
   competencia: string;
