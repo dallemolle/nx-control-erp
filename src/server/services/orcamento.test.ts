@@ -118,6 +118,49 @@ describe("salvarValorOrcamento / buscarRealizadoPorCategoria / buscarProjetadoPo
     expect(totais.get(fixture.categoriaFinanceiraId)).toBe(250);
   });
 
+  test("devolução (entrada numa categoria de despesa) abate o realizado em vez de somar", async () => {
+    const base = {
+      filialId: fixture.filialId,
+      contaBancariaId: fixture.contaBancariaId,
+      origem: "MANUAL" as const,
+      usuarioId: fixture.usuarioId,
+      conciliado: true,
+      categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+    };
+    await prisma.lancamentoBancario.createMany({
+      data: [
+        { ...base, data: new Date("2026-06-10T00:00:00Z"), tipo: "SAIDA", valor: 1000, descricao: "Compra de adubo" },
+        { ...base, data: new Date("2026-06-20T00:00:00Z"), tipo: "ENTRADA", valor: 200, descricao: "Devolução de adubo" },
+      ],
+    });
+
+    const totais = await buscarRealizadoPorCategoria(fixture.filialId, 2026, 6);
+    expect(totais.get(fixture.categoriaFinanceiraId)).toBe(800);
+  });
+
+  test("título a receber numa categoria de despesa (reembolso) abate o projetado", async () => {
+    const titulo = (tipo: "PAGAR" | "RECEBER", valor: number) =>
+      criarTitulo(fixture.sessao, tipo, {
+        contraparteId: tipo === "PAGAR" ? fixture.fornecedorId : fixture.clienteId,
+        documento: `ORC-SINAL-${tipo}-${Date.now()}`,
+        dataEmissao: new Date(),
+        dataCompetencia: new Date(),
+        categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+        centroCustoId: "",
+        centroLucroId: "",
+        safraId: "",
+        projetoId: "",
+        contaBancariaId: fixture.contaBancariaId,
+        formaPagamento: "",
+        parcelas: [{ numero: 1, dataVencimento: new Date("2026-07-15T00:00:00Z"), valorOriginal: valor }],
+      });
+    await titulo("PAGAR", 600);
+    await titulo("RECEBER", 150);
+
+    const totais = await buscarProjetadoPorCategoria(fixture.filialId, 2026, 7);
+    expect(totais.get(fixture.categoriaFinanceiraId)).toBe(450);
+  });
+
   test("buscarRealizadoPorCategoria usa o fallback via baixa quando o lançamento não tem categoria direta (dado histórico)", async () => {
     const parcela = await criarTitulo(fixture.sessao, "PAGAR", {
       contraparteId: fixture.fornecedorId,

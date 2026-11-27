@@ -1,4 +1,5 @@
 import { formatarMoeda } from "@/lib/formatacao";
+import { valorNoSentidoDaCategoria } from "./sentidoDaCategoria";
 
 /**
  * Ano-base do Fluxo de caixa estratégico, por categoria (item 63 do backlog): receita = entradas − saídas nas
@@ -28,9 +29,9 @@ export function somarAnoBase(lancamentos: readonly LancamentoDoAnoBase[]): SomaD
       if (entrada) grupo.entradas += centavos;
       else grupo.saidas += centavos;
     } else if (l.categoria.tipo === "RECEITA") {
-      receita += entrada ? centavos : -centavos;
+      receita += valorNoSentidoDaCategoria("RECEITA", l.tipo, centavos);
     } else {
-      custo += entrada ? -centavos : centavos;
+      custo += valorNoSentidoDaCategoria("DESPESA", l.tipo, centavos);
     }
   }
 
