@@ -409,30 +409,6 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 Mesmo formato e mesma numeração das lacunas do Financeiro (a numeração
 continua, para cada item ter um número único). Prioridade a definir.
 
-### 18. Fluxo por dimensão sem total e sem aviso de visão filtrada
-
-- **Problema:** a tabela de `controladoria/fluxo-por-dimensao/page.tsx` (e a
-  exportação) não tem linha de total, e a coluna "Saldo" é entradas − saídas
-  do mês (realizado + projetado), não um saldo. Com o filtro Fiscal/Gerencial,
-  a tela não mostra o aviso de visão filtrada que as telas de fluxo do
-  Financeiro mostram (`AvisoVisaoFiltrada`).
-- **Exemplo:** para conferir com o Fluxo de caixa de novembro, o usuário
-  precisa somar as linhas à mão (na ajuda, R$ 24.774,10 no total). Com
-  "Fiscal" selecionado, o saque e o recibo somem sem nenhum aviso na tela.
-- **Onde:** `src/app/(dashboard)/controladoria/fluxo-por-dimensao/page.tsx` e
-  `export/route.ts`.
-- **Impacto:** relatório difícil de conciliar com os outros fluxos; "Saldo"
-  pode ser lido como saldo bancário da área.
-- **Caminhos:** linha de total no fim (tela e exportação); renomear "Saldo"
-  para "Resultado do mês" ou "Líquido"; mostrar o aviso de visão filtrada
-  (reaproveitar o componente do Financeiro, ajustando o texto).
-- **Cuidados:** com a lacuna 10 aberta, o total soma as duas pernas das
-  transferências em entradas e saídas (o líquido fica certo).
-- **Ao corrigir:** roteiro `ler-por-dimensao` (passo "Saldo" e o "E depois?"
-  que manda somar as linhas) e o passo "Veja o que mudou" do
-  `filtrar-exportar`, que avisa que não há aviso; a réplica em
-  `src/ajuda/fluxo-por-dimensao/cenas.tsx`.
-
 ### 19. Sem rateio: um título só pode ter um centro de custo
 
 - **Problema:** título e lançamento têm um único `centroCustoId`,
