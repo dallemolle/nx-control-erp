@@ -16,6 +16,7 @@ export const CAMPOS_FILTRO_TITULOS = [
   "vencimentoAte",
   "classificacao",
   "rejeitadas",
+  "titulo",
 ] as const;
 
 function valorOuUndefined(valor: string | undefined): string | undefined {
@@ -55,6 +56,7 @@ export function filtroTitulosDaUrl(get: (campo: string) => string | undefined): 
     vencimentoAte: dataFimDoDiaOuUndefined(get("vencimentoAte")),
     classificacao: classificacaoDaUrl(get("classificacao")),
     rejeitadas: get("rejeitadas") === "1" ? true : undefined,
+    tituloId: valorOuUndefined(get("titulo")),
   };
 }
 

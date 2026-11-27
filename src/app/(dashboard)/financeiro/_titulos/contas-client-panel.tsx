@@ -18,7 +18,9 @@ export function ContasClientePanel({
   podeBaixar,
   podeAprovar,
   filtroAtivo,
+  tituloEmFocoId,
 }: {
+  tituloEmFocoId?: string;
   tipo: TipoTitulo;
   titulos: Parameters<typeof TituloTable>[0]["titulos"];
   /** Listas de seleção do cabeçalho — usadas pelo dialog de edição de cada título. */
@@ -52,6 +54,7 @@ export function ContasClientePanel({
         onAbrirRenegociacao={setParcelaRenegociacaoId}
         onAbrirEstorno={setBaixaEstorno}
         onAbrirDispensa={setBaixaDispensa}
+        tituloEmFocoId={tituloEmFocoId}
       />
       <BaixaDialog
         tipo={tipo}
