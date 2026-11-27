@@ -68,16 +68,20 @@ export const CATEGORIAS: readonly CategoriaExemplo[] = [
 ];
 
 export type LinhaComparativo = {
-  variacaoAbsolutaRealizado: number;
-  variacaoPercentualRealizado: number | null;
+  previsto: number;
+  variacaoAbsoluta: number;
+  variacaoPercentual: number | null;
   alerta: boolean;
 };
 
+/** Réplica de `montarLinhaComparativo`: a variação é sobre o previsto (realizado + projetado). */
 export function compararLinha(tipo: TipoCategoria, orcado: number, realizado: number, projetado: number): LinhaComparativo {
-  const variacaoAbsolutaRealizado = realizado - orcado;
+  const previsto = (Math.round(realizado * 100) + Math.round(projetado * 100)) / 100;
+  const variacaoAbsoluta = (Math.round(previsto * 100) - Math.round(orcado * 100)) / 100;
   return {
-    variacaoAbsolutaRealizado,
-    variacaoPercentualRealizado: orcado === 0 ? null : variacaoAbsolutaRealizado / orcado,
-    alerta: tipo === "DESPESA" && realizado + projetado > orcado,
+    previsto,
+    variacaoAbsoluta,
+    variacaoPercentual: orcado === 0 ? null : variacaoAbsoluta / orcado,
+    alerta: tipo === "DESPESA" && variacaoAbsoluta > 0,
   };
 }

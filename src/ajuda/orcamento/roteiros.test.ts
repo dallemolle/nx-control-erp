@@ -26,10 +26,11 @@ describe("roteiros de Orçamento", () => {
     for (const { realizado, projetado } of [c.novembro, c.novembroFiscal]) {
       const orcado = c.orcadoPorMes[MES - 1];
       const real = montarLinhaComparativo(c.chave, c.nome, c.tipo, 2026, MES, orcado, realizado, projetado);
-      const { variacaoAbsolutaRealizado, variacaoPercentualRealizado, alerta } = real;
+      const { previsto, variacaoAbsoluta, variacaoPercentual, alerta } = real;
       expect(compararLinha(c.tipo, orcado, realizado, projetado)).toEqual({
-        variacaoAbsolutaRealizado,
-        variacaoPercentualRealizado,
+        previsto,
+        variacaoAbsoluta,
+        variacaoPercentual,
         alerta,
       });
     }
@@ -38,14 +39,18 @@ describe("roteiros de Orçamento", () => {
   test("os números citados nos roteiros batem com a réplica", () => {
     const todos = html();
     const insumos = linhaDoComparativo(todos, "Insumos Agrícolas");
-    expect(insumos).toContain(formatarMoeda(-700));
+    expect(insumos).toContain(formatarMoeda(1800));
+    expect(insumos).toContain(formatarMoeda(300));
+    expect(insumos).toContain("20.0%");
+    expect(insumos).not.toContain(formatarMoeda(-700));
     expect(insumos).toContain("Estouro");
     const maoDeObra = linhaDoComparativo(todos, "Mão de obra temporária");
     expect(maoDeObra).toContain("Estouro");
     expect(maoDeObra).toContain("—");
     const venda = linhaDoComparativo(todos, "Venda de produtos");
-    expect(venda).toContain(formatarMoeda(3500));
-    expect(venda).toContain("17.5%");
+    expect(venda).toContain(formatarMoeda(27500));
+    expect(venda).toContain(formatarMoeda(7500));
+    expect(venda).toContain("37.5%");
     expect(venda).not.toContain("Estouro");
 
     const fiscal = html({ "painel.classificacao": "Fiscal" });

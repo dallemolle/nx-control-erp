@@ -114,12 +114,12 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "comp.linha.insumos",
         instrucao: "Linha vermelha com “Estouro”: a despesa passou do orçado",
         explicacao:
-          "Para despesas, o estouro soma o que já foi pago com o que ainda vai ser pago. Em Insumos Agrícolas: " +
-          "R$ 800,00 pagos + R$ 1.000,00 da parcela do adubo = R$ 1.800,00, contra R$ 1.500,00 orçados.",
+          "Previsto é o que já foi pago mais o que ainda vai ser pago no mês. Em Insumos Agrícolas: R$ 800,00 " +
+          "pagos + R$ 1.000,00 da parcela do adubo = R$ 1.800,00 previstos, contra R$ 1.500,00 orçados: Variação " +
+          "de R$ 300,00 (20.0%) e Estouro.",
         dica:
-          "A Variação e a Variação % comparam só o realizado com o orçado (R$ 800,00 − R$ 1.500,00 = −R$ 700,00). " +
-          "Por isso a mesma linha pode mostrar variação negativa e Estouro: o estouro conta também o que ainda " +
-          "falta pagar.",
+          "A Variação e a Variação % comparam o previsto com o orçado, a mesma conta do Estouro: variação " +
+          "positiva numa despesa é estouro. Para saber só o que já saiu, olhe a coluna Realizado.",
       },
       {
         cena: "painel",
@@ -134,8 +134,9 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "comp.linha.venda",
         instrucao: "Receita acima do orçado é boa notícia",
         explicacao:
-          "Categoria de receita nunca marca estouro. Em Venda de produtos, R$ 23.500,00 recebidos contra " +
-          "R$ 20.000,00 orçados: Variação de R$ 3.500,00, ou 17.5%.",
+          "Categoria de receita nunca marca estouro. Em Venda de produtos, R$ 23.500,00 recebidos mais " +
+          "R$ 4.000,00 a receber dão R$ 27.500,00 previstos, contra R$ 20.000,00 orçados: Variação de " +
+          "R$ 7.500,00, ou 37.5%.",
       },
     ],
     eDepois: {
@@ -174,8 +175,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "painel.exportar",
         instrucao: "Exporte o ano inteiro",
         explicacao:
-          "PDF, CSV ou Excel. O arquivo traz os 12 meses de todas as categorias, não só o mês da tela, com uma " +
-          "coluna Estouro (Sim ou Não), e respeita o filtro de classificação.",
+          "PDF, CSV ou Excel. O arquivo traz os 12 meses de todas as categorias, não só o mês da tela, com as " +
+          "colunas Previsto e Estouro (Sim ou Não), e respeita o filtro de classificação.",
       },
     ],
     eDepois: {

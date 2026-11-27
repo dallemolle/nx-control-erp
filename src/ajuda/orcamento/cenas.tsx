@@ -114,6 +114,7 @@ export function CenaPainel({ valores }: PropsCena) {
                 <TableHead>Orçado</TableHead>
                 <CabecalhoComAlvo alvo="comp.realizado">Realizado</CabecalhoComAlvo>
                 <CabecalhoComAlvo alvo="comp.projetado">Projetado</CabecalhoComAlvo>
+                <TableHead>Previsto</TableHead>
                 <TableHead>Variação</TableHead>
                 <TableHead>Variação %</TableHead>
               </TableRow>
@@ -137,16 +138,15 @@ export function CenaPainel({ valores }: PropsCena) {
                     <TableCell>{formatarMoeda(orcado)}</TableCell>
                     <TableCell>{formatarMoeda(realizado)}</TableCell>
                     <TableCell>{formatarMoeda(projetado)}</TableCell>
+                    <TableCell className="font-medium">{formatarMoeda(linha.previsto)}</TableCell>
                     <TableCell className={linha.alerta ? "font-medium text-destructive" : undefined}>
                       <div className="flex items-center gap-2">
-                        {formatarMoeda(linha.variacaoAbsolutaRealizado)}
+                        {formatarMoeda(linha.variacaoAbsoluta)}
                         {linha.alerta && <Badge variant="destructive">Estouro</Badge>}
                       </div>
                     </TableCell>
                     <TableCell>
-                      {linha.variacaoPercentualRealizado === null
-                        ? "—"
-                        : `${(linha.variacaoPercentualRealizado * 100).toFixed(1)}%`}
+                      {linha.variacaoPercentual === null ? "—" : `${(linha.variacaoPercentual * 100).toFixed(1)}%`}
                     </TableCell>
                   </TableRow>
                 );
