@@ -64,7 +64,7 @@ type TituloLinha = {
 };
 
 export type OpcoesTitulo = {
-  contrapartes: { id: string; nome: string; classificacaoFiscalPadrao?: ClassificacaoFiscal | null }[];
+  contrapartes: { id: string; nome: string; classificacaoFiscalPadrao?: ClassificacaoFiscal | null; ativo?: boolean }[];
   categorias: { id: string; nome: string }[];
   centrosCusto: { id: string; nome: string }[];
   centrosLucro: { id: string; nome: string }[];

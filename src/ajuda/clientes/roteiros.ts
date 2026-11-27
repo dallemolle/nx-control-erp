@@ -268,9 +268,11 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "lista.tucuma",
         instrucao: "Confira o status",
         explicacao:
-          "Inativo. O cliente some da escolha do Novo pedido. Os pedidos e os títulos antigos continuam como estavam, " +
-          "e ele continua nos relatórios.",
-        dica: "Hoje o Contas a receber ainda mostra o cliente inativo na escolha do cliente.",
+          "Inativo. O cliente some da escolha do Novo pedido e da conta a receber nova. Os pedidos e os títulos " +
+          "antigos continuam como estavam, e ele continua nos filtros e nos relatórios.",
+        dica:
+          "Ao editar um título antigo dele, o cliente aparece como “(inativo)” e pode ficar; só não dá para lançar " +
+          "título novo nem trocar outro título para ele.",
         preenche: { "lista.tucuma": "Inativo" },
       },
       {

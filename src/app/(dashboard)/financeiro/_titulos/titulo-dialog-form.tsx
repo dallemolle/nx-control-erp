@@ -22,7 +22,7 @@ import { useAcaoDoDialogo } from "../../_shared/use-acao-do-dialogo";
 type Opcao = { id: string; nome: string };
 
 /** Fornecedor/cliente com a classificação padrão que pré-preenche títulos novos. */
-type OpcaoContraparte = Opcao & { classificacaoFiscalPadrao?: ClassificacaoFiscal | null };
+type OpcaoContraparte = Opcao & { classificacaoFiscalPadrao?: ClassificacaoFiscal | null; ativo?: boolean };
 
 type ParcelaLinha = { numero: number; dataVencimento: string; valorOriginal: string };
 
@@ -83,6 +83,8 @@ export function TituloDialogForm({
   ]);
 
   const [classificacao, setClassificacao] = useState<ClassificacaoFiscal>(titulo?.classificacaoFiscal ?? "FISCAL");
+  // Inativo não recebe título novo; na edição, o já escolhido continua na lista, marcado.
+  const opcoesContraparte = contrapartes.filter((opcao) => opcao.ativo !== false || opcao.id === titulo?.contraparteId);
 
   function aoAbrirOuFechar(abrir: boolean) {
     // Cada abertura parte da classificação gravada (edição) ou de FISCAL (criação).
@@ -125,9 +127,9 @@ export function TituloDialogForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {contrapartes.map((opcao) => (
+                {opcoesContraparte.map((opcao) => (
                   <SelectItem key={opcao.id} value={opcao.id}>
-                    {opcao.nome}
+                    {opcao.ativo === false ? `${opcao.nome} (inativo)` : opcao.nome}
                   </SelectItem>
                 ))}
               </SelectContent>

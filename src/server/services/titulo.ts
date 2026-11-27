@@ -154,6 +154,8 @@ export async function validarReferenciasDoTitulo(
   tipo: TipoTitulo,
   dados: TituloHeaderFormValues,
   db: ClientePrisma = prisma,
+  /** Na edição: a contraparte que o título já tem (pode continuar mesmo inativa). */
+  contraparteAtualId: string | null = null,
 ): Promise<{ classificacaoFiscalPadrao: ClassificacaoFiscal | null }> {
   const campos = camposNormalizados(tipo, dados);
   const filialId = sessao.filialId;
@@ -192,6 +194,12 @@ export async function validarReferenciasDoTitulo(
   if (!contraparte) {
     throw new Error(
       `${tipo === "PAGAR" ? "Fornecedor" : "Cliente"} não pertence à empresa ativa`,
+    );
+  }
+  // Inativo não recebe título novo; na edição, o já escolhido pode ficar (só não troca para outro inativo).
+  if (!contraparte.ativo && contraparte.id !== contraparteAtualId) {
+    throw new Error(
+      `${tipo === "PAGAR" ? "Fornecedor" : "Cliente"} inativo: reative o cadastro para lançar título para ele`,
     );
   }
 
@@ -430,7 +438,7 @@ export async function atualizarTitulo(sessao: SessaoAtiva, id: string, dados: Ti
 
   const anterior = await prisma.titulo.findUniqueOrThrow({ where: { id, filialId: sessao.filialId } });
 
-  await validarReferenciasDoTitulo(sessao, anterior.tipo, dados);
+  await validarReferenciasDoTitulo(sessao, anterior.tipo, dados, prisma, anterior.fornecedorId ?? anterior.clienteId);
 
   const campos = camposNormalizados(anterior.tipo, dados);
 

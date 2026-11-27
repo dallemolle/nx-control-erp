@@ -452,28 +452,6 @@ Numeração continua a da Produção. Itens 26 e 27 feitos em 2026-11-27; nada p
 
 Numeração continua a de Vendas.
 
-### 28. Cliente e fornecedor inativos continuam nos títulos
-
-- **Problema:** inativar um cliente tira ele do Novo pedido (a tela e o
-  serviço filtram `ativo`), mas o Contas a receber continua oferecendo o
-  cliente inativo e aceita lançar título para ele. O mesmo vale para
-  fornecedor inativo no Contas a pagar.
-- **Exemplo:** a Lanchonete Tucumã fechou e foi inativada; ela some do Novo
-  pedido, mas aparece na escolha do cliente de uma conta a receber nova.
-- **Onde:** `financeiro/contas-a-receber/page.tsx` e
-  `financeiro/contas-a-pagar/page.tsx` (usam `listarClientes` e
-  `listarFornecedores`, sem filtro) e `validarReferenciasDoTitulo` em
-  `src/server/services/titulo.ts` (não confere `ativo`).
-- **Impacto:** o inativar não faz o que promete fora de Vendas; título novo
-  para quem não deveria mais comprar nem fornecer.
-- **Caminhos:** oferecer só os ativos no título novo e recusar inativo no
-  serviço; na edição, manter o já escolhido mesmo inativo.
-- **Cuidados:** a lista do cadastro, os filtros e os relatórios continuam
-  mostrando os inativos; a operadora de cartão usa cliente e fornecedor pelo
-  CNPJ (a seção 7.7 do manual já pede reativar antes).
-- **Ao corrigir:** dica do passo "Confira o status" do roteiro
-  `inativar-cliente` em `src/ajuda/clientes/roteiros.ts`.
-
 ### 29. Dados bancários do cliente e do fornecedor não aparecem em nenhuma tela
 
 - **Problema:** o cadastro guarda Pix (tipo e chave) ou depósito (banco,
