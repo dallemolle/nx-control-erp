@@ -440,29 +440,6 @@ continua, para cada item ter um número único). Prioridade a definir.
   safras e na sua exportação. A ajuda da Comparação (réplica, passo "Status" e
   a frase do `filtrar-exportar`) foi ajustada junto. Histórico.
 
-### 21. Pendência fiscal: o link não abre o título
-
-- **Problema:** em "Pendências fiscais" (`controladoria/fiscal-gerencial/
-  page.tsx`), o link do documento abre Contas a pagar/receber filtrada só pelo
-  parceiro e pela classificação Fiscal. O usuário ainda precisa achar o
-  título na lista, abrir a linha para anexar e clicar em Editar para completar
-  os dados.
-- **Exemplo:** a Agro Insumos tem 20 notas fiscais no ano; para completar a
-  chave da NF-e 2210, o link mostra as 20 e o usuário procura a certa.
-- **Onde:** `page.tsx` (montagem do `href`); as listas de títulos em
-  `src/app/(dashboard)/financeiro/_titulos/` não têm hoje um parâmetro para
-  abrir um título específico.
-- **Impacto:** a tela que existe para resolver pendências torna a resolução
-  trabalhosa justamente para os parceiros com mais notas.
-- **Caminhos:** aceitar `?titulo=<id>` nas listas (filtrar por ele e abrir a
-  linha já expandida, com Anexos visível); ou abrir o formulário de edição
-  direto da tela de pendências.
-- **Cuidados:** permissão (quem só lê pode ver a pendência, mas não editar);
-  o filtro de busca da lista não deve ficar "preso" no título depois.
-- **Ao corrigir:** passo "Clique no documento" do roteiro `pendencias` em
-  `src/ajuda/fiscal-gerencial/roteiros.ts` (diz que o link não abre o título
-  direto).
-
 ## Produção — lacunas achadas ao escrever a ajuda contextual
 
 Numeração continua a do Financeiro e da Controladoria.
