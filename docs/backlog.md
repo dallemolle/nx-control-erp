@@ -54,6 +54,12 @@ para ser retomado sem precisar reconstruir o raciocínio original.
   negativo) e a observação do índice em `src/ajuda/comparacao-safras/`;
   manual, seção 4.3 (frase "o orçado que faz sentido é o resultado
   esperado").
+  **Atualização (2026-11-27, item 16):** o Orçamento mensal passou a mostrar
+  a coluna Previsto (realizado + projetado) e a Variação sobre ela, a mesma
+  base do Estouro. Ao corrigir o sinal aqui, levar a Comparação entre safras
+  para a mesma regra (Previsto e Variação sobre ele) e trocar o passo
+  "Variação: realizado menos orçado" do roteiro em
+  `src/ajuda/comparacao-safras/roteiros.ts`.
 
 ## API REST de automação (lançamentos via agente)
 
@@ -402,31 +408,6 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 
 Mesmo formato e mesma numeração das lacunas do Financeiro (a numeração
 continua, para cada item ter um número único). Prioridade a definir.
-
-### 16. Variação e Estouro do Orçamento medem coisas diferentes
-
-- **Problema:** em `montarLinhaComparativo`, a Variação (e a Variação %) é
-  realizado − orçado, mas o alerta de Estouro é realizado + projetado > orçado.
-  O selo "Estouro" aparece dentro da célula da Variação.
-- **Exemplo:** na ajuda, Insumos Agrícolas em novembro: orçado R$ 1.500,00,
-  realizado R$ 800,00, projetado R$ 1.000,00. A célula mostra "−R$ 700,00
-  Estouro" e −46.7%: o número diz "sobrou" e o selo diz "estourou".
-- **Onde:** `src/server/services/orcamento.ts` (`montarLinhaComparativo`),
-  `src/app/(dashboard)/controladoria/orcamento/page.tsx` e a exportação
-  (`orcamento/export/route.ts`, colunas Variação e Estouro).
-- **Impacto:** leitura confusa justamente no indicador principal da tela; quem
-  olha só a variação acha que está dentro do orçado.
-- **Caminhos:** mostrar uma coluna "Previsto" (realizado + projetado) e a
-  variação sobre ela; ou manter a variação do realizado e levar o selo para
-  uma coluna própria ("Situação"); ou as duas variações lado a lado.
-- **Cuidados:** a Comparação entre safras usa a mesma variação (só o
-  realizado), mas não tem alerta de estouro (`orcamentoSafra.ts`): decidir a
-  regra para as duas telas juntas. Testes de `orcamento.test.ts` fixam a regra
-  atual.
-- **Ao corrigir:** dica do passo "Linha vermelha com Estouro" do roteiro
-  `ler-comparativo` (explica a diferença) e a réplica
-  (`src/ajuda/orcamento/cenas.tsx`, colunas); manual, seção 4.1 (frase "mesmo
-  que a variação... ainda seja negativa").
 
 ### 17. Grade do Orçamento: sem meses, sem confirmação e fácil de errar
 
