@@ -6,6 +6,7 @@ import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { Prisma, StatusAprovacaoBaixa, StatusParcela, TipoTitulo } from "@prisma/client";
 import { formatarData, formatarDataHora, formatarMoeda } from "@/lib/formatacao";
 import { rejeicaoEmAberto } from "@/lib/financeiro/rejeicaoEmAberto";
+import { descricaoDoLancamentoDaBaixa } from "@/lib/financeiro/descricaoDaBaixa";
 import type { BaixaFormValues } from "@/lib/schemas/baixa";
 import type { ContextoTitulo } from "./titulo";
 
@@ -224,7 +225,15 @@ export async function efetivarBaixa(tx: Prisma.TransactionClient, contexto: Cont
 
   const parcela = await tx.parcela.findUniqueOrThrow({
     where: { id: anterior.parcelaId },
-    include: { titulo: true },
+    include: {
+      titulo: {
+        include: {
+          fornecedor: { select: { nome: true } },
+          cliente: { select: { nome: true } },
+          _count: { select: { parcelas: true } },
+        },
+      },
+    },
   });
   // Pendência antiga de parcela fechada depois do registro: aprovar geraria lançamento de parcela que não existe mais.
   if (parcela.status === "CANCELADO" || parcela.status === "RENEGOCIADO") {
@@ -251,7 +260,12 @@ export async function efetivarBaixa(tx: Prisma.TransactionClient, contexto: Cont
       data: anterior.data,
       tipo: parcela.titulo.tipo === "RECEBER" ? "ENTRADA" : "SAIDA",
       valor: anterior.valorPago,
-      descricao: `Baixa aprovada — parcela nº ${parcela.numero}`,
+      descricao: descricaoDoLancamentoDaBaixa({
+        documento: parcela.titulo.documento,
+        contraparte: (parcela.titulo.tipo === "PAGAR" ? parcela.titulo.fornecedor : parcela.titulo.cliente)?.nome ?? null,
+        parcela: parcela.numero,
+        totalParcelas: parcela.titulo._count.parcelas,
+      }),
       categoriaFinanceiraId: parcela.titulo.categoriaFinanceiraId,
       centroCustoId: parcela.titulo.centroCustoId,
       centroLucroId: parcela.titulo.centroLucroId,

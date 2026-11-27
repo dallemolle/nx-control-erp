@@ -187,7 +187,9 @@ export const ROTEIROS: readonly Roteiro[] = [
           "A lista traz os lançamentos ainda não conciliados da conta, até 30 dias antes ou depois. Entradas " +
           "aparecem com +, saídas com −. Para o depósito do cartão: as duas entradas do bruto (R$ 500,00 e " +
           "R$ 1.000,00) e as duas saídas da taxa (R$ 7,50 e R$ 30,00).",
-        dica: "Os lançamentos dos repasses têm a mesma descrição. Guie-se pela data e pelo valor.",
+        dica:
+          "A descrição de cada lançamento de baixa diz o documento, o cliente ou fornecedor e a parcela: o bruto " +
+          "traz o pedido (PV-41) e a taxa, “Taxa PV-41” com a operadora.",
         preenche: { "grupo.lancamentos": "marcados" },
       },
       {

@@ -389,6 +389,8 @@ describe("baixa (fluxo de aprovação)", () => {
     expect((await prisma.parcela.findUniqueOrThrow({ where: { id: parcela.id } })).status).toBe("PAGO");
     const lancamento = await prisma.lancamentoBancario.findUniqueOrThrow({ where: { id: lancamentoId } });
     expect(lancamento).toMatchObject({ tipo: "ENTRADA", baixaId: baixa.id });
+    const titulo = await prisma.titulo.findUniqueOrThrow({ where: { id: parcela.tituloId }, include: { cliente: true } });
+    expect(lancamento.descricao).toBe(`${titulo.documento} · ${titulo.cliente!.nome} · parcela 1/1`);
 
     await expect(prisma.$transaction((tx) => efetivarBaixa(tx, contexto, baixa.id))).rejects.toThrow(
       "Esta baixa já foi avaliada",

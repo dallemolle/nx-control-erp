@@ -43,7 +43,7 @@ export const LANCAMENTOS = [
     origem: "Baixa",
     classificacao: "Fiscal",
     comprovante: "1234",
-    descricao: "Baixa aprovada — parcela nº 1",
+    descricao: "NF-e 1234 · Agro Insumos Ltda · parcela 2/3",
   },
   {
     data: "18/11/2026",

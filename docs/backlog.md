@@ -308,23 +308,6 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   (`src/ajuda/fluxo-por-dimensao/`), o passo "Não classificado" (o saque
   aparece como entrada e saída) e os números do exemplo (`exemplo.ts`).
 
-### 11. Lançamento de baixa não diz de qual título é
-
-- **Problema:** `efetivarBaixa` grava a descrição "Baixa aprovada — parcela nº
-  N", sem documento nem contraparte.
-- **Exemplo:** o depósito da operadora de cartão concilia com quatro
-  lançamentos "Baixa aprovada — parcela nº 1" (dois brutos e duas taxas, de
-  pedidos diferentes). Na Tesouraria, todas as baixas parecem iguais.
-- **Impacto:** conciliação em grupo e leitura da Tesouraria dependem só de
-  data e valor; risco de marcar o lançamento errado.
-- **Caminhos:** incluir documento e contraparte na descrição (ex.: "NF-e 1234
-  · Agro Insumos · parcela 1/3"); ou mostrar o título na lista a partir de
-  `baixaId`, sem mexer na descrição gravada.
-- **Cuidados:** lançamentos antigos (migrar descrição ou só mostrar o título).
-- **Ao corrigir:** dica do passo "Marque os lançamentos que formam o movimento"
-  no `conciliar-grupo` (`src/ajuda/conciliacao/roteiros.ts`) e a réplica
-  (`src/ajuda/conciliacao/exemplo.ts`, `LANCAMENTOS_DO_DEPOSITO`).
-
 ### 12. Manual: tabela de status da Conciliação incompleta
 
 - **Status:** descartado em 2026-11-21: o Passo a passo foi aposentado, e os
