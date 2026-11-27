@@ -91,6 +91,46 @@ export async function listarLancamentos(filialId: string, opcoes: { classificaca
   });
 }
 
+export const LANCAMENTOS_POR_PAGINA = 50;
+
+/**
+ * Lista da tela da Tesouraria: uma página de 50, na mesma ordem de `listarLancamentos`. A página é trazida para o
+ * intervalo válido. `outrosLados` traz o lado de uma transferência que caiu em outra página: não aparece na tabela,
+ * só completa o par para o diálogo de edição.
+ */
+export async function listarLancamentosDaPagina(
+  filialId: string,
+  opcoes: { classificacao?: FiltroClassificacao },
+  pagina: number,
+) {
+  const where = { filialId, ...whereLancamentoPorClassificacao(opcoes.classificacao) };
+  const total = await prisma.lancamentoBancario.count({ where });
+  const totalPaginas = Math.max(Math.ceil(total / LANCAMENTOS_POR_PAGINA), 1);
+  const paginaSegura = Math.min(Math.max(Math.trunc(pagina) || 1, 1), totalPaginas);
+
+  const lancamentos = await prisma.lancamentoBancario.findMany({
+    where,
+    include: { contaBancaria: { include: { banco: true } } },
+    orderBy: ORDEM_LISTAGEM_LANCAMENTOS,
+    skip: (paginaSegura - 1) * LANCAMENTOS_POR_PAGINA,
+    take: LANCAMENTOS_POR_PAGINA,
+  });
+
+  const ladosPorTransferencia = new Map<string, number>();
+  for (const l of lancamentos) {
+    if (l.transferenciaId) ladosPorTransferencia.set(l.transferenciaId, (ladosPorTransferencia.get(l.transferenciaId) ?? 0) + 1);
+  }
+  const partidas = [...ladosPorTransferencia].filter(([, lados]) => lados === 1).map(([id]) => id);
+  const outrosLados = partidas.length
+    ? await prisma.lancamentoBancario.findMany({
+        where: { filialId, transferenciaId: { in: partidas }, id: { notIn: lancamentos.map((l) => l.id) } },
+        include: { contaBancaria: { include: { banco: true } } },
+      })
+    : [];
+
+  return { lancamentos, outrosLados, pagina: paginaSegura, totalPaginas, total };
+}
+
 /** Versão da API: uma página por vez, ordenada por data (mais recente primeiro). */
 export async function listarLancamentosPaginado(
   filialId: string,

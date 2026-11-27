@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeEscreverLancamento } from "@/server/auth/permissions";
-import { listarResumoContas, listarLancamentos } from "@/server/services/lancamentoBancario";
+import { listarResumoContas, listarLancamentosDaPagina } from "@/server/services/lancamentoBancario";
 import { listarCategoriasFinanceiras } from "@/server/services/categoriaFinanceira";
 import { listarCentrosCusto } from "@/server/services/centroCusto";
 import { listarCentrosLucro } from "@/server/services/centroLucro";
@@ -21,8 +21,10 @@ import { ExportarLinks } from "../../_shared/exportar-links";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
 import { nomeDaContaBancaria } from "@/lib/contaBancaria";
 import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
-import { montarEditaveis, opcoesComAtual } from "@/lib/lancamentoEditavel";
-import { AcoesDoLancamento, type OpcoesDoLancamento } from "./acoes-do-lancamento";
+import { foraDaBase, montarEditaveis, type ExtrasDoLancamento, type OpcoesDoLancamento } from "@/lib/lancamentoEditavel";
+import { Paginacao } from "@/components/paginacao";
+import { AcoesDoLancamento } from "./acoes-do-lancamento";
+import { OpcoesDoLancamentoProvider } from "./opcoes-do-lancamento";
 
 const ORIGEM_LABEL: Record<string, string> = {
   MANUAL: "Manual",
@@ -33,7 +35,7 @@ const ORIGEM_LABEL: Record<string, string> = {
 export default async function TesourariaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ classificacao?: string | string[] }>;
+  searchParams: Promise<{ classificacao?: string | string[]; pagina?: string | string[] }>;
 }) {
   const sessao = await requireSessaoAtiva();
   requirePermission(sessao.perfil, "lancamento:ler");
@@ -42,46 +44,60 @@ export default async function TesourariaPage({
   const classificacao = classificacaoDaUrl(
     Array.isArray(params.classificacao) ? params.classificacao[0] : params.classificacao,
   );
+  const paginaPedida = Number(Array.isArray(params.pagina) ? params.pagina[0] : params.pagina) || 1;
 
-  const [resumoContas, lancamentos, categorias, centrosCusto, centrosLucro, safras, projetos] = await Promise.all([
+  const [resumoContas, paginaDaLista, categorias, centrosCusto, centrosLucro, safras, projetos] = await Promise.all([
     listarResumoContas(sessao.filialId),
-    listarLancamentos(sessao.filialId, { classificacao }),
+    listarLancamentosDaPagina(sessao.filialId, { classificacao }, paginaPedida),
     listarCategoriasFinanceiras(sessao.filialId),
     listarCentrosCusto(sessao.filialId),
     listarCentrosLucro(sessao.filialId),
     listarSafras(sessao.filialId),
     listarProjetos(sessao.filialId),
   ]);
+  const { lancamentos, outrosLados, pagina, totalPaginas } = paginaDaLista;
 
-  const opcoesContasBancarias = resumoContas.map(({ conta }) => ({
-    id: conta.id,
-    nome: nomeDaContaBancaria(conta),
-  }));
+  const opcao = (item: { id: string; nome: string }) => ({ id: item.id, nome: item.nome });
+  const ativos = <T extends { id: string; nome: string; ativo: boolean }>(lista: readonly T[]) =>
+    lista.filter((item) => item.ativo).map(opcao);
 
-  const editaveis = podeEscrever ? montarEditaveis(lancamentos) : {};
-  const porId = <T extends { id: string; nome: string }>(lista: readonly T[], id: string | null) =>
-    id ? (lista.find((item) => item.id === id) ?? null) : null;
-  const ativos = <T extends { ativo: boolean }>(lista: readonly T[]) => lista.filter((item) => item.ativo);
+  /** Listas ativas do diálogo, uma vez para a página toda (o "Novo lançamento" usa as mesmas). */
+  const opcoesDaPagina: OpcoesDoLancamento = {
+    contasBancarias: resumoContas.map(({ conta }) => ({ id: conta.id, nome: nomeDaContaBancaria(conta) })),
+    categorias: ativos(categorias),
+    centrosCusto: ativos(centrosCusto),
+    centrosLucro: ativos(centrosLucro),
+    safras: ativos(safras),
+    projetos: ativos(projetos),
+  };
 
-  /** Opções do diálogo de edição: as ativas mais o que já está gravado no lançamento. */
-  function opcoesDe(lancamento: (typeof lancamentos)[number]): OpcoesDoLancamento {
+  // O lado de uma transferência que ficou em outra página só completa o par; não entra na tabela.
+  const editaveis = podeEscrever ? montarEditaveis([...lancamentos, ...outrosLados]) : {};
+  const porId = (lista: readonly { id: string; nome: string }[], id: string | null) => {
+    const item = id ? lista.find((i) => i.id === id) : undefined;
+    return item ? opcao(item) : null;
+  };
+
+  /** Só o que a linha acrescenta às listas da página: os cadastros inativos que ela já usa. */
+  function extrasDe(lancamento: (typeof lancamentos)[number]): ExtrasDoLancamento {
     const editavel = editaveis[lancamento.id];
-    const contaAtual = { id: lancamento.contaBancariaId, nome: nomeDaContaBancaria(lancamento.contaBancaria) };
-    const contasBancarias =
+    const contas =
       editavel?.tipo === "transferencia"
-        ? opcoesComAtual(
-            opcoesComAtual(opcoesContasBancarias, { id: editavel.contaOrigemId, nome: editavel.contaOrigemNome }),
+        ? [
+            { id: editavel.contaOrigemId, nome: editavel.contaOrigemNome },
             { id: editavel.contaDestinoId, nome: editavel.contaDestinoNome },
-          )
-        : opcoesComAtual(opcoesContasBancarias, contaAtual);
-    return {
-      contasBancarias,
-      categorias: opcoesComAtual(ativos(categorias), porId(categorias, lancamento.categoriaFinanceiraId)),
-      centrosCusto: opcoesComAtual(ativos(centrosCusto), porId(centrosCusto, lancamento.centroCustoId)),
-      centrosLucro: opcoesComAtual(ativos(centrosLucro), porId(centrosLucro, lancamento.centroLucroId)),
-      safras: opcoesComAtual(ativos(safras), porId(safras, lancamento.safraId)),
-      projetos: opcoesComAtual(ativos(projetos), porId(projetos, lancamento.projetoId)),
+          ]
+        : [{ id: lancamento.contaBancariaId, nome: nomeDaContaBancaria(lancamento.contaBancaria) }];
+    const extras: ExtrasDoLancamento = {
+      contasBancarias: foraDaBase(opcoesDaPagina.contasBancarias, contas),
+      categorias: foraDaBase(opcoesDaPagina.categorias, [porId(categorias, lancamento.categoriaFinanceiraId)]),
+      centrosCusto: foraDaBase(opcoesDaPagina.centrosCusto, [porId(centrosCusto, lancamento.centroCustoId)]),
+      centrosLucro: foraDaBase(opcoesDaPagina.centrosLucro, [porId(centrosLucro, lancamento.centroLucroId)]),
+      safras: foraDaBase(opcoesDaPagina.safras, [porId(safras, lancamento.safraId)]),
+      projetos: foraDaBase(opcoesDaPagina.projetos, [porId(projetos, lancamento.projetoId)]),
     };
+    // Manda só as listas com algo: a linha comum não leva nada além do próprio lançamento.
+    return Object.fromEntries(Object.entries(extras).filter(([, lista]) => lista.length > 0));
   }
 
   return (
@@ -98,16 +114,9 @@ export default async function TesourariaPage({
         </div>
         {podeEscrever && (
           <div className="flex flex-wrap gap-2">
-            <LancamentoDialogForm
-              contasBancarias={opcoesContasBancarias}
-              categorias={categorias.filter((c) => c.ativo)}
-              centrosCusto={centrosCusto.filter((c) => c.ativo)}
-              centrosLucro={centrosLucro.filter((c) => c.ativo)}
-              safras={safras.filter((s) => s.ativo)}
-              projetos={projetos.filter((p) => p.ativo)}
-            />
-            <TransferenciaDialogForm contasBancarias={opcoesContasBancarias} />
-            <SaldoBancarioDialogForm contasBancarias={opcoesContasBancarias} />
+            <LancamentoDialogForm {...opcoesDaPagina} />
+            <TransferenciaDialogForm contasBancarias={opcoesDaPagina.contasBancarias} />
+            <SaldoBancarioDialogForm contasBancarias={opcoesDaPagina.contasBancarias} />
           </div>
         )}
       </div>
@@ -164,58 +173,62 @@ export default async function TesourariaPage({
         </div>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Data</TableHead>
-            <TableHead>Conta</TableHead>
-            <TableHead>Tipo</TableHead>
-            <TableHead>Valor</TableHead>
-            <TableHead>Origem</TableHead>
-            <TableHead>Classificação</TableHead>
-            <TableHead>Descrição</TableHead>
-            {podeEscrever ? <TableHead className="w-0" /> : null}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {lancamentos.map((lancamento) => (
-            <TableRow key={lancamento.id}>
-              <TableCell>{formatarData(lancamento.data)}</TableCell>
-              <TableCell>
-                {nomeDaContaBancaria(lancamento.contaBancaria)}
-              </TableCell>
-              <TableCell>
-                <Badge variant={lancamento.tipo === "ENTRADA" ? "default" : "secondary"}>
-                  {lancamento.tipo === "ENTRADA" ? "Entrada" : "Saída"}
-                </Badge>
-              </TableCell>
-              <TableCell>{formatarMoeda(lancamento.valor)}</TableCell>
-              <TableCell>
-                <Badge variant="outline">{ORIGEM_LABEL[lancamento.origem]}</Badge>
-                {lancamento.grupoConciliacaoId ? (
-                  <Badge variant="secondary" className="ml-1">
-                    Conciliado
-                  </Badge>
-                ) : null}
-              </TableCell>
-              <TableCell>
-                <BadgeClassificacao classificacao={lancamento.classificacaoFiscal} />
-                {lancamento.numeroComprovante ? (
-                  <span className="ml-2 text-xs text-muted-foreground">{lancamento.numeroComprovante}</span>
-                ) : null}
-              </TableCell>
-              <TableCell>{lancamento.descricao}</TableCell>
-              {podeEscrever ? (
+      <OpcoesDoLancamentoProvider opcoes={opcoesDaPagina}>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Data</TableHead>
+              <TableHead>Conta</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Valor</TableHead>
+              <TableHead>Origem</TableHead>
+              <TableHead>Classificação</TableHead>
+              <TableHead>Descrição</TableHead>
+              {podeEscrever ? <TableHead className="w-0" /> : null}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {lancamentos.map((lancamento) => (
+              <TableRow key={lancamento.id}>
+                <TableCell>{formatarData(lancamento.data)}</TableCell>
                 <TableCell>
-                  {editaveis[lancamento.id] ? (
-                    <AcoesDoLancamento editavel={editaveis[lancamento.id]} opcoes={opcoesDe(lancamento)} />
+                  {nomeDaContaBancaria(lancamento.contaBancaria)}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={lancamento.tipo === "ENTRADA" ? "default" : "secondary"}>
+                    {lancamento.tipo === "ENTRADA" ? "Entrada" : "Saída"}
+                  </Badge>
+                </TableCell>
+                <TableCell>{formatarMoeda(lancamento.valor)}</TableCell>
+                <TableCell>
+                  <Badge variant="outline">{ORIGEM_LABEL[lancamento.origem]}</Badge>
+                  {lancamento.grupoConciliacaoId ? (
+                    <Badge variant="secondary" className="ml-1">
+                      Conciliado
+                    </Badge>
                   ) : null}
                 </TableCell>
-              ) : null}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+                <TableCell>
+                  <BadgeClassificacao classificacao={lancamento.classificacaoFiscal} />
+                  {lancamento.numeroComprovante ? (
+                    <span className="ml-2 text-xs text-muted-foreground">{lancamento.numeroComprovante}</span>
+                  ) : null}
+                </TableCell>
+                <TableCell>{lancamento.descricao}</TableCell>
+                {podeEscrever ? (
+                  <TableCell>
+                    {editaveis[lancamento.id] ? (
+                      <AcoesDoLancamento editavel={editaveis[lancamento.id]} extras={extrasDe(lancamento)} />
+                    ) : null}
+                  </TableCell>
+                ) : null}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </OpcoesDoLancamentoProvider>
+
+      {totalPaginas > 1 ? <Paginacao pagina={pagina} totalPaginas={totalPaginas} /> : null}
     </div>
   );
 }

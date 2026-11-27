@@ -147,3 +147,39 @@ export function opcoesComAtual(opcoes: readonly Opcao[], atual: Opcao | null): O
   if (!atual || opcoes.some((o) => o.id === atual.id)) return [...opcoes];
   return [...opcoes, atual];
 }
+
+/** As listas do diálogo de edição. A página manda as ativas uma vez só; cada linha, só os extras. */
+export type OpcoesDoLancamento = {
+  contasBancarias: Opcao[];
+  categorias: Opcao[];
+  centrosCusto: Opcao[];
+  centrosLucro: Opcao[];
+  safras: Opcao[];
+  projetos: Opcao[];
+};
+
+/** O que uma linha acrescenta às listas da página: os cadastros inativos que ela já usa. */
+export type ExtrasDoLancamento = Partial<OpcoesDoLancamento>;
+
+/** Os cadastros gravados na linha que não estão entre os ativos (sem repetir). */
+export function foraDaBase(base: readonly Opcao[], atuais: readonly (Opcao | null)[]): Opcao[] {
+  const extras: Opcao[] = [];
+  for (const atual of atuais) {
+    if (atual && !base.some((o) => o.id === atual.id) && !extras.some((o) => o.id === atual.id)) extras.push(atual);
+  }
+  return extras;
+}
+
+/** Listas da página mais os extras da linha, para o diálogo de edição. */
+export function juntarOpcoes(base: OpcoesDoLancamento, extras: ExtrasDoLancamento): OpcoesDoLancamento {
+  const juntar = (chave: keyof OpcoesDoLancamento) =>
+    (extras[chave] ?? []).reduce<Opcao[]>((lista, extra) => opcoesComAtual(lista, extra), base[chave]);
+  return {
+    contasBancarias: juntar("contasBancarias"),
+    categorias: juntar("categorias"),
+    centrosCusto: juntar("centrosCusto"),
+    centrosLucro: juntar("centrosLucro"),
+    safras: juntar("safras"),
+    projetos: juntar("projetos"),
+  };
+}

@@ -13,6 +13,8 @@ import {
   editarTransferencia,
   excluirLancamento,
   listarResumoContas,
+  listarLancamentosDaPagina,
+  LANCAMENTOS_POR_PAGINA,
 } from "./lancamentoBancario";
 import { ErroClassificacaoFiscal } from "./classificacaoFiscal";
 
@@ -804,5 +806,72 @@ describe("excluirLancamento", () => {
     await expect(excluirLancamento(fx.sessao, crypto.randomUUID(), "x")).rejects.toThrow(
       "Lançamento não encontrado na filial ativa",
     );
+  });
+});
+
+describe("listarLancamentosDaPagina", () => {
+  let fx: FixtureFinanceiro;
+  let contaDestinoId: string;
+
+  beforeAll(async () => {
+    fx = await criarFixtureFinanceiro("LBP", "TESOURARIA");
+    const destino = await prisma.contaBancaria.create({
+      data: { filialId: fx.filialId, bancoId: fx.bancoId, agencia: "0004", conta: "pag-1", saldoInicial: 0 },
+    });
+    contaDestinoId = destino.id;
+    const base = {
+      filialId: fx.filialId,
+      contaBancariaId: fx.contaBancariaId,
+      usuarioId: fx.usuarioId,
+      descricao: "Lançamento da paginação",
+      origem: "MANUAL" as const,
+      classificacaoFiscal: "FISCAL" as const,
+    };
+    // 49 mais recentes, depois os dois lados de uma transferência (posições 50 e 51), depois mais 5.
+    await prisma.lancamentoBancario.createMany({
+      data: Array.from({ length: 49 }, () => ({ ...base, data: new Date("2026-10-10"), tipo: "ENTRADA" as const, valor: 10 })),
+    });
+    const transferenciaId = crypto.randomUUID();
+    const lado = { ...base, data: new Date("2026-10-05"), valor: 500, origem: "TRANSFERENCIA" as const, transferenciaId, classificacaoFiscal: null };
+    await prisma.lancamentoBancario.createMany({
+      data: [
+        { ...lado, tipo: "SAIDA" as const },
+        { ...lado, tipo: "ENTRADA" as const, contaBancariaId: contaDestinoId },
+      ],
+    });
+    await prisma.lancamentoBancario.createMany({
+      data: Array.from({ length: 5 }, () => ({ ...base, data: new Date("2026-10-01"), tipo: "SAIDA" as const, valor: 1, classificacaoFiscal: "GERENCIAL" as const })),
+    });
+  });
+
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fx);
+  });
+
+  test("duas páginas de 50 cobrem todos os lançamentos, sem repetir nem pular", async () => {
+    const p1 = await listarLancamentosDaPagina(fx.filialId, {}, 1);
+    const p2 = await listarLancamentosDaPagina(fx.filialId, {}, 2);
+    expect(p1).toMatchObject({ pagina: 1, totalPaginas: 2, total: 56 });
+    expect(p1.lancamentos).toHaveLength(LANCAMENTOS_POR_PAGINA);
+    expect(p2.lancamentos).toHaveLength(6);
+    const ids = new Set([...p1.lancamentos, ...p2.lancamentos].map((l) => l.id));
+    expect(ids.size).toBe(56);
+  });
+
+  test("o lado da transferência que caiu na outra página vem em outrosLados", async () => {
+    const p1 = await listarLancamentosDaPagina(fx.filialId, {}, 1);
+    const ladoNaPagina = p1.lancamentos.find((l) => l.origem === "TRANSFERENCIA");
+    expect(ladoNaPagina).toBeDefined();
+    expect(p1.outrosLados).toHaveLength(1);
+    expect(p1.outrosLados[0].transferenciaId).toBe(ladoNaPagina!.transferenciaId);
+    expect(p1.outrosLados[0].id).not.toBe(ladoNaPagina!.id);
+  });
+
+  test("página fora do intervalo vira a última, e o filtro conta só o que entra nele", async () => {
+    expect((await listarLancamentosDaPagina(fx.filialId, {}, 99)).pagina).toBe(2);
+    expect((await listarLancamentosDaPagina(fx.filialId, {}, 0)).pagina).toBe(1);
+    const gerencial = await listarLancamentosDaPagina(fx.filialId, { classificacao: "GERENCIAL" }, 1);
+    expect(gerencial).toMatchObject({ total: 5, totalPaginas: 1 });
+    expect(gerencial.outrosLados).toEqual([]);
   });
 });

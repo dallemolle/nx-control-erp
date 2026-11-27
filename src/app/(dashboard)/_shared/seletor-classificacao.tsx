@@ -13,9 +13,11 @@ const OPCOES = [
 /**
  * Query string com `classificacao` trocado, preservando os demais parâmetros.
  * "Todos" (sentinela ou vazio) remove o parâmetro — a URL fica igual à de antes do filtro existir.
+ * A página (`pagina`) volta para a primeira: a lista filtrada é outra.
  */
 export function queryComClassificacao(atual: string, valor: string | null): string {
   const params = new URLSearchParams(atual);
+  params.delete("pagina");
   if (valor === "FISCAL" || valor === "GERENCIAL") params.set("classificacao", valor);
   else params.delete("classificacao");
   return params.toString();
