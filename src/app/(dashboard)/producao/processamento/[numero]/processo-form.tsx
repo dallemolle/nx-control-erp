@@ -1,12 +1,19 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAvisoAoSair } from "@/components/use-aviso-ao-sair";
 import { atualizarProcessoOPAction, type FormState } from "../actions";
+import { useProcessoNaoSalvo } from "./processo-nao-salvo";
 
 const ESTADO_INICIAL: FormState = {};
+
+/** Os campos do processo como texto, para comparar o que está na tela com o que foi salvo. */
+function camposDoProcesso(dados: FormData): string {
+  return JSON.stringify([...dados.entries()].filter(([nome]) => nome !== "opId"));
+}
 
 export type ValoresProcesso = {
   branqueamentoTemperaturaC: number | null;
@@ -56,12 +63,42 @@ export function ProcessoForm({
   exigeBranqueamento: boolean;
   minimos: { temperaturaMinC: number; tempoMinS: number };
 }) {
-  const [state, formAction, pendente] = useActionState(atualizarProcessoOPAction, ESTADO_INICIAL);
+  // Campos como estão na tela × como foram salvos (lidos do próprio formulário, para
+  // "85" e 85 não parecerem diferentes). Diferentes: avisa ao sair e no "Encerrar OP".
+  const formRef = useRef<HTMLFormElement>(null);
+  const [salvo, setSalvo] = useState<string | null>(null);
+  const [atual, setAtual] = useState<string | null>(null);
+  const naoSalvo = salvo !== null && atual !== null && atual !== salvo;
+  const { setNaoSalvo } = useProcessoNaoSalvo();
+
+  const [state, formAction, pendente] = useActionState(async (anterior: FormState, dados: FormData) => {
+    const resultado = await atualizarProcessoOPAction(anterior, dados);
+    if (resultado.sucesso) setSalvo(camposDoProcesso(dados));
+    return resultado;
+  }, ESTADO_INICIAL);
   // Valores iniciais congelados: depois de salvar, a página volta com os mesmos números e o
   // Input da Base UI reclama se o `defaultValue` de um campo não controlado mudar.
   const [valores] = useState(valoresIniciais);
+
+  useEffect(() => {
+    const inicial = camposDoProcesso(new FormData(formRef.current!));
+    setSalvo(inicial);
+    setAtual(inicial);
+  }, []);
+  useEffect(() => {
+    setNaoSalvo(naoSalvo);
+  }, [naoSalvo, setNaoSalvo]);
+  // Ao sair da aba (depois de confirmar), o "Encerrar OP" não deve mais avisar.
+  useEffect(() => () => setNaoSalvo(false), [setNaoSalvo]);
+  useAvisoAoSair(naoSalvo, "Os números da aba Processo não foram salvos e serão perdidos. Sair mesmo assim?");
+
   return (
-    <form action={formAction} className="space-y-4">
+    <form
+      ref={formRef}
+      action={formAction}
+      onInput={(evento) => setAtual(camposDoProcesso(new FormData(evento.currentTarget)))}
+      className="space-y-4"
+    >
       <input type="hidden" name="opId" value={opId} />
       {exigeBranqueamento ? (
         <div className="space-y-2">
@@ -95,7 +132,11 @@ export function ProcessoForm({
           {pendente ? "Salvando..." : "Salvar processo"}
         </Button>
         {state.erro ? <span className="text-sm text-destructive">{state.erro}</span> : null}
-        {state.sucesso && !pendente ? <span className="text-sm text-muted-foreground">Salvo.</span> : null}
+        {naoSalvo && !pendente ? (
+          <span className="text-sm font-medium text-amber-700 dark:text-amber-400">Alterações não salvas</span>
+        ) : state.sucesso && !pendente ? (
+          <span className="text-sm text-muted-foreground">Salvo.</span>
+        ) : null}
       </div>
     </form>
   );
