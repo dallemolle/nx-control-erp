@@ -33,7 +33,7 @@ function colunas(filtrado: boolean): ColunaExport<LinhaExport>[] {
     { rotulo: "Juros", valor: (l) => l.jurosSobreDivida },
     { rotulo: "Geração líquida", valor: (l) => l.geracaoLiquida },
     { rotulo: filtrado ? "Acumulado de caixa" : "Saldo de caixa", valor: (l) => l.saldoCaixa },
-    { rotulo: "Margem líquida %", valor: (l) => l.margemLiquida * 100, tipo: "percentual" },
+    { rotulo: "Margem operacional %", valor: (l) => l.margemOperacional * 100, tipo: "percentual" },
   ];
 }
 

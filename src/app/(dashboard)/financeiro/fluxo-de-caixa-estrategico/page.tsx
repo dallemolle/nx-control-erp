@@ -126,9 +126,9 @@ export default async function FluxoDeCaixaEstrategicoPage({
                 ))}
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">Margem líquida</TableCell>
+                <TableCell className="font-medium">Margem operacional</TableCell>
                 {projecoes[tipo].map((ano) => (
-                  <TableCell key={ano.ano}>{(ano.margemLiquida * 100).toFixed(1)}%</TableCell>
+                  <TableCell key={ano.ano}>{(ano.margemOperacional * 100).toFixed(1)}%</TableCell>
                 ))}
               </TableRow>
             </TableBody>

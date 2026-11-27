@@ -77,13 +77,13 @@ describe("calcularProjecaoEstrategica", () => {
     expect(resultado[2].jurosSobreDivida).toBeCloseTo(200, 6);
   });
 
-  test("margemLiquida é geracaoOperacional/receita, e não lança erro quando receita é 0", () => {
+  test("margemOperacional é geracaoOperacional/receita, e não lança erro quando receita é 0", () => {
     const resultado = calcularProjecaoEstrategica(premissasZeradas, 1000, 600, 0);
-    expect(resultado[0].margemLiquida).toBeCloseTo(0.4, 6);
+    expect(resultado[0].margemOperacional).toBeCloseTo(0.4, 6);
 
     const resultadoZerado = calcularProjecaoEstrategica(premissasZeradas, 0, 0, 0);
-    expect(resultadoZerado[0].margemLiquida).toBe(0);
-    expect(Number.isFinite(resultadoZerado[0].margemLiquida)).toBe(true);
+    expect(resultadoZerado[0].margemOperacional).toBe(0);
+    expect(Number.isFinite(resultadoZerado[0].margemOperacional)).toBe(true);
   });
 });
 
