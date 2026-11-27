@@ -110,6 +110,7 @@ export default async function OrcamentoPage({
               <TableHead>Orçado</TableHead>
               <TableHead>Realizado</TableHead>
               <TableHead>Projetado</TableHead>
+              <TableHead>Previsto</TableHead>
               <TableHead>Variação</TableHead>
               <TableHead>Variação %</TableHead>
             </TableRow>
@@ -121,16 +122,15 @@ export default async function OrcamentoPage({
                 <TableCell>{formatarMoeda(linha.orcado)}</TableCell>
                 <TableCell>{formatarMoeda(linha.realizado)}</TableCell>
                 <TableCell>{formatarMoeda(linha.projetado)}</TableCell>
+                <TableCell className="font-medium">{formatarMoeda(linha.previsto)}</TableCell>
                 <TableCell className={linha.alerta ? "font-medium text-destructive" : undefined}>
                   <div className="flex items-center gap-2">
-                    {formatarMoeda(linha.variacaoAbsolutaRealizado)}
+                    {formatarMoeda(linha.variacaoAbsoluta)}
                     {linha.alerta && <Badge variant="destructive">Estouro</Badge>}
                   </div>
                 </TableCell>
                 <TableCell>
-                  {linha.variacaoPercentualRealizado === null
-                    ? "—"
-                    : `${(linha.variacaoPercentualRealizado * 100).toFixed(1)}%`}
+                  {linha.variacaoPercentual === null ? "—" : `${(linha.variacaoPercentual * 100).toFixed(1)}%`}
                 </TableCell>
               </TableRow>
             ))}
