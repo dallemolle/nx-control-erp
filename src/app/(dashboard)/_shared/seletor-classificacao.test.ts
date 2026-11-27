@@ -12,6 +12,11 @@ describe("queryComClassificacao", () => {
     expect(queryComClassificacao("classificacao=FISCAL&ano=2026", "GERENCIAL")).toBe("classificacao=GERENCIAL&ano=2026");
   });
 
+  test("trocar o filtro volta para a primeira página", () => {
+    expect(queryComClassificacao("pagina=3&ano=2026", "FISCAL")).toBe("ano=2026&classificacao=FISCAL");
+    expect(queryComClassificacao("pagina=3&classificacao=FISCAL", null)).toBe("");
+  });
+
   test("Todos (sentinela, vazio ou null) remove o parâmetro", () => {
     expect(queryComClassificacao("ano=2026&classificacao=FISCAL", "__nenhum__")).toBe("ano=2026");
     expect(queryComClassificacao("classificacao=FISCAL", "")).toBe("");

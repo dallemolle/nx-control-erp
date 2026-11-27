@@ -3,21 +3,15 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import type { Editavel, Opcao } from "@/lib/lancamentoEditavel";
+import type { Editavel, ExtrasDoLancamento } from "@/lib/lancamentoEditavel";
 import { LancamentoDialogForm } from "./lancamento-dialog-form";
 import { TransferenciaDialogForm } from "./transferencia-dialog-form";
 import { ExcluirLancamentoDialog } from "./excluir-lancamento-dialog";
+import { useOpcoesDoLancamento } from "./opcoes-do-lancamento";
 
-export type OpcoesDoLancamento = {
-  contasBancarias: Opcao[];
-  categorias: Opcao[];
-  centrosCusto: Opcao[];
-  centrosLucro: Opcao[];
-  safras: Opcao[];
-  projetos: Opcao[];
-};
-
-export function AcoesDoLancamento({ editavel, opcoes }: { editavel: Editavel; opcoes: OpcoesDoLancamento }) {
+/** `extras`: só os cadastros inativos que a linha usa; as listas ativas vêm do provider da página. */
+export function AcoesDoLancamento({ editavel, extras }: { editavel: Editavel; extras: ExtrasDoLancamento }) {
+  const opcoes = useOpcoesDoLancamento(extras);
   const [excluindo, setExcluindo] = useState(false);
   const ligadoAoExtrato = editavel.tipo === "manual" ? editavel.ligadoAoExtrato : editavel.ladoConciliado !== null;
 

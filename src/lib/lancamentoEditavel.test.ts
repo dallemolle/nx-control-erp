@@ -1,6 +1,14 @@
 import { describe, expect, test } from "vitest";
 import { formatarMoeda } from "./formatacao";
-import { montarEditaveis, opcoesComAtual, paraCampoDeData, type LancamentoDaLista } from "./lancamentoEditavel";
+import {
+  foraDaBase,
+  juntarOpcoes,
+  montarEditaveis,
+  opcoesComAtual,
+  paraCampoDeData,
+  type LancamentoDaLista,
+  type OpcoesDoLancamento,
+} from "./lancamentoEditavel";
 
 const BANCO = { tipo: "CORRENTE", agencia: "1234", conta: "12345-6", banco: { nome: "Banco do Brasil" } };
 const CAIXA = { tipo: "CAIXA", agencia: "0000", conta: "Fazenda", banco: { nome: "—" } };
@@ -64,6 +72,38 @@ describe("opcoesComAtual", () => {
   test("não duplica e aceita nulo", () => {
     expect(opcoesComAtual([{ id: "a", nome: "A" }], { id: "a", nome: "A" })).toHaveLength(1);
     expect(opcoesComAtual([{ id: "a", nome: "A" }], null)).toHaveLength(1);
+  });
+});
+
+describe("listas do diálogo enviadas uma vez", () => {
+  const BASE: OpcoesDoLancamento = {
+    contasBancarias: [{ id: "banco", nome: "Banco" }],
+    categorias: [{ id: "a", nome: "A" }],
+    centrosCusto: [],
+    centrosLucro: [],
+    safras: [],
+    projetos: [],
+  };
+
+  test("foraDaBase devolve só o cadastro gravado que não está entre os ativos, sem repetir", () => {
+    const inativa = { id: "x", nome: "Inativa" };
+    expect(foraDaBase(BASE.categorias, [inativa, null, { id: "a", nome: "A" }, inativa])).toEqual([inativa]);
+    expect(foraDaBase(BASE.categorias, [null])).toEqual([]);
+  });
+
+  test("juntarOpcoes acrescenta os extras da linha às listas da página", () => {
+    const juntas = juntarOpcoes(BASE, { categorias: [{ id: "x", nome: "Inativa" }] });
+    expect(juntas.categorias).toEqual([
+      { id: "a", nome: "A" },
+      { id: "x", nome: "Inativa" },
+    ]);
+    expect(juntas.contasBancarias).toEqual(BASE.contasBancarias);
+  });
+
+  test("o lado da transferência que ficou em outra página completa o par", () => {
+    const naPagina = lanc({ id: "s", origem: "TRANSFERENCIA", transferenciaId: "t1", tipo: "SAIDA" });
+    const deFora = lanc({ id: "e", origem: "TRANSFERENCIA", transferenciaId: "t1", tipo: "ENTRADA", contaBancariaId: "caixa", contaBancaria: CAIXA });
+    expect(montarEditaveis([naPagina, deFora]).s).toMatchObject({ tipo: "transferencia", contaDestinoId: "caixa" });
   });
 });
 
