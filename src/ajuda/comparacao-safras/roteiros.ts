@@ -33,21 +33,22 @@ export const ROTEIROS: readonly Roteiro[] = [
           "entradas menos saídas, o orçado que faz sentido comparar é o resultado que você espera: quanto deve " +
           "sobrar depois de vender a produção e pagar os custos. No exemplo, R$ 30.000,00 para a 2026/27.",
         dica:
-          "Só o número, sem R$ e sem ponto de milhar: 30000. O campo não aceita negativo, então não dá para orçar " +
-          "uma safra com prejuízo esperado.",
-        preenche: { "orcado.safra-2026": "30000" },
+          "Digite do jeito de sempre: 30.000, 30000 ou 30.000,00 valem R$ 30.000,00. O campo não aceita " +
+          "negativo, então não dá para orçar uma safra com prejuízo esperado.",
+        preenche: { "orcado.safra-2026": "30.000" },
       },
       {
         cena: "painel",
         alvo: "salvar.safra-2026",
         instrucao: "Clique em “Salvar” na mesma linha",
         explicacao: "Cada safra tem o seu botão. A mudança fica na Auditoria.",
+        preenche: { "salvar.safra-2026": "salvo" },
       },
     ],
     eDepois: {
       texto:
-        "A tela não mostra mensagem de “salvo”: o botão fica em “Salvando...” e volta ao normal. Se algo der " +
-        "errado, o erro aparece em vermelho ao lado do botão. A Variação da safra é recalculada com o orçado novo.",
+        "A linha mostra “Salvo” ao lado do botão. Se algo der errado, o erro aparece em vermelho no mesmo " +
+        "lugar. A Variação da safra é recalculada com o orçado novo.",
       proximoRoteiro: "comparar-safras",
     },
   }),
@@ -94,7 +95,7 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Leia a safra em andamento",
         explicacao:
           "A 2025/26 tem R$ 33.000,00 de resultado realizado contra R$ 40.000,00 orçados: Variação de " +
-          "−R$ 7.000,00 (-17.5%). Somando os R$ 3.000,00 projetados, chega a R$ 36.000,00: ainda R$ 4.000,00 " +
+          "−R$ 7.000,00 (-17,5%). Somando os R$ 3.000,00 projetados, chega a R$ 36.000,00: ainda R$ 4.000,00 " +
           "abaixo do orçado.",
       },
       {
@@ -103,7 +104,7 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Compare com a safra encerrada",
         explicacao:
           "A 2024/25 já fechou: R$ 38.200,00 de resultado contra R$ 35.000,00 orçados, Variação de R$ 3.200,00 " +
-          "(9.1%). Compare safras encerradas entre si: as que estão em andamento ainda vão mudar.",
+          "(9,1%). Compare safras encerradas entre si: as que estão em andamento ainda vão mudar.",
       },
       {
         cena: "painel",

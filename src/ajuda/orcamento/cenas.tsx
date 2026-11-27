@@ -4,7 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alvo, BotaoSimulado, CampoSimulado, SelectSimulado } from "@/components/ajuda/campos-simulados";
 import type { PropsCena } from "@/ajuda/tipos";
-import { formatarMoeda } from "@/lib/formatacao";
+import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
+import { MESES_ABREVIADOS } from "@/lib/meses";
+import { lerValorEmReais, valorParaCampo } from "@/lib/valorEmReais";
 import { ANO, CATEGORIAS, MES, compararLinha, type CategoriaExemplo } from "./exemplo";
 
 // Espelho de src/app/(dashboard)/controladoria/orcamento/*. Mudou um rótulo ou coluna lá? Ajuste aqui também.
@@ -12,24 +14,40 @@ import { ANO, CATEGORIAS, MES, compararLinha, type CategoriaExemplo } from "./ex
 /** Só estas linhas têm alvo nos roteiros; as demais desenham sem destaque. */
 const LINHAS_COM_ALVO = new Set(["insumos", "mao-de-obra", "venda"]);
 
-/** Orçado do mês, com o que o roteiro digitou por cima na grade. */
+/** Orçado do mês, com o que o roteiro digitou por cima na grade (lido como a tela lê). */
 function orcadoDe(categoria: CategoriaExemplo, mes: number, valores: PropsCena["valores"]): number {
   const digitado = valores[`grade.${categoria.chave}.mes-${mes}`];
-  return digitado !== undefined ? Number(digitado) : categoria.orcadoPorMes[mes - 1];
+  return digitado !== undefined ? (lerValorEmReais(digitado) ?? 0) : categoria.orcadoPorMes[mes - 1];
+}
+
+const COLUNA_DO_NOME = "sticky left-0 z-10 w-40 shrink-0 bg-background";
+
+function CabecalhoDaGrade({ titulo }: { titulo: string }) {
+  return (
+    <div className="flex items-end gap-2 border-b pt-4 pb-1 text-xs text-muted-foreground">
+      <span className={`${COLUNA_DO_NOME} text-sm font-semibold text-foreground`}>{titulo}</span>
+      {MESES_ABREVIADOS.map((mes) => (
+        <span key={mes} className="w-24 shrink-0 px-1">
+          {mes}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 function LinhaGrade({ categoria, valores }: { categoria: CategoriaExemplo; valores: PropsCena["valores"] }) {
   const comAlvo = categoria.chave === "insumos";
   const linha = (
     <div className="flex items-center gap-2 border-b py-2">
-      <span className="w-40 shrink-0 truncate text-sm font-medium">{categoria.nome}</span>
+      <span className={`${COLUNA_DO_NOME} truncate text-sm font-medium`}>{categoria.nome}</span>
       {categoria.orcadoPorMes.map((_, indice) => {
         const mes = indice + 1;
+        const digitado = valores[`grade.${categoria.chave}.mes-${mes}`];
         return (
           <CampoSimulado
             key={mes}
             alvo={comAlvo && mes === MES ? `grade.${categoria.chave}.mes-${mes}` : undefined}
-            valor={String(orcadoDe(categoria, mes, valores))}
+            valor={digitado ?? valorParaCampo(orcadoDe(categoria, mes, valores))}
             className="w-24 shrink-0"
           />
         );
@@ -37,10 +55,18 @@ function LinhaGrade({ categoria, valores }: { categoria: CategoriaExemplo; valor
       <BotaoSimulado alvo={comAlvo ? `grade.${categoria.chave}.salvar` : undefined} size="sm">
         Salvar
       </BotaoSimulado>
+      {comAlvo && valores[`grade.${categoria.chave}.salvar`] === "salvo" ? (
+        <span className="text-xs text-muted-foreground">Salvo</span>
+      ) : null}
     </div>
   );
   return comAlvo ? <Alvo nome={`grade.${categoria.chave}`}>{linha}</Alvo> : linha;
 }
+
+const BLOCOS_DA_GRADE = [
+  { titulo: "Despesas", categorias: CATEGORIAS.filter((c) => c.tipo === "DESPESA") },
+  { titulo: "Receitas", categorias: CATEGORIAS.filter((c) => c.tipo === "RECEITA") },
+];
 
 function CabecalhoComAlvo({ alvo, children }: { alvo: string; children: string }) {
   return (
@@ -97,8 +123,13 @@ export function CenaPainel({ valores }: PropsCena) {
         <p className="text-base font-semibold">Valores orçados — {ANO}</p>
         <div className="overflow-x-auto">
           <div className="w-max min-w-full">
-            {CATEGORIAS.map((categoria) => (
-              <LinhaGrade key={categoria.chave} categoria={categoria} valores={valores} />
+            {BLOCOS_DA_GRADE.map((bloco) => (
+              <div key={bloco.titulo}>
+                <CabecalhoDaGrade titulo={bloco.titulo} />
+                {bloco.categorias.map((categoria) => (
+                  <LinhaGrade key={categoria.chave} categoria={categoria} valores={valores} />
+                ))}
+              </div>
             ))}
           </div>
         </div>
@@ -146,7 +177,7 @@ export function CenaPainel({ valores }: PropsCena) {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {linha.variacaoPercentual === null ? "—" : `${(linha.variacaoPercentual * 100).toFixed(1)}%`}
+                      {linha.variacaoPercentual === null ? "—" : formatarPercentual(linha.variacaoPercentual)}
                     </TableCell>
                   </TableRow>
                 );

@@ -34,15 +34,15 @@ describe("roteiros de Comparação entre safras", () => {
 
   test("os números citados nos roteiros batem com a réplica", () => {
     const todos = html();
-    expect(linhaDaTabela(todos, "2025/26")).toContain(`${formatarMoeda(-7000)} (-17.5%)`);
-    expect(linhaDaTabela(todos, "2024/25")).toContain(`${formatarMoeda(3200)} (9.1%)`);
+    expect(linhaDaTabela(todos, "2025/26")).toContain(`${formatarMoeda(-7000)} (-17,5%)`);
+    expect(linhaDaTabela(todos, "2024/25")).toContain(`${formatarMoeda(3200)} (9,1%)`);
     expect(linhaDaTabela(todos, "2026/27")).toContain(formatarMoeda(-300));
     expect(linhaDaTabela(html({ "painel.classificacao": "Fiscal" }), "2025/26")).toContain(formatarMoeda(26000));
   });
 
   test("orçar a 2026/27 recalcula a variação", () => {
-    const linha = linhaDaTabela(html({ "orcado.safra-2026": "30000" }), "2026/27");
-    expect(linha).toContain(`${formatarMoeda(-30300)} (-101.0%)`);
+    const linha = linhaDaTabela(html({ "orcado.safra-2026": "30.000" }), "2026/27");
+    expect(linha).toContain(`${formatarMoeda(-30300)} (-101,0%)`);
   });
 
   test.each(roteiros.map((r) => [r.id, r] as const))("%s tem conteúdo completo", (_id, roteiro) => {

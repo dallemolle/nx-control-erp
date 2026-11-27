@@ -3,7 +3,8 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alvo, BotaoSimulado, CampoSimulado, SelectSimulado } from "@/components/ajuda/campos-simulados";
 import type { PropsCena } from "@/ajuda/tipos";
-import { formatarMoeda } from "@/lib/formatacao";
+import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
+import { lerValorEmReais, valorParaCampo } from "@/lib/valorEmReais";
 import { ROTULOS_STATUS_SAFRA_PROJETO } from "@/lib/schemas/enums";
 import { SAFRAS, variacao, type SafraExemplo } from "./exemplo";
 
@@ -22,7 +23,7 @@ function CabecalhoComAlvo({ alvo, children }: { alvo: string; children: string }
 /** Orçado da safra, com o que o roteiro digitou por cima. */
 function orcadoDe(safra: SafraExemplo, valores: PropsCena["valores"]): number {
   const digitado = valores[`orcado.${safra.chave}`];
-  return digitado !== undefined ? Number(digitado) : safra.orcado;
+  return digitado !== undefined ? (lerValorEmReais(digitado) ?? 0) : safra.orcado;
 }
 
 export function CenaPainel({ valores }: PropsCena) {
@@ -86,12 +87,15 @@ export function CenaPainel({ valores }: PropsCena) {
                     <div className="flex items-center gap-2">
                       <CampoSimulado
                         alvo={editavel ? `orcado.${safra.chave}` : undefined}
-                        valor={String(orcado)}
+                        valor={valores[`orcado.${safra.chave}`] ?? valorParaCampo(orcado)}
                         className="w-32"
                       />
                       <BotaoSimulado alvo={editavel ? `salvar.${safra.chave}` : undefined} size="sm">
                         Salvar
                       </BotaoSimulado>
+                      {editavel && valores[`salvar.${safra.chave}`] === "salvo" ? (
+                        <span className="text-xs text-muted-foreground">Salvo</span>
+                      ) : null}
                     </div>
                   </TableCell>
                   <TableCell>{formatarMoeda(realizado)}</TableCell>
@@ -99,7 +103,7 @@ export function CenaPainel({ valores }: PropsCena) {
                   <TableCell>
                     {formatarMoeda(v.variacaoAbsolutaRealizado)}
                     {v.variacaoPercentualRealizado !== null
-                      ? ` (${(v.variacaoPercentualRealizado * 100).toFixed(1)}%)`
+                      ? ` (${formatarPercentual(v.variacaoPercentualRealizado)})`
                       : null}
                   </TableCell>
                 </TableRow>
