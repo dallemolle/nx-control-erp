@@ -17,6 +17,8 @@ import {
   situacoesParaCancelar,
 } from "./recepcaoFruto";
 import { registrarMovimento } from "./estoque";
+import { criarAjuste, estornarAjuste } from "./ajusteEstoque";
+import { ajusteSchema } from "@/lib/schemas/ajusteEstoque";
 import { adicionarConsumo, criarOP } from "./ordemProducao";
 import { registrarBaixa } from "./baixa";
 import { cabecalhoOPSchema, consumoSchema } from "@/lib/schemas/ordemProducao";
@@ -258,6 +260,25 @@ describe("recepção de fruto", () => {
     await expect(cancelarRecepcao(fx.sessao("PRODUCAO"), r.recepcaoId, "Erro")).rejects.toThrow(
       "O lote já teve movimentação; não é possível excluir a recepção",
     );
+  });
+
+  test("ajuste estornado não impede excluir a recepção (lista e item)", async () => {
+    const r = await criarRecepcao(fx.sessao("PRODUCAO"), propria());
+    const ajuste = await criarAjuste(
+      fx.sessao("PRODUCAO"),
+      ajusteSchema.parse({
+        loteId: r.loteId,
+        data: "2026-11-09",
+        sentido: "SAIDA",
+        quantidadeKg: "1",
+        motivo: "AVARIA",
+      }),
+    );
+    await estornarAjuste(fx.sessao("PRODUCAO"), ajuste.id, "Lote errado");
+    const recepcao = await prisma.recepcaoFruto.findUniqueOrThrow({ where: { id: r.recepcaoId } });
+    expect((await situacoesParaCancelar([recepcao])).get(r.recepcaoId)).toEqual({ podeCancelar: true });
+    await cancelarRecepcao(fx.sessao("PRODUCAO"), r.recepcaoId, "Erro");
+    expect(Number((await prisma.lote.findUniqueOrThrow({ where: { id: r.loteId } })).saldoKg)).toBe(0);
   });
 
   test("cancelar é recusado depois de o lote ser consumido numa OP", async () => {

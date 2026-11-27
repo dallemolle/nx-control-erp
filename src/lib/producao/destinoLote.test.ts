@@ -31,6 +31,20 @@ describe("destinoDoLote", () => {
     });
   });
 
+  test("ajuste estornado some do destino; o que sobra no motivo fica", () => {
+    const destino = destinoDoLote(
+      [
+        mov("ENTRADA", 100),
+        mov("AJUSTE", -10, "AVARIA"),
+        mov("ESTORNO_AJUSTE", 10, "AVARIA"),
+        mov("AJUSTE", -2, "AMOSTRA"),
+      ],
+      98,
+    );
+    expect(destino.ajustes).toEqual([{ motivo: "AMOSTRA", kg: -2 }]);
+    expect(destino.confere).toBe(true);
+  });
+
   test("polpa removida: produção e estorno; venda cancelada volta", () => {
     const destino = destinoDoLote(
       [mov("PRODUCAO_OP", 40), mov("VENDA", -5), mov("ESTORNO_VENDA", 5), mov("ESTORNO_PRODUCAO_OP", -40)],

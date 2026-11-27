@@ -20,7 +20,9 @@ import { hojeDeCalendario, paraDataIso } from "@/lib/producao/periodo";
 import { cn } from "@/lib/utils";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { BarraDeFiltros } from "../_shared/barra-de-filtros";
+import { Badge } from "@/components/ui/badge";
 import { AjusteDialogForm } from "./ajuste-dialog-form";
+import { EstornarAjusteDialog } from "./estornar-ajuste-dialog";
 import { filtrosDosAjustes, type ParametrosAjustes } from "./filtros";
 
 const KG = new Intl.NumberFormat("pt-BR", {
@@ -120,13 +122,14 @@ export default async function AjustesPage({
               <TableHead>Motivo</TableHead>
               <TableHead>Observação</TableHead>
               <TableHead>Usuário</TableHead>
+              {podeAjustar ? <TableHead className="text-right">Ações</TableHead> : null}
             </TableRow>
           </TableHeader>
           <TableBody>
             {ajustes.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={podeAjustar ? 8 : 7}
                   className="py-8 text-center text-sm text-muted-foreground"
                 >
                   Nenhum ajuste no período.
@@ -135,8 +138,9 @@ export default async function AjustesPage({
             ) : null}
             {ajustes.map((a) => {
               const kg = Number(a.quantidadeKg);
+              const estornado = a.estornadoEm !== null;
               return (
-                <TableRow key={a.id}>
+                <TableRow key={a.id} className={cn(estornado && "text-muted-foreground")}>
                   <TableCell>{formatarData(a.data)}</TableCell>
                   <TableCell className="font-medium whitespace-nowrap">
                     {a.lote.codigo}
@@ -145,14 +149,39 @@ export default async function AjustesPage({
                   <TableCell
                     className={cn(
                       "text-right tabular-nums",
-                      kg < 0 && "text-destructive",
+                      estornado ? "line-through" : kg < 0 && "text-destructive",
                     )}
                   >
                     {KG.format(kg)}
                   </TableCell>
-                  <TableCell>{ROTULOS_MOTIVO_AJUSTE[a.motivo]}</TableCell>
+                  <TableCell>
+                    {ROTULOS_MOTIVO_AJUSTE[a.motivo]}
+                    {a.estornadoEm ? (
+                      <div className="mt-1 space-y-0.5">
+                        <Badge variant="outline">Estornado</Badge>
+                        <p className="text-xs">
+                          {formatarData(a.estornadoEm)} por {a.estornadoPor?.nome ?? "—"}: {a.motivoEstorno}
+                        </p>
+                      </div>
+                    ) : null}
+                  </TableCell>
                   <TableCell>{a.observacao ?? "—"}</TableCell>
                   <TableCell>{a.usuario.nome}</TableCell>
+                  {podeAjustar ? (
+                    <TableCell className="text-right">
+                      {estornado ? null : (
+                        <EstornarAjusteDialog
+                          ajuste={{
+                            id: a.id,
+                            lote: a.lote.codigo,
+                            descricao:
+                              `${kg < 0 ? "Saída" : "Entrada"} de ${KG_SALDO.format(Math.abs(kg))} kg ` +
+                              `em ${formatarData(a.data)} (${ROTULOS_MOTIVO_AJUSTE[a.motivo]})`,
+                          }}
+                        />
+                      )}
+                    </TableCell>
+                  ) : null}
                 </TableRow>
               );
             })}

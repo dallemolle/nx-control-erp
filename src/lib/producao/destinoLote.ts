@@ -2,7 +2,7 @@ import type { MotivoAjusteEstoque, TipoMovimentoEstoque } from "@prisma/client";
 import { ROTULOS_MOTIVO_AJUSTE } from "@/lib/schemas/enums";
 import { arredondar } from "./arredondar";
 
-/** Movimento do ledger com sinal (saída < 0); `motivo` só no ajuste. */
+/** Movimento do ledger com sinal (saída < 0); `motivo` só no ajuste e no estorno dele. */
 export type MovimentoDoLote = {
   tipo: TipoMovimentoEstoque;
   quantidadeKg: number;
@@ -32,12 +32,14 @@ export function destinoDoLote(movimentos: MovimentoDoLote[], saldoKg: number): D
       3,
     );
 
+  // O estorno leva o motivo do ajuste que desfaz: o par se anula e o motivo some se zerar.
   const porMotivo = new Map<MotivoAjusteEstoque, number>();
   for (const m of movimentos) {
-    if (m.tipo !== "AJUSTE") continue;
+    if (m.tipo !== "AJUSTE" && m.tipo !== "ESTORNO_AJUSTE") continue;
     const motivo = m.motivo ?? "OUTRO";
     porMotivo.set(motivo, (porMotivo.get(motivo) ?? 0) + m.quantidadeKg);
   }
+  for (const [motivo, kg] of porMotivo) if (Math.abs(kg) < 0.0005) porMotivo.delete(motivo);
 
   const total = arredondar(
     movimentos.reduce((s, m) => s + m.quantidadeKg, 0),

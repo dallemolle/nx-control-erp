@@ -36,6 +36,9 @@ export const AMOSTRA = {
   observacao: "Análise microbiológica",
 } as const;
 
+/** A amostra saiu do lote errado: era do AGC-261118-01. A Maria estorna e lança de novo. */
+export const ESTORNO = { motivo: "Amostra saiu do lote errado" } as const;
+
 export const SOBRA = {
   lote: "AMC-261118-01",
   produto: "Polpa de açaí médio/regular – congelada",
@@ -53,6 +56,8 @@ export type LinhaAjuste = {
   motivo: string;
   observacao: string | null;
   usuario: string;
+  /** "data por quem: motivo", quando o ajuste foi estornado. */
+  estorno?: string;
 };
 
 /** Ajustes de novembro já lançados antes de hoje (a lista vem da data mais recente para a mais antiga). */

@@ -198,7 +198,8 @@ model Usuario {
   apiKeys                   ApiKey[]
   requisicoesIdempotentes   RequisicaoIdempotente[]
   movimentosEstoque         MovimentoEstoque[]
-  ajustesEstoque            AjusteEstoque[]
+  ajustesEstoque            AjusteEstoque[]          @relation("AjusteRegistradoPor")
+  ajustesEstornados         AjusteEstoque[]          @relation("AjusteEstornadoPor")
   recepcoesFruto            RecepcaoFruto[]
   pedidosVenda              PedidoVenda[]
   ordensProducao            OrdemProducao[]
@@ -1069,6 +1070,7 @@ enum TipoMovimentoEstoque {
   ESTORNO_PRODUCAO_OP
   TRANSFERENCIA_SAIDA
   TRANSFERENCIA_ENTRADA
+  ESTORNO_AJUSTE
 }
 
 enum MotivoAjusteEstoque {
@@ -1132,6 +1134,8 @@ model MovimentoEstoque {
   tipo         TipoMovimentoEstoque
   quantidadeKg Decimal              @db.Decimal(18, 3)
   ajusteId     String?              @unique
+  /// Movimento ESTORNO_AJUSTE: o ajuste que ele desfaz.
+  ajusteEstornadoId String?         @unique
   itemPedidoId String?
   consumoOpId  String?
   producaoOpId String?
@@ -1142,7 +1146,8 @@ model MovimentoEstoque {
 
   filial     Filial           @relation(fields: [filialId], references: [id], onDelete: Cascade)
   lote       Lote             @relation(fields: [loteId], references: [id], onDelete: Cascade)
-  ajuste     AjusteEstoque?   @relation(fields: [ajusteId], references: [id])
+  ajuste     AjusteEstoque?   @relation("MovimentoDoAjuste", fields: [ajusteId], references: [id])
+  ajusteEstornado AjusteEstoque? @relation("EstornoDoAjuste", fields: [ajusteEstornadoId], references: [id])
   itemPedido ItemPedidoVenda? @relation(fields: [itemPedidoId], references: [id])
   consumoOp  ConsumoOP?       @relation(fields: [consumoOpId], references: [id])
   producaoOp ProducaoOP?      @relation(fields: [producaoOpId], references: [id])
@@ -1167,11 +1172,17 @@ model AjusteEstoque {
   observacao   String?
   usuarioId    String
   criadoEm     DateTime            @default(now())
+  /// Estorno: movimento contrário com a data do ajuste; o ajuste sai dos totais.
+  estornadoEm    DateTime?
+  estornadoPorId String?
+  motivoEstorno  String?
 
-  filial    Filial            @relation(fields: [filialId], references: [id], onDelete: Cascade)
-  lote      Lote              @relation(fields: [loteId], references: [id], onDelete: Cascade)
-  usuario   Usuario           @relation(fields: [usuarioId], references: [id])
-  movimento MovimentoEstoque?
+  filial        Filial            @relation(fields: [filialId], references: [id], onDelete: Cascade)
+  lote          Lote              @relation(fields: [loteId], references: [id], onDelete: Cascade)
+  usuario       Usuario           @relation("AjusteRegistradoPor", fields: [usuarioId], references: [id])
+  estornadoPor  Usuario?          @relation("AjusteEstornadoPor", fields: [estornadoPorId], references: [id])
+  movimento     MovimentoEstoque? @relation("MovimentoDoAjuste")
+  movimentoEstorno MovimentoEstoque? @relation("EstornoDoAjuste")
 
   @@index([filialId, data])
   @@map("ajustes_estoque")

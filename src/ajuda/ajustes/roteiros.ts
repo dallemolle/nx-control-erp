@@ -1,7 +1,7 @@
 import { construtorDeRoteiros, type Roteiro } from "@/ajuda/tipos";
 import type { ALVOS } from "./alvos";
 import { LISTA_ABERTA } from "./cenas";
-import { AMOSTRA, LOTES_OPCOES, SOBRA, rotuloLote } from "./exemplo";
+import { AMOSTRA, ESTORNO, LOTES_OPCOES, SOBRA, rotuloLote } from "./exemplo";
 
 const roteiro = construtorDeRoteiros<typeof ALVOS>();
 
@@ -174,42 +174,49 @@ export const ROTEIROS: readonly Roteiro[] = [
     passos: [
       {
         cena: "lista",
-        alvo: "lista.tabela",
-        instrucao: "Ajuste não se edita nem se exclui",
+        alvo: "lista.estornar",
+        instrucao: "Clique em “Estornar” na linha do ajuste errado",
         explicacao:
-          "A lista não tem botões: todo ajuste fica registrado como foi lançado. Para corrigir, lance outro ajuste " +
-          "que desfaça o errado.",
+          `Ajuste não se edita: ele se estorna. No exemplo, a amostra de ${AMOSTRA.kg} kg saiu do ${AMOSTRA.lote}, ` +
+          "mas era de outro lote.",
         preenche: { "lista.amostra": "lancado" },
       },
       {
-        cena: "novo",
-        alvo: "novo.sentido",
-        instrucao: "Lance o contrário",
+        cena: "estornar",
+        alvo: "estornar.aviso",
+        instrucao: "Confira o que vai ser desfeito",
         explicacao:
-          "Uma saída errada se desfaz com uma entrada da mesma quantidade no mesmo lote; uma entrada errada, com uma " +
-          "saída. Depois, lance o ajuste certo.",
-        preenche: { "novo.sentido": "entrada" },
+          "O estorno entra na data do ajuste, então o estoque de qualquer dia fica como se o ajuste errado não " +
+          "existisse. Estornar uma entrada só é possível se o lote ainda tiver aquele saldo.",
       },
       {
-        cena: "novo",
-        alvo: "novo.motivo",
-        instrucao: "Use o motivo Outro",
-        explicacao: "Assim o acerto não se mistura com os ajustes de inventário nos filtros.",
-        preenche: { "novo.motivo": "Outro" },
+        cena: "estornar",
+        alvo: "estornar.motivo",
+        instrucao: "Informe o motivo",
+        explicacao: "Fica na linha estornada e na auditoria, para quem ler a lista depois.",
+        preenche: { "estornar.motivo": ESTORNO.motivo },
       },
       {
-        cena: "novo",
-        alvo: "novo.observacao",
-        instrucao: "Explique na observação",
-        explicacao: "Diga qual ajuste está sendo desfeito (data, lote e quantidade), para quem ler a lista depois.",
-        preenche: { "novo.observacao": "Desfaz a saída de 20/11 no lote errado" },
+        cena: "estornar",
+        alvo: "estornar.confirmar",
+        instrucao: "Clique em “Estornar ajuste”",
+        explicacao: "O saldo do lote volta na hora.",
+      },
+      {
+        cena: "lista",
+        alvo: "lista.amostra",
+        instrucao: "A linha fica marcada como estornada",
+        explicacao:
+          "A quantidade aparece riscada, com quem estornou, quando e por quê. O botão some: um ajuste só se estorna " +
+          "uma vez. Depois, lance o ajuste certo com “Novo ajuste”.",
+        preenche: { "lista.amostra": "estornado" },
       },
     ],
     eDepois: {
       texto:
-        "Atenção: depois de um ajuste, o lote passa a ter movimento. Uma recepção cujo lote teve ajuste não pode mais " +
-        "ser excluída, e uma OP cuja polpa teve ajuste não pode mais ser reaberta nem cancelada, mesmo que o ajuste " +
-        "seja desfeito.",
+        "Ajuste estornado não conta como movimento do lote: a recepção daquele lote volta a poder ser excluída, e a OP " +
+        "da polpa volta a poder ser reaberta ou cancelada (se o lote não teve venda nem transferência). Na " +
+        "rastreabilidade, o par se anula e o motivo some do destino do lote.",
       proximoRoteiro: "consultar-ajustes",
     },
   }),

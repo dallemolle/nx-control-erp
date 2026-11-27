@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Alvo,
@@ -10,7 +11,18 @@ import {
 } from "@/components/ajuda/campos-simulados";
 import type { PropsCena, Valores } from "@/ajuda/tipos";
 import { cn } from "@/lib/utils";
-import { AMOSTRA, HISTORICO, HOJE, LOTES_OPCOES, SOBRA, USUARIO, rotuloLote, type LinhaAjuste } from "./exemplo";
+import {
+  AMOSTRA,
+  ESTORNO,
+  HISTORICO,
+  HOJE,
+  KG_SALDO,
+  LOTES_OPCOES,
+  SOBRA,
+  USUARIO,
+  rotuloLote,
+  type LinhaAjuste,
+} from "./exemplo";
 
 // Espelho de src/app/(dashboard)/producao/ajustes/*. Mudou um rótulo, campo ou coluna lá? Ajuste aqui também.
 
@@ -40,9 +52,13 @@ export function ajustesDaCena(valores: Valores): LinhaAjuste[] {
     usuario: USUARIO,
   });
   // O lançado por último aparece primeiro (mesma data, ordem de criação decrescente).
+  const amostra = valores["lista.amostra"];
   const novos: LinhaAjuste[] = [
     ...(valores["lista.sobra"] === "lancado" ? [linha(SOBRA, SOBRA.kg)] : []),
-    ...(valores["lista.amostra"] === "lancado" ? [linha(AMOSTRA, -AMOSTRA.kg)] : []),
+    ...(amostra === "lancado" ? [linha(AMOSTRA, -AMOSTRA.kg)] : []),
+    ...(amostra === "estornado"
+      ? [{ ...linha(AMOSTRA, -AMOSTRA.kg), estorno: `${HOJE} por ${USUARIO}: ${ESTORNO.motivo}` }]
+      : []),
   ];
   const motivo = valores["lista.motivo"];
   return [...novos, ...HISTORICO].filter((a) => !motivo || a.motivo === motivo);
@@ -93,12 +109,13 @@ export function CenaLista({ valores }: PropsCena) {
               <TableHead>Motivo</TableHead>
               <TableHead>Observação</TableHead>
               <TableHead>Usuário</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {ajustes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
                   Nenhum ajuste no período.
                 </TableCell>
               </TableRow>
@@ -112,11 +129,13 @@ export function CenaLista({ valores }: PropsCena) {
                     : null;
               const quantidade = KG.format(a.kg);
               return (
-                <TableRow key={`${a.data}-${a.lote}`}>
+                <TableRow key={`${a.data}-${a.lote}`} className={cn(a.estorno && "text-muted-foreground")}>
                   <TableCell>{a.data}</TableCell>
                   <TableCell className="font-medium whitespace-nowrap">{a.lote}</TableCell>
                   <TableCell>{a.produto}</TableCell>
-                  <TableCell className={cn("text-right tabular-nums", a.kg < 0 && "text-destructive")}>
+                  <TableCell
+                    className={cn("text-right tabular-nums", a.estorno ? "line-through" : a.kg < 0 && "text-destructive")}
+                  >
                     {alvo ? (
                       <Alvo nome={alvo} className="inline-block px-1">
                         {quantidade}
@@ -125,9 +144,28 @@ export function CenaLista({ valores }: PropsCena) {
                       quantidade
                     )}
                   </TableCell>
-                  <TableCell>{a.motivo}</TableCell>
+                  <TableCell>
+                    {a.motivo}
+                    {a.estorno ? (
+                      <div className="mt-1 space-y-0.5">
+                        <Badge variant="outline">Estornado</Badge>
+                        <p className="text-xs">{a.estorno}</p>
+                      </div>
+                    ) : null}
+                  </TableCell>
                   <TableCell>{a.observacao ?? "—"}</TableCell>
                   <TableCell>{a.usuario}</TableCell>
+                  <TableCell className="text-right">
+                    {a.estorno ? null : (
+                      <BotaoSimulado
+                        alvo={alvo === "lista.amostra" ? "lista.estornar" : undefined}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Estornar
+                      </BotaoSimulado>
+                    )}
+                  </TableCell>
                 </TableRow>
               );
             })}
@@ -189,6 +227,24 @@ export function CenaNovo({ valores }: PropsCena) {
       <CampoSimulado alvo="novo.observacao" rotulo="Observação" valor={valores["novo.observacao"]} />
       <BotaoSimulado alvo="novo.salvar" largo>
         Salvar ajuste
+      </BotaoSimulado>
+    </JanelaSimulada>
+  );
+}
+
+export function CenaEstornar({ valores }: PropsCena) {
+  return (
+    <JanelaSimulada titulo={`Estornar ajuste do lote ${AMOSTRA.lote}`} className="max-w-md">
+      <Alvo nome="estornar.aviso" className="p-1">
+        <p className="text-sm text-muted-foreground">
+          Saída de {KG_SALDO.format(AMOSTRA.kg)} kg em {HOJE} ({AMOSTRA.motivo}). O estorno desfaz o ajuste na data dele:
+          o saldo volta como se ele não tivesse sido lançado, e ele sai dos totais por motivo. A linha continua na
+          lista, marcada como estornada.
+        </p>
+      </Alvo>
+      <CampoSimulado alvo="estornar.motivo" rotulo="Motivo" valor={valores["estornar.motivo"]} />
+      <BotaoSimulado alvo="estornar.confirmar" variant="destructive" largo>
+        Estornar ajuste
       </BotaoSimulado>
     </JanelaSimulada>
   );

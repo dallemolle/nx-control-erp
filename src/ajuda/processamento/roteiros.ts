@@ -451,7 +451,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Quando não dá mais para reabrir nem cancelar",
         explicacao:
           "Depois que algum lote de polpa da OP teve venda, ajuste ou transferência, mesmo que desfeitos depois, os " +
-          "dois botões ficam desabilitados e a tela diz qual lote impediu.",
+          "dois botões ficam desabilitados e a tela diz qual lote impediu. A exceção é o ajuste estornado: ele e o " +
+          "estorno não contam.",
         dica: "Nesse caso, corrija o estoque com um ajuste na tela de Ajustes de estoque.",
         preenche: { "op.status": "Encerrada", "op.bloqueado": "sim" },
       },

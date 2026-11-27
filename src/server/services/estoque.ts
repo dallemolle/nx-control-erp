@@ -29,6 +29,16 @@ export async function movimentarSaldo(tx: Prisma.TransactionClient, loteId: stri
   }
 }
 
+/**
+ * Movimentos que contam como "o lote já teve movimentação" (excluir recepção, reabrir ou
+ * cancelar OP): ajuste estornado e o estorno dele não contam, porque o par se anula.
+ */
+export const SEM_AJUSTE_ESTORNADO: Prisma.MovimentoEstoqueWhereInput = {
+  NOT: {
+    OR: [{ tipo: "ESTORNO_AJUSTE" }, { tipo: "AJUSTE", ajuste: { is: { estornadoEm: { not: null } } } }],
+  },
+};
+
 export type NovoMovimento = {
   filialId: string;
   loteId: string;
@@ -38,6 +48,7 @@ export type NovoMovimento = {
   quantidadeKg: number;
   usuarioId: string;
   ajusteId?: string;
+  ajusteEstornadoId?: string;
   itemPedidoId?: string;
   consumoOpId?: string;
   producaoOpId?: string;

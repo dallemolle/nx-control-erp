@@ -442,31 +442,7 @@ continua, para cada item ter um número único). Prioridade a definir.
 
 ## Produção — lacunas achadas ao escrever a ajuda contextual
 
-Numeração continua a do Financeiro e da Controladoria.
-
-### 25. Ajuste de estoque errado não tem estorno
-
-- **Problema:** ajuste lançado não pode ser editado nem excluído. Para
-  corrigir, é preciso lançar o ajuste contrário, com motivo "Outro" ou
-  "Inventário", sem nenhum vínculo com o ajuste errado.
-- **Exemplo:** a Maria lança saída de 10 kg no AMC-261120-01 quando era no
-  AMC-261118-01. A lista passa a ter três linhas (a errada, a entrada que a
-  desfaz e a certa) e o filtro por motivo mostra "perdas" que não existiram.
-- **Onde:** `src/server/services/ajusteEstoque.ts` (só `criarAjuste`);
-  `producao/ajustes/page.tsx` (lista sem ações).
-- **Impacto:** relatório de perdas inflado e histórico difícil de ler. Pior:
-  o ajuste conta como movimento do lote mesmo desfeito, então a recepção
-  daquele lote não pode mais ser excluída e a OP da polpa não pode mais ser
-  reaberta nem cancelada.
-- **Caminhos:** "Estornar" no ajuste (com motivo, gera o movimento contrário
-  ligado ao original e some dos totais de perda); ou excluir ajuste do mesmo
-  dia, enquanto o lote não teve outro movimento depois.
-- **Cuidados:** saldo não pode ficar negativo ao estornar uma entrada;
-  auditoria; a regra de "lote com movimento" da recepção e da OP deveria
-  ignorar o par ajuste/estorno.
-- **Ao corrigir:** roteiro `corrigir-ajuste` em
-  `src/ajuda/ajustes/roteiros.ts` (ensina o ajuste contrário) e o "E depois?"
-  dele.
+Numeração continua a do Financeiro e da Controladoria. Itens 22 a 25 feitos em 2026-11-27; nada pendente.
 
 ## Vendas — lacunas achadas ao escrever a ajuda contextual
 

@@ -9,7 +9,7 @@ import { calcularRecepcao } from "@/lib/producao/recepcao";
 import { calcularValidade, prefixoDoLote, proximoCodigoDeLote } from "@/lib/producao/lote";
 import { documentoDoTituloDaRecepcao, romaneioNoTitulo, type RomaneioNoTitulo } from "@/lib/producao/romaneioNoTitulo";
 import { obterConfiguracaoProducao } from "./configuracaoProducao";
-import { registrarMovimento } from "./estoque";
+import { registrarMovimento, SEM_AJUSTE_ESTORNADO } from "./estoque";
 import { criarTituloInterno } from "./titulo";
 
 export const MSG_SEM_CATEGORIA_COMPRA =
@@ -314,7 +314,9 @@ async function verificarCancelamento(
   recepcao: { status: string; loteId: string; tituloId: string | null },
 ): Promise<{ podeCancelar: boolean; motivo?: string }> {
   if (recepcao.status === "CANCELADA") return { podeCancelar: false, motivo: "A recepção já está cancelada" };
-  const movimentos = await db.movimentoEstoque.count({ where: { loteId: recepcao.loteId } });
+  const movimentos = await db.movimentoEstoque.count({
+    where: { loteId: recepcao.loteId, ...SEM_AJUSTE_ESTORNADO },
+  });
   if (movimentos > 1) {
     return { podeCancelar: false, motivo: "O lote já teve movimentação; não é possível excluir a recepção" };
   }
@@ -345,7 +347,11 @@ export async function situacoesParaCancelar(
   const loteIds = recepcoes.map((r) => r.loteId);
   const tituloIds = recepcoes.flatMap((r) => (r.tituloId ? [r.tituloId] : []));
   const [movimentos, baixas] = await Promise.all([
-    prisma.movimentoEstoque.groupBy({ by: ["loteId"], where: { loteId: { in: loteIds } }, _count: { _all: true } }),
+    prisma.movimentoEstoque.groupBy({
+      by: ["loteId"],
+      where: { loteId: { in: loteIds }, ...SEM_AJUSTE_ESTORNADO },
+      _count: { _all: true },
+    }),
     prisma.baixa.findMany({
       where: { parcela: { tituloId: { in: tituloIds } }, statusAprovacao: { in: ["PENDENTE", "APROVADO"] } },
       select: { parcela: { select: { tituloId: true } } },
