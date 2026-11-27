@@ -28,6 +28,9 @@ const COLUNAS: ColunaExport<LoteListado>[] = [
   { rotulo: "Valor", valor: (l) => l.valor },
 ];
 
+/** Saldo no fim do dia de referência, como na tela. */
+const NA_DATA = { saldoNaData: true };
+
 type LinhaResumo = { status: string; quantidade: number; kg: number };
 const COLUNAS_RESUMO: ColunaExport<LinhaResumo>[] = [
   { rotulo: "Status", valor: (r) => r.status },
@@ -59,22 +62,23 @@ export async function GET(request: Request) {
   const formato = url.searchParams.get("formato");
   const porProdutoLocal = url.searchParams.get("visao") === "resumo";
   const { filtros, referencia } = filtrosDoEstoque(Object.fromEntries(url.searchParams));
+  const saldoEm = `Saldo em ${formatarData(referencia)} (custo e local de hoje)`;
   const cabecalho = () =>
     cabecalhoDoRelatorio(sessao, {
       titulo: porProdutoLocal ? "Estoque por produto e local" : "Estoque por lote",
       filtros: porProdutoLocal
-        ? [`Referência: ${formatarData(referencia)}`]
+        ? [saldoEm]
         : [
-            `Referência: ${formatarData(referencia)}`,
+            saldoEm,
             filtros.status ? `Status: ${ROTULOS_STATUS_LOTE[filtros.status]}` : null,
             filtros.incluirZerados ? "Com lotes zerados" : null,
           ],
     });
 
   if (porProdutoLocal) {
-    const produtoLocal = await resumoProdutoLocal(sessao.filialId);
+    const produtoLocal = await resumoProdutoLocal(sessao.filialId, referencia);
     if (formato === "pdf") {
-      const resumo = await resumoPorStatus(sessao.filialId, {}, referencia);
+      const resumo = await resumoPorStatus(sessao.filialId, {}, referencia, NA_DATA);
       const secoes = [
         secaoResumo(resumo),
         secaoPdf({ titulo: "Saldo por produto e local", linhas: produtoLocal.linhas, colunas: COLUNAS_PRODUTO_LOCAL }),
@@ -89,9 +93,9 @@ export async function GET(request: Request) {
     });
   }
 
-  const lotes = await listarLotes(sessao.filialId, filtros, referencia);
+  const lotes = await listarLotes(sessao.filialId, filtros, referencia, NA_DATA);
   if (formato === "pdf") {
-    const resumo = await resumoPorStatus(sessao.filialId, filtros, referencia);
+    const resumo = await resumoPorStatus(sessao.filialId, filtros, referencia, NA_DATA);
     const secoes = [secaoResumo(resumo), secaoPdf({ titulo: "Lotes", linhas: lotes, colunas: COLUNAS })];
     return responderArquivoPdf(await gerarPdfSecoes(secoes, await cabecalho()), "estoque-por-lote");
   }

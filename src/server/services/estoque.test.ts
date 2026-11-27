@@ -90,6 +90,81 @@ describe("estoque: saldo por movimentos", () => {
   });
 });
 
+describe("estoque na data de referência", () => {
+  let fx: FixtureProducao;
+  let cat: CatalogoDeTeste;
+  const em = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
+  const naData = { saldoNaData: true };
+
+  beforeAll(async () => {
+    fx = await criarFixtureProducao("estoquedata");
+    cat = await criarCatalogoDeTeste(fx);
+    // Vendido inteiro no dia 08: hoje zerado, mas com 100 kg nos dias 05 a 07.
+    const vendido = await criarLoteDeTeste(fx, {
+      produtoId: cat.produtoPolpaId,
+      localId: cat.localCamaraId,
+      kg: 100,
+      custoKg: 12.5,
+      data: em("2026-11-05"),
+      validade: em("2027-05-01"),
+      codigo: "AGC-VENDIDO",
+    });
+    await prisma.$transaction((tx) =>
+      registrarMovimento(tx, {
+        filialId: fx.filialAId,
+        loteId: vendido.id,
+        data: em("2026-11-08"),
+        tipo: "AJUSTE",
+        quantidadeKg: -100,
+        usuarioId: fx.usuarioId,
+      }),
+    );
+    // Recebido no dia 10: não existia antes.
+    await criarLoteDeTeste(fx, {
+      produtoId: cat.produtoPolpaId,
+      localId: cat.localCamaraId,
+      kg: 50,
+      custoKg: 10,
+      data: em("2026-11-10"),
+      validade: em("2027-05-01"),
+      codigo: "AGC-NOVO",
+    });
+  });
+  afterAll(async () => {
+    await fx.limpar();
+  });
+
+  test("lista o saldo que cada lote tinha no dia, com o saldo de hoje à parte", async () => {
+    const lotes = await listarLotes(fx.filialAId, {}, em("2026-11-07"), naData);
+    expect(lotes.map((l) => l.codigo)).toEqual(["AGC-VENDIDO"]);
+    expect(lotes[0]).toMatchObject({ saldoKg: 100, saldoAtualKg: 0, valor: 1250, status: "OK" });
+
+    expect((await listarLotes(fx.filialAId, {}, em("2026-11-08"), naData)).map((l) => l.codigo)).toEqual([]);
+    expect((await listarLotes(fx.filialAId, {}, em("2026-11-10"), naData)).map((l) => l.codigo)).toEqual(["AGC-NOVO"]);
+  });
+
+  test("zerados na data: só lotes que já existiam; status Zerado pelo saldo do dia", async () => {
+    const dia07 = await listarLotes(fx.filialAId, { incluirZerados: true }, em("2026-11-07"), naData);
+    expect(dia07.map((l) => l.codigo)).toEqual(["AGC-VENDIDO"]);
+    const zerados = await listarLotes(fx.filialAId, { status: "ZERADO" }, em("2026-11-09"), naData);
+    expect(zerados.map((l) => l.codigo)).toEqual(["AGC-VENDIDO"]);
+  });
+
+  test("cartões e visão por produto e local seguem a data", async () => {
+    const resumo = await resumoPorStatus(fx.filialAId, {}, em("2026-11-07"), naData);
+    expect(resumo.OK).toEqual({ quantidade: 1, kg: 100 });
+    const porLocal = await resumoProdutoLocal(fx.filialAId, em("2026-11-07"));
+    expect(porLocal.linhas).toEqual([expect.objectContaining({ saldoKg: 100, valor: 1250 })]);
+    expect(porLocal.locais.find((l) => l.localId === cat.localCamaraId)?.saldoKg).toBe(100);
+  });
+
+  test("sem a opção, segue o saldo atual (ajustes e painel)", async () => {
+    const lotes = await listarLotes(fx.filialAId, {}, em("2026-11-07"));
+    expect(lotes.map((l) => l.codigo)).toEqual(["AGC-NOVO"]);
+    expect(lotes[0]).toMatchObject({ saldoKg: 50, saldoAtualKg: 50 });
+  });
+});
+
 describe("estoque: consultas e mudança de local", () => {
   let fx: FixtureProducao;
   let cat: CatalogoDeTeste;

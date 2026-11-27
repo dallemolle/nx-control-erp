@@ -118,17 +118,50 @@ export type FiltroLotes = {
   incluirZerados?: boolean;
 };
 
-/** Lotes da filial com dias, status e valor a custo, na ordem de saída (FEFO, RN-27). */
-export async function listarLotes(filialId: string, filtros: FiltroLotes, referencia: Date) {
+const UM_DIA_MS = 86_400_000;
+
+/**
+ * Saldo de cada lote da filial no fim do dia `referencia`: soma dos movimentos com data
+ * até ele. Os estornos levam a data do movimento original, então se anulam em qualquer dia.
+ */
+export async function saldosNaData(filialId: string, referencia: Date): Promise<Map<string, number>> {
+  const somas = await prisma.movimentoEstoque.groupBy({
+    by: ["loteId"],
+    where: { filialId, data: { lt: new Date(referencia.getTime() + UM_DIA_MS) } },
+    _sum: { quantidadeKg: true },
+  });
+  return new Map(somas.map((s) => [s.loteId, arredondar(Number(s._sum.quantidadeKg ?? 0), 3)]));
+}
+
+/**
+ * Lotes da filial com dias, status e valor a custo, na ordem de saída (FEFO, RN-27).
+ * Com `saldoNaData`, o saldo (e o que depende dele: status Zerado, valor, quais lotes
+ * aparecem) é o do fim do dia `referencia`; `saldoAtualKg` é sempre o de agora, para as
+ * ações. Custo e local são sempre os atuais (não têm histórico).
+ */
+export async function listarLotes(
+  filialId: string,
+  filtros: FiltroLotes,
+  referencia: Date,
+  opcoes: { saldoNaData?: boolean } = {},
+) {
   const configuracao = await obterConfiguracaoProducao(filialId);
   const mostrarZerados = filtros.incluirZerados || filtros.status === "ZERADO";
+  const saldos = opcoes.saldoNaData ? await saldosNaData(filialId, referencia) : null;
+  const filtroDeSaldo: Prisma.LoteWhereInput = saldos
+    ? mostrarZerados
+      ? { data: { lt: new Date(referencia.getTime() + UM_DIA_MS) } }
+      : { id: { in: [...saldos].filter(([, kg]) => kg > 0).map(([id]) => id) } }
+    : mostrarZerados
+      ? {}
+      : { saldoKg: { gt: 0 } };
 
   const lotes = await prisma.lote.findMany({
     where: {
       filialId,
       ...(filtros.produtoId ? { produtoId: filtros.produtoId } : {}),
       ...(filtros.localId ? { localId: filtros.localId } : {}),
-      ...(mostrarZerados ? {} : { saldoKg: { gt: 0 } }),
+      ...filtroDeSaldo,
     },
     include: {
       produto: { select: { codigo: true, descricao: true, conservacao: true, diasLiberacaoVencido: true } },
@@ -140,9 +173,12 @@ export async function listarLotes(filialId: string, filtros: FiltroLotes, refere
   });
 
   const listados = lotes.map((lote) => {
-    const saldoKg = Number(lote.saldoKg);
+    const saldoAtualKg = Number(lote.saldoKg);
+    const saldoKg = saldos ? (saldos.get(lote.id) ?? 0) : saldoAtualKg;
     return {
       ...lote,
+      saldoKg,
+      saldoAtualKg,
       emProducao: lote.producaoOP?.removidoEm === null && lote.producaoOP.ordemProducao.status === "ABERTA",
       bloqueio: bloqueioDaProducao(lote),
       dias: diasParaVencer(lote.validade, referencia),
@@ -169,8 +205,14 @@ export async function resumoPorStatus(
   filialId: string,
   filtros: Pick<FiltroLotes, "produtoId" | "localId">,
   referencia: Date,
+  opcoes: { saldoNaData?: boolean } = {},
 ): Promise<ResumoStatus> {
-  const lotes = await listarLotes(filialId, { produtoId: filtros.produtoId, localId: filtros.localId }, referencia);
+  const lotes = await listarLotes(
+    filialId,
+    { produtoId: filtros.produtoId, localId: filtros.localId },
+    referencia,
+    opcoes,
+  );
   const resumo: ResumoStatus = {
     OK: { quantidade: 0, kg: 0 },
     VENCENDO: { quantidade: 0, kg: 0 },
@@ -184,12 +226,19 @@ export async function resumoPorStatus(
   return resumo;
 }
 
-/** Saldo e valor por produto × local, mais a ocupação de cada local com capacidade. */
-export async function resumoProdutoLocal(filialId: string) {
-  const [lotes, locais] = await Promise.all([
+/**
+ * Saldo e valor por produto × local, mais a ocupação de cada local com capacidade. Com
+ * `referencia`, o saldo é o do fim daquele dia (custo e local seguem os atuais).
+ */
+export async function resumoProdutoLocal(filialId: string, referencia?: Date) {
+  const saldos = referencia ? await saldosNaData(filialId, referencia) : null;
+  const [lotesDoBanco, locais] = await Promise.all([
     prisma.lote.findMany({
-      where: { filialId, saldoKg: { gt: 0 } },
+      where: saldos
+        ? { filialId, id: { in: [...saldos].filter(([, kg]) => kg > 0).map(([id]) => id) } }
+        : { filialId, saldoKg: { gt: 0 } },
       select: {
+        id: true,
         produtoId: true,
         localId: true,
         saldoKg: true,
@@ -204,6 +253,7 @@ export async function resumoProdutoLocal(filialId: string) {
       orderBy: { nome: "asc" },
     }),
   ]);
+  const lotes = lotesDoBanco.map((lote) => ({ ...lote, saldoKg: saldos?.get(lote.id) ?? Number(lote.saldoKg) }));
 
   // Valor = Σ saldo × custo de cada lote: não dá para agregar no banco com groupBy.
   const porChave = new Map<

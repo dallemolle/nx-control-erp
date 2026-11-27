@@ -74,10 +74,10 @@ export const ROTEIROS: readonly Roteiro[] = [
 
   roteiro({
     id: "filtrar-referencia",
-    titulo: "Filtrar e ver o que vence em outro dia",
+    titulo: "Filtrar e ver o estoque em outro dia",
     quandoUsar:
-      "Para achar um lote, ver só os vencidos, ou planejar: o que vai estar vencendo ou vencido no sábado, com o " +
-      "estoque de hoje.",
+      "Para achar um lote, ver só os vencidos, planejar o que vai estar vencendo no sábado ou tirar o estoque de " +
+      "um dia passado (fim do mês, inventário).",
     quemPode: QUEM_VE,
     passos: [
       {
@@ -105,8 +105,8 @@ export const ROTEIROS: readonly Roteiro[] = [
           `Os dias e o status passam a ser contados nesta data. Em ${OUTRO_DIA}, o açaí resfriado AMR-261118-01 ` +
           "também aparece como Vencido, e os cartões mudam junto.",
         dica:
-          "A data muda só a conta do vencimento: o saldo é sempre o de hoje. Ela não mostra como estava o estoque " +
-          "num dia passado.",
+          "O saldo também é o daquele dia: a soma das entradas e saídas até ele. Num dia passado, aparecem os lotes que " +
+          "tinham saldo, mesmo zerados hoje, e um aviso lembra que custo e local são os de hoje.",
         preenche: { "est.referencia": OUTRO_DIA },
       },
       {
