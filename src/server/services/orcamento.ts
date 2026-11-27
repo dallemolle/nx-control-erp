@@ -4,6 +4,7 @@ import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permiss
 import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { saldoRemanescenteParcela } from "./fluxoDeCaixaProjetado";
+import { valorNoSentidoDaCategoria } from "@/lib/financeiro/sentidoDaCategoria";
 import {
   whereLancamentoPorClassificacao,
   whereTituloPorClassificacao,
@@ -176,17 +177,27 @@ export async function buscarRealizadoPorCategoria(
       ...whereLancamentoPorClassificacao(classificacao),
     },
     include: {
-      baixa: { include: { parcela: { include: { titulo: { select: { categoriaFinanceiraId: true } } } } } },
+      categoriaFinanceira: { select: CATEGORIA_COM_TIPO },
+      baixa: { select: { parcela: { select: { titulo: { select: { categoriaFinanceira: { select: CATEGORIA_COM_TIPO } } } } } } },
     },
   });
 
+  // Com sinal conforme o tipo da categoria: a devolução de uma compra abate a despesa em vez de somar.
   const totais = new Map<string, number>();
   for (const lancamento of lancamentos) {
-    const categoriaId = lancamento.categoriaFinanceiraId ?? lancamento.baixa?.parcela.titulo.categoriaFinanceiraId ?? null;
-    if (!categoriaId) continue;
-    totais.set(categoriaId, (totais.get(categoriaId) ?? 0) + Number(lancamento.valor));
+    const categoria = lancamento.categoriaFinanceira ?? lancamento.baixa?.parcela.titulo.categoriaFinanceira ?? null;
+    if (!categoria) continue;
+    const valor = valorNoSentidoDaCategoria(categoria.tipo, lancamento.tipo, Number(lancamento.valor));
+    totais.set(categoria.id, somarEmCentavos(totais.get(categoria.id) ?? 0, valor));
   }
   return totais;
+}
+
+const CATEGORIA_COM_TIPO = { id: true, tipo: true } as const;
+
+/** Soma em centavos: com valores que abatem, somar em ponto flutuante deixaria resíduos como 799,9999. */
+function somarEmCentavos(a: number, b: number): number {
+  return (Math.round(a * 100) + Math.round(b * 100)) / 100;
 }
 
 export async function buscarProjetadoPorCategoria(
@@ -202,19 +213,22 @@ export async function buscarProjetadoPorCategoria(
       dataVencimento: { gte: inicioDoMes(ano, mes), lte: fimDoMes(ano, mes) },
     },
     include: {
-      titulo: { select: { categoriaFinanceiraId: true } },
+      titulo: { select: { tipo: true, categoriaFinanceira: { select: CATEGORIA_COM_TIPO } } },
       baixas: { where: { statusAprovacao: "APROVADO" } },
     },
   });
 
+  // Mesma regra do realizado: título a receber conta como entrada, a pagar como saída.
   const totais = new Map<string, number>();
   for (const parcela of parcelas) {
     const saldo = saldoRemanescenteParcela(
       Number(parcela.valorAtualizado),
       parcela.baixas.map(valoresDaBaixa),
     );
-    const categoriaId = parcela.titulo.categoriaFinanceiraId;
-    totais.set(categoriaId, (totais.get(categoriaId) ?? 0) + saldo);
+    const categoria = parcela.titulo.categoriaFinanceira;
+    const sentido = parcela.titulo.tipo === "RECEBER" ? "ENTRADA" : "SAIDA";
+    const valor = valorNoSentidoDaCategoria(categoria.tipo, sentido, saldo);
+    totais.set(categoria.id, somarEmCentavos(totais.get(categoria.id) ?? 0, valor));
   }
   return totais;
 }

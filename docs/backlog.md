@@ -403,35 +403,6 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 Mesmo formato e mesma numeração das lacunas do Financeiro (a numeração
 continua, para cada item ter um número único). Prioridade a definir.
 
-### 15. Realizado do Orçamento ignora o sentido do lançamento
-
-- **Problema:** `buscarRealizadoPorCategoria` (`src/server/services/orcamento.ts`)
-  soma `lancamento.valor` sem olhar `tipo` (ENTRADA/SAIDA). E o lançamento
-  manual da Tesouraria e o avulso da Conciliação deixam escolher qualquer
-  categoria em qualquer sentido (a lista não filtra receita/despesa), sem
-  validação no serviço.
-- **Exemplo:** a Agro Insumos devolve R$ 200,00 de adubo. A tesouraria lança
-  uma entrada de R$ 200,00 na categoria Insumos Agrícolas. No Orçamento, o
-  realizado de Insumos **sobe** R$ 200,00 em vez de cair, e pode até marcar
-  Estouro por causa da devolução.
-- **Onde:** `src/server/services/orcamento.ts` (`buscarRealizadoPorCategoria`);
-  `src/app/(dashboard)/financeiro/tesouraria/lancamento-dialog-form.tsx` e
-  `src/app/(dashboard)/financeiro/conciliacao/campos-lancamento-avulso.tsx`
-  (lista de categorias).
-- **Impacto:** realizado inflado e estouro falso em qualquer categoria com
-  estorno, devolução ou lançamento no sentido "contrário".
-- **Caminhos:** somar com sinal conforme o tipo da categoria (saída numa
-  despesa soma, entrada numa despesa abate; o inverso para receita); e/ou
-  filtrar a lista de categorias pelo sentido do lançamento, deixando a
-  devolução como exceção explícita.
-- **Cuidados:** o Fluxo por dimensão já separa entradas e saídas
-  (`fluxoDeCaixaPorDimensao.ts`); conferir a Comparação entre safras na sessão
-  da ajuda dela. Dados já lançados no sentido "errado" mudam de valor quando a
-  regra mudar.
-- **Ao corrigir:** passo "Realizado" do roteiro `ler-comparativo` em
-  `src/ajuda/orcamento/roteiros.ts`, se a regra virar "com sinal"; manual,
-  seção 4.1.
-
 ### 16. Variação e Estouro do Orçamento medem coisas diferentes
 
 - **Problema:** em `montarLinhaComparativo`, a Variação (e a Variação %) é
