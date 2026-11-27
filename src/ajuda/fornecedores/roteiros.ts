@@ -77,8 +77,8 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "form.tipo",
         instrucao: "Dados bancários: escolha “Depósito bancário”",
         explicacao:
-          "Opcional: Pix ou depósito, para quem vai pagar. Ficam guardados no cadastro; para consultar, abra o " +
-          "“Editar” do fornecedor.",
+          "Opcional: Pix ou depósito, para quem vai pagar. Aparecem no detalhe das contas a pagar do fornecedor " +
+          "(clique na linha do título) e na tela de baixa, ao lado do nome.",
         preenche: { "form.tipo": "Depósito bancário" },
       },
       {

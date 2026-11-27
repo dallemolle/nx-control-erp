@@ -16,6 +16,7 @@ import { AnexosPanel } from "./anexos-panel";
 import { BaixasDaParcela } from "./baixas-da-parcela";
 import type { BaixaDaParcela } from "./titulos-para-cliente";
 import { TituloDialogForm, paraInputDate, type TituloEditavel } from "./titulo-dialog-form";
+import type { ParcelaParaBaixa } from "./baixa-dialog";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
 import { nomeDaContaBancaria } from "@/lib/contaBancaria";
 
@@ -37,6 +38,8 @@ type TituloLinha = {
   clienteId: string | null;
   fornecedor: { nome: string } | null;
   cliente: { nome: string } | null;
+  /** Pix ou depósito do cadastro da contraparte, já formatado; null se não houver. */
+  dadosBancarios: string | null;
   dataEmissao: Date;
   dataCompetencia: Date;
   categoriaFinanceiraId: string;
@@ -128,7 +131,7 @@ export function TituloTable({
   podeBaixar: boolean;
   podeAprovar: boolean;
   filtroAtivo: boolean;
-  onAbrirBaixa: (parcela: { id: string; saldoEmAberto: number }) => void;
+  onAbrirBaixa: (parcela: ParcelaParaBaixa) => void;
   onAbrirRenegociacao: (parcelaId: string) => void;
   onAbrirEstorno: (baixa: BaixaDaParcela) => void;
   onAbrirDispensa: (baixa: BaixaDaParcela) => void;
@@ -245,6 +248,12 @@ export function TituloTable({
                         <dt className="text-muted-foreground">Comprovante:</dt>
                         <dd>{titulo.tipoComprovante ? ROTULOS_TIPO_COMPROVANTE[titulo.tipoComprovante] : "—"}</dd>
                       </div>
+                      <div className="flex gap-1 sm:col-span-3">
+                        <dt className="text-muted-foreground">
+                          Dados bancários do {tipo === "PAGAR" ? "fornecedor" : "cliente"}:
+                        </dt>
+                        <dd className="break-all">{titulo.dadosBancarios ?? "não cadastrados"}</dd>
+                      </div>
                       {titulo.chaveAcesso && (
                         <div className="flex gap-1 sm:col-span-3">
                           <dt className="text-muted-foreground">Chave de acesso:</dt>
@@ -301,7 +310,14 @@ export function TituloTable({
                           (parcela.temBaixaPendente ? (
                             <span className="text-xs text-muted-foreground">Baixa aguardando aprovação</span>
                           ) : (
-                            <Button type="button" size="sm" onClick={() => onAbrirBaixa({ id: parcela.id, saldoEmAberto: parcela.saldoEmAberto })}>
+                            <Button type="button" size="sm" onClick={() =>
+                              onAbrirBaixa({
+                                id: parcela.id,
+                                saldoEmAberto: parcela.saldoEmAberto,
+                                contraparte: (titulo.fornecedor ?? titulo.cliente)?.nome ?? "",
+                                dadosBancarios: titulo.dadosBancarios,
+                              })
+                            }>
                               Baixar
                             </Button>
                           ))}

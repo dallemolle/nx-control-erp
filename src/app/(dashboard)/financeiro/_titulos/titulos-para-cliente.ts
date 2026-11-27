@@ -1,6 +1,7 @@
 import { nomeDaContaBancaria } from "@/lib/contaBancaria";
 import { rejeicaoEmAberto } from "@/lib/financeiro/rejeicaoEmAberto";
 import { totalAbatido } from "@/lib/financeiro/valorAbatido";
+import { dadosBancariosDaContraparte, type DadosBancariosDoCadastro } from "@/lib/financeiro/dadosBancarios";
 
 type ValorDecimal = number | string | { toString(): string };
 
@@ -33,6 +34,9 @@ type BaixaDoServico = {
 
 type TituloDoServico = {
   contaBancaria: ContaDoServico | null;
+  /** Com o banco do cadastro (consulta da tela); sem ele, não há dados bancários a mostrar. */
+  fornecedor?: (DadosBancariosDoCadastro & { nome: string }) | null;
+  cliente?: (DadosBancariosDoCadastro & { nome: string }) | null;
   parcelas: {
     id: string;
     numero: number;
@@ -123,6 +127,11 @@ function baixasParaCliente(parcela: { status: string; baixas: BaixaDoServico[] }
     });
 }
 
+function dadosBancariosDoTitulo(titulo: Pick<TituloDoServico, "fornecedor" | "cliente">): string | null {
+  const contraparte = titulo.fornecedor ?? titulo.cliente;
+  return contraparte ? dadosBancariosDaContraparte(contraparte) : null;
+}
+
 /**
  * Prepara o retorno de `listarTitulos` para a tabela (Client Component): o
  * `Decimal` do Prisma não é um "plain object" e gera aviso na serialização.
@@ -132,6 +141,8 @@ function baixasParaCliente(parcela: { status: string; baixas: BaixaDoServico[] }
 export function titulosParaCliente<T extends TituloDoServico>(titulos: T[]) {
   return titulos.map(({ contaBancaria, parcelas, ...titulo }) => ({
     ...titulo,
+    /** Pix ou depósito do fornecedor/cliente, numa linha (`dadosBancariosDaContraparte`). */
+    dadosBancarios: dadosBancariosDoTitulo(titulo),
     contaBancaria: contaBancaria
       ? {
           tipo: contaBancaria.tipo,

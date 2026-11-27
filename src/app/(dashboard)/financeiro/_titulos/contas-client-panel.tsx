@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { TipoTitulo } from "@prisma/client";
 import { TituloTable, type OpcoesTitulo } from "./titulo-table";
-import { BaixaDialog } from "./baixa-dialog";
+import { BaixaDialog, type ParcelaParaBaixa } from "./baixa-dialog";
 import { RenegociarDialog } from "./renegociar-dialog";
 import { ImportarCsvDialog } from "./importar-csv-dialog";
 import { EstornarDialog } from "./estornar-dialog";
@@ -30,7 +30,7 @@ export function ContasClientePanel({
   podeAprovar: boolean;
   filtroAtivo: boolean;
 }) {
-  const [parcelaBaixa, setParcelaBaixa] = useState<{ id: string; saldoEmAberto: number } | null>(null);
+  const [parcelaBaixa, setParcelaBaixa] = useState<ParcelaParaBaixa | null>(null);
   const [parcelaRenegociacaoId, setParcelaRenegociacaoId] = useState<string | null>(null);
   const [baixaEstorno, setBaixaEstorno] = useState<BaixaDaParcela | null>(null);
   const [baixaDispensa, setBaixaDispensa] = useState<BaixaDaParcela | null>(null);

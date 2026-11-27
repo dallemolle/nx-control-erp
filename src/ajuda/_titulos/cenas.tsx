@@ -496,9 +496,16 @@ function CenaNovoTitulo({ tipo, valores, exemplo }: PropsCena & ComExemplo) {
   );
 }
 
-function CenaBaixa({ valores }: PropsCena) {
+function CenaBaixa({ tipo, valores, exemplo }: PropsCena & ComExemplo) {
   return (
     <JanelaSimulada titulo="Registrar baixa">
+      <p className="text-sm">
+        <span className="text-muted-foreground">{tipo === "PAGAR" ? "Pagar a" : "Receber de"}:</span>{" "}
+        {exemplo.contraparte}
+        <span className="block break-all text-muted-foreground">
+          {exemplo.dadosBancarios ?? "Sem dados bancários no cadastro."}
+        </span>
+      </p>
       <div className="grid grid-cols-2 gap-4">
         <CampoSimulado alvo="baixa.data" rotulo="Data" valor={valores["baixa.data"]} placeholder="dd/mm/aaaa" />
         <CampoSimulado alvo="baixa.valorPago" rotulo="Valor pago" valor={valores["baixa.valorPago"]} />
@@ -616,7 +623,9 @@ export function criarCenas(tipo: TipoTela, exemplo: ExemploTitulos) {
     novoTitulo: function NovoTitulo(props: PropsCena) {
       return <CenaNovoTitulo {...props} tipo={tipo} exemplo={exemplo} />;
     },
-    baixa: CenaBaixa,
+    baixa: function Baixa(props: PropsCena) {
+      return <CenaBaixa {...props} tipo={tipo} exemplo={exemplo} />;
+    },
     renegociar: function Renegociar(props: PropsCena) {
       return <CenaRenegociar {...props} exemplo={exemplo} />;
     },
