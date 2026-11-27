@@ -482,26 +482,6 @@ Numeração continua a de Vendas.
   Histórico. O item 20 (status de safra e projeto como código), o mesmo
   problema em outra tela, também foi feito.
 
-### 36. O "pai" das categorias e dos centros de custo não é usado
-
-- **Problema:** categorias e centros de custo têm um campo "pai" (e a tela
-  de centros diz "Empresa → Unidade → Departamento → Centro de custo"), mas
-  nenhum relatório usa a hierarquia: o Orçamento, o Fluxo por dimensão e o
-  dashboard mostram cada item separado, sem somar os filhos no pai.
-- **Exemplo:** "Taxas de cartão" dentro de "Despesas bancárias": o
-  Orçamento mostra as duas linhas soltas, sem um total de "Despesas
-  bancárias" com as filhas.
-- **Onde:** `parentId` só é lido em `categoriaFinanceira.ts`,
-  `centroCusto.ts` e `hierarquia.ts` (cadastro e checagem de ciclo).
-- **Impacto:** quem monta a hierarquia esperando relatórios agrupados não
-  vê diferença; o manual prometia o agrupamento (corrigido em 2026-11-21).
-- **Caminhos:** no Orçamento e no Fluxo por dimensão, mostrar os pais com o
-  total dos filhos (linhas recolhíveis); ou, se a hierarquia não for
-  necessária, tirar o campo para não criar expectativa.
-- **Ao corrigir:** dicas dos passos sobre o pai em
-  `src/ajuda/categorias/index.tsx` e `src/ajuda/centros-de-custo/index.tsx`,
-  e as seções 7.2 e 7.3 do manual.
-
 ### 37. Código de projeto repetido mostrava o erro do banco de dados
 
 - **Feito (2026-11-21), na branch da ajuda de Safras e Projetos:** o projeto

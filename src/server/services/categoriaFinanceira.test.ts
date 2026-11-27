@@ -145,7 +145,7 @@ describe("categoriaFinanceira (filial-scoped)", () => {
     });
     const filho = await criarCategoriaFinanceira(sessaoFilialA, {
       nome: "Ciclo Filho",
-      tipo: "DESPESA",
+      tipo: "RECEITA",
       parentId: pai.id,
     });
 
@@ -183,6 +183,32 @@ describe("categoriaFinanceira (filial-scoped)", () => {
   test("sem naoOperacional, a categoria nasce operacional", async () => {
     const categoria = await criarCategoriaFinanceira(sessaoFilialA, { nome: "Vendas", tipo: "RECEITA" });
     expect(categoria.naoOperacional).toBe(false);
+  });
+
+  test("recusa categoria pai de outro tipo, ao criar e ao editar", async () => {
+    const despesa = await criarCategoriaFinanceira(sessaoFilialA, { nome: "Despesas bancárias (tipo)", tipo: "DESPESA" });
+    await expect(
+      criarCategoriaFinanceira(sessaoFilialA, { nome: "Receita dentro", tipo: "RECEITA", parentId: despesa.id }),
+    ).rejects.toThrow("A categoria pai precisa ser do mesmo tipo (Despesa ou Receita)");
+
+    const receita = await criarCategoriaFinanceira(sessaoFilialA, { nome: "Venda solta", tipo: "RECEITA" });
+    await expect(
+      atualizarCategoriaFinanceira(sessaoFilialA, receita.id, { nome: "Venda solta", tipo: "RECEITA", parentId: despesa.id }),
+    ).rejects.toThrow("A categoria pai precisa ser do mesmo tipo (Despesa ou Receita)");
+  });
+
+  test("recusa trocar o tipo de uma categoria que tem filhas do tipo antigo", async () => {
+    const pai = await criarCategoriaFinanceira(sessaoFilialA, { nome: "Grupo que muda", tipo: "DESPESA" });
+    await criarCategoriaFinanceira(sessaoFilialA, { nome: "Filha despesa", tipo: "DESPESA", parentId: pai.id });
+    await expect(
+      atualizarCategoriaFinanceira(sessaoFilialA, pai.id, { nome: "Grupo que muda", tipo: "RECEITA" }),
+    ).rejects.toThrow("A categoria pai precisa ser do mesmo tipo (Despesa ou Receita): mude também Filha despesa");
+  });
+
+  test("pai do mesmo tipo continua aceito", async () => {
+    const pai = await criarCategoriaFinanceira(sessaoFilialA, { nome: "Pai ok", tipo: "DESPESA" });
+    const filha = await criarCategoriaFinanceira(sessaoFilialA, { nome: "Filha ok", tipo: "DESPESA", parentId: pai.id });
+    expect(filha.parentId).toBe(pai.id);
   });
 });
 

@@ -1,6 +1,6 @@
 // Espelhado na ajuda (src/ajuda/fluxo-por-dimensao/cenas.tsx): mudou rótulo, coluna ou texto? Ajuste a ajuda junto.
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { resultadoDoMes, totalDoFluxo } from "@/lib/fluxoPorDimensao";
+import { fluxoEmArvore, resultadoDoMes, totalDoFluxo } from "@/lib/fluxoPorDimensao";
 import { AvisoVisaoFiltrada } from "../../financeiro/_fluxo-de-caixa/aviso-visao-filtrada";
 import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
@@ -12,6 +12,7 @@ import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 import { formatarMoeda } from "@/lib/formatacao";
+import { LinhasRecolhiveis } from "../_shared/linhas-recolhiveis";
 
 const DIMENSOES_VALIDAS: TipoDimensao[] = ["CENTRO_CUSTO", "CENTRO_LUCRO", "SAFRA", "PROJETO"];
 
@@ -56,6 +57,7 @@ export default async function FluxoPorDimensaoPage({
 
   const linhas = await listarFluxoDeCaixaPorDimensao(sessao, dimensao, ano, mes, { classificacao });
   const total = totalDoFluxo(linhas);
+  const itens = fluxoEmArvore(linhas);
 
   return (
     <div className="space-y-8">
@@ -104,21 +106,30 @@ export default async function FluxoPorDimensaoPage({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {linhas.map((linha) => {
-            const resultado = resultadoDoMes(linha);
-            return (
-              <TableRow key={linha.dimensaoId ?? "nao-classificado"}>
-                <TableCell className="font-medium">{linha.dimensaoNome}</TableCell>
-                <TableCell>{formatarMoeda(linha.entradasRealizadas)}</TableCell>
-                <TableCell>{formatarMoeda(linha.saidasRealizadas)}</TableCell>
-                <TableCell>{formatarMoeda(linha.entradasProjetadas)}</TableCell>
-                <TableCell>{formatarMoeda(linha.saidasProjetadas)}</TableCell>
-                <TableCell className={resultado < 0 ? "font-medium text-destructive" : undefined}>
-                  {formatarMoeda(resultado)}
-                </TableCell>
-              </TableRow>
-            );
-          })}
+          <LinhasRecolhiveis
+            linhas={itens.map((item) => {
+              const resultado = resultadoDoMes(item.valores);
+              return {
+                chave: item.chave,
+                paiChave: item.paiChave,
+                nivel: item.nivel,
+                temFilhos: item.temFilhos,
+                direto: item.direto,
+                nome: item.nome,
+                celulas: (
+                  <>
+                    <TableCell>{formatarMoeda(item.valores.entradasRealizadas)}</TableCell>
+                    <TableCell>{formatarMoeda(item.valores.saidasRealizadas)}</TableCell>
+                    <TableCell>{formatarMoeda(item.valores.entradasProjetadas)}</TableCell>
+                    <TableCell>{formatarMoeda(item.valores.saidasProjetadas)}</TableCell>
+                    <TableCell className={resultado < 0 ? "font-medium text-destructive" : undefined}>
+                      {formatarMoeda(resultado)}
+                    </TableCell>
+                  </>
+                ),
+              };
+            })}
+          />
         </TableBody>
         <TableFooter>
           <TableRow className="font-semibold">

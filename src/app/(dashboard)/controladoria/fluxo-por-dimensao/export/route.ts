@@ -1,12 +1,8 @@
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { podeExecutar } from "@/server/auth/permissions";
-import {
-  listarFluxoDeCaixaPorDimensao,
-  type LinhaFluxoPorDimensao,
-  type TipoDimensao,
-} from "@/server/services/fluxoDeCaixaPorDimensao";
+import { listarFluxoDeCaixaPorDimensao, type TipoDimensao } from "@/server/services/fluxoDeCaixaPorDimensao";
 import { type ColunaExport } from "@/lib/export/csv";
-import { resultadoDoMes, totalDoFluxo } from "@/lib/fluxoPorDimensao";
+import { fluxoEmArvore, resultadoDoMes, totalDoFluxo, type ValoresDoFluxo } from "@/lib/fluxoPorDimensao";
 import { responderExport } from "@/lib/export/responder";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 import { cabecalhoDoRelatorio, filtroDeClassificacao } from "@/server/export/cabecalhoDoRelatorio";
@@ -32,9 +28,12 @@ function mesValido(valor: string | null): number {
   return Number.isInteger(numero) && numero >= 1 && numero <= 12 ? numero : new Date().getUTCMonth() + 1;
 }
 
-function colunas(dimensao: TipoDimensao): ColunaExport<LinhaFluxoPorDimensao>[] {
+type LinhaExportada = { nivel: number | ""; nome: string } & ValoresDoFluxo;
+
+function colunas(dimensao: TipoDimensao): ColunaExport<LinhaExportada>[] {
   return [
-    { rotulo: ROTULOS_DIMENSAO[dimensao], valor: (l) => l.dimensaoNome },
+    { rotulo: "Nível", valor: (l) => l.nivel, tipo: "inteiro" },
+    { rotulo: ROTULOS_DIMENSAO[dimensao], valor: (l) => l.nome },
     { rotulo: "Entradas realizadas", valor: (l) => l.entradasRealizadas },
     { rotulo: "Saídas realizadas", valor: (l) => l.saidasRealizadas },
     { rotulo: "Entradas projetadas", valor: (l) => l.entradasProjetadas },
@@ -59,17 +58,23 @@ export async function GET(request: Request) {
   const periodo = `${ano}-${String(mes).padStart(2, "0")}`;
   // Linha Total no fim, como na tela: conferir com o Fluxo de caixa sem somar à mão.
   const total = totalDoFluxo(linhas);
-  const linhaTotal: LinhaFluxoPorDimensao = {
-    dimensaoId: null,
-    dimensaoNome: "Total",
-    ano,
-    mes,
-    entradasRealizadas: total.entradasRealizadas,
-    saidasRealizadas: total.saidasRealizadas,
-    entradasProjetadas: total.entradasProjetadas,
-    saidasProjetadas: total.saidasProjetadas,
-  };
-  const comTotal = [...linhas, linhaTotal];
+  const itens = fluxoEmArvore(linhas);
+  const exportadas: LinhaExportada[] = itens.map((item) => ({
+    nivel: item.nivel,
+    nome: `${"  ".repeat(item.nivel - 1)}${item.nome}`,
+    ...item.valores,
+  }));
+  const comTotal: LinhaExportada[] = [
+    ...exportadas,
+    {
+      nivel: "",
+      nome: "Total",
+      entradasRealizadas: total.entradasRealizadas,
+      saidasRealizadas: total.saidasRealizadas,
+      entradasProjetadas: total.entradasProjetadas,
+      saidasProjetadas: total.saidasProjetadas,
+    },
+  ];
 
   return responderExport(comTotal, colunas(dimensao), {
     nomeArquivo: `fluxo-por-${dimensao.toLowerCase().replace("_", "-")}-${periodo}${

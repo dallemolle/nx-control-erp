@@ -1,9 +1,12 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alvo, BotaoSimulado, SelectSimulado } from "@/components/ajuda/campos-simulados";
 import type { PropsCena } from "@/ajuda/tipos";
 import { formatarMoeda } from "@/lib/formatacao";
+import { fluxoEmArvore } from "@/lib/fluxoPorDimensao";
+import { recuoDoNivel } from "@/lib/recuoDoNivel";
 import { linhasDoExemplo, resultadoDoMes, totalDoFluxo } from "./exemplo";
 
 // Espelho de src/app/(dashboard)/controladoria/fluxo-por-dimensao/*. Mudou um rótulo ou coluna lá? Ajuste aqui também.
@@ -24,6 +27,15 @@ export function CenaPainel({ valores }: PropsCena) {
   const filtro = valores["painel.classificacao"];
   const linhas = linhasDoExemplo(dimensao, filtro);
   const total = totalDoFluxo(linhas);
+  // Como a tela: o pai mostra o próprio valor mais o dos filhos, e ganha a linha "Direto em ...".
+  const itens = fluxoEmArvore(
+    linhas.map((l) => ({
+      ...l,
+      dimensaoId: l.chave === "nao-classificado" ? null : l.chave,
+      dimensaoNome: l.nome,
+      parentId: l.pai ?? null,
+    })),
+  );
 
   return (
     <div className="space-y-8">
@@ -83,23 +95,34 @@ export function CenaPainel({ valores }: PropsCena) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {linhas.map((linha) => {
-              const saldo = resultadoDoMes(linha);
+            {itens.map((item) => {
+              const saldo = resultadoDoMes(item.valores);
+              const nome =
+                LINHAS_COM_ALVO.has(item.chave) && !item.direto ? (
+                  <Alvo nome={`linha.${item.chave}`} className="inline-block px-1">
+                    {item.nome}
+                  </Alvo>
+                ) : (
+                  item.nome
+                );
               return (
-                <TableRow key={linha.chave}>
-                  <TableCell className="font-medium">
-                    {LINHAS_COM_ALVO.has(linha.chave) ? (
-                      <Alvo nome={`linha.${linha.chave}`} className="inline-block px-1">
-                        {linha.nome}
-                      </Alvo>
-                    ) : (
-                      linha.nome
-                    )}
+                <TableRow key={item.chave}>
+                  <TableCell
+                    className={item.direto ? "text-muted-foreground" : item.temFilhos ? "font-semibold" : "font-medium"}
+                  >
+                    <div className="flex items-center gap-1" style={recuoDoNivel(item.nivel)}>
+                      {item.temFilhos ? (
+                        <ChevronDown className="size-4 text-muted-foreground" aria-hidden />
+                      ) : (
+                        <span className="inline-block w-5" aria-hidden />
+                      )}
+                      {nome}
+                    </div>
                   </TableCell>
-                  <TableCell>{formatarMoeda(linha.entradasRealizadas)}</TableCell>
-                  <TableCell>{formatarMoeda(linha.saidasRealizadas)}</TableCell>
-                  <TableCell>{formatarMoeda(linha.entradasProjetadas)}</TableCell>
-                  <TableCell>{formatarMoeda(linha.saidasProjetadas)}</TableCell>
+                  <TableCell>{formatarMoeda(item.valores.entradasRealizadas)}</TableCell>
+                  <TableCell>{formatarMoeda(item.valores.saidasRealizadas)}</TableCell>
+                  <TableCell>{formatarMoeda(item.valores.entradasProjetadas)}</TableCell>
+                  <TableCell>{formatarMoeda(item.valores.saidasProjetadas)}</TableCell>
                   <TableCell className={saldo < 0 ? "font-medium text-destructive" : undefined}>
                     {formatarMoeda(saldo)}
                   </TableCell>

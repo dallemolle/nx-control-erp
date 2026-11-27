@@ -10,6 +10,7 @@ import {
   buscarRealizadoPorCategoria,
   buscarProjetadoPorCategoria,
   listarComparativoOrcamento,
+  comparativoEmArvore,
 } from "./orcamento";
 
 describe("montarLinhaComparativo", () => {
@@ -339,5 +340,43 @@ describe("salvarValoresOrcamentoDoAno (integração)", () => {
     });
     expect(salvos.map((o) => Number(o.valor))).toEqual(Array(12).fill(100));
     expect(await contarAuditoriaDeOrcamento()).toBe(auditoriaAntes);
+  });
+});
+
+describe("comparativoEmArvore", () => {
+  const linha = (id: string, parentId: string | null, orcado: number, realizado: number, projetado = 0) => ({
+    ...montarLinhaComparativo(id, id, "DESPESA", 2026, 11, orcado, realizado, projetado),
+    parentId,
+  });
+
+  test("o pai soma as filhas e o Estouro do pai sai do total", () => {
+    const itens = comparativoEmArvore([
+      linha("Despesas bancárias", null, 50, 45.9),
+      linha("Taxas de cartão", "Despesas bancárias", 30, 12.5),
+    ]);
+    expect(itens.map((i) => [i.chave, i.categoriaNome, i.nivel, i.orcado, i.previsto, i.alerta])).toEqual([
+      ["Despesas bancárias", "Despesas bancárias", 1, 80, 58.4, false],
+      ["Despesas bancárias:direto", "Direto em Despesas bancárias", 2, 50, 45.9, false],
+      ["Taxas de cartão", "Taxas de cartão", 2, 30, 12.5, false],
+    ]);
+    expect(itens[1].direto).toBe(true);
+    expect(itens.map((i) => i.parentId)).toEqual([null, "Despesas bancárias", "Despesas bancárias"]);
+    expect(itens[0].temFilhos).toBe(true);
+  });
+
+  test("uma filha estoura com o grupo dentro do orçado, e o grupo estoura sem filha estourar", () => {
+    const filhaEstoura = comparativoEmArvore([linha("G", null, 100, 0), linha("F", "G", 10, 20)]);
+    expect(filhaEstoura.find((i) => i.chave === "G")!.alerta).toBe(false);
+    expect(filhaEstoura.find((i) => i.chave === "F")!.alerta).toBe(true);
+
+    const grupoEstoura = comparativoEmArvore([linha("G", null, 0, 0), linha("F1", "G", 10, 10), linha("F2", "G", 0, 5)]);
+    expect(grupoEstoura.find((i) => i.chave === "G")!.alerta).toBe(true);
+    expect(grupoEstoura.find((i) => i.chave === "F1")!.alerta).toBe(false);
+  });
+
+  test("Receita dentro de Despesa fica no topo", () => {
+    const receita = { ...montarLinhaComparativo("R", "R", "RECEITA", 2026, 11, 0, 10, 0), parentId: "D" };
+    const itens = comparativoEmArvore([linha("D", null, 0, 0), receita]);
+    expect(itens.map((i) => [i.chave, i.nivel])).toEqual([["D", 1], ["R", 1]]);
   });
 });

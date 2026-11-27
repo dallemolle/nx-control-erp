@@ -1,18 +1,21 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alvo, BotaoSimulado, CampoSimulado, SelectSimulado } from "@/components/ajuda/campos-simulados";
 import type { PropsCena } from "@/ajuda/tipos";
 import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
+import { montarArvore } from "@/lib/arvoreDeLinhas";
 import { MESES_ABREVIADOS } from "@/lib/meses";
+import { recuoDoNivel } from "@/lib/recuoDoNivel";
 import { lerValorEmReais, valorParaCampo } from "@/lib/valorEmReais";
 import { ANO, CATEGORIAS, MES, compararLinha, type CategoriaExemplo } from "./exemplo";
 
 // Espelho de src/app/(dashboard)/controladoria/orcamento/*. Mudou um rótulo ou coluna lá? Ajuste aqui também.
 
 /** Só estas linhas têm alvo nos roteiros; as demais desenham sem destaque. */
-const LINHAS_COM_ALVO = new Set(["insumos", "mao-de-obra", "venda"]);
+const LINHAS_COM_ALVO = new Set(["bancarias", "insumos", "mao-de-obra", "venda"]);
 
 /** Orçado do mês, com o que o roteiro digitou por cima na grade (lido como a tela lê). */
 function orcadoDe(categoria: CategoriaExemplo, mes: number, valores: PropsCena["valores"]): number {
@@ -35,11 +38,21 @@ function CabecalhoDaGrade({ titulo }: { titulo: string }) {
   );
 }
 
-function LinhaGrade({ categoria, valores }: { categoria: CategoriaExemplo; valores: PropsCena["valores"] }) {
+function LinhaGrade({
+  categoria,
+  nivel,
+  valores,
+}: {
+  categoria: CategoriaExemplo;
+  nivel: number;
+  valores: PropsCena["valores"];
+}) {
   const comAlvo = categoria.chave === "insumos";
   const linha = (
     <div className="flex items-center gap-2 border-b py-2">
-      <span className={`${COLUNA_DO_NOME} truncate text-sm font-medium`}>{categoria.nome}</span>
+      <span className={`${COLUNA_DO_NOME} truncate text-sm font-medium`} style={recuoDoNivel(nivel)}>
+        {categoria.nome}
+      </span>
       {categoria.orcadoPorMes.map((_, indice) => {
         const mes = indice + 1;
         const digitado = valores[`grade.${categoria.chave}.mes-${mes}`];
@@ -63,9 +76,16 @@ function LinhaGrade({ categoria, valores }: { categoria: CategoriaExemplo; valor
   return comAlvo ? <Alvo nome={`grade.${categoria.chave}`}>{linha}</Alvo> : linha;
 }
 
+/** Categorias em ordem de árvore: cada filha logo abaixo da mãe, com o nível para o recuo. */
+const emArvore = (tipo: CategoriaExemplo["tipo"]) =>
+  montarArvore(
+    CATEGORIAS.filter((c) => c.tipo === tipo).map((c) => ({ ...c, id: c.chave, parentId: c.pai ?? null, grupo: c.tipo })),
+    () => ({}),
+  );
+
 const BLOCOS_DA_GRADE = [
-  { titulo: "Despesas", categorias: CATEGORIAS.filter((c) => c.tipo === "DESPESA") },
-  { titulo: "Receitas", categorias: CATEGORIAS.filter((c) => c.tipo === "RECEITA") },
+  { titulo: "Despesas", itens: emArvore("DESPESA") },
+  { titulo: "Receitas", itens: emArvore("RECEITA") },
 ];
 
 function CabecalhoComAlvo({ alvo, children }: { alvo: string; children: string }) {
@@ -80,6 +100,13 @@ function CabecalhoComAlvo({ alvo, children }: { alvo: string; children: string }
 
 export function CenaPainel({ valores }: PropsCena) {
   const filtro = valores["painel.classificacao"];
+  const itensDoComparativo = montarArvore(
+    CATEGORIAS.map((c) => ({ ...c, id: c.chave, parentId: c.pai ?? null, grupo: c.tipo })),
+    (categoria) => {
+      const { realizado, projetado } = filtro ? categoria.novembroFiscal : categoria.novembro;
+      return { orcado: orcadoDe(categoria, MES, valores), realizado, projetado };
+    },
+  );
 
   return (
     <div className="space-y-8">
@@ -126,8 +153,8 @@ export function CenaPainel({ valores }: PropsCena) {
             {BLOCOS_DA_GRADE.map((bloco) => (
               <div key={bloco.titulo}>
                 <CabecalhoDaGrade titulo={bloco.titulo} />
-                {bloco.categorias.map((categoria) => (
-                  <LinhaGrade key={categoria.chave} categoria={categoria} valores={valores} />
+                {bloco.itens.map((item) => (
+                  <LinhaGrade key={item.chave} categoria={item.origem} nivel={item.nivel} valores={valores} />
                 ))}
               </div>
             ))}
@@ -151,20 +178,30 @@ export function CenaPainel({ valores }: PropsCena) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {CATEGORIAS.map((categoria) => {
-                const { realizado, projetado } = filtro ? categoria.novembroFiscal : categoria.novembro;
-                const orcado = orcadoDe(categoria, MES, valores);
+              {itensDoComparativo.map((item) => {
+                const categoria = item.origem;
+                const { orcado, realizado, projetado } = item.valores;
                 const linha = compararLinha(categoria.tipo, orcado, realizado, projetado);
+                const nome = LINHAS_COM_ALVO.has(categoria.chave) && !item.direto ? (
+                  <Alvo nome={`comp.linha.${categoria.chave}`} className="inline-block px-1">
+                    {item.nome}
+                  </Alvo>
+                ) : (
+                  item.nome
+                );
                 return (
-                  <TableRow key={categoria.chave} className={linha.alerta ? "bg-destructive/10" : undefined}>
-                    <TableCell className="font-medium">
-                      {LINHAS_COM_ALVO.has(categoria.chave) ? (
-                        <Alvo nome={`comp.linha.${categoria.chave}`} className="inline-block px-1">
-                          {categoria.nome}
-                        </Alvo>
-                      ) : (
-                        categoria.nome
-                      )}
+                  <TableRow key={item.chave} className={linha.alerta ? "bg-destructive/10" : undefined}>
+                    <TableCell
+                      className={item.direto ? "text-muted-foreground" : item.temFilhos ? "font-semibold" : "font-medium"}
+                    >
+                      <div className="flex items-center gap-1" style={recuoDoNivel(item.nivel)}>
+                        {item.temFilhos ? (
+                          <ChevronDown className="size-4 text-muted-foreground" aria-hidden />
+                        ) : (
+                          <span className="inline-block w-5" aria-hidden />
+                        )}
+                        {nome}
+                      </div>
                     </TableCell>
                     <TableCell>{formatarMoeda(orcado)}</TableCell>
                     <TableCell>{formatarMoeda(realizado)}</TableCell>

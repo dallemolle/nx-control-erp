@@ -13,6 +13,7 @@ export const ALVOS = {
     "comp.tabela",
     "comp.realizado",
     "comp.projetado",
+    "comp.linha.bancarias",
     "comp.linha.insumos",
     "comp.linha.mao-de-obra",
     "comp.linha.venda",

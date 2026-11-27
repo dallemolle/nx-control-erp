@@ -2,6 +2,7 @@ import { prisma } from "@/server/db/client";
 import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permissions";
 import { registrarAuditoria } from "@/server/audit/registrar";
 import { assertSemCiclo } from "@/server/services/hierarquia";
+import type { TipoCategoriaFinanceira } from "@prisma/client";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { CategoriaFinanceiraDados } from "@/lib/schemas/categoriaFinanceira";
 
@@ -15,12 +16,16 @@ function normalizarParentId(parentId: string | undefined): string | null {
   return parentId && parentId.length > 0 && parentId !== SEM_PAI ? parentId : null;
 }
 
-async function validarParentMesmaFilial(filialId: string, parentId: string | null) {
+const MSG_TIPO_DO_PAI = "A categoria pai precisa ser do mesmo tipo (Despesa ou Receita)";
+
+/** O pai é da mesma filial e do mesmo tipo: Receita dentro de Despesa não soma em nenhum relatório. */
+async function validarPai(filialId: string, parentId: string | null, tipo: TipoCategoriaFinanceira) {
   if (!parentId) return;
   const parent = await prisma.categoriaFinanceira.findUnique({ where: { id: parentId } });
   if (!parent || parent.filialId !== filialId) {
     throw new Error("Categoria financeira pai inválida");
   }
+  if (parent.tipo !== tipo) throw new Error(MSG_TIPO_DO_PAI);
 }
 
 export async function criarCategoriaFinanceira(
@@ -31,7 +36,7 @@ export async function criarCategoriaFinanceira(
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   const parentId = normalizarParentId(dados.parentId);
-  await validarParentMesmaFilial(sessao.filialId, parentId);
+  await validarPai(sessao.filialId, parentId, dados.tipo);
   const naoOperacional = dados.naoOperacional ?? false;
 
   const categoria = await prisma.categoriaFinanceira.create({
@@ -61,7 +66,7 @@ export async function atualizarCategoriaFinanceira(
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   const parentId = normalizarParentId(dados.parentId);
-  await validarParentMesmaFilial(sessao.filialId, parentId);
+  await validarPai(sessao.filialId, parentId, dados.tipo);
   const naoOperacional = dados.naoOperacional ?? false;
 
   const itens = await prisma.categoriaFinanceira.findMany({
@@ -73,6 +78,16 @@ export async function atualizarCategoriaFinanceira(
   const anterior = await prisma.categoriaFinanceira.findUniqueOrThrow({
     where: { id, filialId: sessao.filialId },
   });
+  if (anterior.tipo !== dados.tipo) {
+    const filhasDoOutroTipo = await prisma.categoriaFinanceira.findMany({
+      where: { parentId: id, tipo: { not: dados.tipo } },
+      select: { nome: true },
+      orderBy: { nome: "asc" },
+    });
+    if (filhasDoOutroTipo.length > 0) {
+      throw new Error(`${MSG_TIPO_DO_PAI}: mude também ${filhasDoOutroTipo.map((f) => f.nome).join(", ")}`);
+    }
+  }
   const categoria = await prisma.categoriaFinanceira.update({
     where: { id },
     data: { nome: dados.nome, tipo: dados.tipo, parentId, naoOperacional },

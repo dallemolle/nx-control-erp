@@ -1,6 +1,6 @@
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { podeExecutar } from "@/server/auth/permissions";
-import { listarComparativoOrcamento, type LinhaComparativoOrcamento } from "@/server/services/orcamento";
+import { comparativoEmArvore, listarComparativoOrcamento, type ItemComparativo } from "@/server/services/orcamento";
 import { type ColunaExport } from "@/lib/export/csv";
 import { responderExport } from "@/lib/export/responder";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
@@ -12,10 +12,11 @@ function anoValido(valor: string | null): number {
 }
 
 /** O ano inteiro (12 meses × categorias), não só o mês da tela — mais útil numa planilha. */
-const COLUNAS: ColunaExport<LinhaComparativoOrcamento>[] = [
+const COLUNAS: ColunaExport<ItemComparativo>[] = [
   { rotulo: "Ano", valor: (l) => l.ano, tipo: "inteiro" },
   { rotulo: "Mês", valor: (l) => l.mes, tipo: "inteiro" },
-  { rotulo: "Categoria", valor: (l) => l.categoriaNome },
+  { rotulo: "Nível", valor: (l) => l.nivel, tipo: "inteiro" },
+  { rotulo: "Categoria", valor: (l) => `${"  ".repeat(l.nivel - 1)}${l.categoriaNome}` },
   { rotulo: "Orçado", valor: (l) => l.orcado },
   { rotulo: "Realizado", valor: (l) => l.realizado },
   { rotulo: "Projetado", valor: (l) => l.projetado },
@@ -40,7 +41,8 @@ export async function GET(request: Request) {
   const classificacao = classificacaoDaUrl(url.searchParams.get("classificacao") ?? undefined);
 
   const linhas = await listarComparativoOrcamento(sessao, ano, { classificacao });
-  const ordenadas = [...linhas].sort((a, b) => a.mes - b.mes || a.categoriaNome.localeCompare(b.categoriaNome));
+  // Mês a mês, cada um em árvore de categorias (o pai com o total do grupo, como na tela).
+  const ordenadas = Array.from({ length: 12 }, (_, i) => comparativoEmArvore(linhas.filter((l) => l.mes === i + 1))).flat();
 
   return responderExport(ordenadas, COLUNAS, {
     nomeArquivo: classificacao ? `orcamento-${ano}-${classificacao.toLowerCase()}` : `orcamento-${ano}`,

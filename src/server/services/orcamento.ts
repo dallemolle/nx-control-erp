@@ -10,6 +10,7 @@ import {
   whereTituloPorClassificacao,
   type FiltroClassificacao,
 } from "./classificacaoFiscal";
+import { montarArvore } from "@/lib/arvoreDeLinhas";
 import type { TipoCategoriaFinanceira } from "@prisma/client";
 
 export type LinhaComparativoOrcamento = {
@@ -27,6 +28,8 @@ export type LinhaComparativoOrcamento = {
   variacaoAbsoluta: number;
   variacaoPercentual: number | null;
   alerta: boolean;
+  /** Categoria pai no cadastro (a árvore decide se vale: mesmo tipo e presente). */
+  parentId: string | null;
 };
 
 /**
@@ -47,7 +50,7 @@ export function montarLinhaComparativo(
   orcado: number,
   realizado: number,
   projetado: number,
-): LinhaComparativoOrcamento {
+): Omit<LinhaComparativoOrcamento, "parentId"> {
   const previsto = (Math.round(realizado * 100) + Math.round(projetado * 100)) / 100;
   const variacaoAbsoluta = (Math.round(previsto * 100) - Math.round(orcado * 100)) / 100;
   const variacaoPercentual = orcado === 0 ? null : variacaoAbsoluta / orcado;
@@ -261,8 +264,8 @@ export async function listarComparativoOrcamento(
 
     for (const categoria of categorias) {
       const orcamento = orcamentos.find((o) => o.categoriaFinanceiraId === categoria.id && o.mes === mes);
-      linhas.push(
-        montarLinhaComparativo(
+      linhas.push({
+        ...montarLinhaComparativo(
           categoria.id,
           categoria.nome,
           categoria.tipo,
@@ -272,8 +275,55 @@ export async function listarComparativoOrcamento(
           realizadoPorCategoria.get(categoria.id) ?? 0,
           projetadoPorCategoria.get(categoria.id) ?? 0,
         ),
-      );
+        parentId: categoria.parentId,
+      });
     }
   }
   return linhas;
+}
+
+export type ItemComparativo = LinhaComparativoOrcamento & {
+  chave: string;
+  nivel: number;
+  paiChave: string | null;
+  temFilhos: boolean;
+  direto: boolean;
+};
+
+/**
+ * O comparativo de um mês em árvore de categorias: o pai traz o orçado, o realizado e o projetado dele mais os
+ * das filhas, e Previsto, Variação e Estouro são recalculados sobre esses totais (item 36 do backlog).
+ */
+export function comparativoEmArvore(linhasDoMes: readonly LinhaComparativoOrcamento[]): ItemComparativo[] {
+  const itens = montarArvore(
+    linhasDoMes.map((linha) => ({
+      id: linha.categoriaFinanceiraId,
+      parentId: linha.parentId,
+      grupo: linha.tipoCategoria,
+      nome: linha.categoriaNome,
+      linha,
+    })),
+    ({ linha }) => ({ orcado: linha.orcado, realizado: linha.realizado, projetado: linha.projetado }),
+  );
+  return itens.map((item) => {
+    const { linha } = item.origem;
+    return {
+      ...montarLinhaComparativo(
+        linha.categoriaFinanceiraId,
+        item.nome,
+        linha.tipoCategoria,
+        linha.ano,
+        linha.mes,
+        item.valores.orcado,
+        item.valores.realizado,
+        item.valores.projetado,
+      ),
+      parentId: item.direto ? linha.categoriaFinanceiraId : linha.parentId,
+      chave: item.chave,
+      nivel: item.nivel,
+      paiChave: item.paiChave,
+      temFilhos: item.temFilhos,
+      direto: item.direto,
+    };
+  });
 }

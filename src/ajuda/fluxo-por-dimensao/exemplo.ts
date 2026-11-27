@@ -13,6 +13,8 @@ export type LinhaExemplo = {
   saidasRealizadas: number;
   entradasProjetadas: number;
   saidasProjetadas: number;
+  /** Chave do centro de custo pai, quando a linha é filha de outra. */
+  pai?: string;
 };
 
 /** A coluna "Resultado do mês" da tela: a mesma função da página e da exportação. */
@@ -22,17 +24,29 @@ const linha = (
   chave: string,
   nome: string,
   [entradasRealizadas, saidasRealizadas, entradasProjetadas, saidasProjetadas]: [number, number, number, number],
-): LinhaExemplo => ({ chave, nome, entradasRealizadas, saidasRealizadas, entradasProjetadas, saidasProjetadas });
+  pai?: string,
+): LinhaExemplo => ({
+  chave,
+  nome,
+  entradasRealizadas,
+  saidasRealizadas,
+  entradasProjetadas,
+  saidasProjetadas,
+  pai,
+});
 
 /**
  * Valores ativos em ordem alfabética e, por último, "Não classificado", como a tela monta.
  * Lavoura: adubo (R$ 800,00 pagos + R$ 1.000,00 a pagar) e mão de obra (R$ 300,00).
- * Administração: tarifa (R$ 45,90) e energia (R$ 580,00 a pagar).
+ * Administração: tarifa (R$ 45,90). A energia (R$ 580,00 a pagar) é da Câmara fria, dentro da Fábrica de
+ * polpa, que não tem valor próprio e mostra a soma da filha.
  * Não classificado: as vendas, sem centro de custo. O saque de R$ 2.000,00 não entra: transferência entre
  * contas só move saldo.
  */
 export const POR_CENTRO_DE_CUSTO: readonly LinhaExemplo[] = [
-  linha("administracao", "Administração", [0, 45.9, 0, 580]),
+  linha("administracao", "Administração", [0, 45.9, 0, 0]),
+  linha("fabrica", "Fábrica de polpa", [0, 0, 0, 0]),
+  linha("camara", "Câmara fria", [0, 0, 0, 580], "fabrica"),
   linha("lavoura", "Lavoura", [0, 1100, 0, 1000]),
   linha("nao-classificado", "Não classificado", [23500, 0, 4000, 0]),
 ];
@@ -42,7 +56,9 @@ export const POR_CENTRO_DE_CUSTO: readonly LinhaExemplo[] = [
  * visão).
  */
 export const POR_CENTRO_DE_CUSTO_FISCAL: readonly LinhaExemplo[] = [
-  linha("administracao", "Administração", [0, 45.9, 0, 580]),
+  linha("administracao", "Administração", [0, 45.9, 0, 0]),
+  linha("fabrica", "Fábrica de polpa", [0, 0, 0, 0]),
+  linha("camara", "Câmara fria", [0, 0, 0, 580], "fabrica"),
   linha("lavoura", "Lavoura", [0, 800, 0, 1000]),
   linha("nao-classificado", "Não classificado", [18000, 0, 4000, 0]),
 ];
