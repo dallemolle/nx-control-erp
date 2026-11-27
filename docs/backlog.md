@@ -580,27 +580,6 @@ Mesma numeração das seções acima.
 - **Correção:** rótulo "Conta de recebimento (Pix e transferência)" em
   `configuracao-producao/configuracao-form.tsx`.
 
-### 52. Mudar os limites da produção muda o passado
-
-- **Problema:** o "Verificar" do balanço de massa e do branqueamento e o
-  "vencendo" do estoque não são gravados: são recalculados com a
-  configuração atual. Subir a tolerância tira o "Verificar" de OPs já
-  encerradas, inclusive no Relatório de processamento e na
-  Rastreabilidade.
-- **Exemplo:** a OP-261119-01 (acerola, diferença de 10%) marca
-  "Verificar" com 3%; com a tolerância em 10%, passa a OK, como se tivesse
-  sido conferida.
-- **Onde:** `resumirOP`/`balancoMassa`/`statusBranqueamento` em
-  `src/lib/producao/op.ts`, chamados com `obterConfiguracaoProducao` em
-  `ordemProducao.ts`, `rastreabilidade.ts` e no detalhe da OP.
-- **Impacto:** o registro de controle de qualidade de uma OP pode mudar
-  depois do fato; a única pista é a Auditoria da configuração.
-- **Caminhos:** gravar na OP, ao encerrar, a tolerância e os mínimos usados
-  (ou o próprio status) e calcular as OPs encerradas com eles.
-- **Ao corrigir:** passo "Mudou algum número?" do roteiro
-  `alertas-controles` (`src/ajuda/configuracao-producao/index.tsx`) e a
-  seção 8.5 do manual.
-
 ### 53. Filtro de datas da Auditoria contava o dia em UTC
 
 - **Status:** feito na branch `feat/ajuda-auditoria`.

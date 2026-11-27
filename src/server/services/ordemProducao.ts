@@ -16,6 +16,7 @@ import { arredondar } from "@/lib/producao/arredondar";
 import {
   custoOP,
   prefixoDaOP,
+  limitesDaOP,
   ratearCustoOP,
   resumirOP,
   type ConfiguracaoResumo,
@@ -613,6 +614,10 @@ export async function encerrarOP(
       data: {
         status: "ENCERRADA",
         encerradaEm: new Date(),
+        // O "Verificar" desta OP fica com os limites de hoje (item 52).
+        toleranciaBalancoMassa: configuracao.toleranciaBalancoMassa,
+        branqueamentoTemperaturaMinC: configuracao.branqueamentoTemperaturaMinC,
+        branqueamentoTempoMinS: configuracao.branqueamentoTempoMinS,
         custoFrutoTotal: resumo.custo.custoFrutoTotal,
         custoInsumosTotal: resumo.custo.custoInsumosTotal,
         custoKgPolpa: resumo.custo.custoKgPolpa,
@@ -659,6 +664,9 @@ export async function reabrirOP(sessao: SessaoAtiva, id: string, motivo: string)
       data: {
         status: "ABERTA",
         encerradaEm: null,
+        toleranciaBalancoMassa: null,
+        branqueamentoTemperaturaMinC: null,
+        branqueamentoTempoMinS: null,
         custoFrutoTotal: null,
         custoInsumosTotal: null,
         custoKgPolpa: null,
@@ -734,18 +742,22 @@ export async function cancelarOP(sessao: SessaoAtiva, id: string, motivo: string
 
 const LINHAS_ATIVAS = { where: { removidoEm: null } } as const;
 
-/** Resumo da OP; encerrada usa o custo gravado, as demais o calculado agora (provisório). */
+/**
+ * Resumo da OP; encerrada usa o custo e os limites gravados, as demais o calculado agora (provisório) com a
+ * configuração atual.
+ */
 function resumoComCustoGravado(
-  op: Parameters<typeof dadosDoResumo>[0] & {
-    status: StatusOrdemProducao;
-    custoFrutoTotal: Prisma.Decimal | null;
-    custoInsumosTotal: Prisma.Decimal | null;
-    custoKgPolpa: Prisma.Decimal | null;
-  },
+  op: Parameters<typeof dadosDoResumo>[0] &
+    Parameters<typeof limitesDaOP>[0] & {
+      status: StatusOrdemProducao;
+      custoFrutoTotal: Prisma.Decimal | null;
+      custoInsumosTotal: Prisma.Decimal | null;
+      custoKgPolpa: Prisma.Decimal | null;
+    },
   linhas: LinhasOP,
   configuracao: ConfiguracaoResumo,
 ): ResumoOP {
-  const resumo = resumirOP(dadosDoResumo(op, linhas), configuracao);
+  const resumo = resumirOP(dadosDoResumo(op, linhas), limitesDaOP(op, configuracao));
   if (op.status !== "ENCERRADA" || op.custoKgPolpa === null) return resumo;
   const custoFrutoTotal = Number(op.custoFrutoTotal);
   const custoInsumosTotal = Number(op.custoInsumosTotal);
