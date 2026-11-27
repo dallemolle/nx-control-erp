@@ -63,7 +63,7 @@ export const ROTEIROS: readonly Roteiro[] = [
           "R$ 1.100,00 já pagos (R$ 800,00 do adubo e R$ 300,00 da mão de obra) e R$ 1.000,00 da parcela do " +
           "adubo que vence no mês: resultado de −R$ 2.100,00.",
         dica:
-          "Centro de custo com pai (ex.: Escritório dentro de Administração) aparece recuado logo abaixo dele, " +
+          "Centro de custo com pai (ex.: Câmara fria dentro de Fábrica de polpa) aparece recuado logo abaixo dele, " +
           "e a linha do pai soma os dois. A seta ao lado do nome recolhe os filhos.",
       },
     ],
