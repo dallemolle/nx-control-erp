@@ -5,6 +5,7 @@
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { recuoDoNivel } from "@/lib/recuoDoNivel";
 import { MESES_ABREVIADOS, NOMES_DOS_MESES } from "@/lib/meses";
 import { valorParaCampo } from "@/lib/valorEmReais";
 import { salvarLinhaOrcamentoAction, type FormState } from "./actions";
@@ -34,7 +35,9 @@ export function LinhaOrcamentoForm({
   ano,
   valoresPorMes,
   somenteLeitura,
+  nivel = 1,
 }: {
+  nivel?: number;
   categoriaFinanceiraId: string;
   categoriaNome: string;
   ano: number;
@@ -47,7 +50,11 @@ export function LinhaOrcamentoForm({
     <form action={formAction} className="flex items-center gap-2 border-b py-2">
       <input type="hidden" name="categoriaFinanceiraId" value={categoriaFinanceiraId} />
       <input type="hidden" name="ano" value={ano} />
-      <span className={`${COLUNA_DO_NOME} truncate text-sm font-medium`} title={categoriaNome}>
+      <span
+        className={`${COLUNA_DO_NOME} truncate text-sm font-medium`}
+        style={recuoDoNivel(nivel)}
+        title={categoriaNome}
+      >
         {categoriaNome}
       </span>
       {valoresPorMes.map((valor, indice) => (

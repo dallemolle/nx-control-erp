@@ -4,7 +4,9 @@ import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeEscreverOrcamento } from "@/server/auth/permissions";
-import { listarComparativoOrcamento } from "@/server/services/orcamento";
+import { comparativoEmArvore, listarComparativoOrcamento } from "@/server/services/orcamento";
+import { montarArvore } from "@/lib/arvoreDeLinhas";
+import { LinhasRecolhiveis } from "../_shared/linhas-recolhiveis";
 import { CabecalhoDaGrade, LinhaOrcamentoForm } from "./linha-orcamento-form";
 import { SeletorAnoMes } from "../_shared/seletor-ano-mes";
 import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
@@ -48,15 +50,27 @@ export default async function OrcamentoPage({
       const linhaDoMes = linhas.find((l) => l.categoriaFinanceiraId === id && l.mes === indice + 1);
       return linhaDoMes?.orcado ?? 0;
     });
-    return { id, nome: primeira.categoriaNome, tipo: primeira.tipoCategoria, valoresPorMes };
+    return {
+      id,
+      nome: primeira.categoriaNome,
+      tipo: primeira.tipoCategoria,
+      parentId: primeira.parentId,
+      valoresPorMes,
+    };
   });
-  // Despesas primeiro (é onde mora o estouro), cada bloco em ordem alfabética, como já vem do serviço.
+  // Despesas primeiro (é onde mora o estouro); dentro de cada bloco, a árvore de categorias (filhas recuadas sob
+  // a mãe). O campo da mãe é o orçamento próprio dela; o total do grupo fica no comparativo.
+  const emArvore = (tipo: "DESPESA" | "RECEITA") =>
+    montarArvore(
+      categoriasUnicas.filter((c) => c.tipo === tipo).map((c) => ({ ...c, grupo: c.tipo })),
+      () => ({}),
+    ).map((item) => ({ ...item.origem, nivel: item.nivel }));
   const blocosDaGrade = [
-    { titulo: "Despesas", categorias: categoriasUnicas.filter((c) => c.tipo === "DESPESA") },
-    { titulo: "Receitas", categorias: categoriasUnicas.filter((c) => c.tipo === "RECEITA") },
+    { titulo: "Despesas", categorias: emArvore("DESPESA") },
+    { titulo: "Receitas", categorias: emArvore("RECEITA") },
   ].filter((bloco) => bloco.categorias.length > 0);
 
-  const linhasDoMes = linhas.filter((l) => l.mes === mes);
+  const itensDoMes = comparativoEmArvore(linhas.filter((l) => l.mes === mes));
 
   return (
     <div className="space-y-8">
@@ -103,6 +117,7 @@ export default async function OrcamentoPage({
                     ano={ano}
                     valoresPorMes={categoria.valoresPorMes}
                     somenteLeitura={somenteLeitura}
+                    nivel={categoria.nivel}
                   />
                 ))}
               </div>
@@ -126,24 +141,34 @@ export default async function OrcamentoPage({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {linhasDoMes.map((linha) => (
-              <TableRow key={linha.categoriaFinanceiraId} className={linha.alerta ? "bg-destructive/10" : undefined}>
-                <TableCell className="font-medium">{linha.categoriaNome}</TableCell>
-                <TableCell>{formatarMoeda(linha.orcado)}</TableCell>
-                <TableCell>{formatarMoeda(linha.realizado)}</TableCell>
-                <TableCell>{formatarMoeda(linha.projetado)}</TableCell>
-                <TableCell className="font-medium">{formatarMoeda(linha.previsto)}</TableCell>
-                <TableCell className={linha.alerta ? "font-medium text-destructive" : undefined}>
-                  <div className="flex items-center gap-2">
-                    {formatarMoeda(linha.variacaoAbsoluta)}
-                    {linha.alerta && <Badge variant="destructive">Estouro</Badge>}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {linha.variacaoPercentual === null ? "—" : formatarPercentual(linha.variacaoPercentual)}
-                </TableCell>
-              </TableRow>
-            ))}
+            <LinhasRecolhiveis
+              linhas={itensDoMes.map((linha) => ({
+                chave: linha.chave,
+                paiChave: linha.paiChave,
+                nivel: linha.nivel,
+                temFilhos: linha.temFilhos,
+                direto: linha.direto,
+                nome: linha.categoriaNome,
+                className: linha.alerta ? "bg-destructive/10" : undefined,
+                celulas: (
+                  <>
+                    <TableCell>{formatarMoeda(linha.orcado)}</TableCell>
+                    <TableCell>{formatarMoeda(linha.realizado)}</TableCell>
+                    <TableCell>{formatarMoeda(linha.projetado)}</TableCell>
+                    <TableCell className="font-medium">{formatarMoeda(linha.previsto)}</TableCell>
+                    <TableCell className={linha.alerta ? "font-medium text-destructive" : undefined}>
+                      <div className="flex items-center gap-2">
+                        {formatarMoeda(linha.variacaoAbsoluta)}
+                        {linha.alerta && <Badge variant="destructive">Estouro</Badge>}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {linha.variacaoPercentual === null ? "—" : formatarPercentual(linha.variacaoPercentual)}
+                    </TableCell>
+                  </>
+                ),
+              }))}
+            />
           </TableBody>
         </Table>
       </section>
