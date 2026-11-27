@@ -15,7 +15,7 @@ import { ANO, CATEGORIAS, MES, compararLinha, type CategoriaExemplo } from "./ex
 // Espelho de src/app/(dashboard)/controladoria/orcamento/*. Mudou um rótulo ou coluna lá? Ajuste aqui também.
 
 /** Só estas linhas têm alvo nos roteiros; as demais desenham sem destaque. */
-const LINHAS_COM_ALVO = new Set(["bancarias", "insumos","mao-de-obra", "venda"]);
+const LINHAS_COM_ALVO = new Set(["bancarias", "insumos", "mao-de-obra", "venda"]);
 
 /** Orçado do mês, com o que o roteiro digitou por cima na grade (lido como a tela lê). */
 function orcadoDe(categoria: CategoriaExemplo, mes: number, valores: PropsCena["valores"]): number {

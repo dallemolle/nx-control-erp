@@ -360,6 +360,7 @@ describe("comparativoEmArvore", () => {
       ["Taxas de cartão", "Taxas de cartão", 2, 30, 12.5, false],
     ]);
     expect(itens[1].direto).toBe(true);
+    expect(itens.map((i) => i.parentId)).toEqual([null, "Despesas bancárias", "Despesas bancárias"]);
     expect(itens[0].temFilhos).toBe(true);
   });
 

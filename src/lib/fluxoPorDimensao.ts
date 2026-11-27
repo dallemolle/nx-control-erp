@@ -1,3 +1,5 @@
+import { montarArvore } from "@/lib/arvoreDeLinhas";
+
 /** As quatro colunas de valor de uma linha do Fluxo de caixa por dimensão. */
 export type ValoresDoFluxo = {
   entradasRealizadas: number;
@@ -31,4 +33,24 @@ export function totalDoFluxo(linhas: readonly ValoresDoFluxo[]): TotalDoFluxo {
     saidasProjetadas: somar("saidasProjetadas"),
   };
   return { ...total, resultado: resultadoDoMes(total) };
+}
+
+/** As linhas do fluxo em árvore (tela e exportação). Só o Centro de custo tem pai; nas outras dimensões tudo é nível 1. */
+export function fluxoEmArvore<
+  L extends ValoresDoFluxo & { dimensaoId: string | null; dimensaoNome: string; parentId: string | null },
+>(linhas: readonly L[]) {
+  return montarArvore(
+    linhas.map((linha) => ({
+      ...linha,
+      id: linha.dimensaoId ?? "nao-classificado",
+      grupo: "dimensao",
+      nome: linha.dimensaoNome,
+    })),
+    (linha): ValoresDoFluxo => ({
+      entradasRealizadas: linha.entradasRealizadas,
+      saidasRealizadas: linha.saidasRealizadas,
+      entradasProjetadas: linha.entradasProjetadas,
+      saidasProjetadas: linha.saidasProjetadas,
+    }),
+  );
 }

@@ -2,8 +2,7 @@ import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { podeExecutar } from "@/server/auth/permissions";
 import { listarFluxoDeCaixaPorDimensao, type TipoDimensao } from "@/server/services/fluxoDeCaixaPorDimensao";
 import { type ColunaExport } from "@/lib/export/csv";
-import { resultadoDoMes, totalDoFluxo, type ValoresDoFluxo } from "@/lib/fluxoPorDimensao";
-import { montarArvore } from "@/lib/arvoreDeLinhas";
+import { fluxoEmArvore, resultadoDoMes, totalDoFluxo, type ValoresDoFluxo } from "@/lib/fluxoPorDimensao";
 import { responderExport } from "@/lib/export/responder";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 import { cabecalhoDoRelatorio, filtroDeClassificacao } from "@/server/export/cabecalhoDoRelatorio";
@@ -59,20 +58,7 @@ export async function GET(request: Request) {
   const periodo = `${ano}-${String(mes).padStart(2, "0")}`;
   // Linha Total no fim, como na tela: conferir com o Fluxo de caixa sem somar à mão.
   const total = totalDoFluxo(linhas);
-  const itens = montarArvore(
-    linhas.map((linha) => ({
-      ...linha,
-      id: linha.dimensaoId ?? "nao-classificado",
-      grupo: "dimensao",
-      nome: linha.dimensaoNome,
-    })),
-    (linha) => ({
-      entradasRealizadas: linha.entradasRealizadas,
-      saidasRealizadas: linha.saidasRealizadas,
-      entradasProjetadas: linha.entradasProjetadas,
-      saidasProjetadas: linha.saidasProjetadas,
-    }),
-  );
+  const itens = fluxoEmArvore(linhas);
   const exportadas: LinhaExportada[] = itens.map((item) => ({
     nivel: item.nivel,
     nome: `${"  ".repeat(item.nivel - 1)}${item.nome}`,

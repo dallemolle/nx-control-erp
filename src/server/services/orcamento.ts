@@ -318,7 +318,7 @@ export function comparativoEmArvore(linhasDoMes: readonly LinhaComparativoOrcame
         item.valores.realizado,
         item.valores.projetado,
       ),
-      parentId: linha.parentId,
+      parentId: item.direto ? linha.categoriaFinanceiraId : linha.parentId,
       chave: item.chave,
       nivel: item.nivel,
       paiChave: item.paiChave,

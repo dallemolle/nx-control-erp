@@ -178,7 +178,7 @@ export const ajudaCategorias: DefinicaoAjuda = {
             "bancárias”.",
           dica:
             "O Orçamento mostra a categoria pai com o total dela mais o das filhas, e as filhas recuadas logo abaixo. " +
-            "A pai precisa ser do mesmo tipo (Despesa ou Receita).",
+            "A categoria pai precisa ser do mesmo tipo (Despesa ou Receita).",
           preenche: { "form.pai": TAXAS.pai! },
         },
         {

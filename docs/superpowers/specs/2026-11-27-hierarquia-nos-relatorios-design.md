@@ -154,3 +154,5 @@ diálogo pelo fluxo de erro de ação que já existe.
   tipo com filhas de outro tipo.
 - Conferência no navegador: Orçamento e Fluxo por dimensão com um grupo de
   três níveis, recolher/expandir, exportações.
+- Recuo do nome no PDF — descartado: o gerador de PDF normaliza espaços; a coluna Nível mostra o nível (CSV e Excel mantêm o recuo).
+- Filtrar a lista de categoria pai pelo tipo no diálogo — descartado: conveniência; o Salvar já recusa com a mensagem.

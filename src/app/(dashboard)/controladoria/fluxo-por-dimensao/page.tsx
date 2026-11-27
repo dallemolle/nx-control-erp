@@ -1,6 +1,6 @@
 // Espelhado na ajuda (src/ajuda/fluxo-por-dimensao/cenas.tsx): mudou rótulo, coluna ou texto? Ajuste a ajuda junto.
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { resultadoDoMes, totalDoFluxo } from "@/lib/fluxoPorDimensao";
+import { fluxoEmArvore, resultadoDoMes, totalDoFluxo } from "@/lib/fluxoPorDimensao";
 import { AvisoVisaoFiltrada } from "../../financeiro/_fluxo-de-caixa/aviso-visao-filtrada";
 import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
@@ -12,7 +12,6 @@ import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 import { formatarMoeda } from "@/lib/formatacao";
-import { montarArvore } from "@/lib/arvoreDeLinhas";
 import { LinhasRecolhiveis } from "../_shared/linhas-recolhiveis";
 
 const DIMENSOES_VALIDAS: TipoDimensao[] = ["CENTRO_CUSTO", "CENTRO_LUCRO", "SAFRA", "PROJETO"];
@@ -58,21 +57,7 @@ export default async function FluxoPorDimensaoPage({
 
   const linhas = await listarFluxoDeCaixaPorDimensao(sessao, dimensao, ano, mes, { classificacao });
   const total = totalDoFluxo(linhas);
-  // Só o Centro de custo tem pai; nas outras dimensões todas as linhas ficam no nível 1.
-  const itens = montarArvore(
-    linhas.map((linha) => ({
-      ...linha,
-      id: linha.dimensaoId ?? "nao-classificado",
-      grupo: "dimensao",
-      nome: linha.dimensaoNome,
-    })),
-    (linha) => ({
-      entradasRealizadas: linha.entradasRealizadas,
-      saidasRealizadas: linha.saidasRealizadas,
-      entradasProjetadas: linha.entradasProjetadas,
-      saidasProjetadas: linha.saidasProjetadas,
-    }),
-  );
+  const itens = fluxoEmArvore(linhas);
 
   return (
     <div className="space-y-8">

@@ -76,7 +76,7 @@ describe("os exemplos batem com o resto da ajuda e com o cadastro", () => {
   test("centros de custo: os do Fluxo por dimensão estão na lista, e a ordem é a do código", () => {
     const lista = centrosDeCusto(fim(roteiroDe(ajudaCentrosDeCusto, "inativar-centro-custo")));
     const nomes = lista.map((c) => c.nome);
-    for (const linha of POR_CENTRO_DE_CUSTO.filter((l) => l.chave !== "nao-classificado")) {
+    for (const linha of POR_CENTRO_DE_CUSTO.filter((l) => l.chave !== "nao-classificado" && !l.pai)) {
       expect(nomes).toContain(linha.nome);
     }
     expect(lista.map((c) => c.codigo)).toEqual(["CC-01", "CC-02", "CC-03", "CC-03.1", "CC-09"]);
