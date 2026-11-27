@@ -34,6 +34,8 @@ export type FiltroTitulos = {
   classificacao?: ClassificacaoFiscal;
   /** Só títulos com alguma parcela com baixa rejeitada em aberto (aviso de Contas a pagar/receber). */
   rejeitadas?: true;
+  /** Um título só: o link das Pendências fiscais abre a lista nele (sempre dentro da filial). */
+  tituloId?: string;
 };
 
 export function parcelaBateFiltroDeParcela(
@@ -246,10 +248,15 @@ const ORDEM_LISTAGEM_TITULOS = [
 
 type TituloListado = Prisma.TituloGetPayload<{ include: typeof INCLUDE_LISTAGEM_TITULOS }>;
 
-function whereListagemTitulos(filialId: string, tipo: TipoTitulo, filtros: FiltroTitulosApi): Prisma.TituloWhereInput {
+function whereListagemTitulos(
+  filialId: string,
+  tipo: TipoTitulo,
+  filtros: FiltroTitulosApi & Pick<FiltroTitulos, "tituloId">,
+): Prisma.TituloWhereInput {
   return {
     filialId,
     tipo,
+    ...(filtros.tituloId && { id: filtros.tituloId }),
     ...(filtros.categoriaId && { categoriaFinanceiraId: filtros.categoriaId }),
     ...(filtros.contraparteId &&
       (tipo === "PAGAR" ? { fornecedorId: filtros.contraparteId } : { clienteId: filtros.contraparteId })),

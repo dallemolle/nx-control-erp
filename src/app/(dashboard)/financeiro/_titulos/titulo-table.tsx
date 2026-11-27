@@ -119,6 +119,7 @@ export function TituloTable({
   onAbrirRenegociacao,
   onAbrirEstorno,
   onAbrirDispensa,
+  tituloEmFocoId,
 }: {
   tipo: TipoTitulo;
   titulos: TituloLinha[];
@@ -131,8 +132,10 @@ export function TituloTable({
   onAbrirRenegociacao: (parcelaId: string) => void;
   onAbrirEstorno: (baixa: BaixaDaParcela) => void;
   onAbrirDispensa: (baixa: BaixaDaParcela) => void;
+  /** Título aberto pelo link das Pendências fiscais: a linha já vem expandida, com parcelas e Anexos. */
+  tituloEmFocoId?: string;
 }) {
-  const [expandidoId, setExpandidoId] = useState<string | null>(null);
+  const [expandidoId, setExpandidoId] = useState<string | null>(tituloEmFocoId ?? null);
 
   return (
     <Table>

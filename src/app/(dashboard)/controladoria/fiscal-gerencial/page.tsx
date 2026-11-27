@@ -262,7 +262,8 @@ export default async function FiscalGerencialPage({
             <TableBody>
               {pendencias.map((titulo) => {
                 const rota = titulo.tipo === "PAGAR" ? "/financeiro/contas-a-pagar" : "/financeiro/contas-a-receber";
-                const href = titulo.contraparteId ? `${rota}?classificacao=FISCAL&contraparte=${titulo.contraparteId}` : rota;
+                // Abre a lista já no título, com a linha expandida (parcelas, Anexos e Editar à mão).
+                const href = `${rota}?titulo=${titulo.tituloId}`;
                 return (
                   <TableRow key={titulo.tituloId}>
                     <TableCell>

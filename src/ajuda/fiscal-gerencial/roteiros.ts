@@ -141,8 +141,9 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "pend.documento",
         instrucao: "Clique no documento",
         explicacao:
-          "Abre Contas a pagar (ou a receber) filtrada pelo parceiro e pela classificação Fiscal. Ali, procure o " +
-          "título na lista: o link não abre o título direto.",
+          "Abre Contas a pagar (ou a receber) já no título, com a linha aberta: parcelas, Anexos e o botão " +
+          "Editar à mão. Uma faixa no alto diz que a lista mostra só aquele título.",
+        dica: "Para voltar à lista completa, clique em “Ver todos” na faixa, ou mexa em qualquer filtro.",
       },
       {
         cena: "painel",

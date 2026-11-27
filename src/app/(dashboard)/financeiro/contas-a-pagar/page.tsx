@@ -18,6 +18,7 @@ import { nomeDaContaBancaria } from "@/lib/contaBancaria";
 import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { contarRejeicoesEmAberto } from "@/server/services/baixa";
 import { AvisoRejeitadas } from "../_titulos/aviso-rejeitadas";
+import { AvisoTituloEmFoco } from "../_titulos/aviso-titulo-em-foco";
 
 function paramCru(valor: string | string[] | undefined): string | undefined {
   return Array.isArray(valor) ? valor[0] : valor;
@@ -34,6 +35,7 @@ type SearchParams = {
   vencimentoDe?: string | string[];
   vencimentoAte?: string | string[];
   rejeitadas?: string | string[];
+  titulo?: string | string[];
 };
 
 export default async function ContasAPagarPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
@@ -120,6 +122,9 @@ export default async function ContasAPagarPage({ searchParams }: { searchParams:
           projetos: opcoes.projetos,
         }}
       />
+      {filtros.tituloId ? (
+        <AvisoTituloEmFoco documento={titulos[0]?.documento ?? null} hrefTodos="/financeiro/contas-a-pagar" />
+      ) : null}
       <AvisoRejeitadas
         quantidade={rejeicoesEmAberto}
         href="/financeiro/contas-a-pagar?rejeitadas=1"
@@ -134,6 +139,7 @@ export default async function ContasAPagarPage({ searchParams }: { searchParams:
         podeBaixar={podeBaixar}
         podeAprovar={podeAprovar}
         filtroAtivo={algumFiltroAtivo(filtros)}
+        tituloEmFocoId={filtros.tituloId}
       />
     </div>
   );

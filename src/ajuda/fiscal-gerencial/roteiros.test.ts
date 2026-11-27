@@ -72,3 +72,10 @@ describe("roteiros de Fiscal × gerencial", () => {
     });
   });
 });
+
+test("o passo do documento diz que o link abre o próprio título", () => {
+  const passo = ajudaFiscalGerencial.roteiros.flatMap((r) => r.passos).find((p) => p.instrucao === "Clique no documento");
+  expect(passo?.explicacao).toContain("já no título");
+  expect(passo?.explicacao).not.toMatch(/não abre o título|procure o título/);
+  expect(passo?.dica).toContain("Ver todos");
+});

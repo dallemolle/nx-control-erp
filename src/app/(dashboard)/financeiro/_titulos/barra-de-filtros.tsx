@@ -24,6 +24,8 @@ export function construirUrlComFiltro(
   valor: string,
 ): string {
   const params = new URLSearchParams(searchParamsAtual.toString());
+  // O título aberto pelo link das Pendências fiscais não fica preso: mexeu no filtro, volta à lista.
+  params.delete("titulo");
   if (!valor || valor === SEM_VALOR) {
     params.delete(campo);
   } else {

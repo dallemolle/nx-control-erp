@@ -116,3 +116,12 @@ describe("filtro de classificação fiscal × gerencial", () => {
     expect(queryStringDosFiltros(get)).toBe("classificacao=GERENCIAL");
   });
 });
+
+describe("filtro de um título só (link das Pendências fiscais)", () => {
+  test("titulo=<id> vira tituloId e segue para a exportação", () => {
+    const get = (c: string) => (c === "titulo" ? "tit-1" : undefined);
+    expect(filtroTitulosDaUrl(get).tituloId).toBe("tit-1");
+    expect(algumFiltroAtivo(filtroTitulosDaUrl(get))).toBe(true);
+    expect(queryStringDosFiltros(get)).toBe("titulo=tit-1");
+  });
+});

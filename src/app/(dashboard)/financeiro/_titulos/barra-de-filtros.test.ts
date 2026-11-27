@@ -26,3 +26,10 @@ describe("construirUrlComFiltro", () => {
     expect(resultado).toBe("/financeiro/contas-a-pagar");
   });
 });
+
+test("mexer em qualquer filtro solta o título aberto pelo link das pendências", () => {
+  const atual = new URLSearchParams("titulo=tit-1&classificacao=FISCAL");
+  expect(construirUrlComFiltro(atual, "/financeiro/contas-a-pagar", "status", "VENCIDO")).toBe(
+    "/financeiro/contas-a-pagar?classificacao=FISCAL&status=VENCIDO",
+  );
+});

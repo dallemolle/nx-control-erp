@@ -203,6 +203,14 @@ describe("titulo (filial-scoped)", () => {
     expect(titulos.every((titulo) => titulo.tipo === "PAGAR")).toBe(true);
   });
 
+  test("listarTitulos com tituloId traz só aquele título (link das Pendências fiscais)", async () => {
+    const todos = await listarTitulos(fixture.filialId, "PAGAR");
+    expect(todos.length).toBeGreaterThan(1);
+    const alvo = todos[1];
+    const filtrados = await listarTitulos(fixture.filialId, "PAGAR", { tituloId: alvo.id });
+    expect(filtrados.map((titulo) => titulo.id)).toEqual([alvo.id]);
+  });
+
   test("listarTitulos isola por filial — título de uma filial irmã não aparece", async () => {
     const filialIrma = await prisma.filial.create({
       data: { empresaId: fixture.empresaId, nome: "Filial Irma TIT", cnpjCpf: "11.111.TIT/0001-99" },
@@ -230,6 +238,8 @@ describe("titulo (filial-scoped)", () => {
 
     const titulosDaFixture = await listarTitulos(fixture.filialId, "PAGAR");
     expect(titulosDaFixture.find((titulo) => titulo.id === tituloNaIrma.id)).toBeUndefined();
+    // O link das Pendências fiscais com o id de um título de outra filial não mostra nada.
+    expect(await listarTitulos(fixture.filialId, "PAGAR", { tituloId: tituloNaIrma.id })).toEqual([]);
 
     await prisma.parcela.deleteMany({ where: { tituloId: tituloNaIrma.id } });
     await prisma.titulo.delete({ where: { id: tituloNaIrma.id } });
