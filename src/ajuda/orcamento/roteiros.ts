@@ -96,6 +96,10 @@ export const ROTEIROS: readonly Roteiro[] = [
           "Soma as movimentações conciliadas da categoria, pela data do lançamento no banco. Pagamento ainda não " +
           "conciliado não entra: concilie o extrato antes de analisar o mês. Dinheiro em conta Caixa já entra " +
           "conciliado.",
+        dica:
+          "O movimento no sentido contrário abate: a devolução de uma compra (entrada numa categoria de despesa) " +
+          "diminui o realizado dela, e a devolução a um cliente diminui o de uma receita. O projetado segue a " +
+          "mesma regra.",
       },
       {
         cena: "painel",
