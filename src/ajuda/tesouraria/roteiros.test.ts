@@ -37,6 +37,13 @@ describe("roteiros de Tesouraria", () => {
     expect(depois).toContain("Diferença em 20/11/2026: R$ 45,90");
   });
 
+  test("a lista é explicada em páginas, e a exportação como a lista inteira", () => {
+    const passo = roteiros.flatMap((r) => r.passos).find((p) => p.instrucao === "Veja a lista de lançamentos");
+    expect(passo?.explicacao).toContain("páginas");
+    expect(passo?.explicacao).not.toMatch(/^Todos os lançamentos/);
+    expect(passo?.dica).toContain("lista inteira");
+  });
+
   test("o filtro Fiscal esconde transferências e lançamentos gerenciais", () => {
     const html = renderToStaticMarkup(createElement(cenas.painel, { valores: { "painel.classificacao": "Fiscal" } }));
     expect(html).toContain("NF-e 1234 · Agro Insumos Ltda · parcela 2/3");

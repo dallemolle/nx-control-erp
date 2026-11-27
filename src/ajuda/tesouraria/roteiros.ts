@@ -264,8 +264,9 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "painel.tabela",
         instrucao: "Veja a lista de lançamentos",
         explicacao:
-          "Todos os lançamentos das contas da filial, dos mais recentes para os mais antigos, com conta, tipo, " +
-          "valor e descrição.",
+          "Os lançamentos das contas da filial, dos mais recentes para os mais antigos, com conta, tipo, valor e " +
+          "descrição. Com mais de 50, a lista se divide em páginas: use Anterior e Próximo embaixo dela.",
+        dica: "Para ter todos de uma vez, exporte em CSV, Excel ou PDF: a exportação traz a lista inteira, com o filtro.",
       },
       {
         cena: "painel",
