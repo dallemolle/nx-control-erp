@@ -264,7 +264,9 @@ tem `planejamentoEstrategico:ler`).
   GESTOR); demais perfis veem os mesmos valores em modo leitura.
 - Tabela: colunas Ano 1 a Ano 5, linhas Receita / Custo operacional /
   CAPEX / Juros / Geração líquida / Saldo de caixa / Margem líquida —
-  para o cenário selecionado.
+  para o cenário selecionado. (2026-11-27: a métrica passou a se chamar
+  "Margem operacional", campo `margemOperacional`, porque a fórmula não
+  desconta CAPEX nem juros; a conta não mudou. Item 14 do backlog.)
 - Sem gráfico nesta v1 (só tabela) — mesma decisão de manter a
   superfície mínima já tomada nos sub-projetos 1/2.
 
