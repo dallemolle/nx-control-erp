@@ -280,8 +280,9 @@ export const ROTEIROS: readonly Roteiro[] = [
         instrucao: "Clique em “Salvar processo”",
         explicacao: "Grava todos os campos da aba de uma vez e mostra “Salvo.”.",
         dica:
-          "Salve antes de trocar de aba: os números digitados e não salvos se perdem, sem aviso, quando você muda de " +
-          "aba ou sai da tela.",
+          "Salve antes de trocar de aba: enquanto houver números não salvos, aparece “Alterações não salvas” e o " +
+          "sistema pede confirmação antes de mudar de aba ou sair da tela (o voltar do navegador não avisa). O " +
+          "“Encerrar OP” também avisa, porque o encerramento usa só o que foi salvo.",
         preenche: { "op.processo": "salvo" },
       },
       {

@@ -15,6 +15,7 @@ import {
   type FormState,
 } from "../actions";
 import { useAcaoDoDialogo } from "../../../_shared/use-acao-do-dialogo";
+import { useProcessoNaoSalvo } from "./processo-nao-salvo";
 
 const ESTADO_INICIAL: FormState = {};
 
@@ -22,6 +23,7 @@ type Situacao = { pode: true } | { pode: false; motivo: string };
 
 export function EncerrarOP({ opId, numero, aVerificar }: { opId: string; numero: string; aVerificar: string[] }) {
   const { aberto, setAberto, state, formAction, pendente } = useAcaoDoDialogo(encerrarOPAction, ESTADO_INICIAL);
+  const { naoSalvo } = useProcessoNaoSalvo();
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
       <DialogTrigger render={<Button />}>Encerrar OP</DialogTrigger>
@@ -31,6 +33,12 @@ export function EncerrarOP({ opId, numero, aVerificar }: { opId: string; numero:
         </DialogHeader>
         <form action={formAction} className="space-y-4">
           <input type="hidden" name="opId" value={opId} />
+          {naoSalvo ? (
+            <p role="status" className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
+              A aba Processo tem números digitados e não salvos. O encerramento usa só o que já foi salvo: feche
+              esta janela e clique em “Salvar processo” antes.
+            </p>
+          ) : null}
           <p className="text-sm text-muted-foreground">
             O custo é gravado e a polpa fica liberada para venda e ajuste. Se precisar corrigir depois, a OP pode ser
             reaberta enquanto nenhum lote de polpa tiver saída.

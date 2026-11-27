@@ -444,26 +444,6 @@ continua, para cada item ter um número único). Prioridade a definir.
 
 Numeração continua a do Financeiro e da Controladoria.
 
-### 23. Aba Processo da OP perde o que não foi salvo, sem aviso
-
-- **Problema:** na OP, a aba Processo (branqueamento, água, caroço, perda,
-  observação) só grava com "Salvar processo". As abas são links: trocar de
-  aba, ou sair da tela, descarta o que foi digitado, sem aviso.
-- **Exemplo:** a operadora digita 85 °C, 10 s, 400 L, 450 kg e 20 kg e clica
-  em "Produção" para conferir a polpa; volta e os campos estão como antes. O
-  balanço continua "Verificar" e ela não sabe por quê.
-- **Onde:** `producao/processamento/[numero]/processo-form.tsx` e as abas em
-  `[numero]/page.tsx`.
-- **Impacto:** retrabalho e OP encerrada com "Verificar" confirmado por
-  engano (a confirmação parece só burocracia quando o número "foi digitado").
-- **Caminhos:** avisar ao sair com alterações não salvas (o editor de tema já
-  faz isso com `beforeunload`; as abas precisam de um aviso próprio, porque são
-  navegação do Next); ou salvar ao sair do campo.
-- **Cuidados:** não salvar sozinho valores parciais que mudem o status de
-  "Verificar" sem a pessoa ver; OP encerrada não tem formulário.
-- **Ao corrigir:** dica do passo "Salvar processo" do roteiro
-  `insumos-processo` em `src/ajuda/processamento/roteiros.ts`.
-
 ### 24. Estoque: data de referência não mostra o estoque de outro dia
 
 - **Problema:** a "Data de referência" do Estoque muda só a conta dos dias e
