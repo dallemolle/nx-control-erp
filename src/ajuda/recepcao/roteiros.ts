@@ -249,9 +249,9 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "editar.campos",
         instrucao: "Corrija e salve",
         explicacao:
-          "Só estes três campos mudam aqui. Eles não alteram o estoque nem o valor. O romaneio corrigido fica só na " +
-          "recepção: o documento da conta a pagar continua o de antes (se precisar, edite o título em Contas a " +
-          "pagar).",
+          "Só estes três campos mudam aqui. Eles não alteram o estoque nem o valor. O romaneio corrigido vai também " +
+          "para o documento da conta a pagar, enquanto ela não tiver pagamento registrado e o documento dela não " +
+          "tiver sido mudado em Contas a pagar; o aviso abaixo do campo diz o que vai acontecer.",
         preenche: { "editar.qualidade": "B" },
       },
       {

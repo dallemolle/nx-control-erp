@@ -7,6 +7,7 @@ import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { DadosEditaveisRecepcao, RecepcaoFormValues } from "@/lib/schemas/recepcao";
 import { calcularRecepcao } from "@/lib/producao/recepcao";
 import { calcularValidade, prefixoDoLote, proximoCodigoDeLote } from "@/lib/producao/lote";
+import { documentoDoTituloDaRecepcao, romaneioNoTitulo, type RomaneioNoTitulo } from "@/lib/producao/romaneioNoTitulo";
 import { obterConfiguracaoProducao } from "./configuracaoProducao";
 import { registrarMovimento } from "./estoque";
 import { criarTituloInterno } from "./titulo";
@@ -144,7 +145,7 @@ export async function criarRecepcao(sessao: SessaoAtiva, dados: RecepcaoFormValu
             "PAGAR",
             {
               contraparteId: fornecedor.id,
-              documento: dados.documento ?? `RF-${codigo}`,
+              documento: documentoDoTituloDaRecepcao(dados.documento ?? null, codigo),
               dataEmissao: dados.data,
               dataCompetencia: dados.data,
               categoriaFinanceiraId: configuracao.categoriaCompraFrutoId!,
@@ -215,23 +216,97 @@ export async function criarRecepcao(sessao: SessaoAtiva, dados: RecepcaoFormValu
 /** Qualidade, documento e observação não afetam estoque nem valor: editáveis sempre. */
 export async function atualizarDadosRecepcao(sessao: SessaoAtiva, id: string, dados: DadosEditaveisRecepcao) {
   autorizar(sessao);
-  const anterior = await prisma.recepcaoFruto.findFirstOrThrow({ where: { id, filialId: sessao.filialId } });
   const novo = {
     qualidade: dados.qualidade ?? null,
     documento: dados.documento ?? null,
     observacao: dados.observacao ?? null,
   };
-  await prisma.recepcaoFruto.update({ where: { id }, data: novo });
-  await registrarAuditoria({
-    empresaId: sessao.empresaId,
-    filialId: sessao.filialId,
-    usuarioId: sessao.usuarioId,
-    entidade: "RecepcaoFruto",
-    entidadeId: id,
-    acao: "ATUALIZAR",
-    anterior: { qualidade: anterior.qualidade, documento: anterior.documento, observacao: anterior.observacao },
-    novo,
+  const auditoria = { empresaId: sessao.empresaId, filialId: sessao.filialId, usuarioId: sessao.usuarioId };
+
+  await prisma.$transaction(async (tx) => {
+    // Trava a recepção e as parcelas: uma baixa registrada ao mesmo tempo ou entra
+    // antes (e o título fica como está) ou espera o documento novo.
+    await tx.$queryRaw`SELECT id FROM recepcoes_fruto WHERE id = ${id} FOR UPDATE`;
+    const anterior = await tx.recepcaoFruto.findFirstOrThrow({
+      where: { id, filialId: sessao.filialId },
+      include: { lote: { select: { codigo: true } }, titulo: { select: { documento: true } } },
+    });
+    await tx.recepcaoFruto.update({ where: { id }, data: novo });
+    await registrarAuditoria(
+      {
+        ...auditoria,
+        entidade: "RecepcaoFruto",
+        entidadeId: id,
+        acao: "ATUALIZAR",
+        anterior: { qualidade: anterior.qualidade, documento: anterior.documento, observacao: anterior.observacao },
+        novo,
+      },
+      tx,
+    );
+
+    // O romaneio é o documento da conta a pagar: acompanha a correção (ver `romaneioNoTitulo`).
+    if (!anterior.tituloId || !anterior.titulo || anterior.status === "CANCELADA") return;
+    const documentoNovo = documentoDoTituloDaRecepcao(novo.documento, anterior.lote.codigo);
+    if (documentoNovo === anterior.titulo.documento) return;
+    await travarParcelasDosTitulos(tx, [anterior.tituloId]);
+    const pagamentos = await tx.baixa.count({
+      where: { parcela: { tituloId: anterior.tituloId }, statusAprovacao: { in: ["PENDENTE", "APROVADO"] } },
+    });
+    const situacao = romaneioNoTitulo({
+      documentoDaRecepcao: anterior.documento,
+      codigoLote: anterior.lote.codigo,
+      documentoDoTitulo: anterior.titulo.documento,
+      temPagamento: pagamentos > 0,
+    });
+    if (!situacao.segue) return;
+    await tx.titulo.update({ where: { id: anterior.tituloId }, data: { documento: documentoNovo } });
+    await registrarAuditoria(
+      {
+        ...auditoria,
+        entidade: "Titulo",
+        entidadeId: anterior.tituloId,
+        acao: "ATUALIZAR",
+        anterior: { documento: anterior.titulo.documento },
+        novo: { documento: documentoNovo },
+      },
+      tx,
+    );
   });
+}
+
+/** Para o diálogo Editar avisar, antes de salvar, se o romaneio vai também para a conta a pagar. */
+export async function romaneiosNosTitulos(
+  recepcoes: {
+    id: string;
+    documento: string | null;
+    tituloId: string | null;
+    lote: { codigo: string };
+    titulo: { documento: string } | null;
+  }[],
+): Promise<Map<string, RomaneioNoTitulo & { documentoDoTitulo: string }>> {
+  const comTitulo = recepcoes.filter((r) => r.tituloId && r.titulo);
+  const baixas = await prisma.baixa.findMany({
+    where: {
+      parcela: { tituloId: { in: comTitulo.map((r) => r.tituloId!) } },
+      statusAprovacao: { in: ["PENDENTE", "APROVADO"] },
+    },
+    select: { parcela: { select: { tituloId: true } } },
+  });
+  const titulosPagos = new Set(baixas.map((b) => b.parcela.tituloId));
+  return new Map(
+    comTitulo.map((r) => [
+      r.id,
+      {
+        ...romaneioNoTitulo({
+          documentoDaRecepcao: r.documento,
+          codigoLote: r.lote.codigo,
+          documentoDoTitulo: r.titulo!.documento,
+          temPagamento: titulosPagos.has(r.tituloId!),
+        }),
+        documentoDoTitulo: r.titulo!.documento,
+      },
+    ]),
+  );
 }
 
 async function verificarCancelamento(
@@ -360,6 +435,7 @@ export async function listarRecepcoes(filialId: string, filtros: FiltroRecepcoes
     },
     include: {
       lote: { select: { codigo: true } },
+      titulo: { select: { documento: true } },
       produto: { select: { descricao: true, fruta: { select: { nome: true } } } },
       talhao: { select: { nome: true } },
       fornecedor: { select: { nome: true } },
