@@ -80,10 +80,10 @@ export const ROTEIROS: readonly Roteiro[] = [
       {
         cena: "painel",
         alvo: "BASE.linha.margem",
-        instrucao: "Margem líquida: quanto sobra de cada real de receita",
+        instrucao: "Margem operacional: quanto a operação deixa de cada real de receita",
         explicacao:
-          "É (receita − custo) ÷ receita. Atenção: apesar do nome, ela não desconta CAPEX nem juros. É a margem da " +
-          "operação, antes de investimento e dívida.",
+          "É (receita − custo) ÷ receita: a margem da operação, antes de investimento e dívida. Ela não desconta " +
+          "CAPEX nem juros; para ver o efeito deles, olhe a geração líquida e o saldo de caixa.",
       },
     ],
     eDepois: {

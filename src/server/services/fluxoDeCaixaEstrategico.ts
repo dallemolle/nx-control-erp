@@ -30,7 +30,7 @@ export type AnoProjetadoEstrategico = {
   geracaoOperacional: number;
   geracaoLiquida: number;
   saldoCaixa: number;
-  margemLiquida: number;
+  margemOperacional: number;
 };
 
 const ANOS_DE_PROJECAO = 5;
@@ -65,9 +65,9 @@ export function calcularProjecaoEstrategica(
     const geracaoOperacional = receita - custoOperacional;
     const geracaoLiquida = geracaoOperacional - capex + premissas.novoEndividamentoAnual - jurosSobreDivida;
     const saldoCaixa = saldoCaixaAnterior + geracaoLiquida;
-    const margemLiquida = receita === 0 ? 0 : geracaoOperacional / receita;
+    const margemOperacional = receita === 0 ? 0 : geracaoOperacional / receita;
 
-    anos.push({ ano, receita, custoOperacional, capex, jurosSobreDivida, geracaoOperacional, geracaoLiquida, saldoCaixa, margemLiquida });
+    anos.push({ ano, receita, custoOperacional, capex, jurosSobreDivida, geracaoOperacional, geracaoLiquida, saldoCaixa, margemOperacional });
 
     receitaAnterior = receita;
     custoAnterior = custoOperacional;

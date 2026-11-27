@@ -57,7 +57,7 @@ export type AnoProjetado = {
   geracaoOperacional: number;
   geracaoLiquida: number;
   saldoCaixa: number;
-  margemLiquida: number;
+  margemOperacional: number;
 };
 
 export function projetar(p: Premissas, receitaBase: number, custoBase: number, saldoBase: number): AnoProjetado[] {
@@ -75,8 +75,8 @@ export function projetar(p: Premissas, receitaBase: number, custoBase: number, s
     const geracaoOperacional = receita - custoOperacional;
     const geracaoLiquida = geracaoOperacional - capex + p.novoEndividamentoAnual - jurosSobreDivida;
     const saldoCaixa = saldoAnterior + geracaoLiquida;
-    const margemLiquida = receita === 0 ? 0 : geracaoOperacional / receita;
-    anos.push({ ano, receita, custoOperacional, capex, jurosSobreDivida, geracaoOperacional, geracaoLiquida, saldoCaixa, margemLiquida });
+    const margemOperacional = receita === 0 ? 0 : geracaoOperacional / receita;
+    anos.push({ ano, receita, custoOperacional, capex, jurosSobreDivida, geracaoOperacional, geracaoLiquida, saldoCaixa, margemOperacional });
     receitaAnterior = receita;
     custoAnterior = custoOperacional;
     saldoAnterior = saldoCaixa;

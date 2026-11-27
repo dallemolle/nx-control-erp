@@ -51,7 +51,7 @@ function Secao({ cenario, valores }: { cenario: Cenario; valores: PropsCena["val
       valor: (a) => moeda(a.saldoCaixa),
       vermelho: (a) => a.saldoCaixa < 0,
     },
-    { chave: "margem", rotulo: "Margem líquida", valor: (a) => `${(a.margemLiquida * 100).toFixed(1)}%` },
+    { chave: "margem", rotulo: "Margem operacional", valor: (a) => `${(a.margemOperacional * 100).toFixed(1)}%` },
   ];
   // Só estes têm alvo nos roteiros; os demais desenham sem destaque.
   const comAlvo = new Set(

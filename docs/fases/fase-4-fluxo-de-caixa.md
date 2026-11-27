@@ -59,8 +59,8 @@ tela em `/financeiro/fluxo-de-caixa-estrategico`).
 - 5 premissas editáveis por cenário (reduzidas das 10 do escopo
   original): crescimento de receita, crescimento de custos/despesas (já
   embute inflação), CAPEX (% da receita), novo endividamento anual,
-  taxa de juros anual. Margem líquida é métrica calculada/exibida, não
-  input. Prazo médio de recebimento/pagamento e capital de giro ficam
+  taxa de juros anual. Margem operacional (até 2026-11-27 chamada de
+  "margem líquida") é métrica calculada/exibida, não input. Prazo médio de recebimento/pagamento e capital de giro ficam
   para uma iteração futura — exigem modelar descasamento de caixa no
   tempo.
 - Sem amortização de dívida modelada (juros incidem sobre o saldo

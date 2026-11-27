@@ -358,28 +358,6 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
   conciliar em dia) e o passo "O ponto de partida é o saldo de hoje"; manual,
   seção 3.6 e a seção do Dashboard executivo.
 
-### 14. "Margem líquida" do Fluxo estratégico é a margem operacional
-
-- **Problema:** `calcularProjecaoEstrategica`
-  (`src/server/services/fluxoDeCaixaEstrategico.ts`) calcula
-  `margemLiquida = geracaoOperacional / receita`, ou seja (receita − custo) ÷
-  receita. A tela e a exportação mostram isso como "Margem líquida", mas a conta
-  não desconta CAPEX nem juros, que a própria tabela mostra logo acima.
-- **Exemplo:** no cenário Pessimista da ajuda, o Ano 3 tem geração líquida de
-  −R$ 54.190,91 e saldo negativo, mas a "margem líquida" mostra −36,9%, que é só
-  a operação; com CAPEX e juros seria bem pior. Num cenário com muita dívida, a
-  margem parece estável enquanto o caixa afunda.
-- **Impacto:** dado enganoso num indicador de decisão (o nome promete uma coisa
-  e a conta faz outra).
-- **Caminhos:** renomear para "Margem operacional" (tela, exportação, manual);
-  ou mudar a conta para geração líquida ÷ receita (mas a geração líquida inclui
-  dívida nova como entrada, o que também distorce); ou mostrar as duas.
-- **Cuidados:** a spec do fluxo estratégico (Fase 6) pode ter definido a
-  fórmula de propósito: conferir antes; a exportação usa o mesmo rótulo.
-- **Ao corrigir:** passo "Margem líquida" do roteiro `ler-projecao` em
-  `src/ajuda/fluxo-de-caixa-estrategico/roteiros.ts` (avisa que não desconta
-  CAPEX nem juros) e a réplica (`cenas.tsx`, rótulo da métrica); manual, seção 3.7.
-
 ### 59. Cancelar ou renegociar parcela com baixa pendente
 
 - **Status:** feito na branch `fix/parcela-com-baixa-pendente` (2026-11-26, spec

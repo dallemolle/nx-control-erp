@@ -37,6 +37,13 @@ describe("roteiros de Fluxo de caixa estratégico", () => {
     ).toBe(false);
   });
 
+  test("a margem se chama operacional, na cena e nos textos (não desconta CAPEX nem juros)", () => {
+    const html = renderToStaticMarkup(createElement(cenas.painel, { valores: {} }));
+    expect(html).toContain("Margem operacional");
+    expect(html).not.toMatch(/[Mm]argem líquida/);
+    expect(JSON.stringify(roteiros)).not.toMatch(/[Mm]argem líquida|apesar do nome/);
+  });
+
   test("mudar a premissa no roteiro recalcula a tabela", () => {
     const html = renderToStaticMarkup(createElement(cenas.painel, { valores: { "BASE.receita": "8.00" } }));
     expect(html).toContain("R$ 237.600,00");
