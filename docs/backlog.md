@@ -259,21 +259,6 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 - **Ao corrigir:** dica do passo "Clique em Rejeitar" no `rejeitar-baixa`
   (`src/ajuda/aprovacoes/roteiros.ts`): manda avisar a pessoa por fora.
 
-### 9. Reconciliar pendentes ignora Sugestão, Divergência e Duplicado
-
-- **Problema:** `reconciliarPendentes` (`src/server/services/conciliacao.ts`)
-  só reprocessa linhas `NAO_CONCILIADO`.
-- **Exemplo:** linha importada como Divergência de valor porque o lançamento
-  certo ainda não existia. O lançamento é criado depois; a linha continua
-  Divergência e o automático nunca a concilia.
-- **Impacto:** status velho e trabalho manual que o sistema poderia fazer.
-- **Caminhos:** reprocessar todos os status não conciliados; ou reclassificar
-  sem conciliar quando houver mais de um candidato.
-- **Cuidados:** não desfazer escolhas que a pessoa já fez; desempenho com
-  muitas linhas.
-- **Ao corrigir:** dica do passo "Clique em Reconciliar pendentes" no
-  `desconciliar` (`src/ajuda/conciliacao/roteiros.ts`).
-
 ### 10. Transferências entre contas inflam entradas e saídas
 
 - **Status:** feito na branch `fix/transferencias-fora-das-somas` (2026-11-26,

@@ -17,8 +17,12 @@ export function ReconciliarPendentesButton() {
         setMensagem(resultado.erro);
         return;
       }
+      const reclassificadas = resultado.reclassificadas ?? 0;
       setMensagem(
-        `${resultado.conciliadasAutomaticamente} de ${resultado.totalProcessadas} linha(s) pendente(s) conciliada(s).`,
+        `${resultado.conciliadasAutomaticamente} de ${resultado.totalProcessadas} linha(s) pendente(s) conciliada(s)` +
+          (reclassificadas > 0
+            ? `; ${reclassificadas} ${reclassificadas === 1 ? "mudou" : "mudaram"} de situação.`
+            : "."),
       );
     });
   }

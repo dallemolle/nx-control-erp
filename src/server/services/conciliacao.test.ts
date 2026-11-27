@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
+import type { StatusLinhaExtrato } from "@prisma/client";
 import { classificarLinhaExtrato, type CandidatoParaClassificar } from "./conciliacao";
 import { prisma } from "@/server/db/client";
 import { PermissionError } from "@/server/auth/permissions";
@@ -314,6 +315,126 @@ describe("reconciliarPendentes", () => {
     const linhaDepois = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linhaAntes.id } });
     expect(linhaDepois.status).toBe("CONCILIADO");
     expect(await lancamentosDoGrupoDaLinha(linhaDepois.id)).toEqual([lancamento.id]);
+  });
+
+  describe("reprocessa também Sugestão, Divergência e Duplicado", () => {
+    let contaSeq = 0;
+
+    /** Conta nova por teste (os candidatos são buscados por conta) com uma linha de saída de R$ 150,00 em 15/08. */
+    async function linhaComStatus(status: StatusLinhaExtrato) {
+      contaSeq += 1;
+      const conta = await prisma.contaBancaria.create({
+        data: {
+          filialId: fixture.filialId,
+          bancoId: fixture.bancoId,
+          agencia: "0009",
+          conta: `reproc-${contaSeq}`,
+          saldoInicial: 0,
+        },
+      });
+      const extrato = await prisma.extratoImportado.create({
+        data: {
+          filialId: fixture.filialId,
+          contaBancariaId: conta.id,
+          nomeArquivo: "reproc.ofx",
+          totalLinhas: 1,
+          linhasNovas: 1,
+          linhasIgnoradas: 0,
+          usuarioId: fixture.usuarioId,
+        },
+      });
+      const linha = await prisma.linhaExtrato.create({
+        data: {
+          extratoImportadoId: extrato.id,
+          contaBancariaId: conta.id,
+          data: new Date("2026-08-15T12:00:00Z"),
+          valor: 150,
+          tipo: "SAIDA",
+          historico: "TARIFA",
+          identificadorBancario: `REPROC-${contaSeq}`,
+          status,
+        },
+      });
+      return { contaId: conta.id, linhaId: linha.id };
+    }
+
+    async function lancar(contaId: string, valor: number, data = "2026-08-15", conciliado = false) {
+      return prisma.lancamentoBancario.create({
+        data: {
+          filialId: fixture.filialId,
+          contaBancariaId: contaId,
+          data: new Date(`${data}T00:00:00Z`),
+          tipo: "SAIDA",
+          valor,
+          descricao: "Lançamento do teste",
+          origem: "MANUAL",
+          usuarioId: fixture.usuarioId,
+          conciliado,
+        },
+      });
+    }
+
+    const statusDaLinha = async (id: string) => (await prisma.linhaExtrato.findUniqueOrThrow({ where: { id } })).status;
+
+    test("Divergência de valor concilia quando o lançamento certo aparece", async () => {
+      const { contaId, linhaId } = await linhaComStatus("DIVERGENCIA_VALOR");
+      const certo = await lancar(contaId, 150);
+
+      await reconciliarPendentes(fixture.sessao);
+
+      expect(await statusDaLinha(linhaId)).toBe("CONCILIADO");
+      expect(await lancamentosDoGrupoDaLinha(linhaId)).toEqual([certo.id]);
+      const auditoria = await prisma.auditLog.findFirstOrThrow({
+        where: { entidadeId: linhaId, acao: "CONCILIAR_AUTOMATICO" },
+      });
+      expect(auditoria.valorAnterior).toEqual({ status: "DIVERGENCIA_VALOR" });
+    });
+
+    test("Duplicado concilia quando surge um lançamento livre que bate", async () => {
+      const { contaId, linhaId } = await linhaComStatus("DUPLICADO");
+      await lancar(contaId, 150, "2026-08-15", true); // o primeiro débito, já conciliado
+      const segundo = await lancar(contaId, 150);
+
+      await reconciliarPendentes(fixture.sessao);
+
+      expect(await statusDaLinha(linhaId)).toBe("CONCILIADO");
+      expect(await lancamentosDoGrupoDaLinha(linhaId)).toEqual([segundo.id]);
+    });
+
+    test("Sugestão com dois candidatos continua Sugestão, sem conciliar", async () => {
+      const { contaId, linhaId } = await linhaComStatus("SUGESTAO");
+      await lancar(contaId, 150);
+      await lancar(contaId, 150, "2026-08-16");
+
+      await reconciliarPendentes(fixture.sessao);
+
+      expect(await statusDaLinha(linhaId)).toBe("SUGESTAO");
+      expect((await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linhaId } })).grupoConciliacaoId).toBeNull();
+    });
+
+    test("Divergência cujo candidato sumiu volta para Não conciliado e conta como mudança", async () => {
+      const { linhaId } = await linhaComStatus("DIVERGENCIA_DATA");
+
+      const resultado = await reconciliarPendentes(fixture.sessao);
+
+      expect(await statusDaLinha(linhaId)).toBe("NAO_CONCILIADO");
+      expect(resultado.reclassificadas).toBeGreaterThanOrEqual(1);
+    });
+
+    test("linha já conciliada não é reprocessada", async () => {
+      const { contaId, linhaId } = await linhaComStatus("NAO_CONCILIADO");
+      await lancar(contaId, 150);
+      await reconciliarPendentes(fixture.sessao);
+      const grupoAntes = (await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linhaId } })).grupoConciliacaoId;
+      expect(grupoAntes).not.toBeNull();
+
+      await lancar(contaId, 150, "2026-08-14"); // outro candidato exato: não pode mexer na linha conciliada
+      await reconciliarPendentes(fixture.sessao);
+
+      const depois = await prisma.linhaExtrato.findUniqueOrThrow({ where: { id: linhaId } });
+      expect(depois.status).toBe("CONCILIADO");
+      expect(depois.grupoConciliacaoId).toBe(grupoAntes);
+    });
   });
 
   test("perfil sem conciliacao:escrever não consegue reconciliar pendentes", async () => {

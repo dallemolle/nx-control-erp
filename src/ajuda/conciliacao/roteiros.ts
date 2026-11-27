@@ -296,11 +296,12 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "lista.reconciliar",
         instrucao: "Clique em “Reconciliar pendentes”",
         explicacao:
-          "O sistema tenta de novo a conciliação automática nas linhas Não conciliado de todas as contas da " +
-          "filial, e avisa quantas conseguiu. Use depois de aprovar uma baixa ou confirmar um repasse que faltava.",
+          "O sistema tenta de novo a conciliação automática em todas as linhas ainda não conciliadas das contas " +
+          "da filial (Não conciliado, Sugestão, Divergência e Duplicado), e avisa quantas conseguiu e quantas " +
+          "mudaram de situação. Use depois de aprovar uma baixa, confirmar um repasse ou corrigir um lançamento.",
         dica:
-          "Ele não reprocessa as linhas que estão como Sugestão, Divergência ou Duplicado: essas você resolve " +
-          "escolhendo o lançamento na própria linha.",
+          "Só concilia sozinho quando há um único lançamento com o mesmo valor a até 3 dias. Se houver dois ou " +
+          "mais, a linha fica como Sugestão e você escolhe o lançamento na própria linha.",
       },
     ],
     eDepois: {
