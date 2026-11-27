@@ -1,5 +1,11 @@
 const MOEDA = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const DATA = new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" });
+const PERCENTUAL = new Intl.NumberFormat("pt-BR", { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+/** Formata uma fração como percentual brasileiro, com uma casa: 0.175 → "17,5%". */
+export function formatarPercentual(fracao: number): string {
+  return PERCENTUAL.format(fracao);
+}
 
 /**
  * Formata um valor em reais ("R$ 1.234,56"). Aceita `number`, `string` e o

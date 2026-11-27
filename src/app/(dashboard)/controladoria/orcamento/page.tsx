@@ -5,12 +5,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeEscreverOrcamento } from "@/server/auth/permissions";
 import { listarComparativoOrcamento } from "@/server/services/orcamento";
-import { LinhaOrcamentoForm } from "./linha-orcamento-form";
+import { CabecalhoDaGrade, LinhaOrcamentoForm } from "./linha-orcamento-form";
 import { SeletorAnoMes } from "../_shared/seletor-ano-mes";
 import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
-import { formatarMoeda } from "@/lib/formatacao";
+import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
 
 function anoValido(valor: string | undefined): number {
   const numero = Number(valor);
@@ -48,8 +48,13 @@ export default async function OrcamentoPage({
       const linhaDoMes = linhas.find((l) => l.categoriaFinanceiraId === id && l.mes === indice + 1);
       return linhaDoMes?.orcado ?? 0;
     });
-    return { id, nome: primeira.categoriaNome, valoresPorMes };
+    return { id, nome: primeira.categoriaNome, tipo: primeira.tipoCategoria, valoresPorMes };
   });
+  // Despesas primeiro (é onde mora o estouro), cada bloco em ordem alfabética, como já vem do serviço.
+  const blocosDaGrade = [
+    { titulo: "Despesas", categorias: categoriasUnicas.filter((c) => c.tipo === "DESPESA") },
+    { titulo: "Receitas", categorias: categoriasUnicas.filter((c) => c.tipo === "RECEITA") },
+  ].filter((bloco) => bloco.categorias.length > 0);
 
   const linhasDoMes = linhas.filter((l) => l.mes === mes);
 
@@ -87,15 +92,20 @@ export default async function OrcamentoPage({
         {/* 12 campos por linha não cabem no celular: a grade rola sozinha, a página não. */}
         <div className="overflow-x-auto">
           <div className="w-max min-w-full">
-            {categoriasUnicas.map((categoria) => (
-              <LinhaOrcamentoForm
-                key={categoria.id}
-                categoriaFinanceiraId={categoria.id}
-                categoriaNome={categoria.nome}
-                ano={ano}
-                valoresPorMes={categoria.valoresPorMes}
-                somenteLeitura={somenteLeitura}
-              />
+            {blocosDaGrade.map((bloco) => (
+              <div key={bloco.titulo}>
+                <CabecalhoDaGrade titulo={bloco.titulo} />
+                {bloco.categorias.map((categoria) => (
+                  <LinhaOrcamentoForm
+                    key={categoria.id}
+                    categoriaFinanceiraId={categoria.id}
+                    categoriaNome={categoria.nome}
+                    ano={ano}
+                    valoresPorMes={categoria.valoresPorMes}
+                    somenteLeitura={somenteLeitura}
+                  />
+                ))}
+              </div>
             ))}
           </div>
         </div>
@@ -130,7 +140,7 @@ export default async function OrcamentoPage({
                   </div>
                 </TableCell>
                 <TableCell>
-                  {linha.variacaoPercentual === null ? "—" : `${(linha.variacaoPercentual * 100).toFixed(1)}%`}
+                  {linha.variacaoPercentual === null ? "—" : formatarPercentual(linha.variacaoPercentual)}
                 </TableCell>
               </TableRow>
             ))}

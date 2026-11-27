@@ -5,9 +5,28 @@
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MESES_ABREVIADOS, NOMES_DOS_MESES } from "@/lib/meses";
+import { valorParaCampo } from "@/lib/valorEmReais";
 import { salvarLinhaOrcamentoAction, type FormState } from "./actions";
 
 const ESTADO_INICIAL: FormState = {};
+
+/** A coluna do nome fica parada ao rolar a grade para o lado (no celular, a grade rola sozinha). */
+const COLUNA_DO_NOME = "sticky left-0 z-10 w-40 shrink-0 bg-background";
+
+/** Título do bloco (Despesas, Receitas) e os meses alinhados aos campos. */
+export function CabecalhoDaGrade({ titulo }: { titulo: string }) {
+  return (
+    <div className="flex items-end gap-2 border-b pt-4 pb-1 text-xs text-muted-foreground">
+      <span className={`${COLUNA_DO_NOME} text-sm font-semibold text-foreground`}>{titulo}</span>
+      {MESES_ABREVIADOS.map((mes) => (
+        <span key={mes} className="w-24 px-1">
+          {mes}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 export function LinhaOrcamentoForm({
   categoriaFinanceiraId,
@@ -28,18 +47,21 @@ export function LinhaOrcamentoForm({
     <form action={formAction} className="flex items-center gap-2 border-b py-2">
       <input type="hidden" name="categoriaFinanceiraId" value={categoriaFinanceiraId} />
       <input type="hidden" name="ano" value={ano} />
-      <span className="w-40 shrink-0 truncate text-sm font-medium" title={categoriaNome}>
+      <span className={`${COLUNA_DO_NOME} truncate text-sm font-medium`} title={categoriaNome}>
         {categoriaNome}
       </span>
       {valoresPorMes.map((valor, indice) => (
         <Input
-          key={indice}
+          // Com o valor na key, o campo é recriado quando o salvo volta do servidor e mostra o valor normalizado
+          // ("1.500" → "1.500,00"); só trocar o defaultValue de um campo não controlado não muda nada na tela.
+          key={`${indice}-${valor}`}
           name={`mes-${indice + 1}`}
-          type="number"
-          step="0.01"
-          defaultValue={valor}
+          type="text"
+          inputMode="decimal"
+          aria-label={`${categoriaNome}, ${NOMES_DOS_MESES[indice]}`}
+          defaultValue={valorParaCampo(valor)}
           disabled={somenteLeitura}
-          className="w-24"
+          className="w-24 text-right"
         />
       ))}
       {!somenteLeitura && (
@@ -48,6 +70,11 @@ export function LinhaOrcamentoForm({
         </Button>
       )}
       {state.erro ? <span className="text-xs text-destructive">{state.erro}</span> : null}
+      {state.sucesso && !pendente ? (
+        <span className="text-xs text-muted-foreground" role="status">
+          Salvo
+        </span>
+      ) : null}
     </form>
   );
 }
