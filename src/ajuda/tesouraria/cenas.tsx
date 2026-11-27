@@ -52,8 +52,13 @@ export function CenaPainel({ valores }: PropsCena) {
                   <p className="text-muted-foreground">
                     Saldo bancário informado: {SALDO.informadoBancoFormatado} em {SALDO.dataInformadoBanco}
                   </p>
+                  <p className="text-muted-foreground">
+                    Saldo contábil em {SALDO.dataInformadoBanco}: {SALDO.contabilBancoNaData}
+                  </p>
                   <Alvo nome="painel.diferencaBanco" className="inline-block p-1">
-                    <p className="text-destructive">Diferença: {SALDO.diferencaBanco}</p>
+                    <p className="text-destructive">
+                      Diferença em {SALDO.dataInformadoBanco}: {SALDO.diferencaBanco}
+                    </p>
                   </Alvo>
                 </>
               ) : (
@@ -74,7 +79,10 @@ export function CenaPainel({ valores }: PropsCena) {
               <p className="text-muted-foreground">
                 Saldo bancário informado: {SALDO.informadoCaixa} em {SALDO.dataInformadoCaixa}
               </p>
-              <p className="text-muted-foreground">Diferença: R$ 0,00</p>
+              <p className="text-muted-foreground">
+                Saldo contábil em {SALDO.dataInformadoCaixa}: {SALDO.contabilCaixaNaData}
+              </p>
+              <p className="text-muted-foreground">Diferença em {SALDO.dataInformadoCaixa}: R$ 0,00</p>
             </CardContent>
           </Card>
         </Alvo>

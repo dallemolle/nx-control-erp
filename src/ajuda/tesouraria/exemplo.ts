@@ -7,11 +7,14 @@ export const CAIXA = "Caixa · Fazenda";
 
 export const SALDO = {
   contabilBanco: "R$ 48.250,00",
+  /** Nenhum lançamento do banco depois de 20/11: o saldo contábil na data é igual ao total. */
+  contabilBancoNaData: "R$ 48.250,00",
   informadoBanco: "48204,10",
   informadoBancoFormatado: "R$ 48.204,10",
   dataInformadoBanco: "20/11/2026",
   diferencaBanco: "R$ 45,90",
   contabilCaixa: "R$ 1.350,00",
+  contabilCaixaNaData: "R$ 1.350,00",
   informadoCaixa: "R$ 1.350,00",
   dataInformadoCaixa: "18/11/2026",
 } as const;
