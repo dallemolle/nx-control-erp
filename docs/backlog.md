@@ -409,35 +409,6 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 Mesmo formato e mesma numeração das lacunas do Financeiro (a numeração
 continua, para cada item ter um número único). Prioridade a definir.
 
-### 17. Grade do Orçamento: sem meses, sem confirmação e fácil de errar
-
-- **Problema:** na grade "Valores orçados", (a) os 12 campos não têm o nome do
-  mês; (b) ao rolar para o lado, o nome da categoria some; (c) o Salvar não
-  mostra "salvo" (`state.sucesso` do `LinhaOrcamentoForm` não é usado); (d)
-  campo numérico aceita "1.500", que é lido como R$ 1,50 sem aviso; (e)
-  receita e despesa aparecem misturadas, sem indicar o tipo; (f) a Variação %
-  sai com ponto ("17.5%"), fora do padrão brasileiro do resto da tela.
-- **Exemplo:** para orçar novembro, o usuário conta 11 campos a partir da
-  esquerda; se errar, grava outubro, e nada na tela confirma o que foi salvo.
-- **Onde:** `src/app/(dashboard)/controladoria/orcamento/linha-orcamento-form.tsx`
-  e `page.tsx`.
-- **Impacto:** erro de digitação silencioso no orçamento, que alimenta o
-  estouro e as decisões do mês.
-- **Caminhos:** cabeçalho com os meses (Jan…Dez) e coluna do nome fixa
-  (`sticky`); mensagem "Salvo" na linha; campo de moeda como nos títulos
-  (vírgula decimal, sem ambiguidade de ponto); agrupar por Receita/Despesa;
-  formatar a Variação % com vírgula.
-- **Cuidados:** a grade rola na horizontal no celular (comentário no
-  `page.tsx`); manter. A Comparação entre safras tem um formulário parecido
-  (`comparacao-safras/linha-safra-form.tsx`), com os mesmos problemas (c), (d)
-  e (f): corrigir junto, e ajustar o roteiro `orcar-safra` (dica do ponto de
-  milhar, "E depois?" sem mensagem de salvo) e o `comparar-safras` ("-17.5%",
-  "9.1%").
-- **Ao corrigir:** roteiro `orcar-ano` (dica "A grade não mostra o nome dos
-  meses", explicação do valor com ponto e a dica do ponto de milhar, texto do
-  "E depois?" sobre não haver mensagem de salvo), passo da Venda de produtos
-  ("17.5%") e o teste `roteiros.test.ts`; a réplica em `cenas.tsx`.
-
 ### 18. Fluxo por dimensão sem total e sem aviso de visão filtrada
 
 - **Problema:** a tabela de `controladoria/fluxo-por-dimensao/page.tsx` (e a
