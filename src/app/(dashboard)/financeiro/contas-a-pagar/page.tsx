@@ -82,6 +82,7 @@ export default async function ContasAPagarPage({ searchParams }: { searchParams:
     contasBancarias: contasBancarias.map((conta) => ({
       id: conta.id,
       nome: nomeDaContaBancaria(conta),
+      ativo: conta.ativo,
     })),
   };
 

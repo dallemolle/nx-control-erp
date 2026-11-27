@@ -73,7 +73,7 @@ export type OpcoesTitulo = {
   centrosLucro: { id: string; nome: string }[];
   safras: { id: string; nome: string }[];
   projetos: { id: string; nome: string }[];
-  contasBancarias: { id: string; nome: string }[];
+  contasBancarias: { id: string; nome: string; ativo?: boolean }[];
 };
 
 const VARIANTE_STATUS: Record<string, "default" | "secondary" | "destructive"> = {

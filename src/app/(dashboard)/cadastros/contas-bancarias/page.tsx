@@ -1,6 +1,5 @@
 import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission, podeAlterarFilialAtiva } from "@/server/auth/permissions";
@@ -10,6 +9,7 @@ import { ROTULOS_TIPO_CONTA_BANCARIA } from "@/lib/schemas/enums";
 import { formatarMoeda } from "@/lib/formatacao";
 import { ContaBancariaDialogForm } from "./conta-bancaria-dialog-form";
 import { alternarAtivoContaBancariaAction } from "./actions";
+import { BotaoAlternarAtivo } from "../../_shared/botao-alternar-ativo";
 
 export default async function ContasBancariasPage() {
   const sessao = await requireSessaoAtiva();
@@ -70,13 +70,11 @@ export default async function ContasBancariasPage() {
                       conta={{ ...conta, saldoInicial: Number(conta.saldoInicial) }}
                       bancos={bancos}
                     />
-                    <form action={alternarAtivoContaBancariaAction}>
-                      <input type="hidden" name="id" value={conta.id} />
-                      <input type="hidden" name="ativo" value={(!conta.ativo).toString()} />
-                      <Button type="submit" variant="outline" size="sm">
-                        {conta.ativo ? "Inativar" : "Reativar"}
-                      </Button>
-                    </form>
+                    <BotaoAlternarAtivo
+                      id={conta.id}
+                      ativo={conta.ativo}
+                      action={alternarAtivoContaBancariaAction}
+                    />
                   </>
                 )}
               </TableCell>

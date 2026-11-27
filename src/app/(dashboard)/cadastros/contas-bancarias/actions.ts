@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { contaBancariaSchema } from "@/lib/schemas/contaBancaria";
 import * as contaBancariaService from "@/server/services/contaBancaria";
+import type { EstadoAlternarAtivo } from "../../_shared/botao-alternar-ativo";
 
 export type FormState = { erro?: string; sucesso?: boolean };
 
@@ -52,11 +53,20 @@ export async function atualizarContaBancariaAction(
   return { sucesso: true };
 }
 
-export async function alternarAtivoContaBancariaAction(formData: FormData): Promise<void> {
+export async function alternarAtivoContaBancariaAction(
+  _anterior: EstadoAlternarAtivo,
+  formData: FormData,
+): Promise<EstadoAlternarAtivo> {
   const sessao = await requireSessaoAtiva();
   const id = String(formData.get("id") ?? "");
   const ativo = formData.get("ativo") === "true";
 
-  await contaBancariaService.definirAtivoContaBancaria(sessao, id, ativo);
+  try {
+    await contaBancariaService.definirAtivoContaBancaria(sessao, id, ativo);
+  } catch (erro) {
+    // Ex.: conta com saldo não inativa; a mensagem vai para o lado do botão.
+    return { erro: erro instanceof Error ? erro.message : "Ocorreu um erro inesperado" };
+  }
   revalidatePath("/cadastros/contas-bancarias");
+  return {};
 }

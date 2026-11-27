@@ -154,8 +154,8 @@ export async function validarReferenciasDoTitulo(
   tipo: TipoTitulo,
   dados: TituloHeaderFormValues,
   db: ClientePrisma = prisma,
-  /** Na edição: a contraparte que o título já tem (pode continuar mesmo inativa). */
-  contraparteAtualId: string | null = null,
+  /** Na edição: a contraparte e a conta que o título já tem (podem continuar mesmo inativas). */
+  atual: { contraparteId: string | null; contaBancariaId: string | null } = { contraparteId: null, contaBancariaId: null },
 ): Promise<{ classificacaoFiscalPadrao: ClassificacaoFiscal | null }> {
   const campos = camposNormalizados(tipo, dados);
   const filialId = sessao.filialId;
@@ -183,6 +183,14 @@ export async function validarReferenciasDoTitulo(
       throw new Error(`${rotulo} não pertence à filial ativa`);
     }
   }
+  // Conta inativa não recebe título novo (o que cair nela ficaria fora das telas de saldo); na edição, a já
+  // escolhida pode ficar.
+  if (campos.contaBancariaId && campos.contaBancariaId !== atual.contaBancariaId) {
+    const conta = await db.contaBancaria.findFirst({ where: { id: campos.contaBancariaId }, select: { ativo: true } });
+    if (conta && !conta.ativo) {
+      throw new Error("Conta bancária inativa: escolha uma conta ativa (ou reative esta no cadastro)");
+    }
+  }
 
   const contraparte =
     tipo === "PAGAR"
@@ -197,7 +205,7 @@ export async function validarReferenciasDoTitulo(
     );
   }
   // Inativo não recebe título novo; na edição, o já escolhido pode ficar (só não troca para outro inativo).
-  if (!contraparte.ativo && contraparte.id !== contraparteAtualId) {
+  if (!contraparte.ativo && contraparte.id !== atual.contraparteId) {
     throw new Error(
       `${tipo === "PAGAR" ? "Fornecedor" : "Cliente"} inativo: reative o cadastro para lançar título para ele`,
     );
@@ -441,7 +449,10 @@ export async function atualizarTitulo(sessao: SessaoAtiva, id: string, dados: Ti
 
   const anterior = await prisma.titulo.findUniqueOrThrow({ where: { id, filialId: sessao.filialId } });
 
-  await validarReferenciasDoTitulo(sessao, anterior.tipo, dados, prisma, anterior.fornecedorId ?? anterior.clienteId);
+  await validarReferenciasDoTitulo(sessao, anterior.tipo, dados, prisma, {
+    contraparteId: anterior.fornecedorId ?? anterior.clienteId,
+    contaBancariaId: anterior.contaBancariaId,
+  });
 
   const campos = camposNormalizados(anterior.tipo, dados);
 

@@ -153,14 +153,13 @@ async function somarSaldoConciliado(filialIds: string[], ate?: Date): Promise<nu
   // `LancamentoBancario.data` é TIMESTAMP(3) — uma migração futura pra
   // precisão maior exigiria revisitar essa conta.
   const [saldosIniciais, somas] = await Promise.all([
-    prisma.contaBancaria.aggregate({ where: { ...filtroFilial, ativo: true }, _sum: { saldoInicial: true } }),
+    prisma.contaBancaria.aggregate({ where: filtroFilial, _sum: { saldoInicial: true } }),
     prisma.lancamentoBancario.groupBy({
       by: ["tipo"],
       where: {
         ...filtroFilial,
         conciliado: true,
         ...(ate ? { data: { lte: ate } } : {}),
-        contaBancaria: { ativo: true },
       },
       _sum: { valor: true },
     }),
@@ -177,14 +176,14 @@ async function somarSaldoConciliado(filialIds: string[], ate?: Date): Promise<nu
 export type AguardandoConciliacao = { entradas: number; saidas: number };
 
 /**
- * O que foi lançado e ainda aguarda conciliação, nas contas ativas das filiais. Sem corte de data, como o saldo
+ * O que foi lançado e ainda aguarda conciliação, em todas as contas das filiais. Sem corte de data, como o saldo
  * contábil da Tesouraria: saldo conciliado + isto = saldo contábil. Usado pelas projeções (o realizado continua só
  * com conciliados).
  */
 export async function buscarAguardandoConciliacaoDasFiliais(filialIds: string[]): Promise<AguardandoConciliacao> {
   const somas = await prisma.lancamentoBancario.groupBy({
     by: ["tipo"],
-    where: { filialId: { in: filialIds }, conciliado: false, contaBancaria: { ativo: true } },
+    where: { filialId: { in: filialIds }, conciliado: false },
     _sum: { valor: true },
   });
   return {
@@ -229,7 +228,6 @@ export async function listarFluxoDeCaixaRealizado(
         filialId: sessao.filialId,
         conciliado: true,
         data: { gte: inicioDaJanela, lte: fimDaJanela },
-        contaBancaria: { ativo: true },
         ...whereLancamentoPorClassificacao(opcoes.classificacao),
       },
     }),

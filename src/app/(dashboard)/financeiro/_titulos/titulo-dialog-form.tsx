@@ -72,7 +72,7 @@ export function TituloDialogForm({
   centrosLucro: Opcao[];
   safras: Opcao[];
   projetos: Opcao[];
-  contasBancarias: Opcao[];
+  contasBancarias: (Opcao & { ativo?: boolean })[];
 }) {
   const action = titulo
     ? atualizarTituloAction.bind(null, tipo)
@@ -85,6 +85,7 @@ export function TituloDialogForm({
   const [classificacao, setClassificacao] = useState<ClassificacaoFiscal>(titulo?.classificacaoFiscal ?? "FISCAL");
   // Inativo não recebe título novo; na edição, o já escolhido continua na lista, marcado.
   const opcoesContraparte = contrapartes.filter((opcao) => opcao.ativo !== false || opcao.id === titulo?.contraparteId);
+  const opcoesConta = contasBancarias.filter((opcao) => opcao.ativo !== false || opcao.id === titulo?.contaBancariaId);
 
   function aoAbrirOuFechar(abrir: boolean) {
     // Cada abertura parte da classificação gravada (edição) ou de FISCAL (criação).
@@ -224,9 +225,9 @@ export function TituloDialogForm({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={SEM_VALOR}>Nenhuma</SelectItem>
-                {contasBancarias.map((opcao) => (
+                {opcoesConta.map((opcao) => (
                   <SelectItem key={opcao.id} value={opcao.id}>
-                    {opcao.nome}
+                    {opcao.ativo === false ? `${opcao.nome} (inativa)` : opcao.nome}
                   </SelectItem>
                 ))}
               </SelectContent>

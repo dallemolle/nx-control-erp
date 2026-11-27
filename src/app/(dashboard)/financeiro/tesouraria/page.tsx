@@ -132,6 +132,7 @@ export default async function TesourariaPage({
               <CardHeader>
                 <CardTitle className="text-sm font-medium">
                   {nomeDaContaBancaria(conta)}
+                  {conta.ativo ? null : <span className="text-muted-foreground"> (inativa)</span>}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-1 text-sm">

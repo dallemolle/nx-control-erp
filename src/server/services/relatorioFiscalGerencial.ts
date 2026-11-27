@@ -70,7 +70,6 @@ export async function obterComparativoMensal(sessao: SessaoAtiva, ano: number): 
     where: {
       filialId: sessao.filialId,
       conciliado: true,
-      contaBancaria: { ativo: true },
       classificacaoFiscal: { not: null },
       data: { gte: new Date(Date.UTC(ano, 0, 1)), lte: new Date(Date.UTC(ano, 11, 31, 23, 59, 59, 999)) },
     },

@@ -82,6 +82,7 @@ export default async function ContasAReceberPage({ searchParams }: { searchParam
     contasBancarias: contasBancarias.map((conta) => ({
       id: conta.id,
       nome: nomeDaContaBancaria(conta),
+      ativo: conta.ativo,
     })),
   };
 

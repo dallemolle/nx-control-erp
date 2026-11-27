@@ -51,7 +51,7 @@ function somar(totais: Map<string | null, TotaisPorDimensao>, chave: string | nu
  * Consulta e agregação do realizado por dimensão — campo direto primeiro,
  * fallback via baixa->parcela->titulo; sem os dois, chave `null`. `filtro`
  * restringe o que entra (período, safras) além do recorte fixo: filial,
- * conciliado, conta ativa e classificação.
+ * conciliado e classificação (contas inativas contam: o histórico delas não some).
  */
 async function somarRealizadoPorDimensao(
   filialId: string,
@@ -69,7 +69,6 @@ async function somarRealizadoPorDimensao(
           conciliado: true,
           // Transferência entre contas não é entrada nem saída de nenhuma dimensão: só move saldo.
           ...SEM_TRANSFERENCIA,
-          contaBancaria: { ativo: true },
           ...whereLancamentoPorClassificacao(classificacao),
         },
         filtro,

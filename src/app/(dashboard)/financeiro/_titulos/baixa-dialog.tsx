@@ -26,7 +26,7 @@ export function BaixaDialog({
 }: {
   tipo: TipoTitulo;
   parcela: ParcelaParaBaixa | null;
-  contasBancarias: { id: string; nome: string }[];
+  contasBancarias: { id: string; nome: string; ativo?: boolean }[];
   aberto: boolean;
   onOpenChange: (aberto: boolean) => void;
 }) {
@@ -101,11 +101,13 @@ export function BaixaDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {contasBancarias.map((opcao) => (
-                  <SelectItem key={opcao.id} value={opcao.id}>
-                    {opcao.nome}
-                  </SelectItem>
-                ))}
+                {contasBancarias
+                  .filter((opcao) => opcao.ativo !== false)
+                  .map((opcao) => (
+                    <SelectItem key={opcao.id} value={opcao.id}>
+                      {opcao.nome}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>

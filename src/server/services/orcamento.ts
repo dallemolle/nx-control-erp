@@ -179,7 +179,6 @@ export async function buscarRealizadoPorCategoria(
     where: {
       filialId,
       conciliado: true,
-      contaBancaria: { ativo: true },
       data: { gte: inicioDoMes(ano, mes), lte: fimDoMes(ano, mes) },
       ...whereLancamentoPorClassificacao(classificacao),
     },
