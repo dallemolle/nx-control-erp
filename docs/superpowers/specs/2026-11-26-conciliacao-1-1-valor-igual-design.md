@@ -180,7 +180,8 @@ diferença continua funcionando).
 ## Fora do escopo
 
 - **Item 9 do backlog** ("Reconciliar pendentes" ignora Sugestão, Divergência
-  e Duplicado): → continua no backlog, sem mudança.
+  e Duplicado): → continua no backlog, sem mudança. **Feito** em 2026-11-27
+  (branch `fix/reconciliar-todas-pendentes`).
 - **Mudar a classificação automática:** descartado. Ela já só vincula quando o
   valor é igual.
 - **Corrigir conciliações antigas com soma diferente:** descartado. Consulta
