@@ -314,7 +314,13 @@ export function CenaEditar({ valores }: PropsCena) {
           rotulo="Qualidade"
           valor={valores["editar.qualidade"] ?? COMPRA.qualidade}
         />
-        <CampoSimulado rotulo="Romaneio / NF" valor={COMPRA.documento} />
+        <div className="space-y-1">
+          <CampoSimulado rotulo="Romaneio / NF" valor={COMPRA.documento} />
+          <p className="text-xs text-muted-foreground">
+            O romaneio vai também para o documento da conta a pagar (hoje &quot;{COMPRA.documento}&quot;). Em branco, ela
+            volta ao código do lote.
+          </p>
+        </div>
         <CampoSimulado rotulo="Observação" valor={valores["editar.observacao"]} />
       </Alvo>
       <BotaoSimulado alvo="editar.salvar" largo>

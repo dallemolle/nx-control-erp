@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { QUALIDADE_FRUTO, SEM_VALOR } from "@/lib/schemas/enums";
 import { cancelarRecepcaoAction, editarRecepcaoAction, type FormState } from "./actions";
 import { useAcaoDoDialogo } from "../../_shared/use-acao-do-dialogo";
+import type { RomaneioNoTitulo } from "@/lib/producao/romaneioNoTitulo";
 
 const ESTADO_INICIAL: FormState = {};
 
@@ -23,9 +24,11 @@ type Props = {
   };
   podeEscrever: boolean;
   situacao: { podeCancelar: boolean; motivo?: string };
+  /** Só para recepção com conta a pagar: se o romaneio editado vai também para o documento dela. */
+  romaneioNoTitulo: (RomaneioNoTitulo & { documentoDoTitulo: string }) | null;
 };
 
-export function RecepcaoAcoes({ recepcao, podeEscrever, situacao }: Props) {
+export function RecepcaoAcoes({ recepcao, podeEscrever, situacao, romaneioNoTitulo }: Props) {
   return (
     <div className="flex justify-end gap-2">
       <Button
@@ -38,7 +41,7 @@ export function RecepcaoAcoes({ recepcao, podeEscrever, situacao }: Props) {
       </Button>
       {podeEscrever ? (
         <>
-          <EditarRecepcao recepcao={recepcao} />
+          <EditarRecepcao recepcao={recepcao} romaneioNoTitulo={romaneioNoTitulo} />
           <ExcluirRecepcao recepcao={recepcao} situacao={situacao} />
         </>
       ) : null}
@@ -46,7 +49,13 @@ export function RecepcaoAcoes({ recepcao, podeEscrever, situacao }: Props) {
   );
 }
 
-function EditarRecepcao({ recepcao }: { recepcao: Props["recepcao"] }) {
+function EditarRecepcao({
+  recepcao,
+  romaneioNoTitulo,
+}: {
+  recepcao: Props["recepcao"];
+  romaneioNoTitulo: Props["romaneioNoTitulo"];
+}) {
   const { aberto, setAberto, state, formAction, pendente } = useAcaoDoDialogo(editarRecepcaoAction, ESTADO_INICIAL);
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
@@ -79,6 +88,14 @@ function EditarRecepcao({ recepcao }: { recepcao: Props["recepcao"] }) {
           <div className="space-y-2">
             <Label htmlFor={`documento-${recepcao.id}`}>Romaneio / NF</Label>
             <Input id={`documento-${recepcao.id}`} name="documento" defaultValue={recepcao.documento ?? ""} />
+            {romaneioNoTitulo ? (
+              <p className="text-xs text-muted-foreground">
+                {romaneioNoTitulo.segue
+                  ? `O romaneio vai também para o documento da conta a pagar (hoje "${romaneioNoTitulo.documentoDoTitulo}"). ` +
+                    "Em branco, ela volta ao código do lote."
+                  : `A conta a pagar fica com o documento "${romaneioNoTitulo.documentoDoTitulo}": ${romaneioNoTitulo.motivo}.`}
+              </p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <Label htmlFor={`observacao-${recepcao.id}`}>Observação</Label>

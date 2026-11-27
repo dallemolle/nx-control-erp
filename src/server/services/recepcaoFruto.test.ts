@@ -371,6 +371,53 @@ describe("recepção de fruto", () => {
     expect(await prisma.auditLog.count({ where: { entidadeId: r.recepcaoId, acao: "ATUALIZAR" } })).toBe(1);
   });
 
+  test("romaneio editado vai para o documento da conta a pagar, com auditoria do título", async () => {
+    const r = await criarRecepcao(fx.sessao("PRODUCAO"), terceiro());
+    await atualizarDadosRecepcao(fx.sessao("PRODUCAO"), r.recepcaoId, { documento: "152", observacao: null });
+    const titulo = await prisma.titulo.findUniqueOrThrow({ where: { id: r.tituloId! } });
+    expect(titulo.documento).toBe("152");
+    const log = await prisma.auditLog.findFirstOrThrow({ where: { entidadeId: r.tituloId!, acao: "ATUALIZAR" } });
+    expect(log.valorAnterior).toMatchObject({ documento: `RF-${r.codigoLote}` });
+    expect(log.valorNovo).toMatchObject({ documento: "152" });
+
+    // Romaneio apagado: o título volta ao documento gerado pela recepção.
+    await atualizarDadosRecepcao(fx.sessao("PRODUCAO"), r.recepcaoId, { documento: null, observacao: null });
+    const depois = await prisma.titulo.findUniqueOrThrow({ where: { id: r.tituloId! } });
+    expect(depois.documento).toBe(`RF-${r.codigoLote}`);
+  });
+
+  test("título com documento mudado à mão não é sobrescrito pelo romaneio", async () => {
+    const r = await criarRecepcao(fx.sessao("PRODUCAO"), terceiro());
+    await prisma.titulo.update({ where: { id: r.tituloId! }, data: { documento: "NF 900" } });
+    await atualizarDadosRecepcao(fx.sessao("PRODUCAO"), r.recepcaoId, { documento: "152", observacao: null });
+    const titulo = await prisma.titulo.findUniqueOrThrow({ where: { id: r.tituloId! } });
+    expect(titulo.documento).toBe("NF 900");
+    const recepcao = await prisma.recepcaoFruto.findUniqueOrThrow({ where: { id: r.recepcaoId } });
+    expect(recepcao.documento).toBe("152");
+  });
+
+  test("título com pagamento registrado não recebe o romaneio", async () => {
+    const r = await criarRecepcao(fx.sessao("PRODUCAO"), terceiro());
+    const parcela = await prisma.parcela.findFirstOrThrow({ where: { tituloId: r.tituloId! } });
+    const banco = await prisma.banco.findFirstOrThrow();
+    const conta = await prisma.contaBancaria.create({
+      data: { filialId: fx.filialAId, bancoId: banco.id, agencia: "1", conta: `R-${Date.now()}`, tipo: "CORRENTE" },
+    });
+    await prisma.baixa.create({
+      data: {
+        parcelaId: parcela.id,
+        data: new Date("2026-11-10"),
+        valorPago: 240,
+        contaBancariaId: conta.id,
+        usuarioId: fx.usuarioId,
+        statusAprovacao: "PENDENTE",
+      },
+    });
+    await atualizarDadosRecepcao(fx.sessao("PRODUCAO"), r.recepcaoId, { documento: "152", observacao: null });
+    const titulo = await prisma.titulo.findUniqueOrThrow({ where: { id: r.tituloId! } });
+    expect(titulo.documento).toBe(`RF-${r.codigoLote}`);
+  });
+
   test("listarRecepcoes filtra por período, fruta e origem, só da filial", async () => {
     const lista = await listarRecepcoes(fx.filialAId, {
       inicio: new Date("2026-11-09"),

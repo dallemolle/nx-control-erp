@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { prisma } from "@/server/db/client";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { podeExecutar, requirePermission } from "@/server/auth/permissions";
-import { listarRecepcoes, situacoesParaCancelar } from "@/server/services/recepcaoFruto";
+import { listarRecepcoes, romaneiosNosTitulos, situacoesParaCancelar } from "@/server/services/recepcaoFruto";
 import { obterConfiguracaoProducao } from "@/server/services/configuracaoProducao";
 import { ORIGEM_RECEPCAO, ROTULOS_ORIGEM_RECEPCAO } from "@/lib/schemas/enums";
 import { formatarData, formatarMoeda } from "@/lib/formatacao";
@@ -35,7 +35,10 @@ export default async function RecepcaoPage({ searchParams }: { searchParams: Pro
     listarRecepcoes(sessao.filialId, { ...periodo, frutaId: sp.fruta || undefined, origem }),
     prisma.fruta.findMany({ where: { empresaId: sessao.empresaId }, select: { id: true, nome: true }, orderBy: { nome: "asc" } }),
   ]);
-  const situacoes = await situacoesParaCancelar(recepcoes);
+  const [situacoes, romaneios] = await Promise.all([
+    situacoesParaCancelar(recepcoes),
+    podeEscrever ? romaneiosNosTitulos(recepcoes) : new Map(),
+  ]);
   const opcoes = podeEscrever ? await carregarOpcoes(sessao.empresaId, sessao.filialId) : null;
 
   const valoresFiltro = {
@@ -140,6 +143,7 @@ export default async function RecepcaoPage({ searchParams }: { searchParams: Pro
                     <RecepcaoAcoes
                       podeEscrever={podeEscrever && !cancelada}
                       situacao={situacoes.get(r.id) ?? { podeCancelar: false }}
+                      romaneioNoTitulo={romaneios.get(r.id) ?? null}
                       recepcao={{
                         id: r.id,
                         loteId: r.loteId,

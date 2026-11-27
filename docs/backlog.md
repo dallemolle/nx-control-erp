@@ -444,27 +444,6 @@ continua, para cada item ter um número único). Prioridade a definir.
 
 Numeração continua a do Financeiro e da Controladoria.
 
-### 22. Romaneio corrigido na recepção não chega à conta a pagar
-
-- **Problema:** na criação, o "Romaneio / NF" da recepção vira o documento da
-  conta a pagar (ou `RF-<lote>`, se vazio). O "Editar" da recepção muda o
-  romaneio só na recepção (`atualizarDadosRecepcao`); o título continua com o
-  documento antigo, sem aviso.
-- **Exemplo:** o José da Silva entrega açaí sem romaneio; a conta nasce como
-  "RF-FA-261120-01". No dia seguinte o romaneio 152 chega e é lançado pelo
-  Editar: a recepção mostra 152, Contas a pagar continua "RF-FA-261120-01".
-- **Onde:** `src/server/services/recepcaoFruto.ts` (`atualizarDadosRecepcao`);
-  o formulário em `producao/recepcao/recepcao-acoes.tsx`.
-- **Impacto:** o financeiro procura o pagamento pelo romaneio e não acha; os
-  dois registros da mesma carga discordam.
-- **Caminhos:** ao editar o romaneio, atualizar também o documento do título
-  enquanto ele não tiver baixa (e registrar na auditoria); ou avisar no
-  diálogo que o título precisa ser editado em Contas a pagar.
-- **Cuidados:** título com baixa ou já conciliado; título com documento já
-  mudado à mão em Contas a pagar (não sobrescrever sem perguntar).
-- **Ao corrigir:** passo "Corrija e salve" do roteiro `corrigir-excluir` em
-  `src/ajuda/recepcao/roteiros.ts` (diz que o documento da conta não muda).
-
 ### 23. Aba Processo da OP perde o que não foi salvo, sem aviso
 
 - **Problema:** na OP, a aba Processo (branqueamento, água, caroço, perda,
