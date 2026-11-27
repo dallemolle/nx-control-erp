@@ -1,6 +1,6 @@
 # Ano-base do estratégico sem empréstimos e aportes
 
-Data: 2026-11-26 · Status: aprovado, a implementar
+Data: 2026-11-26 · Status: implementada (2026-11-26)
 
 Item 63 do [backlog](../../backlog.md), seção "Financeiro — lacunas achadas ao
 escrever a ajuda contextual" ("Ano-base do estratégico conta empréstimos e
