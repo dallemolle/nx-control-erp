@@ -31,12 +31,14 @@ do Orçamento.
   (mesma fórmula de `montarLinhaComparativo`). Cada linha tem o próprio
   Estouro: uma filha pode estourar com o grupo dentro do orçado, e o grupo
   pode estourar sem nenhuma filha estourar.
-- **Total do rodapé** (Fluxo por dimensão) soma só as linhas de nível 1:
-  nada é contado duas vezes.
+- **Total do rodapé** (Fluxo por dimensão) continua sendo `totalDoFluxo`
+  sobre as linhas planas (valores próprios), o que equivale a somar só as
+  linhas de nível 1: nada é contado duas vezes.
 - **Linha de topo** quando o pai não está na lista (pai inativo, sem valores,
   ou de outra filial) ou é de tipo diferente.
-- **Ordem:** alfabética dentro de cada nível (a ordem que o serviço já usa),
-  filhos logo abaixo do pai.
+- **Ordem:** a de entrada dentro de cada nível (os serviços já entregam em
+  ordem alfabética, com inativos e "Não classificado" no fim), filhos logo
+  abaixo do pai.
 - **Cadastro:** a categoria pai precisa ser do mesmo tipo. Criar ou editar
   com pai de outro tipo é recusado com "A categoria pai precisa ser do mesmo
   tipo (Despesa ou Receita)". Mudar o tipo de uma categoria que tem filhas de
@@ -142,7 +144,7 @@ diálogo pelo fluxo de erro de ação que já existe.
 
 - `src/lib/arvoreDeLinhas.test.ts`: pai com e sem valor próprio; três
   níveis; pai ausente vira topo; pai de outro grupo vira topo; ciclo não
-  trava; ordem alfabética por nível; soma em centavos; total pelas linhas de
+  trava; ordem de entrada por nível; soma em centavos; total pelas linhas de
   nível 1 igual ao total plano.
 - `orcamento.test.ts`: `comparativoEmArvore` com Estouro do pai sobre o total
   e filha estourando com grupo dentro do orçado; "Direto em…".
