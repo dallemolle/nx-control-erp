@@ -615,36 +615,6 @@ Mesma numeração das seções acima.
 - **Feito (2026-11-21), na mesma branch:** "Já existe uma empresa com este
   CNPJ/CPF" e "Já existe uma filial com este CNPJ/CPF". Histórico.
 
-### 48. Cor e logo da empresa em dois lugares
-
-- **Problema:** o formulário "Editar empresa" ainda tem "Usar cor
-  personalizada" e "Logo". A cor só pinta a barra lateral e só vale enquanto
-  a empresa não tem tema salvo; o logo é o mesmo "Logo para fundo claro" do
-  Tema e marca. Quem troca a cor ali com tema salvo não vê efeito nenhum.
-- **Onde:** `empresas/empresa-dialog-form.tsx` (`corPrimaria`, `logo`),
-  `src/app/(dashboard)/layout.tsx` (usa `corPrimaria` sem tema).
-- **Impacto:** confusão: dois lugares para a mesma coisa, um que às vezes
-  não funciona.
-- **Caminhos:** tirar cor e logo do formulário e deixar só o Tema e marca
-  (a cor antiga pode virar a primária/barra lateral de um tema inicial,
-  numa migração); ou mostrar no formulário "Esta empresa tem tema: a cor
-  daqui não vale".
-- **Ao corrigir:** passo "Cor e logo: deixe para o Tema e marca" do roteiro
-  `cadastrar-empresa` (`src/ajuda/empresas/roteiros.ts`) e a réplica do
-  formulário em `src/ajuda/empresas/cenas.tsx`.
-
-### 49. Filial nova não dá acesso a ninguém
-
-- **Problema:** `criarFilial` não cria acesso para quem cadastrou. A filial
-  não aparece em "Trocar filial" de ninguém até o Administrador marcar o
-  acesso em Usuários. Já a empresa nova dá acesso ao criador na Matriz.
-- **Impacto:** quem cria a filial acha que não deu certo; passo esquecido.
-- **Caminhos:** dar Leitura e Alteração a quem criou, como na empresa nova;
-  ou, ao salvar, mostrar "Dê acesso em Usuários" com o link.
-- **Ao corrigir:** passo "Agora, dê acesso a ela" do roteiro
-  `cadastrar-filial` (`src/ajuda/filiais/index.tsx`) e a seção 8.2 do
-  manual.
-
 ### 50. Rótulo da conta de recebimento citava o cartão
 
 - **Status:** feito na branch `feat/ajuda-configuracao-producao`.
@@ -807,20 +777,6 @@ Numeração continua a das seções anteriores.
   `startTransition`, que não dispara o reset.
 - **Cuidados:** muitos formulários; fazer pelo hook comum e migrar aos
   poucos; selects da Base UI também têm valor inicial.
-
-### 66. Recusa do Inativar em empresa, filial e usuário cai na página de erro
-
-- **Problema:** o Inativar de Empresas, Filiais e Usuários é um formulário
-  simples cuja action lança a exceção do serviço ("Troque de empresa antes
-  de inativar esta", "Troque de filial antes de inativar esta", "Você não
-  pode desativar seu próprio acesso"). Não há `error.tsx`: em produção a
-  pessoa vê a página de erro genérica do Next, sem a mensagem.
-- **Onde:** `alternarAtivoEmpresaAction`, `alternarAtivoFilialAction` e
-  `alternarAtivoUsuarioAction` e os `<form>` das páginas.
-- **Caminho:** usar `BotaoAlternarAtivo`
-  (`src/app/(dashboard)/_shared/botao-alternar-ativo.tsx`, criado no item 31
-  para Contas bancárias): a action devolve `{ erro }` e o botão mostra a
-  mensagem ao lado. Visto em 2026-11-27.
 
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 

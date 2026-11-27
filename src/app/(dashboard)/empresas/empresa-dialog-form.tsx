@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -20,16 +19,13 @@ type Empresa = {
   nomeFantasia: string;
   cnpjCpf: string;
   moedaPadrao: string;
-  corPrimaria: string | null;
-  logoUrl: string | null;
   exigirAprovacaoPorOutro: boolean;
 };
 
 const ESTADO_INICIAL: FormState = {};
-const COR_PADRAO = "#0b2545";
 
+/** Cor e logo não ficam aqui: são do Tema e marca, o botão ao lado na lista. */
 export function EmpresaDialogForm({ empresa }: { empresa?: Empresa }) {
-  const [usarCor, setUsarCor] = useState(!!empresa?.corPrimaria);
   const action = empresa ? atualizarEmpresaAction : criarEmpresaAction;
   const { aberto, setAberto, state, formAction, pendente } = useAcaoDoDialogo(action, ESTADO_INICIAL);
 
@@ -77,46 +73,6 @@ export function EmpresaDialogForm({ empresa }: { empresa?: Empresa }) {
               maxLength={3}
               required
             />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="usarCorPersonalizada"
-                name="usarCorPersonalizada"
-                value="true"
-                checked={usarCor}
-                onChange={(e) => setUsarCor(e.target.checked)}
-                className="size-4"
-              />
-              <Label htmlFor="usarCorPersonalizada">Usar cor personalizada nesta empresa</Label>
-            </div>
-            <input
-              type="color"
-              id="corPrimaria"
-              name="corPrimaria"
-              defaultValue={empresa?.corPrimaria ?? COR_PADRAO}
-              className={usarCor ? "h-9 w-16" : "h-9 w-16 opacity-40"}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="logo">Logo</Label>
-            {empresa?.logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={empresa.logoUrl} alt="Logo atual" className="h-10 w-10 rounded object-contain" />
-            ) : null}
-            <Input
-              id="logo"
-              name="logo"
-              type="file"
-              accept="image/png,image/jpeg,image/svg+xml,image/webp"
-            />
-            {empresa?.logoUrl ? (
-              <div className="flex items-center gap-2">
-                <input type="checkbox" id="removerLogo" name="removerLogo" value="true" className="size-4" />
-                <Label htmlFor="removerLogo">Remover logo atual</Label>
-              </div>
-            ) : null}
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-2">

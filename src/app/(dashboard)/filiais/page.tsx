@@ -1,12 +1,12 @@
 import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { requirePermission } from "@/server/auth/permissions";
 import { listarFiliais } from "@/server/services/filial";
 import { FilialDialogForm } from "./filial-dialog-form";
 import { alternarAtivoFilialAction } from "./actions";
+import { BotaoAlternarAtivo } from "../_shared/botao-alternar-ativo";
 
 export default async function FiliaisPage() {
   const sessao = await requireSessaoAtiva();
@@ -52,13 +52,7 @@ export default async function FiliaisPage() {
                 <FilialDialogForm filial={filial} />
                 {/* A filial em que você está não se inativa daqui: o serviço recusa. */}
                 {filial.id === sessao.filialId ? null : (
-                  <form action={alternarAtivoFilialAction}>
-                    <input type="hidden" name="id" value={filial.id} />
-                    <input type="hidden" name="ativo" value={(!filial.ativo).toString()} />
-                    <Button type="submit" variant="outline" size="sm">
-                      {filial.ativo ? "Inativar" : "Reativar"}
-                    </Button>
-                  </form>
+                  <BotaoAlternarAtivo id={filial.id} ativo={filial.ativo} action={alternarAtivoFilialAction} />
                 )}
               </TableCell>
             </TableRow>

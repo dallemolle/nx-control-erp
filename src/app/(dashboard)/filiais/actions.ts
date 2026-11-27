@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { filialSchema } from "@/lib/schemas/filial";
 import * as filialService from "@/server/services/filial";
+import type { EstadoAlternarAtivo } from "../_shared/botao-alternar-ativo";
 
 export type FormState = { erro?: string; sucesso?: boolean };
 
@@ -52,11 +53,20 @@ export async function atualizarFilialAction(
   return { sucesso: true };
 }
 
-export async function alternarAtivoFilialAction(formData: FormData): Promise<void> {
+export async function alternarAtivoFilialAction(
+  _anterior: EstadoAlternarAtivo,
+  formData: FormData,
+): Promise<EstadoAlternarAtivo> {
   const sessao = await requireSessaoAtiva();
   const id = String(formData.get("id") ?? "");
   const ativo = formData.get("ativo") === "true";
 
-  await filialService.definirAtivoFilial(sessao, id, ativo);
+  try {
+    await filialService.definirAtivoFilial(sessao, id, ativo);
+  } catch (erro) {
+    // Ex.: "Troque de filial antes de inativar esta"; a mensagem vai para o lado do botão.
+    return { erro: mensagemErro(erro) };
+  }
   revalidatePath("/filiais");
+  return {};
 }

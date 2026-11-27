@@ -1,6 +1,5 @@
 import { BotaoAjuda } from "@/components/ajuda/botao-ajuda";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
@@ -13,6 +12,7 @@ import { PerfilForm } from "./perfil-form";
 import { AcessoFilialForm } from "./acesso-filial-form";
 import { ChavesApiDialog } from "./chaves-api-dialog";
 import { alternarAtivoUsuarioAction } from "./actions";
+import { BotaoAlternarAtivo } from "../_shared/botao-alternar-ativo";
 
 export default async function UsuariosPage() {
   const sessao = await requireSessaoAtiva();
@@ -78,13 +78,12 @@ export default async function UsuariosPage() {
                   <div className="flex justify-end gap-2">
                     <ChavesApiDialog usuarioId={vinculo.usuarioId} />
                     {eVoce ? null : (
-                      <form action={alternarAtivoUsuarioAction}>
-                        <input type="hidden" name="usuarioId" value={vinculo.usuarioId} />
-                        <input type="hidden" name="ativo" value={(!vinculo.ativo).toString()} />
-                        <Button type="submit" variant="outline" size="sm">
-                          {vinculo.ativo ? "Desativar" : "Reativar"}
-                        </Button>
-                      </form>
+                      <BotaoAlternarAtivo
+                        id={vinculo.usuarioId}
+                        ativo={vinculo.ativo}
+                        action={alternarAtivoUsuarioAction}
+                        rotuloInativar="Desativar"
+                      />
                     )}
                   </div>
                 </TableCell>

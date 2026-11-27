@@ -43,7 +43,6 @@ describe("o exemplo bate com o sistema e com as outras ajudas", () => {
       nomeFantasia: BOA_VISTA.nomeFantasia,
       cnpjCpf: BOA_VISTA.cnpjDigitado,
       moedaPadrao: BOA_VISTA.moeda,
-      corPrimaria: "",
       exigirAprovacaoPorOutro: "true",
     };
     expect(empresaSchema.safeParse(dados).success).toBe(true);

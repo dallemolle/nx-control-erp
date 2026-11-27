@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { cnpjCpfSchema } from "@/lib/cnpjCpf";
-import { corHexValida } from "@/lib/corContraste";
 import { checkboxSchema } from "./campos";
 
 export const empresaSchema = z.object({
@@ -12,11 +11,8 @@ export const empresaSchema = z.object({
     .trim()
     .length(3, "Use o código ISO da moeda, ex: BRL")
     .default("BRL"),
-  corPrimaria: z
-    .string()
-    .trim()
-    .transform((v) => (v === "" ? null : v))
-    .refine((v) => v === null || corHexValida(v), "Cor inválida"),
+  // Cor e logo ficam no Tema e marca. A corPrimaria antiga continua no banco e pinta a barra lateral enquanto
+  // a empresa não tem tema salvo (src/app/(dashboard)/layout.tsx).
   exigirAprovacaoPorOutro: checkboxSchema,
 });
 
