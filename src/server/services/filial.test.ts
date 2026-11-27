@@ -39,6 +39,10 @@ describe("filial", () => {
       data: { nome: "Usuario Filial", email: `filial-${randomSuffix}@teste.local`, senhaHash: "x" },
     });
     usuarioId = usuario.id;
+    // Quem cria a filial ganha acesso a ela pelo vínculo com a empresa.
+    await prisma.usuarioEmpresa.createMany({
+      data: [empresaAId, empresaBId].map((empresaId) => ({ usuarioId, empresaId, perfil: "ADMINISTRADOR" as const })),
+    });
 
     sessaoAdministrador = {
       usuarioId,
@@ -77,6 +81,13 @@ describe("filial", () => {
     await expect(
       criarFilial(sessaoFinanceiro, { nome: "Sem permissão", cnpjCpf: "99.999.999/0001-99" }),
     ).rejects.toThrow(PermissionError);
+  });
+
+  test("quem cria a filial ganha Leitura e Alteração nela", async () => {
+    const acesso = await prisma.usuarioEmpresaFilial.findFirst({
+      where: { filialId: filialEmpresaAId, usuarioEmpresa: { usuarioId } },
+    });
+    expect(acesso).toMatchObject({ podeAlterar: true, ativo: true });
   });
 
   test("violação do cnpjCpf único gera erro", async () => {

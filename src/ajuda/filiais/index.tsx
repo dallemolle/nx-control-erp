@@ -167,10 +167,10 @@ export const ajudaFiliais: DefinicaoAjuda = {
         {
           cena: "lista",
           alvo: "lista.igarape",
-          instrucao: "Agora, dê acesso a ela",
+          instrucao: "Agora, dê acesso a quem vai trabalhar nela",
           explicacao:
-            "A filial nasce sem ninguém com acesso, nem você. Em Administração → Usuários, marque Leitura (e Alteração) " +
-            "para quem vai trabalhar nela; só então ela aparece em “Trocar filial”.",
+            "Você já tem Leitura e Alteração nela e a encontra em “Trocar filial”. Para as outras pessoas, marque " +
+            "Leitura (e Alteração) em Administração → Usuários; só então ela aparece em “Trocar filial” delas.",
           dica:
             "A filial nova também começa sem categorias, centros, contas bancárias e configuração de produção: " +
             "cadastre dentro dela.",

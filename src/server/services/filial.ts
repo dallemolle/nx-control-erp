@@ -14,8 +14,21 @@ export async function listarFiliais(empresaId: string) {
 export async function criarFilial(sessao: SessaoAtiva, dados: FilialFormValues) {
   requirePermission(sessao.perfil, "filial:gerenciar");
 
+  // Quem cria já sai com Leitura e Alteração, como na Matriz da empresa nova: sem isso a filial não aparece em
+  // "Trocar filial" de ninguém até alguém marcar o acesso em Usuários.
   const filial = await comMensagemDeDuplicidade(
-    () => prisma.filial.create({ data: { ...dados, empresaId: sessao.empresaId } }),
+    () =>
+      prisma.$transaction(async (tx) => {
+        const nova = await tx.filial.create({ data: { ...dados, empresaId: sessao.empresaId } });
+        const vinculo = await tx.usuarioEmpresa.findUniqueOrThrow({
+          where: { usuarioId_empresaId: { usuarioId: sessao.usuarioId, empresaId: sessao.empresaId } },
+          select: { id: true },
+        });
+        await tx.usuarioEmpresaFilial.create({
+          data: { usuarioEmpresaId: vinculo.id, filialId: nova.id, podeAlterar: true, ativo: true },
+        });
+        return nova;
+      }),
     MSG_CNPJ_DUPLICADO,
   );
 

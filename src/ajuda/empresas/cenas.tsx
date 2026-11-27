@@ -126,14 +126,6 @@ function FormularioEmpresa({ valores, titulo, cnpj }: PropsCena & { titulo: stri
       <CampoSimulado alvo="form.fantasia" rotulo="Nome fantasia" valor={valores["form.fantasia"]} />
       <CampoSimulado alvo="form.cnpj" rotulo="CNPJ/CPF" valor={cnpj ?? valores["form.cnpj"]} />
       <CampoSimulado alvo="form.moeda" rotulo="Moeda padrão" valor={valores["form.moeda"] ?? "BRL"} />
-      <Alvo nome="form.cor" className="space-y-2 px-1">
-        <div className="flex items-center gap-2 text-sm">
-          <Caixinha marcada={false} />
-          Usar cor personalizada nesta empresa
-        </div>
-        <span aria-hidden className="block h-9 w-16 rounded border bg-[#0b2545] opacity-40" />
-      </Alvo>
-      <CampoSimulado alvo="form.logo" rotulo="Logo" valor="Escolher arquivo · Nenhum arquivo escolhido" />
       <Alvo nome="form.aprovacao" className="space-y-1 px-1">
         <div className="flex items-center gap-2 text-sm">
           <Caixinha marcada={aprovacao} />

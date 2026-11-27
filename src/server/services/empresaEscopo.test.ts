@@ -31,7 +31,6 @@ describe("escopo de Empresas e Filiais", () => {
     nomeFantasia: nome,
     cnpjCpf,
     moedaPadrao: "BRL",
-    corPrimaria: null,
     exigirAprovacaoPorOutro: true,
   });
 

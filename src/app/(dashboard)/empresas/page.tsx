@@ -8,6 +8,7 @@ import { requirePermission } from "@/server/auth/permissions";
 import { listarEmpresas } from "@/server/services/empresa";
 import { EmpresaDialogForm } from "./empresa-dialog-form";
 import { alternarAtivoEmpresaAction } from "./actions";
+import { BotaoAlternarAtivo } from "../_shared/botao-alternar-ativo";
 
 export default async function EmpresasPage() {
   const sessao = await requireSessaoAtiva();
@@ -65,13 +66,7 @@ export default async function EmpresasPage() {
                 </Button>
                 {/* A empresa em que você está não se inativa daqui: o serviço recusa. */}
                 {empresa.id === sessao.empresaId ? null : (
-                  <form action={alternarAtivoEmpresaAction}>
-                    <input type="hidden" name="id" value={empresa.id} />
-                    <input type="hidden" name="ativo" value={(!empresa.ativo).toString()} />
-                    <Button type="submit" variant="outline" size="sm">
-                      {empresa.ativo ? "Inativar" : "Reativar"}
-                    </Button>
-                  </form>
+                  <BotaoAlternarAtivo id={empresa.id} ativo={empresa.ativo} action={alternarAtivoEmpresaAction} />
                 )}
               </TableCell>
             </TableRow>

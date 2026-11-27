@@ -13,10 +13,13 @@ export function BotaoAlternarAtivo({
   id,
   ativo,
   action,
+  rotuloInativar = "Inativar",
 }: {
   id: string;
   ativo: boolean;
   action: (anterior: EstadoAlternarAtivo, dados: FormData) => Promise<EstadoAlternarAtivo>;
+  /** Usuários diz "Desativar" (o acesso à empresa), não "Inativar". */
+  rotuloInativar?: string;
 }) {
   const [state, formAction, pendente] = useActionState(action, {});
   return (
@@ -24,7 +27,7 @@ export function BotaoAlternarAtivo({
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="ativo" value={(!ativo).toString()} />
       <Button type="submit" variant="outline" size="sm" disabled={pendente}>
-        {ativo ? "Inativar" : "Reativar"}
+        {ativo ? rotuloInativar : "Reativar"}
       </Button>
       {state.erro ? <p className="max-w-64 text-right text-xs text-destructive">{state.erro}</p> : null}
     </form>

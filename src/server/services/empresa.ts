@@ -36,16 +36,6 @@ function validarArquivoLogo(arquivo: File, tipo: TipoImagemEmpresa = "logo"): vo
   }
 }
 
-/** undefined = não mexe no campo; null = limpa; string = nova url. */
-async function processarLogo(
-  empresaId: string,
-  logoUrlAtual: string | null,
-  arquivo: File | null,
-  removerLogo: boolean,
-): Promise<string | null | undefined> {
-  return processarImagemEmpresa(empresaId, logoUrlAtual, arquivo, removerLogo, "logo");
-}
-
 /** Logo, logo para fundo escuro ou favicon no Blob público. undefined = não mexe; null = limpa; string = nova url. */
 export async function processarImagemEmpresa(
   empresaId: string,
@@ -93,14 +83,12 @@ export async function empresaAdministrada(sessao: SessaoAtiva, empresaId: string
 
 const MSG_CNPJ_DUPLICADO = "Já existe uma empresa com este CNPJ/CPF";
 
-export async function criarEmpresa(sessao: SessaoAtiva, dados: EmpresaFormValues, logo: File | null = null) {
+/** Logo e cor ficam no Tema e marca (`atualizarMarca`); aqui, só os dados cadastrais. */
+export async function criarEmpresa(sessao: SessaoAtiva, dados: EmpresaFormValues) {
   requirePermission(sessao.perfil, "empresa:gerenciar");
 
-  // Valida ANTES da transação — um arquivo inválido não deve deixar uma empresa órfã pra trás.
-  if (logo && logo.size > 0) validarArquivoLogo(logo);
-
   // A Matriz nasce com o CNPJ da empresa: o repetido pode estar em qualquer das duas tabelas.
-  let empresa = await comMensagemDeDuplicidade(() => prisma.$transaction(async (tx) => {
+  const empresa = await comMensagemDeDuplicidade(() => prisma.$transaction(async (tx) => {
     const novaEmpresa = await tx.empresa.create({ data: dados });
     const vinculo = await tx.usuarioEmpresa.create({
       data: { usuarioId: sessao.usuarioId, empresaId: novaEmpresa.id, perfil: "ADMINISTRADOR" },
@@ -114,17 +102,6 @@ export async function criarEmpresa(sessao: SessaoAtiva, dados: EmpresaFormValues
     return novaEmpresa;
   }), MSG_CNPJ_DUPLICADO);
 
-  if (logo && logo.size > 0) {
-    try {
-      const logoUrl = await processarLogo(empresa.id, null, logo, false);
-      if (logoUrl) {
-        empresa = await prisma.empresa.update({ where: { id: empresa.id }, data: { logoUrl } });
-      }
-    } catch (erro) {
-      console.warn(`Falha ao subir logo da empresa ${empresa.id} recem-criada:`, erro);
-    }
-  }
-
   await registrarAuditoria({
     empresaId: empresa.id,
     filialId: null,
@@ -133,28 +110,17 @@ export async function criarEmpresa(sessao: SessaoAtiva, dados: EmpresaFormValues
     entidadeId: empresa.id,
     acao: "CRIAR",
     anterior: null,
-    novo: { ...dados, logoUrl: empresa.logoUrl },
+    novo: dados,
   });
 
   return empresa;
 }
 
-export async function atualizarEmpresa(
-  sessao: SessaoAtiva,
-  id: string,
-  dados: EmpresaFormValues,
-  logo: File | null = null,
-  removerLogo = false,
-) {
+export async function atualizarEmpresa(sessao: SessaoAtiva, id: string, dados: EmpresaFormValues) {
   const anterior = await empresaAdministrada(sessao, id);
-  const novoLogoUrl = await processarLogo(id, anterior.logoUrl, logo, removerLogo);
 
   const empresa = await comMensagemDeDuplicidade(
-    () =>
-      prisma.empresa.update({
-        where: { id },
-        data: { ...dados, ...(novoLogoUrl !== undefined ? { logoUrl: novoLogoUrl } : {}) },
-      }),
+    () => prisma.empresa.update({ where: { id }, data: dados }),
     MSG_CNPJ_DUPLICADO,
   );
 
@@ -170,11 +136,9 @@ export async function atualizarEmpresa(
       nomeFantasia: anterior.nomeFantasia,
       cnpjCpf: anterior.cnpjCpf,
       moedaPadrao: anterior.moedaPadrao,
-      corPrimaria: anterior.corPrimaria,
       exigirAprovacaoPorOutro: anterior.exigirAprovacaoPorOutro,
-      logoUrl: anterior.logoUrl,
     },
-    novo: { ...dados, logoUrl: novoLogoUrl !== undefined ? novoLogoUrl : anterior.logoUrl },
+    novo: dados,
   });
 
   return empresa;

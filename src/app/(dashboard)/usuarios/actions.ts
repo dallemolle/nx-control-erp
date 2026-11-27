@@ -7,6 +7,7 @@ import * as usuarioService from "@/server/services/usuario";
 import * as usuarioEmpresaFilialService from "@/server/services/usuarioEmpresaFilial";
 import * as apiKeyService from "@/server/services/apiKey";
 import { lerValidadeChave } from "@/lib/validadeChaveApi";
+import type { EstadoAlternarAtivo } from "../_shared/botao-alternar-ativo";
 
 export type FormState = { erro?: string; sucesso?: boolean };
 
@@ -76,13 +77,22 @@ export async function atualizarPerfilAction(
   return { sucesso: true };
 }
 
-export async function alternarAtivoUsuarioAction(formData: FormData): Promise<void> {
+export async function alternarAtivoUsuarioAction(
+  _anterior: EstadoAlternarAtivo,
+  formData: FormData,
+): Promise<EstadoAlternarAtivo> {
   const sessao = await requireSessaoAtiva();
-  const usuarioId = String(formData.get("usuarioId") ?? "");
+  const usuarioId = String(formData.get("id") ?? "");
   const ativo = formData.get("ativo") === "true";
 
-  await usuarioService.definirAtivoVinculo(sessao, usuarioId, ativo);
+  try {
+    await usuarioService.definirAtivoVinculo(sessao, usuarioId, ativo);
+  } catch (erro) {
+    // Ex.: "Você não pode desativar seu próprio acesso"; a mensagem vai para o lado do botão.
+    return { erro: mensagemErro(erro) };
+  }
   revalidatePath("/usuarios");
+  return {};
 }
 
 export async function atualizarAcessoFilialAction(formData: FormData): Promise<void> {

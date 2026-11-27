@@ -52,14 +52,6 @@ export const ROTEIROS: readonly Roteiro[] = [
       },
       {
         cena: "nova",
-        alvo: "form.cor",
-        instrucao: "Cor e logo: deixe para o Tema e marca",
-        explicacao:
-          "A cor personalizada daqui só pinta a barra lateral, e só enquanto a empresa não tem tema salvo. O logo é " +
-          "o mesmo “logo para fundo claro” do Tema e marca, que tem mais opções.",
-      },
-      {
-        cena: "nova",
         alvo: "form.aprovacao",
         instrucao: "Aprovação por outra pessoa: deixe marcada",
         explicacao:
@@ -73,6 +65,7 @@ export const ROTEIROS: readonly Roteiro[] = [
         explicacao:
           "O sistema cria a empresa, uma filial “Matriz” com o mesmo CNPJ, e faz de você o Administrador, com acesso " +
           "de alteração na Matriz.",
+        dica: "Cores e logo não ficam aqui: são do “Tema e marca”, o botão ao lado da empresa na lista.",
       },
       {
         cena: "lista",

@@ -51,7 +51,6 @@ describe("tema por empresa", () => {
         nomeFantasia: "Empresa Tema",
         cnpjCpf: `${sufixo}/0001-77`,
         moedaPadrao: "BRL",
-        corPrimaria: null,
         exigirAprovacaoPorOutro: false,
       })
     ).id;
