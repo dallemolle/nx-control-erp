@@ -177,8 +177,8 @@ export const ajudaCategorias: DefinicaoAjuda = {
             "Opcional: põe a categoria dentro de outra, para organizar a lista. No exemplo, dentro de “Despesas " +
             "bancárias”.",
           dica:
-            "Hoje o pai só aparece na lista: os relatórios e o Orçamento mostram cada categoria separada, sem somar as " +
-            "filhas no pai.",
+            "O Orçamento mostra a categoria pai com o total dela mais o das filhas, e as filhas recuadas logo abaixo. " +
+            "A pai precisa ser do mesmo tipo (Despesa ou Receita).",
           preenche: { "form.pai": TAXAS.pai! },
         },
         {

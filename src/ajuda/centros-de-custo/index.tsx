@@ -189,8 +189,8 @@ export const ajudaCentrosDeCusto: DefinicaoAjuda = {
           instrucao: "Escolha o centro pai",
           explicacao: "A Câmara fria fica dentro da Fábrica de polpa. Um centro não pode ficar dentro dele mesmo nem de um filho.",
           dica:
-            "Hoje o pai só organiza a lista: o Fluxo por dimensão mostra cada centro separado, sem somar os filhos no " +
-            "pai.",
+            "No Fluxo de caixa por dimensão, o centro pai mostra o total dele mais o dos filhos, e os filhos " +
+            "aparecem recuados logo abaixo.",
           preenche: { "form.pai": FABRICA.nome },
         },
         {

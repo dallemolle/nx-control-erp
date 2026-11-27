@@ -11,6 +11,8 @@ export type CategoriaExemplo = {
   chave: string;
   nome: string;
   tipo: TipoCategoria;
+  /** Chave da categoria pai, se houver. */
+  pai?: string;
   /** Orçado de janeiro (índice 0) a dezembro (índice 11). */
   orcadoPorMes: readonly number[];
   /** Realizado e projetado de novembro, na visão Todos e na visão Fiscal. */
@@ -32,6 +34,15 @@ export const CATEGORIAS: readonly CategoriaExemplo[] = [
     orcadoPorMes: todoMes(50),
     novembro: { realizado: 45.9, projetado: 0 },
     novembroFiscal: { realizado: 45.9, projetado: 0 },
+  },
+  {
+    chave: "taxas",
+    nome: "Taxas de cartão",
+    tipo: "DESPESA",
+    pai: "bancarias",
+    orcadoPorMes: todoMes(30),
+    novembro: { realizado: 12.5, projetado: 0 },
+    novembroFiscal: { realizado: 12.5, projetado: 0 },
   },
   {
     chave: "energia",

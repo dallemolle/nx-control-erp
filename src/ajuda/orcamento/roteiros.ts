@@ -138,6 +138,17 @@ export const ROTEIROS: readonly Roteiro[] = [
           "R$ 4.000,00 a receber dão R$ 27.500,00 previstos, contra R$ 20.000,00 orçados: Variação de " +
           "R$ 7.500,00, ou 37,5%.",
       },
+      {
+        cena: "painel",
+        alvo: "comp.linha.bancarias",
+        instrucao: "Leia o grupo de Despesas bancárias",
+        explicacao:
+          "Taxas de cartão está dentro de Despesas bancárias (o pai é escolhido em Cadastros → Categorias " +
+          "financeiras). A linha de Despesas bancárias soma tudo: R$ 80,00 orçados e R$ 58,40 previstos. " +
+          "“Direto em Despesas bancárias” é o que foi lançado na própria categoria (a tarifa de R$ 45,90), e " +
+          "Taxas de cartão, o resto (R$ 12,50).",
+        dica: "Clique na seta ao lado do nome para recolher as filhas: o total do grupo continua na linha.",
+      },
     ],
     eDepois: {
       texto:

@@ -58,6 +58,17 @@ describe("roteiros de Orçamento", () => {
     expect(linhaDoComparativo(fiscal, "Mão de obra temporária")).not.toContain("Estouro");
   });
 
+  test("o grupo Despesas bancárias soma a filha e mostra o Direto em", () => {
+    const markup = html();
+    const inicio = markup.indexOf('data-alvo="comp.linha.bancarias"');
+    const pai = markup.slice(inicio, markup.indexOf("</tr>", inicio));
+    expect(pai).toContain(formatarMoeda(80));
+    expect(pai).toContain(formatarMoeda(58.4));
+    const direto = linhaDoComparativo(markup, "Direto em Despesas bancárias");
+    expect(direto).toContain(formatarMoeda(45.9));
+    expect(linhaDoComparativo(markup, "Taxas de cartão")).toContain(formatarMoeda(12.5));
+  });
+
   test("a grade mostra os meses, os blocos Despesas e Receitas e o Salvo", () => {
     const antes = html();
     expect(antes).toContain(">Jan<");

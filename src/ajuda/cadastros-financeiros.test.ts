@@ -62,7 +62,10 @@ describe("os exemplos batem com o resto da ajuda e com o cadastro", () => {
 
   test("categorias: as ativas são as do Orçamento, e a inativada é a que não aparece nele", () => {
     const antes = categoriasDoRoteiro({}).filter((c) => c.ativo).map((c) => c.nome);
-    expect(antes).toEqual(expect.arrayContaining(CATEGORIAS_DO_ORCAMENTO.map((c) => c.nome)));
+    // "Taxas de cartão" é a categoria que o próprio roteiro cria: o Orçamento já a mostra pronta.
+    expect(antes).toEqual(
+      expect.arrayContaining(CATEGORIAS_DO_ORCAMENTO.map((c) => c.nome).filter((nome) => nome !== TAXAS.nome)),
+    );
     expect(CATEGORIAS_DO_ORCAMENTO.map((c) => c.nome)).not.toContain(INATIVADA);
     const depois = categoriasDoRoteiro(fim(roteiroDe(ajudaCategorias, "inativar-categoria")));
     expect(depois.find((c) => c.nome === INATIVADA)?.ativo).toBe(false);
