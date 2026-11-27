@@ -11,6 +11,7 @@ import {
 } from "./fluxoDeCaixa";
 import { idsDasFiliaisAtivas } from "./filiaisConsolidadas";
 import { whereLancamentoPorClassificacao, type FiltroClassificacao } from "./classificacaoFiscal";
+import { somarAnoBase, type ForaDaBase, type LancamentoDoAnoBase } from "@/lib/financeiro/anoBaseEstrategico";
 
 export type PremissasCenario = {
   crescimentoReceita: number;
@@ -94,6 +95,8 @@ export async function garantirCenariosEstrategicos(empresaId: string, db: Client
   });
 }
 
+const CATEGORIA_DO_ANO_BASE = { select: { tipo: true, naoOperacional: true } } as const;
+
 /**
  * Ano-base da projeção: realizado conciliado dos últimos 12 meses, somando
  * as filiais ativas da empresa (ver `idsDasFiliaisAtivas`). Com `opcoes.classificacao`, receita e custo usam só
@@ -102,6 +105,11 @@ export async function garantirCenariosEstrategicos(empresaId: string, db: Client
  * é único e não se divide entre fiscal e gerencial (decisão FG5, igual ao
  * fluxo realizado filtrado).
  *
+ * Receita e custo saem da categoria do lançamento (ou, na falta, da do título
+ * da baixa), não do sentido da movimentação: categorias não operacionais
+ * (empréstimos, aportes) e lançamentos sem categoria ficam de fora e voltam
+ * em `foraDaBase`, para a tela avisar.
+ *
  * Transferências entre contas não entram na receita nem no custo (só movem saldo).
  *
  * O saldo de partida é o saldo contábil de hoje (conciliado + o que aguarda conciliação), o mesmo de onde parte o Fluxo de caixa projetado; o ano-base continua só com conciliados.
@@ -109,21 +117,20 @@ export async function garantirCenariosEstrategicos(empresaId: string, db: Client
 export async function buscarAnoBaseConsolidado(
   empresaId: string,
   opcoes: { classificacao?: FiltroClassificacao } = {},
-): Promise<{ receitaBase: number; custoBase: number; saldoCaixaBase: number }> {
+): Promise<{ receitaBase: number; custoBase: number; saldoCaixaBase: number; foraDaBase: ForaDaBase }> {
   const filialIds = await idsDasFiliaisAtivas(empresaId);
   const hoje = new Date();
   const inicioJanela = new Date(hoje);
   inicioJanela.setUTCFullYear(inicioJanela.getUTCFullYear() - 1);
 
-  const [saldoCaixaBase, somas] = await Promise.all([
+  const [saldoCaixaBase, lancamentos] = await Promise.all([
     opcoes.classificacao
       ? Promise.resolve(0)
       : Promise.all([
           buscarSaldoConciliadoDasFiliais(filialIds),
           buscarAguardandoConciliacaoDasFiliais(filialIds),
         ]).then(([conciliado, aguardando]) => saldoComAguardando(conciliado, aguardando)),
-    prisma.lancamentoBancario.groupBy({
-      by: ["tipo"],
+    prisma.lancamentoBancario.findMany({
       where: {
         filialId: { in: filialIds },
         conciliado: true,
@@ -132,15 +139,21 @@ export async function buscarAnoBaseConsolidado(
         contaBancaria: { ativo: true },
         ...whereLancamentoPorClassificacao(opcoes.classificacao),
       },
-      _sum: { valor: true },
+      select: {
+        tipo: true,
+        valor: true,
+        categoriaFinanceira: CATEGORIA_DO_ANO_BASE,
+        baixa: { select: { parcela: { select: { titulo: { select: { categoriaFinanceira: CATEGORIA_DO_ANO_BASE } } } } } },
+      },
     }),
   ]);
 
-  return {
-    receitaBase: Number(somas.find((s) => s.tipo === "ENTRADA")?._sum.valor ?? 0),
-    custoBase: Number(somas.find((s) => s.tipo === "SAIDA")?._sum.valor ?? 0),
-    saldoCaixaBase,
-  };
+  const paraSomar: LancamentoDoAnoBase[] = lancamentos.map((l) => ({
+    tipo: l.tipo,
+    valor: Number(l.valor),
+    categoria: l.categoriaFinanceira ?? l.baixa?.parcela.titulo.categoriaFinanceira ?? null,
+  }));
+  return { ...somarAnoBase(paraSomar), saldoCaixaBase };
 }
 
 export async function listarCenariosEstrategicos(
@@ -171,6 +184,7 @@ export async function listarProjecaoEstrategica(
 ): Promise<{
   cenarios: Record<TipoCenarioEstrategico, PremissasCenario & { id: string }>;
   projecoes: Record<TipoCenarioEstrategico, AnoProjetadoEstrategico[]>;
+  foraDaBase: ForaDaBase;
 }> {
   requirePermission(sessao.perfil, "planejamentoEstrategico:ler");
 
@@ -183,7 +197,7 @@ export async function listarProjecaoEstrategica(
   for (const tipo of TIPOS_CENARIO) {
     projecoes[tipo] = calcularProjecaoEstrategica(cenarios[tipo], anoBase.receitaBase, anoBase.custoBase, anoBase.saldoCaixaBase);
   }
-  return { cenarios, projecoes };
+  return { cenarios, projecoes, foraDaBase: anoBase.foraDaBase };
 }
 
 export async function atualizarPremissasCenario(

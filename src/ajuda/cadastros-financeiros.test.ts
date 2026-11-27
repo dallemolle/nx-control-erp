@@ -53,6 +53,13 @@ describe("os exemplos batem com o resto da ajuda e com o cadastro", () => {
     expect(bancoSchema.safeParse(SICREDI).success).toBe(true);
   });
 
+  test("categorias: o formulário mostra a caixa Não operacional e o roteiro explica quando marcar", () => {
+    const html = renderToStaticMarkup(createElement(ajudaCategorias.cenas.nova, { valores: {} }));
+    expect(html).toContain("Não operacional");
+    const passo = roteiroDe(ajudaCategorias, "cadastrar-categoria").passos.find((p) => p.alvo === "form.naoOperacional");
+    expect(passo?.explicacao).toContain("estratégico");
+  });
+
   test("categorias: as ativas são as do Orçamento, e a inativada é a que não aparece nele", () => {
     const antes = categoriasDoRoteiro({}).filter((c) => c.ativo).map((c) => c.nome);
     expect(antes).toEqual(expect.arrayContaining(CATEGORIAS_DO_ORCAMENTO.map((c) => c.nome)));

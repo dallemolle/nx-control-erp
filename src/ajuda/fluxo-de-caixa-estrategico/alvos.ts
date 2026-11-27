@@ -4,6 +4,7 @@ export const ALVOS = {
     "painel.classificacao",
     "painel.exportar",
     "painel.aviso",
+    "painel.foraDaBase",
     "BASE.receita",
     "BASE.custos",
     "BASE.capex",

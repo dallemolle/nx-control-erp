@@ -370,12 +370,13 @@ model CategoriaFinanceira {
   nome         String
   tipo         TipoCategoriaFinanceira
   parentId     String?
+  naoOperacional Boolean                @default(false)
   ativo        Boolean                 @default(true)
   criadoEm     DateTime                @default(now())
   atualizadoEm DateTime                @updatedAt
 
   filial                   Filial                 @relation(fields: [filialId], references: [id], onDelete: Cascade)
-  parent                   CategoriaFinanceira?   @relation("CategoriaFinanceiraHierarquia", fields: [parentId], references: [id])
+  parent                   CategoriaFinanceira?  @relation("CategoriaFinanceiraHierarquia", fields: [parentId], references: [id])
   filhos                   CategoriaFinanceira[]  @relation("CategoriaFinanceiraHierarquia")
   titulos                  Titulo[]
   lancamentosBancarios     LancamentoBancario[]

@@ -19,10 +19,14 @@ describe("filiais desativadas nos consolidados (integração)", () => {
   beforeAll(async () => {
     fixture = await criarFixtureFinanceiro("FCONS", "GESTOR");
 
+    const receitaAtiva = await prisma.categoriaFinanceira.create({
+      data: { filialId: fixture.filialId, nome: "Vendas FCONS", tipo: "RECEITA" },
+    });
     await prisma.lancamentoBancario.create({
       data: {
         filialId: fixture.filialId,
         contaBancariaId: fixture.contaBancariaId,
+        categoriaFinanceiraId: receitaAtiva.id,
         data: ontem,
         tipo: "ENTRADA",
         valor: 1000,
@@ -40,10 +44,14 @@ describe("filiais desativadas nos consolidados (integração)", () => {
     const conta = await prisma.contaBancaria.create({
       data: { filialId: comPendencia.id, bancoId: fixture.bancoId, agencia: "0005", conta: "fcons-2", saldoInicial: 700 },
     });
+    const receitaDesativada = await prisma.categoriaFinanceira.create({
+      data: { filialId: comPendencia.id, nome: "Vendas FCONS", tipo: "RECEITA" },
+    });
     await prisma.lancamentoBancario.create({
       data: {
         filialId: comPendencia.id,
         contaBancariaId: conta.id,
+        categoriaFinanceiraId: receitaDesativada.id,
         data: ontem,
         tipo: "ENTRADA",
         valor: 300,
@@ -79,6 +87,7 @@ describe("filiais desativadas nos consolidados (integração)", () => {
       await prisma.parcela.deleteMany({ where: { titulo: { filialId } } });
       await prisma.titulo.deleteMany({ where: { filialId } });
       await prisma.lancamentoBancario.deleteMany({ where: { filialId } });
+      await prisma.categoriaFinanceira.deleteMany({ where: { filialId } });
       await prisma.contaBancaria.deleteMany({ where: { filialId } });
       await prisma.filial.delete({ where: { id: filialId } });
     }

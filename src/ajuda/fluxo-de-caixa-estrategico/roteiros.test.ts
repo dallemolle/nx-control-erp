@@ -27,6 +27,16 @@ describe("roteiros de Fluxo de caixa estratégico", () => {
     expect(pessimista[1].saldoCaixa).toBeGreaterThan(0);
   });
 
+  test("a cena mostra o aviso do que ficou fora do ano-base, com os números do exemplo", () => {
+    const html = renderToStaticMarkup(createElement(cenas.painel, { valores: {} }));
+    expect(html).toContain("categorias não operacionais");
+    const passo = roteiros[0].passos.find((p) => p.alvo === "painel.foraDaBase");
+    expect(passo?.explicacao).toContain("Não operacional");
+    expect(
+      roteiros[0].passos.some((p) => (p.dica ?? "").includes("lançados como entrada entram como receita")),
+    ).toBe(false);
+  });
+
   test("mudar a premissa no roteiro recalcula a tabela", () => {
     const html = renderToStaticMarkup(createElement(cenas.painel, { valores: { "BASE.receita": "8.00" } }));
     expect(html).toContain("R$ 237.600,00");

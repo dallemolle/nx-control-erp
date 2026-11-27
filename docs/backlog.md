@@ -472,22 +472,6 @@ módulos ainda não estão em uso). Os demais estão com prioridade a definir.
 - **Impacto:** erro intermitente; nenhum dado errado.
 - **Caminhos:** `ORDER BY id` no SELECT.
 
-### 63. Ano-base do estratégico conta empréstimos e aportes como receita
-
-- **Problema:** `buscarAnoBaseConsolidado` (`src/server/services/fluxoDeCaixaEstrategico.ts`)
-  soma todas as entradas e saídas conciliadas dos últimos 12 meses (sem as
-  transferências desde 2026-11-26). Empréstimo recebido, aporte de sócio e
-  outras entradas avulsas que não são receita entram na `receitaBase`; a
-  amortização do empréstimo entra no `custoBase`.
-- **Exemplo:** um custeio de R$ 100.000,00 recebido em março aumenta a receita
-  do ano-base em R$ 100.000,00; a projeção de 5 anos cresce essa "receita"
-  todo ano.
-- **Impacto:** projeção estratégica distorcida quando a fazenda se financia.
-- **Caminhos:** basear receita e custo nas categorias (RECEITA e DESPESA) dos
-  lançamentos e das baixas; mostrar à parte o que ficou sem categoria.
-- **Cuidados:** baixa de título sem categoria e lançamento avulso sem
-  categoria somem da base; avisar quanto ficou de fora.
-
 ### 64. Lista da Tesouraria sem paginação, com opções de edição em cada linha
 
 - **Problema:** a lista da Tesouraria carrega todos os lançamentos da filial e,

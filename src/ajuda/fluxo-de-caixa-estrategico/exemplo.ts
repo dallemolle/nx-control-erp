@@ -3,6 +3,8 @@
  * (src/server/services/fluxoDeCaixaEstrategico.ts), repetida aqui porque a réplica roda no navegador e o
  * serviço importa o banco; o teste da ajuda confere que as duas dão o mesmo resultado.
  */
+import type { ForaDaBase } from "@/lib/financeiro/anoBaseEstrategico";
+
 export type Cenario = "BASE" | "OTIMISTA" | "PESSIMISTA";
 
 export type Premissas = {
@@ -13,8 +15,14 @@ export type Premissas = {
   taxaJurosAnual: number;
 };
 
-/** Ano-base: realizado conciliado dos últimos 12 meses; saldo em caixa de hoje (conciliado + aguardando conciliação, o mesmo de onde parte o Fluxo de caixa projetado). */
+/** Ano-base: receita e custo conciliados dos últimos 12 meses, por categoria (sem as não operacionais); saldo em caixa de hoje (conciliado + aguardando conciliação, o mesmo de onde parte o Fluxo de caixa projetado). */
 export const ANO_BASE = { receita: 220_000, custo: 205_000, saldoCaixa: 47_850 } as const;
+
+/** O custeio de R$ 100.000,00 e as parcelas pagas dele, nas categorias não operacionais; uma tarifa sem categoria. */
+export const FORA_DA_BASE: ForaDaBase = {
+  naoOperacional: { entradas: 100_000, saidas: 20_000 },
+  semCategoria: { entradas: 0, saidas: 1_500 },
+};
 
 export const PREMISSAS: Readonly<Record<Cenario, Premissas>> = {
   BASE: {

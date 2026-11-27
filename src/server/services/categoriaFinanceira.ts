@@ -3,7 +3,7 @@ import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permiss
 import { registrarAuditoria } from "@/server/audit/registrar";
 import { assertSemCiclo } from "@/server/services/hierarquia";
 import type { SessaoAtiva } from "@/server/auth/sessao";
-import type { CategoriaFinanceiraFormValues } from "@/lib/schemas/categoriaFinanceira";
+import type { CategoriaFinanceiraDados } from "@/lib/schemas/categoriaFinanceira";
 
 export async function listarCategoriasFinanceiras(filialId: string) {
   return prisma.categoriaFinanceira.findMany({ where: { filialId }, orderBy: { nome: "asc" } });
@@ -25,16 +25,17 @@ async function validarParentMesmaFilial(filialId: string, parentId: string | nul
 
 export async function criarCategoriaFinanceira(
   sessao: SessaoAtiva,
-  dados: CategoriaFinanceiraFormValues,
+  dados: CategoriaFinanceiraDados,
 ) {
   requirePermission(sessao.perfil, "cadastro:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   const parentId = normalizarParentId(dados.parentId);
   await validarParentMesmaFilial(sessao.filialId, parentId);
+  const naoOperacional = dados.naoOperacional ?? false;
 
   const categoria = await prisma.categoriaFinanceira.create({
-    data: { nome: dados.nome, tipo: dados.tipo, parentId, filialId: sessao.filialId },
+    data: { nome: dados.nome, tipo: dados.tipo, parentId, naoOperacional, filialId: sessao.filialId },
   });
 
   await registrarAuditoria({
@@ -45,7 +46,7 @@ export async function criarCategoriaFinanceira(
     entidadeId: categoria.id,
     acao: "CRIAR",
     anterior: null,
-    novo: { nome: dados.nome, tipo: dados.tipo, parentId },
+    novo: { nome: dados.nome, tipo: dados.tipo, parentId, naoOperacional },
   });
 
   return categoria;
@@ -54,13 +55,14 @@ export async function criarCategoriaFinanceira(
 export async function atualizarCategoriaFinanceira(
   sessao: SessaoAtiva,
   id: string,
-  dados: CategoriaFinanceiraFormValues,
+  dados: CategoriaFinanceiraDados,
 ) {
   requirePermission(sessao.perfil, "cadastro:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
   const parentId = normalizarParentId(dados.parentId);
   await validarParentMesmaFilial(sessao.filialId, parentId);
+  const naoOperacional = dados.naoOperacional ?? false;
 
   const itens = await prisma.categoriaFinanceira.findMany({
     where: { filialId: sessao.filialId },
@@ -73,7 +75,7 @@ export async function atualizarCategoriaFinanceira(
   });
   const categoria = await prisma.categoriaFinanceira.update({
     where: { id },
-    data: { nome: dados.nome, tipo: dados.tipo, parentId },
+    data: { nome: dados.nome, tipo: dados.tipo, parentId, naoOperacional },
   });
 
   await registrarAuditoria({
@@ -83,8 +85,13 @@ export async function atualizarCategoriaFinanceira(
     entidade: "CategoriaFinanceira",
     entidadeId: id,
     acao: "ATUALIZAR",
-    anterior: { nome: anterior.nome, tipo: anterior.tipo, parentId: anterior.parentId },
-    novo: { nome: dados.nome, tipo: dados.tipo, parentId },
+    anterior: {
+      nome: anterior.nome,
+      tipo: anterior.tipo,
+      parentId: anterior.parentId,
+      naoOperacional: anterior.naoOperacional,
+    },
+    novo: { nome: dados.nome, tipo: dados.tipo, parentId, naoOperacional },
   });
 
   return categoria;
