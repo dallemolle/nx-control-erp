@@ -8,7 +8,7 @@ import { LinhaSafraForm } from "./linha-safra-form";
 import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
-import { formatarMoeda } from "@/lib/formatacao";
+import { formatarMoeda, formatarPercentual } from "@/lib/formatacao";
 import { ROTULOS_STATUS_SAFRA_PROJETO } from "@/lib/schemas/enums";
 
 export default async function ComparacaoSafrasPage({
@@ -81,7 +81,7 @@ export default async function ComparacaoSafrasPage({
               <TableCell>
                 {formatarMoeda(linha.variacaoAbsolutaRealizado)}
                 {linha.variacaoPercentualRealizado !== null
-                  ? ` (${(linha.variacaoPercentualRealizado * 100).toFixed(1)}%)`
+                  ? ` (${formatarPercentual(linha.variacaoPercentualRealizado)})`
                   : null}
               </TableCell>
             </TableRow>

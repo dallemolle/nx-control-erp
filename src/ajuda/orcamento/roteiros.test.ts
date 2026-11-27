@@ -41,7 +41,7 @@ describe("roteiros de Orçamento", () => {
     const insumos = linhaDoComparativo(todos, "Insumos Agrícolas");
     expect(insumos).toContain(formatarMoeda(1800));
     expect(insumos).toContain(formatarMoeda(300));
-    expect(insumos).toContain("20.0%");
+    expect(insumos).toContain("20,0%");
     expect(insumos).not.toContain(formatarMoeda(-700));
     expect(insumos).toContain("Estouro");
     const maoDeObra = linhaDoComparativo(todos, "Mão de obra temporária");
@@ -50,7 +50,7 @@ describe("roteiros de Orçamento", () => {
     const venda = linhaDoComparativo(todos, "Venda de produtos");
     expect(venda).toContain(formatarMoeda(27500));
     expect(venda).toContain(formatarMoeda(7500));
-    expect(venda).toContain("37.5%");
+    expect(venda).toContain("37,5%");
     expect(venda).not.toContain("Estouro");
 
     const fiscal = html({ "painel.classificacao": "Fiscal" });
@@ -58,8 +58,20 @@ describe("roteiros de Orçamento", () => {
     expect(linhaDoComparativo(fiscal, "Mão de obra temporária")).not.toContain("Estouro");
   });
 
+  test("a grade mostra os meses, os blocos Despesas e Receitas e o Salvo", () => {
+    const antes = html();
+    expect(antes).toContain(">Jan<");
+    expect(antes).toContain(">Nov<");
+    expect(antes).toContain(">Despesas<");
+    expect(antes).toContain(">Receitas<");
+    expect(antes).toContain("1.500,00");
+    expect(antes).not.toContain(">Salvo<");
+    expect(html({ "grade.insumos.salvar": "salvo" })).toContain(">Salvo<");
+    expect(JSON.stringify(roteiros)).not.toMatch(/não mostra o nome dos meses|Cuidado com o ponto de milhar/);
+  });
+
   test("orçar novembro de Insumos em 2000 tira o estouro", () => {
-    const insumos = linhaDoComparativo(html({ "grade.insumos.mes-11": "2000" }), "Insumos Agrícolas");
+    const insumos = linhaDoComparativo(html({ "grade.insumos.mes-11": "2.000" }), "Insumos Agrícolas");
     expect(insumos).toContain(formatarMoeda(2000));
     expect(insumos).not.toContain("Estouro");
   });

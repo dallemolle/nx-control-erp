@@ -29,31 +29,30 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "grade.secao",
         instrucao: "Uma linha por categoria financeira",
         explicacao:
-          "Aparecem todas as categorias ativas da filial, de receita e de despesa, em ordem alfabética. Orce as " +
-          "receitas também: elas viram a meta do mês. Para ter uma categoria nova aqui, cadastre-a em Cadastros → " +
-          "Categorias financeiras.",
+          "Aparecem todas as categorias ativas da filial, separadas em dois blocos: Despesas primeiro e Receitas " +
+          "depois, cada um em ordem alfabética. Orce as receitas também: elas viram a meta do mês. Para ter uma " +
+          "categoria nova aqui, cadastre-a em Cadastros → Categorias financeiras.",
       },
       {
         cena: "painel",
         alvo: "grade.insumos",
         instrucao: "Os 12 campos são os meses, de janeiro a dezembro",
         explicacao:
-          "O primeiro campo depois do nome é janeiro e o último é dezembro. No exemplo, Insumos Agrícolas tem " +
-          "R$ 2.500,00 em agosto e setembro e R$ 1.500,00 em outubro e novembro, os meses de adubação.",
+          "O nome do mês está no alto de cada coluna. No exemplo, Insumos Agrícolas tem R$ 2.500,00 em agosto e " +
+          "setembro e R$ 1.500,00 em outubro e novembro, os meses de adubação.",
         dica:
-          "A grade não mostra o nome dos meses: conte da esquerda para a direita. No celular, arraste a grade para " +
-          "o lado para ver os últimos meses.",
+          "No celular, arraste a grade para o lado para ver os últimos meses: o nome da categoria fica parado à " +
+          "esquerda.",
       },
       {
         cena: "painel",
         alvo: "grade.insumos.mes-11",
         instrucao: "Digite o valor do mês",
         explicacao:
-          "Só o número, sem R$ e sem ponto de milhar: 2000 para R$ 2.000,00. Para centavos, use ponto: 45.90. " +
-          "Campo vazio vale zero, e valor negativo não é aceito. No exemplo, novembro de Insumos Agrícolas passa " +
-          "de 1500 para 2000.",
-        dica: "Cuidado com o ponto de milhar: 1.500 é lido como um real e cinquenta centavos (R$ 1,50).",
-        preenche: { "grade.insumos.mes-11": "2000" },
+          "Do jeito de sempre, com ou sem ponto de milhar e com vírgula nos centavos: 2.000, 2000 ou 2.000,00 " +
+          "valem R$ 2.000,00; 45,90 vale quarenta e cinco reais e noventa centavos. Campo vazio vale zero, e valor " +
+          "negativo não é aceito. No exemplo, novembro de Insumos Agrícolas passa de 1.500,00 para 2.000.",
+        preenche: { "grade.insumos.mes-11": "2.000" },
       },
       {
         cena: "painel",
@@ -62,14 +61,15 @@ export const ROTEIROS: readonly Roteiro[] = [
         explicacao:
           "Cada linha tem o seu botão, que grava os 12 meses daquela categoria de uma vez: ou salva todos, ou " +
           "nenhum. Mudou duas categorias? Clique no Salvar de cada uma. Cada mudança fica na Auditoria.",
+        preenche: { "grade.insumos.salvar": "salvo" },
       },
     ],
     eDepois: {
       texto:
-        "A tela não mostra mensagem de “salvo”: o botão fica em “Salvando...” e volta ao normal. Se algo der " +
-        "errado, o erro aparece em vermelho no fim da linha, com o mês (por exemplo, “Mês 3: Não pode ser " +
-        "negativo”). O comparativo passa a usar o valor novo: no exemplo, Insumos Agrícolas deixa de marcar " +
-        "Estouro em novembro, porque os R$ 1.800,00 previstos cabem nos R$ 2.000,00 orçados.",
+        "A linha mostra “Salvo” ao lado do botão. Se algo der errado, o erro aparece em vermelho no fim da linha, " +
+        "com o mês (por exemplo, “Março: Não pode ser negativo”). O comparativo passa a usar o valor novo: no " +
+        "exemplo, Insumos Agrícolas deixa de marcar Estouro em novembro, porque os R$ 1.800,00 previstos cabem " +
+        "nos R$ 2.000,00 orçados.",
       proximoRoteiro: "ler-comparativo",
     },
   }),
@@ -116,7 +116,7 @@ export const ROTEIROS: readonly Roteiro[] = [
         explicacao:
           "Previsto é o que já foi pago mais o que ainda vai ser pago no mês. Em Insumos Agrícolas: R$ 800,00 " +
           "pagos + R$ 1.000,00 da parcela do adubo = R$ 1.800,00 previstos, contra R$ 1.500,00 orçados: Variação " +
-          "de R$ 300,00 (20.0%) e Estouro.",
+          "de R$ 300,00 (20,0%) e Estouro.",
         dica:
           "A Variação e a Variação % comparam o previsto com o orçado, a mesma conta do Estouro: variação " +
           "positiva numa despesa é estouro. Para saber só o que já saiu, olhe a coluna Realizado.",
@@ -136,7 +136,7 @@ export const ROTEIROS: readonly Roteiro[] = [
         explicacao:
           "Categoria de receita nunca marca estouro. Em Venda de produtos, R$ 23.500,00 recebidos mais " +
           "R$ 4.000,00 a receber dão R$ 27.500,00 previstos, contra R$ 20.000,00 orçados: Variação de " +
-          "R$ 7.500,00, ou 37.5%.",
+          "R$ 7.500,00, ou 37,5%.",
       },
     ],
     eDepois: {

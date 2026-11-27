@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { formatarData, formatarDataHora, formatarMoeda } from "./formatacao";
+import { describe, expect, it, test } from "vitest";
+import { formatarData, formatarDataHora, formatarMoeda, formatarPercentual } from "./formatacao";
 
 // Intl usa espaço não separável entre "R$" e o número.
 const semNbsp = (texto: string) => texto.replace(/ /g, " ");
@@ -36,5 +36,14 @@ describe("formatarDataHora", () => {
 
   it("perto da meia-noite UTC ainda é o dia anterior em Brasília", () => {
     expect(formatarDataHora(new Date("2026-10-16T02:30:00.000Z"))).toBe("15/10/2026 23:30");
+  });
+});
+
+describe("formatarPercentual", () => {
+  test("uma casa, com vírgula, a partir da fração", () => {
+    expect(formatarPercentual(0.175)).toBe("17,5%");
+    expect(formatarPercentual(0.2)).toBe("20,0%");
+    expect(formatarPercentual(-0.175)).toBe("-17,5%");
+    expect(formatarPercentual(0)).toBe("0,0%");
   });
 });

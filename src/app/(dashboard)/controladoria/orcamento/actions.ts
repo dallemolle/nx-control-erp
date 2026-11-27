@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { valorOrcamentoSchema } from "@/lib/schemas/orcamento";
+import { NOMES_DOS_MESES } from "@/lib/meses";
 import { salvarValoresOrcamentoDoAno } from "@/server/services/orcamento";
 
 export type FormState = { erro?: string; sucesso?: boolean };
@@ -27,7 +28,7 @@ export async function salvarLinhaOrcamentoAction(
     const bruto = formData.get(`mes-${mes}`);
     const parsed = valorOrcamentoSchema.safeParse(bruto);
     if (!parsed.success) {
-      return { erro: `Mês ${mes}: ${parsed.error.issues[0]?.message ?? "valor inválido"}` };
+      return { erro: `${NOMES_DOS_MESES[mes - 1]}: ${parsed.error.issues[0]?.message ?? "valor inválido"}` };
     }
     valoresPorMes.push({ mes, valor: parsed.data });
   }

@@ -3,11 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-const MESES = [
-  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
-];
+import { NOMES_DOS_MESES as MESES } from "@/lib/meses";
 
 export function deslocarAno(ano: number, direcao: 1 | -1): number {
   return ano + direcao;
