@@ -267,6 +267,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ numero:
                     responsavel: pedido.entrega.responsavel,
                     observacao: pedido.entrega.observacao,
                     recebidoPor: pedido.entrega.recebidoPor,
+                    dataRealizada: pedido.entrega.dataRealizada ? paraDataIso(pedido.entrega.dataRealizada) : null,
                   }}
                 />
               </>

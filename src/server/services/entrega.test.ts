@@ -93,6 +93,38 @@ describe("entregas", () => {
     expect(await entregaDe(pedidoId)).toMatchObject({ status: "EM_ROTA", dataRealizada: null, recebidoPor: null });
   });
 
+  test("entrega já entregue: corrige data e recebido por; data antes do pedido é recusada", async () => {
+    const pedidoId = await novoPedido("2026-11-10");
+    await atualizarEntrega(
+      fx.sessao("VENDAS"),
+      pedidoId,
+      entregaSchema.parse({ status: "ENTREGUE", dataRealizada: "2026-11-23", recebidoPor: "Rui" }),
+    );
+    await atualizarEntrega(
+      fx.sessao("VENDAS"),
+      pedidoId,
+      entregaSchema.parse({ dataRealizada: "2026-11-24", recebidoPor: "Lúcia" }),
+    );
+    expect(await entregaDe(pedidoId)).toMatchObject({
+      status: "ENTREGUE",
+      recebidoPor: "Lúcia",
+      dataRealizada: d("2026-11-24"),
+    });
+
+    await expect(
+      atualizarEntrega(fx.sessao("VENDAS"), pedidoId, entregaSchema.parse({ dataRealizada: "2026-11-09" })),
+    ).rejects.toThrow("A entrega não pode ser antes da data do pedido (10/11/2026)");
+    const outro = await novoPedido("2026-11-10");
+    await expect(
+      atualizarEntrega(
+        fx.sessao("VENDAS"),
+        outro,
+        entregaSchema.parse({ status: "ENTREGUE", dataRealizada: "2026-11-09" }),
+      ),
+    ).rejects.toThrow("antes da data do pedido");
+    expect((await entregaDe(outro)).status).not.toBe("ENTREGUE");
+  });
+
   test("edita os dados; campo omitido não muda e campo vazio apaga", async () => {
     const pedidoId = await novoPedido();
     await atualizarEntrega(

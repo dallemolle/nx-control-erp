@@ -6,13 +6,17 @@ import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { DadosEntrega } from "@/lib/schemas/entrega";
 import { hojeDeCalendario } from "@/lib/producao/periodo";
 import { atrasoEntregaDias } from "@/lib/producao/venda";
+import { formatarData } from "@/lib/formatacao";
 
 /** Atualiza a entrega (D-16). Só os campos enviados mudam; entrega cancelada fica como está. */
 export async function atualizarEntrega(sessao: SessaoAtiva, pedidoId: string, dados: DadosEntrega): Promise<void> {
   requirePermission(sessao.perfil, "venda:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
-  const atual = await prisma.entrega.findFirst({ where: { pedidoId, pedido: { filialId: sessao.filialId } } });
+  const atual = await prisma.entrega.findFirst({
+    where: { pedidoId, pedido: { filialId: sessao.filialId } },
+    include: { pedido: { select: { data: true } } },
+  });
   if (!atual) throw new Error("Entrega não encontrada");
   if (atual.status === "CANCELADA") throw new Error("Entrega cancelada não pode ser alterada");
 
@@ -27,6 +31,9 @@ export async function atualizarEntrega(sessao: SessaoAtiva, pedidoId: string, da
     dataRealizada: entregue ? (dados.dataRealizada ?? atual.dataRealizada ?? hojeDeCalendario()) : null,
     recebidoPor: entregue ? (dados.recebidoPor === undefined ? atual.recebidoPor : dados.recebidoPor) : null,
   };
+  if (novo.dataRealizada && novo.dataRealizada < atual.pedido.data) {
+    throw new Error(`A entrega não pode ser antes da data do pedido (${formatarData(atual.pedido.data)})`);
+  }
 
   await prisma.entrega.update({ where: { pedidoId }, data: novo });
   await registrarAuditoria({

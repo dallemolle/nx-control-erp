@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { StatusEntrega } from "@prisma/client";
+import { formatarData } from "@/lib/formatacao";
 import { atualizarEntregaAction, type FormState } from "../entregas/actions";
 import { useAcaoDoDialogo } from "../../_shared/use-acao-do-dialogo";
 
@@ -21,9 +22,11 @@ export type EntregaParaAcoes = {
   responsavel: string | null;
   observacao: string | null;
   recebidoPor: string | null;
+  /** `AAAA-MM-DD`, só na entregue. */
+  dataRealizada: string | null;
 };
 
-/** Botões da entrega: em rota, entregue (com data e quem recebeu) e editar. */
+/** Botões da entrega: em rota, entregue (com data e quem recebeu), desfazer a entrega e editar. */
 export function EntregaAcoes({
   entrega,
   podeEscrever,
@@ -38,6 +41,7 @@ export function EntregaAcoes({
     <div className="flex flex-wrap justify-end gap-2">
       {entrega.status === "PENDENTE" ? <MarcarEmRota pedidoId={entrega.pedidoId} /> : null}
       {entrega.status !== "ENTREGUE" ? <MarcarEntregue entrega={entrega} hoje={hoje} /> : null}
+      {entrega.status === "ENTREGUE" ? <DesfazerEntrega entrega={entrega} /> : null}
       <EditarEntrega entrega={entrega} />
     </div>
   );
@@ -88,6 +92,35 @@ function MarcarEntregue({ entrega, hoje }: { entrega: EntregaParaAcoes; hoje: st
   );
 }
 
+/** Entregue por engano (pedido errado): volta para Em rota e apaga a data e quem recebeu. */
+function DesfazerEntrega({ entrega }: { entrega: EntregaParaAcoes }) {
+  const { aberto, setAberto, state, formAction, pendente } = useAcaoDoDialogo(atualizarEntregaAction, ESTADO_INICIAL);
+  return (
+    <Dialog open={aberto} onOpenChange={setAberto}>
+      <DialogTrigger render={<Button variant="outline" size="sm" />}>Desfazer entrega</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Desfazer a entrega do pedido {entrega.numero}</DialogTitle>
+        </DialogHeader>
+        <form action={formAction} className="space-y-4">
+          <input type="hidden" name="pedidoId" value={entrega.pedidoId} />
+          <input type="hidden" name="status" value="EM_ROTA" />
+          <p className="text-sm text-muted-foreground">
+            A entrega volta para Em rota e a data
+            {entrega.dataRealizada ? ` (${formatarData(entrega.dataRealizada)})` : ""} e quem recebeu
+            {entrega.recebidoPor ? ` (${entrega.recebidoPor})` : ""} são apagados. Use quando marcou o pedido errado;
+            para corrigir só a data ou o nome, use “Editar”. Fica registrado na auditoria.
+          </p>
+          {state.erro ? <p className="text-sm text-destructive">{state.erro}</p> : null}
+          <Button type="submit" variant="destructive" className="w-full" disabled={pendente}>
+            {pendente ? "Salvando..." : "Desfazer entrega"}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function EditarEntrega({ entrega }: { entrega: EntregaParaAcoes }) {
   const { aberto, setAberto, state, formAction, pendente } = useAcaoDoDialogo(atualizarEntregaAction, ESTADO_INICIAL);
   const id = `editar-entrega-${entrega.pedidoId}`;
@@ -100,6 +133,24 @@ function EditarEntrega({ entrega }: { entrega: EntregaParaAcoes }) {
         </DialogHeader>
         <form action={formAction} className="space-y-4">
           <input type="hidden" name="pedidoId" value={entrega.pedidoId} />
+          {entrega.status === "ENTREGUE" ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor={`${id}-realizada`}>Entregue em</Label>
+                <Input
+                  id={`${id}-realizada`}
+                  name="dataRealizada"
+                  type="date"
+                  defaultValue={entrega.dataRealizada ?? ""}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={`${id}-recebido`}>Recebido por</Label>
+                <Input id={`${id}-recebido`} name="recebidoPor" defaultValue={entrega.recebidoPor ?? ""} />
+              </div>
+            </div>
+          ) : null}
           <div className="space-y-2">
             <Label htmlFor={`${id}-data`}>Data prevista</Label>
             <Input id={`${id}-data`} name="dataPrevista" type="date" defaultValue={entrega.dataPrevista} required />
