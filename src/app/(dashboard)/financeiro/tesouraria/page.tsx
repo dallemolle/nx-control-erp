@@ -73,9 +73,10 @@ export default async function TesourariaPage({
 
   // O lado de uma transferência que ficou em outra página só completa o par; não entra na tabela.
   const editaveis = podeEscrever ? montarEditaveis([...lancamentos, ...outrosLados]) : {};
-  const porId = (lista: readonly { id: string; nome: string }[], id: string | null) => {
+  // Fora das listas ativas só fica o inativo que a linha já usa: vai marcado.
+  const porId = (lista: readonly { id: string; nome: string }[], id: string | null, inativo = "inativo") => {
     const item = id ? lista.find((i) => i.id === id) : undefined;
-    return item ? opcao(item) : null;
+    return item ? { id: item.id, nome: `${item.nome} (${inativo})` } : null;
   };
 
   /** Só o que a linha acrescenta às listas da página: os cadastros inativos que ela já usa. */
@@ -90,10 +91,10 @@ export default async function TesourariaPage({
         : [{ id: lancamento.contaBancariaId, nome: nomeDaContaBancaria(lancamento.contaBancaria) }];
     const extras: ExtrasDoLancamento = {
       contasBancarias: foraDaBase(opcoesDaPagina.contasBancarias, contas),
-      categorias: foraDaBase(opcoesDaPagina.categorias, [porId(categorias, lancamento.categoriaFinanceiraId)]),
+      categorias: foraDaBase(opcoesDaPagina.categorias, [porId(categorias, lancamento.categoriaFinanceiraId, "inativa")]),
       centrosCusto: foraDaBase(opcoesDaPagina.centrosCusto, [porId(centrosCusto, lancamento.centroCustoId)]),
       centrosLucro: foraDaBase(opcoesDaPagina.centrosLucro, [porId(centrosLucro, lancamento.centroLucroId)]),
-      safras: foraDaBase(opcoesDaPagina.safras, [porId(safras, lancamento.safraId)]),
+      safras: foraDaBase(opcoesDaPagina.safras, [porId(safras, lancamento.safraId, "inativa")]),
       projetos: foraDaBase(opcoesDaPagina.projetos, [porId(projetos, lancamento.projetoId)]),
     };
     // Manda só as listas com algo: a linha comum não leva nada além do próprio lançamento.

@@ -262,10 +262,10 @@ export const ajudaSafras: DefinicaoAjuda = {
           alvo: "lista.inativar",
           instrucao: "Para tirar a safra de uso, clique em “Inativar”",
           explicacao:
-            "Não pede confirmação. A safra inativa sai da Recepção, da Tesouraria, da Conciliação e da Comparação " +
-            "entre safras, mesmo tendo valores. No Fluxo por dimensão, continua aparecendo enquanto tiver valores no " +
-            "período. O botão vira “Reativar”.",
-          dica: "Hoje o Contas a pagar e o Contas a receber ainda oferecem a safra inativa: escolha outra.",
+            "Não pede confirmação. A safra inativa sai da Recepção, dos títulos e lançamentos novos (Contas a pagar, " +
+            "Contas a receber, Tesouraria e Conciliação) e da Comparação entre safras, mesmo tendo valores. No Fluxo " +
+            "por dimensão, continua aparecendo enquanto tiver valores no período. O botão vira “Reativar”.",
+          dica: "Ao editar um título ou lançamento antigo, a safra aparece como “(inativa)” e pode ficar.",
         },
       ],
       eDepois: {

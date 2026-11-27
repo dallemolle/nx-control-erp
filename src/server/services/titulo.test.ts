@@ -874,3 +874,62 @@ describe("título e contraparte inativa", () => {
     await expect(atualizarTitulo(fixture.sessao, titulo.id, dados(outro.id))).rejects.toThrow("Fornecedor inativo");
   });
 });
+
+describe("título com categoria e dimensões inativas", () => {
+  let fixture: FixtureFinanceiro;
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("TITDIMINATIVA");
+  });
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fixture);
+  });
+
+  const dados = (categoriaFinanceiraId: string, centroCustoId = "") => ({
+    contraparteId: fixture.fornecedorId,
+    documento: "NF-DIM",
+    dataEmissao: new Date("2026-11-20"),
+    dataCompetencia: new Date("2026-11-20"),
+    categoriaFinanceiraId,
+    centroCustoId,
+    centroLucroId: "",
+    safraId: "",
+    projetoId: "",
+    contaBancariaId: "",
+    formaPagamento: "",
+    parcelas: [{ numero: 1, dataVencimento: new Date("2026-12-20"), valorOriginal: 100 }],
+  });
+  const novaCategoria = (nome: string, ativo = true) =>
+    prisma.categoriaFinanceira.create({ data: { filialId: fixture.filialId, nome, tipo: "DESPESA", ativo } });
+  let seq = 0;
+  const novoCentro = (ativo = true) =>
+    prisma.centroCusto.create({
+      data: { filialId: fixture.filialId, nome: "Centro", codigo: `CC-${Date.now()}-${seq++}`, ativo },
+    });
+
+  test("título novo recusa categoria e centro de custo inativos", async () => {
+    const categoria = await novaCategoria("Venda de bens usados", false);
+    await expect(criarTitulo(fixture.sessao, "PAGAR", dados(categoria.id))).rejects.toThrow(
+      "Categoria financeira inativa: escolha outra ou reative o cadastro",
+    );
+    const centro = await novoCentro(false);
+    await expect(criarTitulo(fixture.sessao, "PAGAR", dados(fixture.categoriaFinanceiraId, centro.id))).rejects.toThrow(
+      "Centro de custo inativo",
+    );
+  });
+
+  test("na edição, mantém a categoria e o centro já escolhidos mesmo inativos, mas não troca para outro inativo", async () => {
+    const categoria = await novaCategoria("Manutenção do trator");
+    const centro = await novoCentro();
+    const titulo = await criarTitulo(fixture.sessao, "PAGAR", dados(categoria.id, centro.id));
+    await prisma.categoriaFinanceira.update({ where: { id: categoria.id }, data: { ativo: false } });
+    await prisma.centroCusto.update({ where: { id: centro.id }, data: { ativo: false } });
+
+    const editado = await atualizarTitulo(fixture.sessao, titulo.id, { ...dados(categoria.id, centro.id), documento: "NF-DIM-2" });
+    expect(editado.documento).toBe("NF-DIM-2");
+
+    const outroCentro = await novoCentro(false);
+    await expect(
+      atualizarTitulo(fixture.sessao, titulo.id, dados(categoria.id, outroCentro.id)),
+    ).rejects.toThrow("Centro de custo inativo");
+  });
+});

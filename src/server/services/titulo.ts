@@ -11,6 +11,7 @@ import {
 } from "@/server/services/classificacaoFiscal";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { garantirSemBaixaPendente } from "./baixa";
+import { validarReferenciasDoLancamento, type ReferenciasDoLancamento } from "./referenciasDoLancamento";
 import {
   argumentosDeCursor,
   CursorInvalidoError,
@@ -154,34 +155,32 @@ export async function validarReferenciasDoTitulo(
   tipo: TipoTitulo,
   dados: TituloHeaderFormValues,
   db: ClientePrisma = prisma,
-  /** Na edição: a contraparte e a conta que o título já tem (podem continuar mesmo inativas). */
-  atual: { contraparteId: string | null; contaBancariaId: string | null } = { contraparteId: null, contaBancariaId: null },
+  /** Na edição: a contraparte, a conta, a categoria e as dimensões que o título já tem (podem continuar mesmo inativas). */
+  atual: { contraparteId: string | null; contaBancariaId: string | null } & Partial<ReferenciasDoLancamento> = {
+    contraparteId: null,
+    contaBancariaId: null,
+  },
 ): Promise<{ classificacaoFiscalPadrao: ClassificacaoFiscal | null }> {
   const campos = camposNormalizados(tipo, dados);
   const filialId = sessao.filialId;
 
-  const referenciasDaFilial: [string, string | null, () => Promise<unknown>][] = [
-    ["Categoria financeira", campos.categoriaFinanceiraId, () =>
-      db.categoriaFinanceira.findFirst({ where: { id: campos.categoriaFinanceiraId, filialId } }),
-    ],
-    ["Centro de custo", campos.centroCustoId, () =>
-      db.centroCusto.findFirst({ where: { id: campos.centroCustoId ?? "", filialId } }),
-    ],
-    ["Centro de lucro", campos.centroLucroId, () =>
-      db.centroLucro.findFirst({ where: { id: campos.centroLucroId ?? "", filialId } }),
-    ],
-    ["Safra", campos.safraId, () => db.safra.findFirst({ where: { id: campos.safraId ?? "", filialId } })],
-    ["Projeto", campos.projetoId, () => db.projeto.findFirst({ where: { id: campos.projetoId ?? "", filialId } })],
-    ["Conta bancária", campos.contaBancariaId, () =>
-      db.contaBancaria.findFirst({ where: { id: campos.contaBancariaId ?? "", filialId } }),
-    ],
-  ];
-
-  for (const [rotulo, valor, buscar] of referenciasDaFilial) {
-    if (valor === null) continue;
-    if (!(await buscar())) {
-      throw new Error(`${rotulo} não pertence à filial ativa`);
-    }
+  // Categoria e dimensões: da filial e ativas (na edição, as que o título já tem podem ficar).
+  await validarReferenciasDoLancamento(
+    filialId,
+    {
+      categoriaFinanceiraId: campos.categoriaFinanceiraId,
+      centroCustoId: campos.centroCustoId,
+      centroLucroId: campos.centroLucroId,
+      safraId: campos.safraId,
+      projetoId: campos.projetoId,
+    },
+    { db, atual },
+  );
+  if (
+    campos.contaBancariaId &&
+    !(await db.contaBancaria.findFirst({ where: { id: campos.contaBancariaId, filialId } }))
+  ) {
+    throw new Error("Conta bancária não pertence à filial ativa");
   }
   // Conta inativa não recebe título novo (o que cair nela ficaria fora das telas de saldo); na edição, a já
   // escolhida pode ficar.
@@ -452,6 +451,11 @@ export async function atualizarTitulo(sessao: SessaoAtiva, id: string, dados: Ti
   await validarReferenciasDoTitulo(sessao, anterior.tipo, dados, prisma, {
     contraparteId: anterior.fornecedorId ?? anterior.clienteId,
     contaBancariaId: anterior.contaBancariaId,
+    categoriaFinanceiraId: anterior.categoriaFinanceiraId,
+    centroCustoId: anterior.centroCustoId,
+    centroLucroId: anterior.centroLucroId,
+    safraId: anterior.safraId,
+    projetoId: anterior.projetoId,
   });
 
   const campos = camposNormalizados(anterior.tipo, dados);

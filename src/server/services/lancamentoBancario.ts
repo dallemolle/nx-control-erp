@@ -366,7 +366,8 @@ export async function editarLancamentoManual(sessao: SessaoAtiva, id: string, da
     safraId: normalizarOpcional(dados.safraId),
     projetoId: normalizarOpcional(dados.projetoId),
   };
-  await validarReferenciasDoLancamento(sessao.filialId, referencias);
+  // Na edição, a categoria e as dimensões que o lançamento já tem podem ficar mesmo inativas.
+  await validarReferenciasDoLancamento(sessao.filialId, referencias, { atual });
 
   const classificacaoFiscal = dados.classificacaoFiscal ?? "FISCAL";
   const tipoComprovante = normalizarOpcional(dados.tipoComprovante) as TipoComprovante | null;

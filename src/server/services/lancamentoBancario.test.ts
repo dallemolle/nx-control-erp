@@ -875,3 +875,36 @@ describe("listarLancamentosDaPagina", () => {
     expect(gerencial.outrosLados).toEqual([]);
   });
 });
+
+describe("lançamento com categoria inativa", () => {
+  let fx: FixtureFinanceiro;
+  beforeAll(async () => {
+    fx = await criarFixtureFinanceiro("LBINATIVA", "TESOURARIA");
+  });
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fx);
+  });
+
+  const dados = (categoriaFinanceiraId: string) => ({
+    contaBancariaId: fx.contaBancariaId,
+    data: new Date("2026-11-20T00:00:00Z"),
+    tipo: "ENTRADA" as const,
+    valor: 35000,
+    descricao: "Venda do trator",
+    categoriaFinanceiraId,
+  });
+
+  test("lançamento novo recusa categoria inativa; na edição, a já escolhida pode ficar", async () => {
+    const categoria = await prisma.categoriaFinanceira.create({
+      data: { filialId: fx.filialId, nome: "Venda de bens usados", tipo: "RECEITA" },
+    });
+    const lanc = await criarLancamentoManual(fx.sessao, dados(categoria.id));
+    await prisma.categoriaFinanceira.update({ where: { id: categoria.id }, data: { ativo: false } });
+
+    await expect(criarLancamentoManual(fx.sessao, dados(categoria.id))).rejects.toThrow(
+      "Categoria financeira inativa: escolha outra ou reative o cadastro",
+    );
+    const editado = await editarLancamentoManual(fx.sessao, lanc.id, { ...dados(categoria.id), descricao: "Venda do trator velho" });
+    expect(editado.descricao).toBe("Venda do trator velho");
+  });
+});
