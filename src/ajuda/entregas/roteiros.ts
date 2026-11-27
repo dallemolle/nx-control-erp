@@ -142,10 +142,10 @@ export const ROTEIROS: readonly Roteiro[] = [
         cena: "entregue",
         alvo: "entregue.confirmar",
         instrucao: "Clique em “Confirmar entrega”",
-        explicacao: "Confira antes a data e o nome.",
+        explicacao: "A data não pode ser antes da data do pedido.",
         dica:
-          "Depois de entregue, o “Editar” não muda a data da entrega nem quem recebeu, e a entrega não volta para Em " +
-          "rota.",
+          "Errou? Na entrega entregue, o “Editar” corrige a data da entrega e quem recebeu. Se marcou o pedido " +
+          "errado, “Desfazer entrega” volta para Em rota e apaga a data e o nome. As duas ficam na auditoria.",
       },
       {
         cena: "lista",

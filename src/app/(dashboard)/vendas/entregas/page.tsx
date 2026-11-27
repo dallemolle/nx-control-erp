@@ -122,6 +122,7 @@ export default async function EntregasPage({ searchParams }: { searchParams: Pro
                       responsavel: e.responsavel,
                       observacao: e.observacao,
                       recebidoPor: e.recebidoPor,
+                      dataRealizada: e.dataRealizada ? paraDataIso(e.dataRealizada) : null,
                     }}
                   />
                 </TableCell>

@@ -446,30 +446,7 @@ Numeração continua a do Financeiro e da Controladoria. Itens 22 a 25 feitos em
 
 ## Vendas — lacunas achadas ao escrever a ajuda contextual
 
-Numeração continua a da Produção.
-
-### 27. Entrega marcada como entregue não pode ser corrigida
-
-- **Problema:** depois de "Entregue", o botão some e o "Editar" só muda data
-  prevista, endereço, responsável e observação. A data da entrega e o
-  "Recebido por" ficam como foram lançados, e a entrega não volta para Em
-  rota. O serviço (`atualizarEntrega`) já aceita esses campos e o status; falta
-  a tela.
-- **Exemplo:** a Rita marca o 131 como entregue em 23/11, recebido pelo Rui,
-  mas quem recebeu foi a Lúcia, no dia 24 — ou clicou no pedido errado. Não há
-  como corrigir pela tela; o atraso e o nome ficam errados para sempre.
-- **Onde:** `vendas/_shared/entrega-acoes.tsx` (`EditarEntrega` e a regra que
-  esconde `MarcarEntregue`).
-- **Impacto:** atraso de entrega (e o alerta do Painel) e o comprovante de
-  quem recebeu ficam errados; a única saída é cancelar o pedido inteiro e
-  lançar de novo, o que desfaz estoque e financeiro sem motivo.
-- **Caminhos:** no "Editar" de entrega entregue, mostrar "Entregue em" e
-  "Recebido por"; e um "Desfazer entrega" que volta para Em rota (com
-  auditoria, que já é registrada).
-- **Cuidados:** a data de entrega não pode ficar antes da data do pedido;
-  limitar o desfazer a quem pode cancelar pedido, se o usuário preferir.
-- **Ao corrigir:** dica do passo "Clique em “Confirmar entrega”" do roteiro
-  `confirmar-entrega` em `src/ajuda/entregas/roteiros.ts`.
+Numeração continua a da Produção. Itens 26 e 27 feitos em 2026-11-27; nada pendente.
 
 ## Cadastros — lacunas achadas ao escrever a ajuda contextual
 
@@ -913,6 +890,31 @@ Numeração continua a das seções anteriores.
 - **Correção:** `dashboard-executivo/formatos.ts` (eixo "38 mil", dica
   "R$ 38.000,00", faixas "1–30 dias" … "Mais de 90 dias", percentual
   "19,0%"); título do aging diz "vencidas, por dias de atraso".
+
+## Interface — formulários
+
+### 65. Erro do servidor apaga o que foi digitado no diálogo
+
+- **Problema:** os diálogos com formulário (`useActionState` e campos não
+  controlados, com `defaultValue`) voltam aos valores iniciais depois de
+  cada envio, inclusive quando o servidor devolve erro. A mensagem aparece,
+  mas os campos que a pessoa mudou se perdem.
+- **Exemplo:** no "Editar" de uma entrega entregue, a Rita troca "Recebido
+  por" de Rui para Lúcia e a data para 19/11, antes da data do pedido. O erro
+  "A entrega não pode ser antes da data do pedido" aparece, e o campo volta a
+  "Rui"; ela corrige a data, salva, e o nome errado fica gravado sem ela
+  perceber. (Visto ao fazer o item 27, em 2026-11-27.)
+- **Onde:** é o reset automático de formulário do React 19 depois de uma
+  action; vale para quase todos os diálogos (`use-acao-do-dialogo.ts` e os
+  que usam `useActionState` direto).
+- **Impacto:** retrabalho e dado errado gravado quando a pessoa não confere
+  tudo de novo depois do erro.
+- **Caminhos:** a action devolver os valores enviados no estado de erro e o
+  formulário usar esses valores como `defaultValue` (com `key` para
+  remontar); ou chamar o envio por `onSubmit` com `preventDefault` e
+  `startTransition`, que não dispara o reset.
+- **Cuidados:** muitos formulários; fazer pelo hook comum e migrar aos
+  poucos; selects da Base UI também têm valor inicial.
 
 ## Ajuda contextual (spec 2026-11-19-ajuda-contextual)
 

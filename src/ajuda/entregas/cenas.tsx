@@ -84,7 +84,11 @@ function Acoes({ e }: { e: EntregaExemplo }) {
         <BotaoSimulado alvo={do131 ? "lista.entregue" : undefined} variant="outline" size="sm">
           Entregue
         </BotaoSimulado>
-      ) : null}
+      ) : (
+        <BotaoSimulado variant="outline" size="sm">
+          Desfazer entrega
+        </BotaoSimulado>
+      )}
       <BotaoSimulado alvo={do131 ? "lista.editar" : undefined} variant="outline" size="sm">
         Editar
       </BotaoSimulado>
