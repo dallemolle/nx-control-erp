@@ -258,9 +258,11 @@ export const ROTEIROS: readonly Roteiro[] = [
         alvo: "lista.sitio",
         instrucao: "Confira o status",
         explicacao:
-          "Inativo. O fornecedor some da escolha da Recepção de fruto. As recepções e os títulos antigos continuam " +
-          "como estavam, e ele continua no Relatório de origem.",
-        dica: "Hoje o Contas a pagar ainda mostra o fornecedor inativo na escolha do fornecedor.",
+          "Inativo. O fornecedor some da escolha da Recepção de fruto e da conta a pagar nova. As recepções e os " +
+          "títulos antigos continuam como estavam, e ele continua nos filtros e no Relatório de origem.",
+        dica:
+          "Ao editar um título antigo dele, o fornecedor aparece como “(inativo)” e pode ficar; só não dá para " +
+          "lançar título novo nem trocar outro título para ele.",
         preenche: { "lista.sitio": "Inativo" },
       },
       {

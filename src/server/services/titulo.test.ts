@@ -814,3 +814,63 @@ describe("criarTituloInterno (núcleo usado por outros módulos)", () => {
     ).rejects.toThrow(PermissionError);
   });
 });
+
+describe("título e contraparte inativa", () => {
+  let fixture: FixtureFinanceiro;
+  beforeAll(async () => {
+    fixture = await criarFixtureFinanceiro("TITINATIVA");
+  });
+  afterAll(async () => {
+    await limparFixtureFinanceiro(fixture);
+  });
+
+  const dados = (contraparteId: string) => ({
+    contraparteId,
+    documento: "NF-INATIVA",
+    dataEmissao: new Date("2026-11-20"),
+    dataCompetencia: new Date("2026-11-20"),
+    categoriaFinanceiraId: fixture.categoriaFinanceiraId,
+    centroCustoId: "",
+    centroLucroId: "",
+    safraId: "",
+    projetoId: "",
+    contaBancariaId: "",
+    formaPagamento: "",
+    parcelas: [{ numero: 1, dataVencimento: new Date("2026-12-20"), valorOriginal: 100 }],
+  });
+  let seq = 0;
+  const doc = () => `INATIVA-${Date.now()}-${seq++}`;
+  const inativar = (id: string, tipo: "PAGAR" | "RECEBER") =>
+    tipo === "PAGAR"
+      ? prisma.fornecedor.update({ where: { id }, data: { ativo: false } })
+      : prisma.cliente.update({ where: { id }, data: { ativo: false } });
+
+  test("título novo recusa fornecedor e cliente inativos", async () => {
+    const fornecedor = await prisma.fornecedor.create({
+      data: { empresaId: fixture.sessao.empresaId, nome: "Fornecedor fechado", cnpjCpf: doc(), ativo: false },
+    });
+    const cliente = await prisma.cliente.create({
+      data: { empresaId: fixture.sessao.empresaId, nome: "Lanchonete Tucumã", cnpjCpf: doc(), ativo: false },
+    });
+    await expect(criarTitulo(fixture.sessao, "PAGAR", dados(fornecedor.id))).rejects.toThrow(
+      "Fornecedor inativo: reative o cadastro para lançar título para ele",
+    );
+    await expect(criarTitulo(fixture.sessao, "RECEBER", dados(cliente.id))).rejects.toThrow("Cliente inativo");
+  });
+
+  test("na edição, mantém a contraparte já escolhida mesmo inativa, mas não troca para outra inativa", async () => {
+    const fornecedor = await prisma.fornecedor.create({
+      data: { empresaId: fixture.sessao.empresaId, nome: "Fornecedor que vai fechar", cnpjCpf: doc() },
+    });
+    const titulo = await criarTitulo(fixture.sessao, "PAGAR", dados(fornecedor.id));
+    await inativar(fornecedor.id, "PAGAR");
+
+    const editado = await atualizarTitulo(fixture.sessao, titulo.id, { ...dados(fornecedor.id), documento: "NF-NOVA" });
+    expect(editado.documento).toBe("NF-NOVA");
+
+    const outro = await prisma.fornecedor.create({
+      data: { empresaId: fixture.sessao.empresaId, nome: "Outro fechado", cnpjCpf: doc(), ativo: false },
+    });
+    await expect(atualizarTitulo(fixture.sessao, titulo.id, dados(outro.id))).rejects.toThrow("Fornecedor inativo");
+  });
+});
