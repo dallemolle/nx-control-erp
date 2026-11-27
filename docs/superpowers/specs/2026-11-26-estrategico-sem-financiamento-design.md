@@ -82,7 +82,8 @@ de saídas sem categoria.
 
 ### Cálculo — `src/server/services/fluxoDeCaixaEstrategico.ts`
 
-- Função pura `somarAnoBase(lancamentos)` que recebe
+- Função pura `somarAnoBase(lancamentos)` (em `src/lib/financeiro/anoBaseEstrategico.ts`, junto com
+  `textoForaDaBase`, que monta o aviso; a ajuda usa as mesmas funções no navegador) que recebe
   `{ tipo, valor, categoria: { tipo, naoOperacional } | null }[]` e devolve
   `{ receitaBase, custoBase, foraDaBase }`, com
   `foraDaBase = { naoOperacional: { entradas, saidas }, semCategoria: { entradas, saidas } }`.
