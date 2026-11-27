@@ -11,7 +11,7 @@ import { requirePermission } from "@/server/auth/permissions";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import { arredondar } from "@/lib/producao/arredondar";
 import { destinoDoLote, type DestinoLote } from "@/lib/producao/destinoLote";
-import { resumirOP, type ResumoOP } from "@/lib/producao/op";
+import { limitesDaOP, resumirOP, type ResumoOP } from "@/lib/producao/op";
 import { hojeDeCalendario } from "@/lib/producao/periodo";
 import { statusDoLote, type StatusLote } from "@/lib/producao/statusLote";
 import { ROTULOS_ORIGEM_RECEPCAO } from "@/lib/schemas/enums";
@@ -162,6 +162,9 @@ const SELECT_OP = {
   responsavel: true,
   branqueamentoTemperaturaC: true,
   branqueamentoTempoS: true,
+  toleranciaBalancoMassa: true,
+  branqueamentoTemperaturaMinC: true,
+  branqueamentoTempoMinS: true,
   aguaLitros: true,
   carocoResiduoKg: true,
   perdaKg: true,
@@ -205,7 +208,8 @@ function paraOpRastreio(op: OpCarregada, configuracao: ConfiguracaoProducaoValor
     producoes: op.producoes.filter((p) => p.removidoEm === null),
     insumos: op.insumos,
   });
-  const resumo = resumirOP(dadosDoResumo(op, linhas), configuracao);
+  // Encerrada: os limites gravados nela (item 52).
+  const resumo = resumirOP(dadosDoResumo(op, linhas), limitesDaOP(op, configuracao));
   return {
     numero: op.numero,
     data: op.data,

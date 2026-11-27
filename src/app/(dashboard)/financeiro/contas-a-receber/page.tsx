@@ -7,6 +7,7 @@ import { listarCentrosCusto } from "@/server/services/centroCusto";
 import { listarCentrosLucro } from "@/server/services/centroLucro";
 import { listarSafras } from "@/server/services/safra";
 import { listarProjetos } from "@/server/services/projeto";
+import { encerradosPorUltimo } from "@/lib/encerradosPorUltimo";
 import { listarContasBancarias } from "@/server/services/contaBancaria";
 import { TituloDialogForm } from "../_titulos/titulo-dialog-form";
 import { ContasClientePanel } from "../_titulos/contas-client-panel";
@@ -66,8 +67,8 @@ export default async function ContasAReceberPage({ searchParams }: { searchParam
     listarCategoriasFinanceiras(sessao.filialId),
     listarCentrosCusto(sessao.filialId),
     listarCentrosLucro(sessao.filialId),
-    listarSafras(sessao.filialId),
-    listarProjetos(sessao.filialId),
+    listarSafras(sessao.filialId).then((lista) => encerradosPorUltimo(lista, "encerrada")),
+    listarProjetos(sessao.filialId).then((lista) => encerradosPorUltimo(lista, "encerrado")),
     listarContasBancarias(sessao.filialId),
     contarRejeicoesEmAberto(sessao.filialId, "RECEBER"),
   ]);

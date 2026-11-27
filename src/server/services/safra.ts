@@ -3,6 +3,10 @@ import { requirePermission, requireAlteracaoFilial } from "@/server/auth/permiss
 import { registrarAuditoria } from "@/server/audit/registrar";
 import type { SessaoAtiva } from "@/server/auth/sessao";
 import type { SafraFormValues } from "@/lib/schemas/safra";
+import { comMensagemDeDuplicidade } from "./duplicidade";
+
+// Duas "2025/26" na mesma filial dividiriam os valores sem ninguém perceber.
+const MSG_NOME_DUPLICADO = "Já existe uma safra com este nome nesta filial";
 
 export async function listarSafras(filialId: string) {
   return prisma.safra.findMany({ where: { filialId }, orderBy: { nome: "asc" } });
@@ -12,9 +16,10 @@ export async function criarSafra(sessao: SessaoAtiva, dados: SafraFormValues) {
   requirePermission(sessao.perfil, "cadastro:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
 
-  const safra = await prisma.safra.create({
-    data: { ...dados, filialId: sessao.filialId },
-  });
+  const safra = await comMensagemDeDuplicidade(
+    () => prisma.safra.create({ data: { ...dados, filialId: sessao.filialId } }),
+    MSG_NOME_DUPLICADO,
+  );
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,
@@ -37,7 +42,10 @@ export async function atualizarSafra(sessao: SessaoAtiva, id: string, dados: Saf
   const anterior = await prisma.safra.findUniqueOrThrow({
     where: { id, filialId: sessao.filialId },
   });
-  const safra = await prisma.safra.update({ where: { id }, data: dados });
+  const safra = await comMensagemDeDuplicidade(
+    () => prisma.safra.update({ where: { id }, data: dados }),
+    MSG_NOME_DUPLICADO,
+  );
 
   await registrarAuditoria({
     empresaId: sessao.empresaId,

@@ -1,5 +1,14 @@
 import { describe, expect, test } from "vitest";
-import { balancoMassa, custoOP, prefixoDaOP, ratearCustoOP, rendimento, resumirOP, statusBranqueamento } from "./op";
+import {
+  balancoMassa,
+  custoOP,
+  limitesDaOP,
+  prefixoDaOP,
+  ratearCustoOP,
+  rendimento,
+  resumirOP,
+  statusBranqueamento,
+} from "./op";
 import { proximoCodigoDeLote } from "./lote";
 
 const MIN = { temperaturaMinC: 80, tempoMinS: 10 };
@@ -147,4 +156,23 @@ test("número da OP: OP-AAMMDD-NN pela sequência do dia", () => {
   const prefixo = prefixoDaOP(new Date("2026-11-10"));
   expect(prefixo).toBe("OP-261110");
   expect(proximoCodigoDeLote(prefixo, ["OP-261110-01", "OP-261109-07"])).toBe("OP-261110-02");
+});
+
+describe("limitesDaOP (item 52)", () => {
+  const atual = { toleranciaBalancoMassa: 0.1, branqueamentoTemperaturaMinC: 90, branqueamentoTempoMinS: 20 };
+
+  test("OP com limites gravados (encerrada) usa os dela", () => {
+    expect(
+      limitesDaOP(
+        { toleranciaBalancoMassa: 0.03, branqueamentoTemperaturaMinC: 80, branqueamentoTempoMinS: 10 },
+        atual,
+      ),
+    ).toEqual({ toleranciaBalancoMassa: 0.03, branqueamentoTemperaturaMinC: 80, branqueamentoTempoMinS: 10 });
+  });
+
+  test("sem limites gravados (aberta) usa a configuração atual", () => {
+    expect(
+      limitesDaOP({ toleranciaBalancoMassa: null, branqueamentoTemperaturaMinC: null, branqueamentoTempoMinS: null }, atual),
+    ).toEqual(atual);
+  });
 });

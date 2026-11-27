@@ -1433,6 +1433,11 @@ model OrdemProducao {
   custoInsumosTotal         Decimal?            @db.Decimal(18, 2)
   custoKgPolpa              Decimal?            @db.Decimal(18, 4)
   encerradaEm               DateTime?
+  /// Limites da configuração no encerramento (item 52): o "Verificar" da OP encerrada usa estes, não os atuais.
+  /// Limpos ao reabrir.
+  toleranciaBalancoMassa       Decimal?        @db.Decimal(5, 4)
+  branqueamentoTemperaturaMinC Decimal?        @db.Decimal(5, 1)
+  branqueamentoTempoMinS       Int?
   /// A última reabertura.
   motivoReabertura          String?
   motivoCancelamento        String?

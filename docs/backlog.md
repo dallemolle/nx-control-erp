@@ -489,29 +489,6 @@ Numeração continua a de Vendas.
   com este código" (teste em
   `src/server/services/duplicidadeCadastros.test.ts`). Histórico.
 
-### 38. Safra e projeto Encerrados não bloqueiam nada, e a safra pode repetir o nome
-
-- **Problema:** o status (Planejado, Em andamento, Encerrado) só é exibido:
-  uma safra ou projeto Encerrado continua aceitando títulos, lançamentos e,
-  no caso da safra, recepções. E a safra não tem nome único na filial: dá
-  para cadastrar duas "2025/26", que aparecem iguais em todas as listas.
-- **Exemplo:** a 2024/25 está Encerrada, mas uma recepção de hoje pode ser
-  marcada nela por engano; duas "2026/27" cadastradas por duas pessoas
-  dividem os valores sem ninguém perceber.
-- **Onde:** `safraSchema`/`projetoSchema` e os serviços de título,
-  lançamento e recepção (nenhum lê `status`); `model Safra` em
-  `prisma/schema.prisma` (sem `@@unique([filialId, nome])`, o projeto tem
-  por código).
-- **Impacto:** o status não protege o fechamento da safra; nome repetido
-  embaralha a Comparação entre safras e o Fluxo por dimensão.
-- **Caminhos:** decidir se Encerrado deve bloquear lançamentos novos (ou só
-  avisar, já que uma venda pode chegar depois da colheita); criar o índice
-  único de nome da safra por filial (migração, conferindo duplicadas
-  existentes) e usar `comMensagemDeDuplicidade`.
-- **Ao corrigir:** passo "Informe o nome" de `cadastrar-safra`, passo
-  "Confira o status" de `encerrar-safra` e passo "Escolha o status" de
-  `cadastrar-projeto` (`src/ajuda/safras`, `projetos`).
-
 ## Administração — lacunas achadas ao escrever a ajuda contextual
 
 Mesma numeração das seções acima.
@@ -602,27 +579,6 @@ Mesma numeração das seções acima.
   depósito da operadora e nem mostra a escolha de conta no pedido.
 - **Correção:** rótulo "Conta de recebimento (Pix e transferência)" em
   `configuracao-producao/configuracao-form.tsx`.
-
-### 52. Mudar os limites da produção muda o passado
-
-- **Problema:** o "Verificar" do balanço de massa e do branqueamento e o
-  "vencendo" do estoque não são gravados: são recalculados com a
-  configuração atual. Subir a tolerância tira o "Verificar" de OPs já
-  encerradas, inclusive no Relatório de processamento e na
-  Rastreabilidade.
-- **Exemplo:** a OP-261119-01 (acerola, diferença de 10%) marca
-  "Verificar" com 3%; com a tolerância em 10%, passa a OK, como se tivesse
-  sido conferida.
-- **Onde:** `resumirOP`/`balancoMassa`/`statusBranqueamento` em
-  `src/lib/producao/op.ts`, chamados com `obterConfiguracaoProducao` em
-  `ordemProducao.ts`, `rastreabilidade.ts` e no detalhe da OP.
-- **Impacto:** o registro de controle de qualidade de uma OP pode mudar
-  depois do fato; a única pista é a Auditoria da configuração.
-- **Caminhos:** gravar na OP, ao encerrar, a tolerância e os mínimos usados
-  (ou o próprio status) e calcular as OPs encerradas com eles.
-- **Ao corrigir:** passo "Mudou algum número?" do roteiro
-  `alertas-controles` (`src/ajuda/configuracao-producao/index.tsx`) e a
-  seção 8.5 do manual.
 
 ### 53. Filtro de datas da Auditoria contava o dia em UTC
 

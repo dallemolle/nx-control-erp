@@ -104,6 +104,30 @@ export type ConfiguracaoResumo = {
   branqueamentoTempoMinS: number;
 };
 
+type Numero = number | { toString(): string };
+
+/**
+ * Limites com que a OP é avaliada (item 52): os gravados ao encerrar, se houver; senão os da configuração atual.
+ * Sem isso, subir a tolerância depois tiraria o "Verificar" de uma OP já encerrada, como se tivesse sido conferida.
+ */
+export function limitesDaOP(
+  op: {
+    toleranciaBalancoMassa: Numero | null;
+    branqueamentoTemperaturaMinC: Numero | null;
+    branqueamentoTempoMinS: number | null;
+  },
+  atual: ConfiguracaoResumo,
+): ConfiguracaoResumo {
+  if (op.toleranciaBalancoMassa === null || op.branqueamentoTemperaturaMinC === null || op.branqueamentoTempoMinS === null) {
+    return atual;
+  }
+  return {
+    toleranciaBalancoMassa: Number(op.toleranciaBalancoMassa),
+    branqueamentoTemperaturaMinC: Number(op.branqueamentoTemperaturaMinC),
+    branqueamentoTempoMinS: op.branqueamentoTempoMinS,
+  };
+}
+
 export type DadosResumoOP = {
   exigeBranqueamento: boolean;
   branqueamentoTemperaturaC: number | null;

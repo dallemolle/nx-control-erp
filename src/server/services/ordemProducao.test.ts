@@ -443,6 +443,36 @@ describe("ordem de produção", () => {
       }
     });
 
+    test("52. OP encerrada guarda os limites: mudar a configuração não muda o Verificar dela; reabrir limpa", async () => {
+      const { op } = await opCompleta(); // branqueamento 85 °C / 12 s, OK com o mínimo padrão de 80 °C
+      await encerrarOP(adm(), op.id, { confirmarVerificar: false });
+      const encerrada = await prisma.ordemProducao.findUniqueOrThrow({ where: { id: op.id } });
+      expect(Number(encerrada.branqueamentoTemperaturaMinC)).toBe(80);
+      expect(encerrada.branqueamentoTempoMinS).toBe(10);
+      expect(Number(encerrada.toleranciaBalancoMassa)).toBe(0.03);
+
+      const minimo = (branqueamentoTemperaturaMinC: number) =>
+        prisma.configuracaoProducao.upsert({
+          where: { filialId: fx.filialAId },
+          create: { filialId: fx.filialAId, branqueamentoTemperaturaMinC },
+          update: { branqueamentoTemperaturaMinC },
+        });
+      await minimo(90);
+      try {
+        expect((await obterOP(fx.filialAId, op.numero))!.resumo.branqueamento).toBe("OK");
+        const listadas = await listarOPs(fx.filialAId, { inicio: d("2026-11-13"), fim: d("2026-11-13") });
+        expect(listadas.find((o) => o.id === op.id)!.resumo.branqueamento).toBe("OK");
+
+        await reabrirOP(adm(), op.id, "Conferir o branqueamento");
+        const reaberta = await prisma.ordemProducao.findUniqueOrThrow({ where: { id: op.id } });
+        expect(reaberta.branqueamentoTemperaturaMinC).toBeNull();
+        expect(reaberta.toleranciaBalancoMassa).toBeNull();
+        expect((await obterOP(fx.filialAId, op.numero))!.resumo.branqueamento).toBe("VERIFICAR");
+      } finally {
+        await minimo(80);
+      }
+    });
+
     test("encerrar exige consumo e produção", async () => {
       const vazia = await nova();
       await expect(encerrarOP(adm(), vazia.id, { confirmarVerificar: true })).rejects.toThrow(

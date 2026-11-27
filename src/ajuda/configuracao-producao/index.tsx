@@ -489,9 +489,11 @@ export const ajudaConfiguracaoProducao: DefinicaoAjuda = {
           alvo: "salvar",
           instrucao: "Mudou algum número? Clique em “Salvar”",
           explicacao:
-            "Atenção: os avisos são recalculados com os números atuais, também para os lotes e as OPs antigos. Subir " +
-            "a tolerância para 10% tira o “Verificar” da OP de acerola, já encerrada.",
-          dica: "O valor anterior fica na Auditoria, se precisar saber com que número uma OP foi conferida.",
+            "Vale para as OPs abertas e as próximas. A OP encerrada guarda a tolerância e os mínimos do dia em que foi " +
+            "encerrada: subir a tolerância para 10% não tira o “Verificar” da OP de acerola, já encerrada.",
+          dica:
+            "Os avisos de vencimento do estoque usam sempre os dias de hoje. Reabrir uma OP faz ela voltar a usar os " +
+            "números atuais; ao encerrar de novo, guarda os novos.",
         },
       ],
       eDepois: {

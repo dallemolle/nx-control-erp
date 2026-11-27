@@ -63,6 +63,9 @@ export async function criarRecepcao(sessao: SessaoAtiva, dados: RecepcaoFormValu
   if (dados.safraId) {
     const safra = await prisma.safra.findFirst({ where: { id: dados.safraId, filialId: sessao.filialId } });
     if (!safra) throw new Error("Safra não pertence à filial ativa");
+    if (!safra.ativo) throw new Error("Safra inativa: escolha outra ou reative o cadastro");
+    // Fruto chegando numa safra encerrada é engano. Título e lançamento aceitam: nota e venda chegam depois.
+    if (safra.status === "ENCERRADO") throw new Error("Safra encerrada: escolha outra ou mude o status da safra");
   }
 
   let fatorUnidadeKg: number | null = null;
