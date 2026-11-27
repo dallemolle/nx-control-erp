@@ -22,7 +22,7 @@ import {
   validarParcelasVenda,
   type SituacaoPagamento,
 } from "@/lib/producao/venda";
-import { obterConfiguracaoProducao } from "./configuracaoProducao";
+import { categoriaAtiva, msgReferenciaInativaDaConfiguracao, obterConfiguracaoProducao } from "./configuracaoProducao";
 import {
   bloqueioDaProducao,
   exigirLiberacao,
@@ -74,6 +74,10 @@ export async function criarPedido(sessao: SessaoAtiva, dados: PedidoVendaFormVal
 
   const configuracao = await obterConfiguracaoProducao(sessao.filialId);
   if (!configuracao.categoriaVendaId) throw new Error(MSG_SEM_CATEGORIA_VENDA);
+  // Sem isto o título recusaria com "escolha outra", o que não se faz no pedido.
+  if (!(await categoriaAtiva(configuracao.categoriaVendaId))) {
+    throw new Error(msgReferenciaInativaDaConfiguracao("categoriaVendaId"));
+  }
 
   const naMaquininha = dados.formaPagamento === "CARTAO";
   const aPrazo = dados.formaPagamento === "A_PRAZO";
@@ -88,6 +92,10 @@ export async function criarPedido(sessao: SessaoAtiva, dados: PedidoVendaFormVal
       where: { id: contaId, filialId: sessao.filialId, ativo: true },
       select: { tipo: true },
     });
+    if (!conta && !dados.contaBancariaId) {
+      // Veio da configuração: a pessoa não escolheu conta no pedido.
+      throw new Error(msgReferenciaInativaDaConfiguracao(emDinheiro ? "contaCaixaPadraoId" : "contaRecebimentoPadraoId"));
+    }
     if (!conta) throw new Error("Conta não encontrada ou inativa");
     if (emDinheiro && conta.tipo !== "CAIXA") throw new Error("Venda em dinheiro entra numa conta Caixa");
     if (!emDinheiro && conta.tipo === "CAIXA") throw new Error("Pix e transferência não entram na conta Caixa");

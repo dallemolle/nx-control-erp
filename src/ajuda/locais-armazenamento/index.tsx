@@ -196,8 +196,8 @@ export const ajudaLocaisArmazenamento: DefinicaoAjuda = {
             "“Inativar” não pede confirmação. O local inativo não pode mais receber lotes e sai do quadro de ocupação " +
             "e do filtro de local do Estoque. O botão vira “Reativar”.",
           dica:
-            "Hoje o sistema deixa inativar um local que ainda tem lotes: eles ficam lá, fora do quadro de ocupação. " +
-            "Transfira os lotes para outro local antes.",
+            "Com lote com saldo dentro, o Inativar é recusado e a mensagem diz quantos lotes e quantos kg: transfira " +
+            "os lotes para outro local (Produção → Estoque) e inative depois.",
         },
       ],
       eDepois: {

@@ -9,7 +9,9 @@ import {
 } from "./producaoTestFixtures";
 import {
   CONFIGURACAO_PRODUCAO_PADRAO,
+  msgReferenciaInativaDaConfiguracao,
   obterConfiguracaoProducao,
+  referenciasInativasDaConfiguracao,
   salvarConfiguracaoProducao,
 } from "./configuracaoProducao";
 import { configuracaoProducaoSchema } from "@/lib/schemas/configuracaoProducao";
@@ -209,5 +211,75 @@ describe("configuração de produção - vendas (7c)", () => {
       contaCaixaPadraoId: "",
     });
     expect(parsed).toMatchObject({ categoriaVendaId: null, contaRecebimentoPadraoId: null, contaCaixaPadraoId: null });
+  });
+});
+
+describe("51. configuração com cadastro inativado", () => {
+  let fx: FixtureProducao;
+  let cad: CadastrosDeVenda;
+  beforeAll(async () => {
+    fx = await criarFixtureProducao("config51");
+    cad = await criarCadastrosDeVenda(fx);
+    await salvar({
+      categoriaVendaId: cad.categoriaVendaId,
+      contaRecebimentoPadraoId: cad.contaCorrenteId,
+      contaCaixaPadraoId: cad.contaCaixaId,
+    });
+    await prisma.categoriaFinanceira.update({ where: { id: cad.categoriaVendaId }, data: { ativo: false } });
+    await prisma.contaBancaria.update({ where: { id: cad.contaCorrenteId }, data: { ativo: false } });
+  });
+  afterAll(async () => {
+    await fx.limpar();
+  });
+
+  const salvar = (extra: Partial<typeof CONFIGURACAO_PRODUCAO_PADRAO>) =>
+    salvarConfiguracaoProducao(fx.sessao("ADMINISTRADOR"), { ...CONFIGURACAO_PRODUCAO_PADRAO, ...extra });
+
+  test("manter a escolhida inativa não trava o Salvar de outro campo", async () => {
+    await salvar({
+      registroAdepara: "REG-51",
+      categoriaVendaId: cad.categoriaVendaId,
+      contaRecebimentoPadraoId: cad.contaCorrenteId,
+      contaCaixaPadraoId: cad.contaCaixaId,
+    });
+    expect(await obterConfiguracaoProducao(fx.filialAId)).toMatchObject({ registroAdepara: "REG-51" });
+  });
+
+  test("escolher uma inativa nova é recusado", async () => {
+    const despesaInativa = await prisma.categoriaFinanceira.create({
+      data: { filialId: fx.filialAId, nome: "Insumos Agrícolas", tipo: "DESPESA", ativo: false },
+    });
+    await expect(salvar({ categoriaCompraFrutoId: despesaInativa.id })).rejects.toThrow(
+      "Categoria de compra de fruto inativa: escolha outra ou reative o cadastro",
+    );
+    await expect(salvar({ contaCaixaPadraoId: cad.contaCaixaId, contaRecebimentoPadraoId: null })).resolves.toBeUndefined();
+    await expect(salvar({ contaRecebimentoPadraoId: cad.contaCorrenteId })).rejects.toThrow(
+      "Conta de recebimento padrão inativa: escolha outra ou reative o cadastro",
+    );
+  });
+
+  test("lista as escolhidas inativas, com o nome e o efeito", async () => {
+    const valores = {
+      ...CONFIGURACAO_PRODUCAO_PADRAO,
+      categoriaVendaId: cad.categoriaVendaId,
+      contaRecebimentoPadraoId: cad.contaCorrenteId,
+      contaCaixaPadraoId: cad.contaCaixaId,
+    };
+    const inativas = await referenciasInativasDaConfiguracao(fx.filialAId, valores);
+    expect(inativas).toEqual([
+      expect.objectContaining({
+        campo: "categoriaVendaId",
+        aviso: "A categoria de venda “Venda de produtos” está inativa: o pedido de venda é recusado.",
+      }),
+      expect.objectContaining({
+        campo: "contaRecebimentoPadraoId",
+        aviso: expect.stringMatching(
+          /^A conta de recebimento “.*123-4” está inativa: o pedido à vista em Pix ou transferência não vem com a conta preenchida\.$/,
+        ),
+      }),
+    ]);
+    expect(msgReferenciaInativaDaConfiguracao("categoriaVendaId")).toBe(
+      "A categoria de venda da Configuração de produção está inativa: escolha outra lá ou reative o cadastro",
+    );
   });
 });

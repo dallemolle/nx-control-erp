@@ -259,8 +259,8 @@ export async function resumoProdutoLocal(filialId: string, referencia?: Date) {
       },
     }),
     prisma.localArmazenamento.findMany({
-      where: { filialId, ativo: true },
-      select: { id: true, nome: true, capacidadeKg: true },
+      where: { filialId },
+      select: { id: true, nome: true, capacidadeKg: true, ativo: true },
       orderBy: { nome: "asc" },
     }),
   ]);
@@ -294,17 +294,22 @@ export async function resumoProdutoLocal(filialId: string, referencia?: Date) {
 
   return {
     linhas,
-    locais: locais.map((local) => {
-      const capacidadeKg = local.capacidadeKg === null ? null : Number(local.capacidadeKg);
-      const saldoKg = arredondar(saldoPorLocal.get(local.id) ?? 0, 3);
-      return {
-        localId: local.id,
-        nome: local.nome,
-        capacidadeKg,
-        saldoKg,
-        ocupacao: capacidadeKg ? saldoKg / capacidadeKg : null,
-      };
-    }),
+    // O inativo só entra com saldo (inativado antes de o Inativar conferir os lotes, ou saldo numa data passada):
+    // sem ele, o saldo dos lotes de lá sumiria do quadro.
+    locais: locais
+      .filter((local) => local.ativo || saldoPorLocal.has(local.id))
+      .map((local) => {
+        const capacidadeKg = local.capacidadeKg === null ? null : Number(local.capacidadeKg);
+        const saldoKg = arredondar(saldoPorLocal.get(local.id) ?? 0, 3);
+        return {
+          localId: local.id,
+          nome: local.nome,
+          ativo: local.ativo,
+          capacidadeKg,
+          saldoKg,
+          ocupacao: capacidadeKg ? saldoKg / capacidadeKg : null,
+        };
+      }),
   };
 }
 

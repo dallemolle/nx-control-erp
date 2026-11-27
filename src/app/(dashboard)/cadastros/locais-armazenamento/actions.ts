@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireSessaoAtiva } from "@/server/auth/sessao";
 import { localArmazenamentoSchema } from "@/lib/schemas/localArmazenamento";
 import * as localService from "@/server/services/localArmazenamento";
+import type { EstadoAlternarAtivo } from "../../_shared/botao-alternar-ativo";
 
 export type FormState = { erro?: string; sucesso?: boolean };
 
@@ -46,11 +47,20 @@ export async function atualizarLocalAction(_prev: FormState, formData: FormData)
   return { sucesso: true };
 }
 
-export async function alternarAtivoLocalAction(formData: FormData): Promise<void> {
+export async function alternarAtivoLocalAction(
+  _anterior: EstadoAlternarAtivo,
+  formData: FormData,
+): Promise<EstadoAlternarAtivo> {
   const sessao = await requireSessaoAtiva();
   const id = String(formData.get("id") ?? "");
   const ativo = formData.get("ativo") === "true";
 
-  await localService.definirAtivoLocalArmazenamento(sessao, id, ativo);
+  try {
+    await localService.definirAtivoLocalArmazenamento(sessao, id, ativo);
+  } catch (erro) {
+    // Ex.: local com lotes com saldo; a mensagem vai para o lado do botão.
+    return { erro: mensagemErro(erro) };
+  }
   revalidatePath("/cadastros/locais-armazenamento");
+  return {};
 }

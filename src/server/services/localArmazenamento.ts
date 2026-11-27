@@ -11,6 +11,18 @@ export async function listarLocaisArmazenamento(filialId: string) {
   return prisma.localArmazenamento.findMany({ where: { filialId }, orderBy: { nome: "asc" } });
 }
 
+/**
+ * Locais do filtro do Estoque: os ativos e os inativos que ainda têm lote com saldo (inativados antes de o
+ * Inativar conferir os lotes). Transferência só para os ativos.
+ */
+export async function listarLocaisDoEstoque(filialId: string) {
+  return prisma.localArmazenamento.findMany({
+    where: { filialId, OR: [{ ativo: true }, { lotes: { some: { saldoKg: { gt: 0 } } } }] },
+    select: { id: true, nome: true, ativo: true },
+    orderBy: { nome: "asc" },
+  });
+}
+
 function autorizar(sessao: SessaoAtiva) {
   requirePermission(sessao.perfil, "cadastroProducao:escrever");
   requireAlteracaoFilial(sessao.podeAlterarFilial);
@@ -73,6 +85,20 @@ export async function atualizarLocalArmazenamento(
 export async function definirAtivoLocalArmazenamento(sessao: SessaoAtiva, id: string, ativo: boolean) {
   autorizar(sessao);
   await prisma.localArmazenamento.findUniqueOrThrow({ where: { id, filialId: sessao.filialId } });
+  // Inativo, o local sai do quadro de ocupação, do filtro do Estoque e das transferências: os lotes ficariam
+  // escondidos lá dentro.
+  if (!ativo) {
+    const comSaldo = await prisma.lote.aggregate({
+      where: { localId: id, saldoKg: { gt: 0 } },
+      _count: true,
+      _sum: { saldoKg: true },
+    });
+    if (comSaldo._count > 0) {
+      const kg = Number(comSaldo._sum.saldoKg ?? 0).toLocaleString("pt-BR");
+      const lotes = comSaldo._count === 1 ? "1 lote" : `${comSaldo._count} lotes`;
+      throw new Error(`O local tem ${lotes} com saldo (${kg} kg): transfira os lotes antes de inativar`);
+    }
+  }
   const local = await prisma.localArmazenamento.update({ where: { id }, data: { ativo } });
   await registrarAuditoria({
     empresaId: sessao.empresaId,

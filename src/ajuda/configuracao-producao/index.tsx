@@ -359,8 +359,8 @@ export const ajudaConfiguracaoProducao: DefinicaoAjuda = {
             "“Configuração salva.” aparece embaixo da tela. A alteração fica na Auditoria, com o valor anterior e o " +
             "novo.",
           dica:
-            "Inativou depois a categoria ou a conta escolhida? Volte aqui e escolha outra: a tela não avisa, e a " +
-            "conta inativa faz o Salvar ser recusado.",
+            "Inativou depois a categoria ou a conta escolhida? O topo desta tela avisa, o campo mostra “(inativa)” e a " +
+            "recepção e o pedido explicam a recusa. Escolha outra aqui ou reative o cadastro.",
           preenche: { mensagem: "sim" },
         },
       ],

@@ -264,6 +264,24 @@ describe("pedido de venda", () => {
     await expect(criarPedido(fx.sessao("VENDAS"), pedido(itens))).resolves.toMatchObject({ numero: expect.any(Number) });
   });
 
+  test("categoria e conta da configuração inativadas: a recusa aponta para a configuração", async () => {
+    await configurarVendas(fx, cad);
+    const lote = await novoLote();
+    const itens = [{ loteId: lote.id, quantidadeKg: 1, precoKg: 5 }];
+
+    await prisma.categoriaFinanceira.update({ where: { id: cad.categoriaVendaId }, data: { ativo: false } });
+    await expect(criarPedido(fx.sessao("VENDAS"), pedido(itens))).rejects.toThrow(
+      "A categoria de venda da Configuração de produção está inativa: escolha outra lá ou reative o cadastro",
+    );
+    await prisma.categoriaFinanceira.update({ where: { id: cad.categoriaVendaId }, data: { ativo: true } });
+
+    await prisma.contaBancaria.update({ where: { id: cad.contaCorrenteId }, data: { ativo: false } });
+    await expect(criarPedido(fx.sessao("VENDAS"), pedido(itens, { formaPagamento: "PIX" }))).rejects.toThrow(
+      "A conta de recebimento da Configuração de produção está inativa: escolha outra lá ou reative o cadastro",
+    );
+    await prisma.contaBancaria.update({ where: { id: cad.contaCorrenteId }, data: { ativo: true } });
+  });
+
   test("dinheiro em conta corrente e Pix na conta Caixa são recusados", async () => {
     const lote = await novoLote();
     const itens = [{ loteId: lote.id, quantidadeKg: 1, precoKg: 5 }];

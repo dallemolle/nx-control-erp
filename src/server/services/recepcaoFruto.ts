@@ -8,7 +8,7 @@ import type { DadosEditaveisRecepcao, RecepcaoFormValues } from "@/lib/schemas/r
 import { calcularRecepcao } from "@/lib/producao/recepcao";
 import { calcularValidade, prefixoDoLote, proximoCodigoDeLote } from "@/lib/producao/lote";
 import { documentoDoTituloDaRecepcao, romaneioNoTitulo, type RomaneioNoTitulo } from "@/lib/producao/romaneioNoTitulo";
-import { obterConfiguracaoProducao } from "./configuracaoProducao";
+import { categoriaAtiva, msgReferenciaInativaDaConfiguracao, obterConfiguracaoProducao } from "./configuracaoProducao";
 import { registrarMovimento, SEM_AJUSTE_ESTORNADO } from "./estoque";
 import { criarTituloInterno } from "./titulo";
 
@@ -86,6 +86,10 @@ export async function criarRecepcao(sessao: SessaoAtiva, dados: RecepcaoFormValu
   const configuracao = await obterConfiguracaoProducao(sessao.filialId);
   const geraTitulo = fornecedor !== null && calculo.valorTotal > 0;
   if (geraTitulo && !configuracao.categoriaCompraFrutoId) throw new Error(MSG_SEM_CATEGORIA_COMPRA);
+  // Sem isto o título recusaria com "escolha outra", o que não se faz na recepção.
+  if (geraTitulo && !(await categoriaAtiva(configuracao.categoriaCompraFrutoId!))) {
+    throw new Error(msgReferenciaInativaDaConfiguracao("categoriaCompraFrutoId"));
+  }
 
   // Sem classificação no formulário nem no fornecedor: com número de nota é
   // fiscal; sem, é compra gerencial com recibo (o padrão fiscal do sistema
