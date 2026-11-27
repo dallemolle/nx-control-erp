@@ -249,6 +249,8 @@ Use essas rotas pra conferir o nome/código/CNPJ exato antes de montar o corpo d
 
 `GET /fornecedores` e `GET /clientes` trazem também `classificacaoFiscalPadrao` (`FISCAL`, `GERENCIAL` ou `null`): é a classificação que um título novo daquele parceiro recebe quando o corpo não informa `classificacaoFiscal`.
 
+`GET /categorias-financeiras` traz também `naoOperacional` (`true` ou `false`): categorias de empréstimo, aporte e amortização marcadas assim ficam fora da receita e do custo do Fluxo de caixa estratégico.
+
 ---
 
 ## 8. Testando no Postman — passo a passo

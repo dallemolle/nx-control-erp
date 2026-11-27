@@ -28,7 +28,7 @@ export const INATIVADA = "Venda de bens usados";
 
 export const ALVOS = {
   lista: ["lista.nova", "lista.tabela", "lista.taxas", "lista.bensUsados", "lista.inativar"],
-  nova: ["form.nome", "form.tipo", "form.pai", "form.salvar"],
+  nova: ["form.nome", "form.tipo", "form.pai", "form.naoOperacional", "form.salvar"],
 } as const;
 
 /** As categorias no ponto do roteiro: `lista.taxas` = "sim" depois de salva; `lista.bensUsados` = Ativo/Inativo. */
@@ -111,6 +111,16 @@ function CenaNova({ valores }: PropsCena) {
       <CampoSimulado alvo="form.nome" rotulo="Nome" valor={valores["form.nome"]} />
       <SelectSimulado alvo="form.tipo" rotulo="Tipo" valor={valores["form.tipo"] ?? "Receita"} />
       <SelectSimulado alvo="form.pai" rotulo="Categoria pai" valor={valores["form.pai"] ?? "Nenhuma (raiz)"} />
+      <Alvo nome="form.naoOperacional" className="space-y-1">
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" disabled checked={valores["form.naoOperacional"] === "sim"} className="size-4" readOnly />
+          Não operacional
+        </label>
+        <p className="text-xs text-muted-foreground">
+          Empréstimos, aportes de sócio e amortização de dívida. Ficam fora da receita e do custo do Fluxo de caixa
+          estratégico.
+        </p>
+      </Alvo>
       <BotaoSimulado alvo="form.salvar" largo>
         Salvar
       </BotaoSimulado>
@@ -170,6 +180,15 @@ export const ajudaCategorias: DefinicaoAjuda = {
             "Hoje o pai só aparece na lista: os relatórios e o Orçamento mostram cada categoria separada, sem somar as " +
             "filhas no pai.",
           preenche: { "form.pai": TAXAS.pai! },
+        },
+        {
+          cena: "nova",
+          alvo: "form.naoOperacional",
+          instrucao: "Deixe “Não operacional” desmarcado",
+          explicacao:
+            "Taxa de cartão é custo da operação. Marque só as categorias de empréstimo recebido, aporte de sócio e " +
+            "amortização de dívida: elas ficam fora da receita e do custo do Fluxo de caixa estratégico, que projeta " +
+            "a operação. O resto do sistema (Tesouraria, fluxos, Orçamento) continua mostrando esses lançamentos.",
         },
         {
           cena: "nova",
