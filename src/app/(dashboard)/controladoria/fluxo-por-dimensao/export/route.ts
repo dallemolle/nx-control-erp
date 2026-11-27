@@ -6,6 +6,7 @@ import {
   type TipoDimensao,
 } from "@/server/services/fluxoDeCaixaPorDimensao";
 import { type ColunaExport } from "@/lib/export/csv";
+import { resultadoDoMes, totalDoFluxo } from "@/lib/fluxoPorDimensao";
 import { responderExport } from "@/lib/export/responder";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 import { cabecalhoDoRelatorio, filtroDeClassificacao } from "@/server/export/cabecalhoDoRelatorio";
@@ -38,10 +39,7 @@ function colunas(dimensao: TipoDimensao): ColunaExport<LinhaFluxoPorDimensao>[] 
     { rotulo: "Saídas realizadas", valor: (l) => l.saidasRealizadas },
     { rotulo: "Entradas projetadas", valor: (l) => l.entradasProjetadas },
     { rotulo: "Saídas projetadas", valor: (l) => l.saidasProjetadas },
-    {
-      rotulo: "Saldo",
-      valor: (l) => l.entradasRealizadas - l.saidasRealizadas + l.entradasProjetadas - l.saidasProjetadas,
-    },
+    { rotulo: "Resultado do mês", valor: (l) => resultadoDoMes(l) },
   ];
 }
 
@@ -59,8 +57,21 @@ export async function GET(request: Request) {
 
   const linhas = await listarFluxoDeCaixaPorDimensao(sessao, dimensao, ano, mes, { classificacao });
   const periodo = `${ano}-${String(mes).padStart(2, "0")}`;
+  // Linha Total no fim, como na tela: conferir com o Fluxo de caixa sem somar à mão.
+  const total = totalDoFluxo(linhas);
+  const linhaTotal: LinhaFluxoPorDimensao = {
+    dimensaoId: null,
+    dimensaoNome: "Total",
+    ano,
+    mes,
+    entradasRealizadas: total.entradasRealizadas,
+    saidasRealizadas: total.saidasRealizadas,
+    entradasProjetadas: total.entradasProjetadas,
+    saidasProjetadas: total.saidasProjetadas,
+  };
+  const comTotal = [...linhas, linhaTotal];
 
-  return responderExport(linhas, colunas(dimensao), {
+  return responderExport(comTotal, colunas(dimensao), {
     nomeArquivo: `fluxo-por-${dimensao.toLowerCase().replace("_", "-")}-${periodo}${
       classificacao ? `-${classificacao.toLowerCase()}` : ""
     }`,
