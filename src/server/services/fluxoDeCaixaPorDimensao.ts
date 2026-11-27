@@ -16,6 +16,8 @@ export type TipoDimensao = "CENTRO_CUSTO" | "CENTRO_LUCRO" | "SAFRA" | "PROJETO"
 export type LinhaFluxoPorDimensao = {
   dimensaoId: string | null;
   dimensaoNome: string;
+  /** Centro de custo pai (só nessa dimensão; nas outras, null). */
+  parentId: string | null;
   ano: number;
   mes: number;
   entradasRealizadas: number;
@@ -313,11 +315,15 @@ export async function listarFluxoDeCaixaPorDimensao(
 ): Promise<LinhaFluxoPorDimensao[]> {
   requirePermission(sessao.perfil, "titulo:ler");
 
-  const [valores, realizado, projetado] = await Promise.all([
+  const [valores, realizado, projetado, pais] = await Promise.all([
     listarValoresDimensao(sessao.filialId, tipoDimensao),
     buscarRealizadoPorDimensao(sessao.filialId, tipoDimensao, ano, mes, opcoes.classificacao),
     buscarProjetadoPorDimensao(sessao.filialId, tipoDimensao, ano, mes, opcoes.classificacao),
+    tipoDimensao === "CENTRO_CUSTO"
+      ? prisma.centroCusto.findMany({ where: { filialId: sessao.filialId }, select: { id: true, parentId: true } })
+      : Promise.resolve([]),
   ]);
+  const paiPorId = new Map(pais.map((c) => [c.id, c.parentId]));
 
   const linhas: LinhaFluxoPorDimensao[] = valores.map((valor) => {
     const r = realizado.get(valor.id) ?? { entradas: 0, saidas: 0 };
@@ -325,6 +331,7 @@ export async function listarFluxoDeCaixaPorDimensao(
     return {
       dimensaoId: valor.id,
       dimensaoNome: valor.nome,
+      parentId: paiPorId.get(valor.id) ?? null,
       ano,
       mes,
       entradasRealizadas: r.entradas,
@@ -358,6 +365,7 @@ export async function listarFluxoDeCaixaPorDimensao(
       linhas.push({
         dimensaoId: id,
         dimensaoNome: nome ? `${nome} (inativo)` : "Desconhecido (inativo)",
+        parentId: paiPorId.get(id) ?? null,
         ano,
         mes,
         entradasRealizadas: r.entradas,
@@ -373,6 +381,7 @@ export async function listarFluxoDeCaixaPorDimensao(
   linhas.push({
     dimensaoId: null,
     dimensaoNome: "Não classificado",
+    parentId: null,
     ano,
     mes,
     entradasRealizadas: rNulo.entradas,

@@ -609,6 +609,16 @@ describe("fluxoDeCaixaPorDimensao", () => {
       expect(linhaFilho?.saidasRealizadas).toBe(60);
     });
 
+    test("traz o parentId dos centros de custo; nas outras dimensões, null", async () => {
+      const linhas = await listarFluxoDeCaixaPorDimensao(fixture.sessao, "CENTRO_CUSTO", 2026, 11);
+      expect(linhas.find((l) => l.dimensaoId === centroCustoFilhoId)?.parentId).toBe(centroCustoAtivoId);
+      expect(linhas.find((l) => l.dimensaoId === centroCustoAtivoId)?.parentId).toBeNull();
+      expect(linhas.find((l) => l.dimensaoId === null)?.parentId).toBeNull();
+
+      const porSafra = await listarFluxoDeCaixaPorDimensao(fixture.sessao, "SAFRA", 2026, 11);
+      expect(porSafra.every((l) => l.parentId === null)).toBe(true);
+    });
+
     test("dimensão inativa mas classificada aparece em linha própria '(inativo)', não some nem vira Não classificado", async () => {
       await prisma.lancamentoBancario.create({
         data: {

@@ -12,6 +12,8 @@ import { SeletorClassificacao } from "../../_shared/seletor-classificacao";
 import { ExportarLinks } from "../../_shared/exportar-links";
 import { classificacaoDaUrl } from "@/lib/classificacaoFiscal";
 import { formatarMoeda } from "@/lib/formatacao";
+import { montarArvore } from "@/lib/arvoreDeLinhas";
+import { LinhasRecolhiveis } from "../_shared/linhas-recolhiveis";
 
 const DIMENSOES_VALIDAS: TipoDimensao[] = ["CENTRO_CUSTO", "CENTRO_LUCRO", "SAFRA", "PROJETO"];
 
@@ -56,6 +58,21 @@ export default async function FluxoPorDimensaoPage({
 
   const linhas = await listarFluxoDeCaixaPorDimensao(sessao, dimensao, ano, mes, { classificacao });
   const total = totalDoFluxo(linhas);
+  // Só o Centro de custo tem pai; nas outras dimensões todas as linhas ficam no nível 1.
+  const itens = montarArvore(
+    linhas.map((linha) => ({
+      ...linha,
+      id: linha.dimensaoId ?? "nao-classificado",
+      grupo: "dimensao",
+      nome: linha.dimensaoNome,
+    })),
+    (linha) => ({
+      entradasRealizadas: linha.entradasRealizadas,
+      saidasRealizadas: linha.saidasRealizadas,
+      entradasProjetadas: linha.entradasProjetadas,
+      saidasProjetadas: linha.saidasProjetadas,
+    }),
+  );
 
   return (
     <div className="space-y-8">
@@ -104,21 +121,30 @@ export default async function FluxoPorDimensaoPage({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {linhas.map((linha) => {
-            const resultado = resultadoDoMes(linha);
-            return (
-              <TableRow key={linha.dimensaoId ?? "nao-classificado"}>
-                <TableCell className="font-medium">{linha.dimensaoNome}</TableCell>
-                <TableCell>{formatarMoeda(linha.entradasRealizadas)}</TableCell>
-                <TableCell>{formatarMoeda(linha.saidasRealizadas)}</TableCell>
-                <TableCell>{formatarMoeda(linha.entradasProjetadas)}</TableCell>
-                <TableCell>{formatarMoeda(linha.saidasProjetadas)}</TableCell>
-                <TableCell className={resultado < 0 ? "font-medium text-destructive" : undefined}>
-                  {formatarMoeda(resultado)}
-                </TableCell>
-              </TableRow>
-            );
-          })}
+          <LinhasRecolhiveis
+            linhas={itens.map((item) => {
+              const resultado = resultadoDoMes(item.valores);
+              return {
+                chave: item.chave,
+                paiChave: item.paiChave,
+                nivel: item.nivel,
+                temFilhos: item.temFilhos,
+                direto: item.direto,
+                nome: item.nome,
+                celulas: (
+                  <>
+                    <TableCell>{formatarMoeda(item.valores.entradasRealizadas)}</TableCell>
+                    <TableCell>{formatarMoeda(item.valores.saidasRealizadas)}</TableCell>
+                    <TableCell>{formatarMoeda(item.valores.entradasProjetadas)}</TableCell>
+                    <TableCell>{formatarMoeda(item.valores.saidasProjetadas)}</TableCell>
+                    <TableCell className={resultado < 0 ? "font-medium text-destructive" : undefined}>
+                      {formatarMoeda(resultado)}
+                    </TableCell>
+                  </>
+                ),
+              };
+            })}
+          />
         </TableBody>
         <TableFooter>
           <TableRow className="font-semibold">
