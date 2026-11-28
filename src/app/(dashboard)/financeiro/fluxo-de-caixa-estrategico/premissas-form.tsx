@@ -1,7 +1,7 @@
 "use client";
 // Espelhado na ajuda (src/ajuda/fluxo-de-caixa-estrategico/cenas.tsx): mudou rótulo ou campo? Ajuste a ajuda junto.
 
-import { useActionState } from "react";
+import { useFormularioDaAcao } from "@/components/use-formulario-da-acao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,10 +20,10 @@ export function PremissasForm({
   premissas: PremissasCenario;
   somenteLeitura: boolean;
 }) {
-  const [state, formAction, pendente] = useActionState(atualizarPremissasCenarioAction, ESTADO_INICIAL);
+  const [state, formAction, pendente] = useFormularioDaAcao(atualizarPremissasCenarioAction, ESTADO_INICIAL);
 
   return (
-    <form action={formAction} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <form onSubmit={formAction} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <input type="hidden" name="tipo" value={tipo} />
       <div className="space-y-2">
         <Label htmlFor={`${tipo}-crescimentoReceita`}>Crescimento de receita (% a.a.)</Label>

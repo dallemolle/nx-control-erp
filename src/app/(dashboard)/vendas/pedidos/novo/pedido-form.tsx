@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { useFormularioDaAcao } from "@/components/use-formulario-da-acao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -107,7 +108,7 @@ const itemVazio = (chave: number): ItemForm => ({
 });
 
 export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
-  const [state, formAction, pendente] = useActionState(criarPedidoAction, ESTADO_INICIAL);
+  const [state, formAction, pendente] = useFormularioDaAcao(criarPedidoAction, ESTADO_INICIAL);
 
   const [data, setData] = useState(opcoes.hoje);
   const [clienteId, setClienteId] = useState("");
@@ -238,7 +239,7 @@ export function PedidoForm({ opcoes }: { opcoes: OpcoesPedido }) {
   );
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form onSubmit={formAction} className="space-y-6">
       <input type="hidden" name="itens" value={itensJson} />
       <input type="hidden" name="retiraNaPropriedade" value={retira ? "true" : "false"} />
       <input type="hidden" name="formaPagamento" value={forma} />

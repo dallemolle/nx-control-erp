@@ -70,7 +70,7 @@ export function ClienteDialogForm({ cliente, bancos }: { cliente?: Cliente; banc
         <DialogHeader>
           <DialogTitle>{cliente ? "Editar cliente" : "Novo cliente"}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           {cliente ? <input type="hidden" name="id" value={cliente.id} /> : null}
           <div className="space-y-2">
             <Label htmlFor="nome">Nome</Label>

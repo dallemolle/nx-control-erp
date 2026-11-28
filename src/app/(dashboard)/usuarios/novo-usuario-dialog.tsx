@@ -58,7 +58,7 @@ export function NovoUsuarioDialog() {
         <DialogHeader>
           <DialogTitle>Novo usuário</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <div className="flex gap-2">

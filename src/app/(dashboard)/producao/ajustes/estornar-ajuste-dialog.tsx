@@ -19,7 +19,7 @@ export function EstornarAjusteDialog({ ajuste }: { ajuste: { id: string; lote: s
         <DialogHeader>
           <DialogTitle>Estornar ajuste do lote {ajuste.lote}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           <input type="hidden" name="id" value={ajuste.id} />
           <p className="text-sm text-muted-foreground">
             {ajuste.descricao}. O estorno desfaz o ajuste na data dele: o saldo volta como se ele não tivesse sido

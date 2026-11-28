@@ -116,7 +116,7 @@ export function ConciliarGrupoDialog({
         {erroCarga ? <p className="text-sm text-destructive">{erroCarga}</p> : null}
         {!candidatos && !erroCarga ? <p className="text-sm text-muted-foreground">Carregando...</p> : null}
         {candidatos ? (
-          <form action={formAction} className="space-y-4">
+          <form onSubmit={formAction} className="space-y-4">
             {linhasDoGrupo.map((l) => (
               <input key={l.id} type="hidden" name="linhaIds" value={l.id} />
             ))}

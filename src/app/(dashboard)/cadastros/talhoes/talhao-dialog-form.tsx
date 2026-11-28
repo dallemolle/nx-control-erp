@@ -35,7 +35,7 @@ export function TalhaoDialogForm({ talhao, frutas }: { talhao?: Talhao; frutas: 
         <DialogHeader>
           <DialogTitle>{talhao ? "Editar talhão" : "Novo talhão"}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           {talhao ? <input type="hidden" name="id" value={talhao.id} /> : null}
           <div className="space-y-2">
             <Label htmlFor="nome">Nome</Label>

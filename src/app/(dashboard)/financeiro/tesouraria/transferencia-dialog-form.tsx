@@ -52,7 +52,7 @@ export function TransferenciaDialogForm({
             na Conciliação.
           </p>
         ) : null}
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           {editando ? <input type="hidden" name="transferenciaId" value={transferencia.transferenciaId} /> : null}
           {transferencia && travado ? <input type="hidden" name="contaOrigemId" value={transferencia.contaOrigemId} /> : null}
           {transferencia && travado ? <input type="hidden" name="contaDestinoId" value={transferencia.contaDestinoId} /> : null}

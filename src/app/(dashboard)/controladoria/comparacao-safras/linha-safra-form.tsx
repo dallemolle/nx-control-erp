@@ -2,7 +2,7 @@
 
 // Espelhado na ajuda (src/ajuda/comparacao-safras/cenas.tsx): mudou campo, botão ou mensagem? Ajuste a ajuda junto.
 
-import { useActionState } from "react";
+import { useFormularioDaAcao } from "@/components/use-formulario-da-acao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { salvarOrcamentoSafraAction, type FormState } from "./actions";
@@ -20,14 +20,14 @@ export function LinhaSafraForm({
   valorOrcado: number;
   somenteLeitura: boolean;
 }) {
-  const [state, formAction, pendente] = useActionState(salvarOrcamentoSafraAction, ESTADO_INICIAL);
+  const [state, formAction, pendente] = useFormularioDaAcao(salvarOrcamentoSafraAction, ESTADO_INICIAL);
 
   if (somenteLeitura) {
     return <span>{formatarMoeda(valorOrcado)}</span>;
   }
 
   return (
-    <form action={formAction} className="flex items-center gap-2">
+    <form onSubmit={formAction} className="flex items-center gap-2">
       <input type="hidden" name="safraId" value={safraId} />
       <Input
         key={valorOrcado} // recria o campo quando o valor salvo volta do servidor (mostra "30.000,00")

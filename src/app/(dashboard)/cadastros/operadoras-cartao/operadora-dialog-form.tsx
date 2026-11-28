@@ -101,7 +101,7 @@ export function OperadoraDialogForm({
         <DialogHeader>
           <DialogTitle>{operadora ? "Editar operadora" : "Nova operadora"}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           {operadora ? <input type="hidden" name="id" value={operadora.id} /> : null}
           <input type="hidden" name="condicoes" value={condicoesJson} />
 

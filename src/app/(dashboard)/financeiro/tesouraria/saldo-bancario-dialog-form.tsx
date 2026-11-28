@@ -33,7 +33,7 @@ export function SaldoBancarioDialogForm({
         <DialogHeader>
           <DialogTitle>Informar saldo bancário</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="contaBancariaId">Conta bancária</Label>
             <Select name="contaBancariaId">

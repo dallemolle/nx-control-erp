@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useFormularioDaAcao } from "@/components/use-formulario-da-acao";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,7 @@ const ESTADO_INICIAL: FormState = {};
 
 /** Data, fruta e responsável; ao salvar, o servidor leva direto ao detalhe da OP. */
 export function NovaOPDialog({ hoje, frutas }: { hoje: string; frutas: { id: string; nome: string }[] }) {
-  const [state, formAction, pendente] = useActionState(criarOPAction, ESTADO_INICIAL);
+  const [state, formAction, pendente] = useFormularioDaAcao(criarOPAction, ESTADO_INICIAL);
   const [frutaId, setFrutaId] = useState(frutas.length === 1 ? frutas[0].id : "");
 
   return (
@@ -22,7 +23,7 @@ export function NovaOPDialog({ hoje, frutas }: { hoje: string; frutas: { id: str
         <DialogHeader>
           <DialogTitle>Nova ordem de produção</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="nova-op-data">Data</Label>

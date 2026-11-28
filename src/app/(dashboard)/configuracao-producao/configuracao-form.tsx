@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useFormularioDaAcao } from "@/components/use-formulario-da-acao";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,9 @@ function Campo({
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{rotulo}</Label>
-      <Input id={id} name={id} {...props} />
+      {/* `key` com o valor salvo: depois de salvar, o campo remonta com ele (o Base UI avisa se o valor inicial
+          de um campo não controlado muda). */}
+      <Input key={String(props.defaultValue)} id={id} name={id} {...props} />
       {ajuda ? <p className="text-xs text-muted-foreground">{ajuda}</p> : null}
     </div>
   );
@@ -79,10 +81,10 @@ export function ConfiguracaoForm({
   categoriasReceita: { id: string; nome: string }[];
   contas: { id: string; tipo: string; rotulo: string }[];
 }) {
-  const [state, formAction, pendente] = useActionState(salvarConfiguracaoProducaoAction, ESTADO_INICIAL);
+  const [state, formAction, pendente] = useFormularioDaAcao(salvarConfiguracaoProducaoAction, ESTADO_INICIAL);
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form onSubmit={formAction} className="space-y-6">
       <fieldset disabled={somenteLeitura} className="space-y-6">
         <Card>
           <CardHeader>

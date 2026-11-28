@@ -68,7 +68,7 @@ export function FornecedorDialogForm({
         <DialogHeader>
           <DialogTitle>{fornecedor ? "Editar fornecedor" : "Novo fornecedor"}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           {fornecedor ? <input type="hidden" name="id" value={fornecedor.id} /> : null}
           <div className="space-y-2">
             <Label htmlFor="nome">Nome</Label>

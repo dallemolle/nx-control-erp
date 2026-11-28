@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useFormularioDaAcao } from "@/components/use-formulario-da-acao";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +38,7 @@ export function CancelarPedido({
         <DialogHeader>
           <DialogTitle>Cancelar pedido {numero}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           <input type="hidden" name="id" value={pedidoId} />
           <p className="text-sm text-muted-foreground">
             O estoque volta para os lotes, a conta a receber é cancelada e, se a venda foi à vista, o recebimento é
@@ -67,12 +67,12 @@ export function ObservacaoPedido({
   observacao: string | null;
   podeEditar: boolean;
 }) {
-  const [state, formAction, pendente] = useActionState(editarObservacaoAction, ESTADO_INICIAL);
+  const [state, formAction, pendente] = useFormularioDaAcao(editarObservacaoAction, ESTADO_INICIAL);
   if (!podeEditar) {
     return <p className="text-sm">{observacao ?? <span className="text-muted-foreground">Sem observação.</span>}</p>;
   }
   return (
-    <form action={formAction} className="space-y-2">
+    <form onSubmit={formAction} className="space-y-2">
       <input type="hidden" name="id" value={pedidoId} />
       <Label htmlFor="observacao-pedido" className="sr-only">
         Observação

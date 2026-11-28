@@ -131,7 +131,7 @@ export function NovaRecepcao({ opcoes }: { opcoes: OpcoesRecepcao }) {
           <DialogHeader>
             <DialogTitle>Nova recepção de fruto</DialogTitle>
           </DialogHeader>
-          <form action={formAction} className="space-y-4">
+          <form onSubmit={formAction} className="space-y-4">
             {/* A chave reinicia os campos depois de cada lote criado. */}
             <CamposRecepcao key={state.codigoLote ?? "nova"} opcoes={opcoes} />
             {state.erro ? (

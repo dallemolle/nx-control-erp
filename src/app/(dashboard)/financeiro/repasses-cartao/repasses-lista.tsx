@@ -2,7 +2,8 @@
 // Espelhado na ajuda (src/ajuda/repasses-cartao/cenas.tsx): mudou rótulo, coluna ou botão? Ajuste a ajuda junto.
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useFormularioDaAcao } from "@/components/use-formulario-da-acao";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,9 +31,9 @@ const VARIANTE = { A_RECEBER: "secondary", ATRASADO: "destructive", RECEBIDO: "d
 const ESTADO_INICIAL: FormState = {};
 
 function Desfazer({ parcelaId }: { parcelaId: string }) {
-  const [state, action, pendente] = useActionState(desfazerRepasseAction, ESTADO_INICIAL);
+  const [state, action, pendente] = useFormularioDaAcao(desfazerRepasseAction, ESTADO_INICIAL);
   return (
-    <form action={action} className="flex flex-col items-end gap-1">
+    <form onSubmit={action} className="flex flex-col items-end gap-1">
       <input type="hidden" name="parcelaId" value={parcelaId} />
       <Button type="submit" variant="ghost" size="sm" disabled={pendente}>
         Desfazer
@@ -52,7 +53,7 @@ export function RepassesLista({
   podeConfirmar: boolean;
 }) {
   const [marcados, setMarcados] = useState<Set<string>>(new Set());
-  const [state, action, pendente] = useActionState(async (anterior: FormState, dados: FormData) => {
+  const [state, action, pendente] = useFormularioDaAcao(async (anterior: FormState, dados: FormData) => {
     const resultado = await confirmarRepassesAction(anterior, dados);
     if (resultado.sucesso) setMarcados(new Set());
     return resultado;
@@ -76,7 +77,7 @@ export function RepassesLista({
   return (
     <div className="space-y-4">
       {podeConfirmar ? (
-        <form action={action} className="flex flex-wrap items-end gap-3 rounded-lg border bg-muted/40 p-3">
+        <form onSubmit={action} className="flex flex-wrap items-end gap-3 rounded-lg border bg-muted/40 p-3">
           <input type="hidden" name="parcelaIds" value={JSON.stringify([...marcados])} />
           <div className="text-sm">
             <p className="text-muted-foreground">{selecionadas.length} repasse(s) marcado(s)</p>

@@ -36,7 +36,7 @@ export function FilialDialogForm({ filial }: { filial?: Filial }) {
         <DialogHeader>
           <DialogTitle>{filial ? "Editar filial" : "Nova filial"}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           {filial ? <input type="hidden" name="id" value={filial.id} /> : null}
           <div className="space-y-2">
             <Label htmlFor="nome">Nome</Label>

@@ -29,7 +29,7 @@ export function FrutaDialogForm({ fruta }: { fruta?: Fruta }) {
         <DialogHeader>
           <DialogTitle>{fruta ? "Editar fruta" : "Nova fruta"}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           {fruta ? <input type="hidden" name="id" value={fruta.id} /> : null}
           <div className="space-y-2">
             <Label htmlFor="nome">Nome</Label>

@@ -32,7 +32,7 @@ export function LiberarLoteDialog({
           <DialogTitle>Liberar lote vencido {lote.codigo}</DialogTitle>
         </DialogHeader>
         {situacao.tipo === "PODE" ? (
-          <form action={formAction} className="space-y-4">
+          <form onSubmit={formAction} className="space-y-4">
             <input type="hidden" name="loteId" value={lote.id} />
             <p className="text-sm">
               A movimentação ficará liberada até <strong>{formatarData(situacao.liberadoAte)}</strong> (validade +{" "}
@@ -83,7 +83,7 @@ export function RevogarLiberacaoDialog({
         <DialogHeader>
           <DialogTitle>Revogar liberação do lote {lote.codigo}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           <input type="hidden" name="loteId" value={lote.id} />
           <p className="text-sm">
             A liberação até {formatarData(liberadoAte)} será desfeita e o lote volta a ficar bloqueado.

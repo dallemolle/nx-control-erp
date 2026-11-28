@@ -126,7 +126,7 @@ export function TituloDialogForm({
         <DialogHeader>
           <DialogTitle>{titulo ? "Editar título" : "Novo título"}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           {titulo ? <input type="hidden" name="id" value={titulo.id} /> : null}
           <input type="hidden" name="parcelas" value={JSON.stringify(parcelas)} />
 

@@ -27,7 +27,7 @@ export function AjusteDialogForm({ lotes, hoje }: { lotes: LoteParaAjuste[]; hoj
         <DialogHeader>
           <DialogTitle>Novo ajuste de estoque</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formAction} className="space-y-4">
           <input type="hidden" name="sentido" value={sentido} />
           <div className="flex flex-wrap gap-4 text-sm">
             {(["SAIDA", "ENTRADA"] as const).map((valor) => (
